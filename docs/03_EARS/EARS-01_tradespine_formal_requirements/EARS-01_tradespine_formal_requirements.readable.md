@@ -22,7 +22,7 @@
 | --- | --- | --- | --- |
 | 1.0 | 2026-06-01T19:30:00-03:00 | Codex | Initial EARS generated from approved PRD-01 and TradeSpine source brief. |
 | 1.0.1 | 2026-06-01T19:49:37-03:00 | Codex | Clarified two-session behavior, one-day session-open expiration warnings, mandatory symbol-information validation, and day-trade no-overnight close. |
-| 1.0.2 | 2026-06-01T20:01:34-03:00 | Paulo Henrique Barreto Reboucas | Approved EARS-01 for downstream BDD generation. |
+| 1.0.2 | 2026-06-01T20:01:34-03:00 | phbr | Approved EARS-01 for downstream BDD generation. |
 
 ## Purpose and Context
 

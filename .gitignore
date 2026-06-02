@@ -23,3 +23,6 @@ node_modules/
 # Logs locais
 *.log
 logs/
+
+# Agents configs
+.aidoc/

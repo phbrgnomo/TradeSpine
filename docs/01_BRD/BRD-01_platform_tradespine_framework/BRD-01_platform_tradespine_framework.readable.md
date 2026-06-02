@@ -14,7 +14,7 @@
 | PRD-ready score | 94/100 |
 | Created | 2026-06-01T13:20:00-03:00 |
 | Updated | 2026-06-01T13:20:00-03:00 |
-| Author | Paulo Henrique Barreto Reboucas |
+| Author | phbr |
 | Prepared by | Codex |
 | Target | v1.0 after phased v0.1-v0.9 build validation |
 
@@ -23,7 +23,7 @@
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
 | 1.0 | 2026-06-01T13:20:00-03:00 | Codex | Initial Platform BRD generated from TradeSpine PRD v3.73 and architecture diagram source. |
-| 1.0-approval | 2026-06-01T13:55:00-03:00 | Paulo Henrique Barreto Reboucas | BRD approved for downstream PRD generation. |
+| 1.0-approval | 2026-06-01T13:55:00-03:00 | phbr | BRD approved for downstream PRD generation. |
 
 ## Executive Summary
 
@@ -195,9 +195,9 @@ Rationale: The MVP proves the shared platform foundation before expanding strate
 
 | Role | Name | Authority |
 | --- | --- | --- |
-| Executive Sponsor | Paulo Henrique Barreto Reboucas | Final scope and release approval |
-| Product Owner | Paulo Henrique Barreto Reboucas | Feature priority and trading workflow fit |
-| Technical Lead | Paulo Henrique Barreto Reboucas | Architecture and implementation acceptance |
+| Executive Sponsor | phbr | Final scope and release approval |
+| Product Owner | phbr | Feature priority and trading workflow fit |
+| Technical Lead | phbr | Architecture and implementation acceptance |
 
 ### Key Contributors
 
@@ -482,10 +482,10 @@ System must avoid unnecessary runtime work during optimization and idle ticks.
 
 | Role | Name | Title | Date |
 | --- | --- | --- | --- |
-| Executive Sponsor | Paulo Henrique Barreto Reboucas | Owner | 2026-06-01T13:55:00-03:00 |
-| Product Owner | Paulo Henrique Barreto Reboucas | Owner | 2026-06-01T13:55:00-03:00 |
-| Business Lead | Paulo Henrique Barreto Reboucas | Owner | 2026-06-01T13:55:00-03:00 |
-| Technology Lead | Paulo Henrique Barreto Reboucas | Owner | 2026-06-01T13:55:00-03:00 |
+| Executive Sponsor | phbr | Owner | 2026-06-01T13:55:00-03:00 |
+| Product Owner | phbr | Owner | 2026-06-01T13:55:00-03:00 |
+| Business Lead | phbr | Owner | 2026-06-01T13:55:00-03:00 |
+| Technology Lead | phbr | Owner | 2026-06-01T13:55:00-03:00 |
 
 ### Approval Criteria
 

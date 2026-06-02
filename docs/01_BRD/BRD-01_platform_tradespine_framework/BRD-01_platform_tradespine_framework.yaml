@@ -29,7 +29,7 @@ document_control:
   status: Approved
   date_created: "2026-06-01T13:20:00-03:00"
   last_updated: "2026-06-01T13:20:00-03:00"
-  author: "Paulo Henrique Barreto Reboucas"
+  author: "phbr"
   prepared_by: "Codex"
   mvp_target_launch: "v1.0 after phased v0.1-v0.9 build validation"
   prd_ready_score: "94/100"
@@ -45,12 +45,12 @@ document_control:
         date: "2026-06-01T13:20:00-03:00"
         author: "Codex"
         changes: "Initial Platform BRD generated from TradeSpine PRD v3.73 and architecture diagram source."
-        approver: "Paulo Henrique Barreto Reboucas"
+        approver: "phbr"
       - version: "1.0-approval"
         date: "2026-06-01T13:55:00-03:00"
-        author: "Paulo Henrique Barreto Reboucas"
+        author: "phbr"
         changes: "BRD approved for downstream PRD generation."
-        approver: "Paulo Henrique Barreto Reboucas"
+        approver: "phbr"
 
 ## Executive Summary
 executive_summary:
@@ -242,13 +242,13 @@ project_scope:
 stakeholders:
   decision_makers:
     - role: "Executive Sponsor"
-      name: "Paulo Henrique Barreto Reboucas"
+      name: "phbr"
       authority: "Final scope and release approval"
     - role: "Product Owner"
-      name: "Paulo Henrique Barreto Reboucas"
+      name: "phbr"
       authority: "Feature priority and trading workflow fit"
     - role: "Technical Lead"
-      name: "Paulo Henrique Barreto Reboucas"
+      name: "phbr"
       authority: "Architecture and implementation acceptance"
   key_contributors:
     - role: "Strategy Author"
@@ -582,19 +582,19 @@ risk_management:
 approval:
   approvers:
     - role: "Executive Sponsor"
-      name: "Paulo Henrique Barreto Reboucas"
+      name: "phbr"
       title: "Owner"
       date: "2026-06-01T13:55:00-03:00"
     - role: "Product Owner"
-      name: "Paulo Henrique Barreto Reboucas"
+      name: "phbr"
       title: "Owner"
       date: "2026-06-01T13:55:00-03:00"
     - role: "Business Lead"
-      name: "Paulo Henrique Barreto Reboucas"
+      name: "phbr"
       title: "Owner"
       date: "2026-06-01T13:55:00-03:00"
     - role: "Technology Lead"
-      name: "Paulo Henrique Barreto Reboucas"
+      name: "phbr"
       title: "Owner"
       date: "2026-06-01T13:55:00-03:00"
   criteria:

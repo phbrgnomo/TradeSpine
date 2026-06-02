@@ -24,7 +24,7 @@
 | 1.0.1 | 2026-06-01T14:18:42-03:00 | Codex | Fixed section-scoped element IDs from PRD audit v001. |
 | 1.0.2 | 2026-06-01T14:31:40-03:00 | Codex | Clarified v1 strategy guide, evidence-stream separation, and account-mode ownership requirements. |
 | 1.0.3 | 2026-06-01T19:13:08-03:00 | Codex | Resolved PRD audit v004 source-drift findings for runtime risk controls, performance budgets, validation evidence, session and sizing scope, release governance, and v1 safety behaviors. |
-| 1.0-approval | 2026-06-01T19:30:00-03:00 | Paulo Henrique Barreto Reboucas | PRD approved for downstream EARS generation. |
+| 1.0-approval | 2026-06-01T19:30:00-03:00 | phbr | PRD approved for downstream EARS generation. |
 | 1.0.4 | 2026-06-01T19:49:37-03:00 | Codex | Aligned EARS review clarifications for one-day contract-expiration warnings, explicit symbol-information validation, and day-trade no-overnight behavior. |
 
 ## Executive Summary

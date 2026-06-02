@@ -22,7 +22,7 @@
 | Version | Date | Author | Changes |
 | --- | --- | --- | --- |
 | 1.0 | 2026-06-01T20:01:34-03:00 | Codex | Initial BDD acceptance suite generated from approved EARS-01. |
-| 1.0-approval | 2026-06-01T20:35:00-03:00 | Paulo Henrique Barreto Reboucas | BDD approved for downstream ADR generation. |
+| 1.0-approval | 2026-06-01T20:35:00-03:00 | phbr | BDD approved for downstream ADR generation. |
 
 ## Feature Definition
 

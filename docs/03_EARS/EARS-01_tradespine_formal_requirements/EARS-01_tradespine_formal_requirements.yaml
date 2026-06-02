@@ -28,7 +28,7 @@ document_control:
   date_created: "2026-06-01T19:30:00-03:00"
   last_updated: "2026-06-01T20:01:34-03:00"
   author: "Codex"
-  reviewer: "Paulo Henrique Barreto Reboucas"
+  reviewer: "phbr"
   priority: P1
   source_document: "@prd: PRD.01.09.9e71"
   brd_reference: "@brd: BRD.01.03.d116"
@@ -48,7 +48,7 @@ document_control:
       changes: "Clarified two-session behavior, one-day session-open expiration warnings, mandatory symbol-information validation, and day-trade no-overnight close."
     - version: "1.0.2"
       date: "2026-06-01T20:01:34-03:00"
-      author: "Paulo Henrique Barreto Reboucas"
+      author: "phbr"
       changes: "Approved EARS-01 for downstream BDD generation."
 
 ## Purpose and Context

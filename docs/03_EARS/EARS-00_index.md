@@ -115,4 +115,4 @@ Before marking EARS as "Approved":
 ---
 
 **Last Updated**: 2026-06-01
-**Maintainer**: Paulo Henrique Barreto Reboucas
+**Maintainer**: phbr

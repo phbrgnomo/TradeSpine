@@ -90,4 +90,4 @@ Corpus-level coverage audit: [ADR-00.A v001](ADR-00.A_audit_report_v001.md) reco
 ---
 
 **Last Updated**: 2026-06-01  
-**Maintainer**: Paulo Henrique Barreto Reboucas
+**Maintainer**: phbr

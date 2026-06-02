@@ -28,7 +28,7 @@ document_control:
   date_created: "2026-06-01T20:01:34-03:00"
   last_updated: "2026-06-01T20:35:00-03:00"
   author: "Codex"
-  reviewer: "Paulo Henrique Barreto Reboucas"
+  reviewer: "phbr"
   priority: P1
   source_document: "@ears: EARS-01"
   prd_reference: "@prd: PRD-01"
@@ -46,7 +46,7 @@ document_control:
       changes: "Initial BDD acceptance suite generated from approved EARS-01."
     - version: "1.0-approval"
       date: "2026-06-01T20:35:00-03:00"
-      author: "Paulo Henrique Barreto Reboucas"
+      author: "phbr"
       changes: "BDD approved for downstream ADR generation."
 
 ## Feature Definition

@@ -13,7 +13,7 @@ last_updated: "2026-06-01T20:35:00-03:00"
 document_control:
   status: Accepted
   date: "2026-06-01"
-  decision_makers: ["Paulo Henrique Barreto Reboucas"]
+  decision_makers: ["phbr"]
   author: "Codex"
   version: "1.0"
   originating_topic: "@prd: PRD.01.14.de0d"

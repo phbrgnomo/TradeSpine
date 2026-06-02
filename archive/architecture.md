@@ -1,7 +1,7 @@
 # MQL5 Expert Advisor Framework Architecture
 
 **Version:** 2.2.0  
-**Author:** Paulo Henrique Barreto Rebouças  
+**Author:** phbr  
 **Last Updated:** 2025-10-29
 
 ---
@@ -273,7 +273,7 @@ Each EA contains:
 
 ```cpp
 // MyScalpEA.mq5
-#property copyright "Paulo Henrique Barreto Rebouças"
+#property copyright "phbr"
 #property version   "1.00"
 
 #include <Trade/Trade.mqh>
@@ -953,7 +953,7 @@ Start with a complete EA file - no framework yet:
 
 ```cpp
 // MyScalpEA.mq5
-#property copyright "Paulo Henrique Barreto Rebouças"
+#property copyright "phbr"
 #property version   "1.00"
 
 #include <Trade/Trade.mqh>

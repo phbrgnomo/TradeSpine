@@ -142,4 +142,4 @@ Before marking PRD as "Approved":
 - [PRD-01 canonical YAML](PRD-01_tradespine_platform_requirements/PRD-01_tradespine_platform_requirements.yaml)
 
 **Last Updated**: 2026-06-01
-**Maintainer**: Paulo Henrique Barreto Reboucas
+**Maintainer**: phbr
