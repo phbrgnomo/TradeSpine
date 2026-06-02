@@ -1,0 +1,719 @@
+---
+document_type: brd-document
+artifact_type: BRD
+layer: 1
+deliverable_type: code
+id: BRD-01
+title: TradeSpine Platform Foundation
+metadata:
+  schema_version: "1.0"
+  document_type: brd-document
+  artifact_type: BRD
+  layer: 1
+  deliverable_type: code
+  lifecycle: mvp-prod-newmvp
+  brd_type: platform
+  c4_level: context
+  diagram_standard:
+    tags:
+      - "@diagram: c4-l1"
+      - "@diagram: dfd-l1"
+status: Approved
+created_date: "2026-06-01T13:20:00-03:00"
+last_updated: "2026-06-01T13:20:00-03:00"
+
+## Document Control
+document_control:
+  project_name: TradeSpine
+  version: "1.0"
+  status: Approved
+  date_created: "2026-06-01T13:20:00-03:00"
+  last_updated: "2026-06-01T13:20:00-03:00"
+  author: "Paulo Henrique Barreto Reboucas"
+  prepared_by: "Codex"
+  mvp_target_launch: "v1.0 after phased v0.1-v0.9 build validation"
+  prd_ready_score: "94/100"
+  brd_type: platform
+  upstream_mode: ref
+  upstream_ref_path:
+    - "../../00_REF/REF-01_tradespine_source_brief.md"
+    - "../../../Project/PRD.md"
+    - "../../../Project/architecture-diagram.html"
+  revision_history:
+    entries:
+      - version: "1.0"
+        date: "2026-06-01T13:20:00-03:00"
+        author: "Codex"
+        changes: "Initial Platform BRD generated from TradeSpine PRD v3.73 and architecture diagram source."
+        approver: "Paulo Henrique Barreto Reboucas"
+      - version: "1.0-approval"
+        date: "2026-06-01T13:55:00-03:00"
+        author: "Paulo Henrique Barreto Reboucas"
+        changes: "BRD approved for downstream PRD generation."
+        approver: "Paulo Henrique Barreto Reboucas"
+
+## Executive Summary
+executive_summary:
+  overview: >
+    TradeSpine defines the platform foundation for reusable, safety-governed
+    MetaTrader 5 strategy development focused on B3 futures. The MVP validates
+    whether shared execution, risk, state, and audit capabilities can replace
+    repeated per-strategy infrastructure while preserving strategy-author
+    control over entry logic.
+  target_users:
+    primary:
+      - segment: "Owner-operator trader building MT5 strategies for B3 futures"
+        need: "Create strategies without repeatedly rebuilding execution, risk, session, and audit infrastructure."
+        size: "One primary operator for v1"
+    secondary:
+      - segment: "Future MQL5 strategy developer"
+        need: "Use a documented framework without deep expertise in account-mode, broker, or async execution mechanics."
+
+## Diagrams Registry
+diagrams:
+  id: "BRD.01.01.d46d"
+  directory: "diagrams/"
+  format: "Mermaid source migrated through charts-flow"
+  items:
+    - id: "BRD.01.03.d116"
+      title: "TradeSpine system context"
+      file: "diagrams/BRD-01-diag_system_context.md"
+      rendered_svg: "diagrams/BRD-01-diag_system_context-1.svg"
+      source: "../../../Project/architecture-diagram.html#fig-01"
+      scope: "Context-level view of trader, MT5 terminal, broker, strategy files, framework, and Python analytics boundary."
+    - id: "BRD.01.01.4667"
+      title: "Business audit flow"
+      file: "diagrams/BRD-01-diag_audit_flow.md"
+      rendered_svg: "diagrams/BRD-01-diag_audit_flow-1.svg"
+      source: "../../../Project/architecture-diagram.html#fig-03"
+      scope: "Business-level view of intent and execution evidence required for post-trade review."
+    - id: "BRD.01.01.0dae"
+      title: "State ownership context"
+      file: "diagrams/BRD-01-diag_state_ownership.md"
+      rendered_svg: "diagrams/BRD-01-diag_state_ownership-1.svg"
+      source: "../../../Project/architecture-diagram.html#fig-05"
+      scope: "Context-level ownership boundary for same-symbol strategy operation across account modes."
+
+## Introduction
+introduction:
+  business_context: >
+    The current strategy-development process creates one Expert Advisor per
+    strategy and repeats broker/session handling, position accounting, risk
+    controls, logging, and recovery logic in each file. The TradeSpine platform
+    consolidates those shared concerns into an audited framework so new B3
+    futures strategies can focus on strategy logic.
+  purpose: >
+    This BRD defines the business requirements for the first TradeSpine MVP
+    cycle: a reusable MT5 framework foundation that supports safe strategy
+    authoring, same-symbol multi-strategy operation, reproducible dependencies,
+    and evidence suitable for post-trade analysis.
+  document_scope:
+    in_scope:
+      - "Business objectives for the platform foundation."
+      - "MVP capabilities needed before downstream strategy BRDs depend on TradeSpine."
+      - "Quality expectations and launch gates for v1.0."
+      - "Architecture decision topics for downstream PRD, ADR, and SPEC artifacts."
+    out_of_scope:
+      - "Detailed MQL5 class contracts and method signatures."
+      - "Per-module implementation plans."
+      - "Custom optimization criteria and Python analytics implementation."
+      - "B3 equities, pyramiding, multi-symbol operation, UI panels, and WebRequest integrations."
+
+## Business Objectives
+business_objectives:
+  hypothesis:
+    statement: "A shared MT5 strategy framework can reduce duplicated EA infrastructure while enforcing strategy-level safety and auditability for B3 futures trading."
+    validation_questions:
+      - "Can a reference strategy be authored as one strategy file with shared infrastructure outside the strategy file?"
+      - "Can framework-mediated orders pass through safety checks that prevent catastrophic order submission?"
+      - "Can netting and hedging accounts support multiple same-symbol strategy instances without strategy-code changes?"
+  problem_statement:
+    problem: "Each custom EA repeats critical infrastructure, increasing delivery time and real-money defect exposure."
+    impact: "The source brief estimates the reference Turtle EA at 4,081 lines with roughly 70% reusable infrastructure."
+    mvp_solution: "Create a shared TradeSpine platform foundation and reference strategies that prove the common infrastructure layer."
+  goals:
+    - id: "BRD.01.04.22e9"
+      statement: "Reduce per-strategy infrastructure duplication for new B3 futures strategies."
+      baseline: "Reference strategy contains roughly 70% reusable infrastructure."
+      target: "New reference strategy uses a single strategy file with shared framework services by v1.0."
+    - id: "BRD.01.04.7b04"
+      statement: "Prevent catastrophic framework-mediated order submission."
+      baseline: "Safety checks are repeated per EA."
+      target: "All framework helper order flow passes through a guarded path before broker submission."
+    - id: "BRD.01.04.4fb6"
+      statement: "Preserve same-symbol multi-strategy operation across supported account modes."
+      baseline: "Netting isolation is a known design risk."
+      target: "Both netting and hedging modes demonstrate independent strategy ownership for same-symbol strategies."
+    - id: "BRD.01.04.3030"
+      statement: "Make framework builds reproducible across terminal updates."
+      baseline: "MetaTrader standard-library behavior may change with terminal updates."
+      target: "Dependencies used by the framework are vendored and version-recorded for v1.0."
+    - id: "BRD.01.04.79f3"
+      statement: "Enable strategy authoring without reading framework internals."
+      baseline: "Current strategy authoring requires infrastructure knowledge."
+      target: "v1.0 ships a template, two reference strategies, and authoring documentation."
+  success_metrics:
+    - id: "BRD.01.04.d58c"
+      objective: "Strategy authoring compression"
+      metric: "Reference strategy shape"
+      target: "One `.mq5` strategy file plus shared framework includes"
+      period: "v1.0 sign-off"
+    - id: "BRD.01.04.9f63"
+      objective: "Safety gate coverage"
+      metric: "Framework-mediated order paths"
+      target: "100% routed through guarded execution"
+      period: "v1.0 sign-off"
+    - id: "BRD.01.04.7937"
+      objective: "Account-mode parity"
+      metric: "Supported account modes"
+      target: "Netting, exchange-netting, and hedging behavior validated"
+      period: "v1.0 sign-off"
+  expected_benefits:
+    quantifiable:
+      - "Reduce repeated infrastructure from the reference baseline toward a single shared layer."
+      - "Ship two reference strategies for validation and examples."
+      - "Complete phased build gates from v0.1 through v1.0."
+    qualitative:
+      - "Centralized review surface for safety-critical trading behavior."
+      - "Clear separation between strategy logic and execution infrastructure."
+      - "Traceable audit evidence for Python-side analysis."
+  cost_benefit:
+    development_costs:
+      team: "One owner-operator/developer through phased v0.1-v1.0 delivery."
+      infrastructure: "Existing local MT5 terminal and repository."
+      third_party: "No required external package dependency for v1."
+    total_mvp_investment: "Owner time; cash cost not estimated in source brief."
+    roi_hypothesis: "Investment is justified if repeated strategy infrastructure is replaced by audited shared services without reducing trading safety."
+
+## Project Scope
+project_scope:
+  scope_statement: >
+    The MVP establishes TradeSpine as the platform BRD for single-symbol MT5
+    strategy development on B3 futures. It delivers the framework foundation,
+    reference strategy authoring model, strategy-scoped safety controls, audit
+    evidence, and account-mode abstraction needed before downstream strategy
+    features depend on the framework.
+  core_features:
+    p1_must_have:
+      - "Single-file strategy authoring model."
+      - "Guarded framework-mediated trade execution."
+      - "Strategy-scoped netting and hedging ownership."
+      - "B3 futures sizing and session support."
+      - "Trade intent and execution audit evidence."
+      - "Vendored standard-library dependency foundation."
+      - "Reference strategy template and two working reference strategies."
+    p2_should_have:
+      - "Low-I/O optimization and idle-path behavior."
+      - "Operator-facing documentation for strategy authors."
+      - "Extensible placeholders for deferred equity and advanced analytics work."
+  out_of_scope:
+    items:
+      - "B3 equities implementation."
+      - "Pyramiding and partial-close management."
+      - "Multi-symbol and portfolio operation."
+      - "Custom optimization criteria and DSR analytics."
+      - "External API/WebRequest integrations."
+      - "User interface panels."
+    rationale: "The MVP proves the shared platform foundation before expanding strategy breadth."
+  workflow:
+    diagram:
+      type: sequenceDiagram
+      content: |
+        sequenceDiagram
+          participant Trader
+          participant Strategy
+          participant TradeSpine
+          participant Broker
+          participant Analytics
+          Trader->>Strategy: Configure strategy inputs
+          Strategy->>TradeSpine: Request framework-mediated trade action
+          TradeSpine->>Broker: Submit only after business safety gates pass
+          Broker-->>TradeSpine: Return trade outcome
+          TradeSpine->>Analytics: Record intent and execution evidence
+          Analytics-->>Trader: Support post-trade review
+    happy_path:
+      - "Trader selects a B3 futures strategy and risk settings."
+      - "Strategy emits a trading intent through framework helpers."
+      - "TradeSpine applies safety, session, account-mode, and audit rules."
+      - "Broker accepts or rejects the trade request."
+      - "TradeSpine records paired evidence for review."
+
+## Stakeholders
+stakeholders:
+  decision_makers:
+    - role: "Executive Sponsor"
+      name: "Paulo Henrique Barreto Reboucas"
+      authority: "Final scope and release approval"
+    - role: "Product Owner"
+      name: "Paulo Henrique Barreto Reboucas"
+      authority: "Feature priority and trading workflow fit"
+    - role: "Technical Lead"
+      name: "Paulo Henrique Barreto Reboucas"
+      authority: "Architecture and implementation acceptance"
+  key_contributors:
+    - role: "Strategy Author"
+      name: "Primary owner-operator"
+      responsibility: "Validate authoring ergonomics and reference strategies"
+    - role: "MT5 Broker/Exchange Environment"
+      name: "B3 futures broker via MetaTrader 5"
+      responsibility: "Provide symbol, session, margin, fill, and account-mode behavior"
+    - role: "Python Analytics Consumer"
+      name: "External analytics repository"
+      responsibility: "Consume TradeSpine audit exports outside the MQL5 tree"
+
+## Functional Requirements
+functional_requirements:
+  priority_definitions:
+    P1: "Must Have - blocks v1.0 if missing"
+    P2: "Should Have - useful for v1.0 but deferrable with explicit rationale"
+    Future: "Next BRD cycle or later roadmap item"
+  requirements:
+    - id: "BRD.01.07.88a6"
+      title: "Single-file strategy authoring"
+      capability: "System must enable a trader to create a new MT5 strategy as one strategy file that uses shared framework services."
+      priority: P1
+      complexity:
+        rating: "3/5"
+        rationale: "Trader -> strategy -> framework; no regulatory workflow; multiple authoring constraints."
+      business_needs:
+        - "Keep strategy files focused on signal logic and strategy-level behavior selection."
+        - "Provide a template and references that expose the expected authoring pattern."
+      business_rules:
+        - "A v1 strategy attaches to one chart symbol."
+        - "Strategy logic must not require direct broker execution infrastructure."
+      acceptance_criteria:
+        items:
+          - id: "BRD.01.07.71d6"
+            criterion: "Reference strategy packaging"
+            target: "Each v1 reference strategy is one `.mq5` strategy file plus shared framework includes."
+    - id: "BRD.01.07.a94e"
+      title: "Guarded trade flow"
+      capability: "System must ensure every framework-mediated entry passes through one guarded trade path before broker submission."
+      priority: P1
+      complexity:
+        rating: "5/5"
+        rationale: "Strategy -> framework -> broker; real-money trading risk; many safety constraints."
+      business_needs:
+        - "Prevent catastrophic order volume or direction errors from framework helper usage."
+        - "Reject unsafe trades before they reach the broker."
+      business_rules:
+        - "Raw broker submission is prohibited by repository policy for strategy files."
+        - "Safety checks must apply to framework helpers, not depend on each strategy author repeating them."
+      acceptance_criteria:
+        items:
+          - id: "BRD.01.07.de65"
+            criterion: "Guard coverage"
+            target: "100% of framework helper entry paths route through the guarded execution path."
+    - id: "BRD.01.07.b44d"
+      title: "Account-mode independent strategy ownership"
+      capability: "System must support strategy-scoped ownership on netting, exchange-netting, and hedging accounts."
+      priority: P1
+      complexity:
+        rating: "5/5"
+        rationale: "Strategy -> framework -> broker account mode; high trading risk; ownership and recovery constraints."
+      business_needs:
+        - "Allow multiple TradeSpine strategies on the same symbol with distinct strategy identity."
+        - "Keep strategy code mode-agnostic."
+      business_rules:
+        - "Exclusive same-symbol locking on netting accounts is not acceptable."
+        - "Manual activity outside the strategy is outside strategy ownership."
+      acceptance_criteria:
+        items:
+          - id: "BRD.01.07.49b8"
+            criterion: "Same-symbol strategy independence"
+            target: "Two same-symbol strategy instances can maintain independent ownership evidence in supported account modes."
+    - id: "BRD.01.07.69ef"
+      title: "B3 futures MVP scope"
+      capability: "System must support B3 futures strategy development for WIN, WDO, IND, and DOL in v1."
+      priority: P1
+      complexity:
+        rating: "4/5"
+        rationale: "Trader -> broker symbol metadata; exchange trading constraints; futures sizing and session rules."
+      business_needs:
+        - "Use broker-provided symbol and session information for trading decisions."
+        - "Support futures risk sizing for v1 reference strategies."
+      business_rules:
+        - "B3 equities remain deferred to a later BRD cycle."
+        - "Fallback constants for symbol data are rejected."
+      acceptance_criteria:
+        items:
+          - id: "BRD.01.07.9b1f"
+            criterion: "Futures validation scope"
+            target: "v1.0 sign-off includes B3 futures symbols in the supported validation set."
+    - id: "BRD.01.07.8e15"
+      title: "Trade audit evidence"
+      capability: "System must provide paired trade intent and execution evidence for post-trade review."
+      priority: P1
+      complexity:
+        rating: "4/5"
+        rationale: "Strategy -> framework -> broker -> analytics; financial audit evidence; schema and retention constraints."
+      business_needs:
+        - "Record intended trade risk and final broker outcome."
+        - "Keep analytics outside the MQL5 tree while preserving exportable evidence."
+      business_rules:
+        - "Optimization mode may suppress audit writes unless explicitly enabled."
+        - "Python analytics consume exported evidence; the framework reports data only."
+      acceptance_criteria:
+        items:
+          - id: "BRD.01.07.75a9"
+            criterion: "Evidence pairing"
+            target: "Each accepted entry attempt has intent and execution evidence rows."
+    - id: "BRD.01.07.717b"
+      title: "Framework testability"
+      capability: "System must support non-broker tests for pure logic and coordinator behavior."
+      priority: P1
+      complexity:
+        rating: "4/5"
+        rationale: "Framework -> test harness; no external partner; multiple safety-critical behaviors."
+      business_needs:
+        - "Validate safety and state behavior without live broker dependency."
+        - "Support phased confidence before real-money operation."
+      business_rules:
+        - "Business safety gates require test evidence before v1.0 sign-off."
+      acceptance_criteria:
+        items:
+          - id: "BRD.01.07.7ef2"
+            criterion: "Test evidence"
+            target: "Tier-1 and Tier-2 test evidence exists for v1.0 launch gates."
+    - id: "BRD.01.07.bf02"
+      title: "Low-overhead operation"
+      capability: "System must avoid unnecessary runtime work during optimization and idle ticks."
+      priority: P2
+      complexity:
+        rating: "3/5"
+        rationale: "Framework -> MT5 tester; no regulatory workflow; performance and I/O constraints."
+      business_needs:
+        - "Keep strategy testing practical during optimization passes."
+        - "Avoid runtime I/O that does not support trading decisions."
+      business_rules:
+        - "Optimization context controls heavy logging, drawing, and persistence paths."
+      acceptance_criteria:
+        items:
+          - id: "BRD.01.07.1505"
+            criterion: "Optimization overhead"
+            target: "Median framework strategy tester overhead is <=10% versus matched baseline under the benchmark protocol."
+
+## Architecture Decision Topics
+adr_topics:
+  topics:
+    - id: "BRD.01.08.ab58"
+      category: Infrastructure
+      title: "Self-contained MT5 project layout"
+      status: Selected
+      business_driver: "Strategies must appear in the MT5 Navigator while framework code remains version-controlled with the project."
+      budget_constraint: "Use existing local MT5 installation and repository."
+      compliance_requirements: null
+      team_constraints: "One owner-operator maintains the framework."
+      recommended_selection: "Self-contained `MQL5/Experts/Main/TradeSpine` project root."
+      prd_requirements: "Define user-visible folder structure, release packaging, and build workflow."
+    - id: "BRD.01.08.cea7"
+      category: Data Architecture
+      title: "State and audit evidence ownership"
+      status: Pending
+      business_driver: "Strategy-scoped ownership and audit evidence are required for safe live operation and post-trade review."
+      budget_constraint: "No external database dependency in v1."
+      compliance_requirements: "Preserve enough evidence to explain trade decisions and broker outcomes."
+      team_constraints: "MQL5 file and terminal-global-variable limits apply."
+      recommended_selection: "Pending downstream decision on state durability and audit format details."
+      prd_requirements: "Define state ownership, recovery evidence, audit records, and analytics export boundaries."
+    - id: "BRD.01.08.a20b"
+      category: Integration
+      title: "Broker terminal and analytics boundary"
+      status: Selected
+      business_driver: "The framework must trade through MT5 and feed analysis outside the MQL5 tree."
+      budget_constraint: "Use terminal-native capabilities for v1."
+      compliance_requirements: null
+      team_constraints: "Synchronous external web calls are out of v1 scope."
+      recommended_selection: "MT5 broker integration plus file-based analytics handoff."
+      prd_requirements: "Define broker-source-of-truth rules and Python analytics output contracts."
+    - id: "BRD.01.08.0ce5"
+      category: Security
+      title: "Trading safety and bypass policy"
+      status: Pending
+      business_driver: "Real-money trading requires controls that prevent unsafe framework-mediated orders."
+      budget_constraint: "No paid security tooling required for v1."
+      compliance_requirements: "Repository checks must detect prohibited raw broker submission in strategy files."
+      team_constraints: "MQL5 cannot prevent all language-level bypasses."
+      recommended_selection: "Pending downstream safety policy and verification details."
+      prd_requirements: "Define catastrophic protection gates, operator overrides, and repository policy checks."
+    - id: "BRD.01.08.8cbc"
+      category: Observability
+      title: "Operator-visible logs and trade audit records"
+      status: Pending
+      business_driver: "Operators need enough evidence to diagnose rejections, halts, and trade outcomes."
+      budget_constraint: "Use terminal journal and local files in v1."
+      compliance_requirements: "Trade evidence must support post-trade analysis without hidden state."
+      team_constraints: "Optimization passes must not incur avoidable I/O."
+      recommended_selection: "Pending downstream logging and audit schema details."
+      prd_requirements: "Define log levels, audit events, retention expectations, and optimization behavior."
+    - id: "BRD.01.08.48cb"
+      category: AI/ML
+      title: "AI and machine-learning scope"
+      status: N/A
+      business_driver: "No AI or ML capability is required for the platform MVP."
+      budget_constraint: null
+      compliance_requirements: null
+      team_constraints: null
+      recommended_selection: null
+      prd_requirements: null
+    - id: "BRD.01.08.92f4"
+      category: Technology Selection
+      title: "MQL5 framework foundation"
+      status: Selected
+      business_driver: "The platform must run inside MetaTrader 5 and support MQL5 strategy authorship."
+      budget_constraint: "Use the existing MetaTrader 5 toolchain."
+      compliance_requirements: "Dependency behavior must be reproducible across terminal updates."
+      team_constraints: "MQL5 language and MetaEditor compile workflow constrain delivery."
+      recommended_selection: "MQL5 with selected vendored MetaQuotes standard-library classes."
+      prd_requirements: "Define vendoring scope, include policy, and compile validation."
+
+## Quality Expectations
+quality_expectations:
+  expectations:
+    - category: safety
+      expectation: "Framework-mediated order flow blocks catastrophic order submission before broker handoff."
+    - category: reliability
+      expectation: "Ambiguous strategy ownership or recovery state stops the affected strategy rather than guessing safe exposure."
+    - category: auditability
+      expectation: "Trade intent and execution outcomes are paired for post-trade review."
+    - category: performance
+      expectation: "Matched benchmark overhead is <=10% versus baseline strategy runs."
+    - category: maintainability
+      expectation: "New strategy files contain strategy logic and behavior selection, not repeated infrastructure."
+    - category: reproducibility
+      expectation: "Framework standard-library dependencies are frozen and version-recorded."
+    - category: operability
+      expectation: "Operator-facing halt, warning, and rejection states are visible in logs or chart output."
+
+## Constraints and Assumptions
+constraints_and_assumptions:
+  constraints:
+    items:
+      - id: "BRD.01.10.b11c"
+        category: Scope
+        description: "v1 strategy instances are single-symbol and attach to one chart symbol."
+        impact: "Multi-symbol and portfolio behavior move to later BRD cycles."
+      - id: "BRD.01.10.8d76"
+        category: Platform
+        description: "MetaTrader 5 and MQL5 are mandatory for this platform cycle."
+        impact: "MQL4 compatibility and non-MT5 runtime targets are rejected."
+      - id: "BRD.01.10.32c6"
+        category: Build
+        description: "v1 compile workflow uses MetaEditor."
+        impact: "Headless CI compile is deferred unless added by a later change."
+      - id: "BRD.01.10.a8a5"
+        category: Broker
+        description: "Broker symbol metadata, account mode, and trade retcodes remain authoritative operational inputs."
+        impact: "The framework must fail loudly on unusable broker data."
+      - id: "BRD.01.10.6ca8"
+        category: Analytics
+        description: "Advanced analytics run outside the MQL5 tree."
+        impact: "The framework records evidence; Python tooling performs deeper analysis."
+  assumptions:
+    items:
+      - id: "BRD.01.10.c6f8"
+        assumption: "The operator accepts responsibility for strategy parameters and risk thresholds per chart."
+        validation_method: "Document common inputs and default behavior before v1.0 sign-off."
+        impact_if_false: "Add stricter default risk policy in a later BRD cycle."
+      - id: "BRD.01.10.88ee"
+        assumption: "The broker exposes sufficient symbol, session, and account metadata for B3 futures operation."
+        validation_method: "Validate reference symbols during market-context testing."
+        impact_if_false: "Block unsupported symbols or brokers before live operation."
+      - id: "BRD.01.10.1473"
+        assumption: "Manual MetaEditor compile remains acceptable for v1."
+        validation_method: "Confirm release workflow during v1.0 sign-off."
+        impact_if_false: "Create a later automation BRD or change record."
+
+## Acceptance Criteria and Success Validation
+acceptance_criteria:
+  launch_gates:
+    must_have:
+      - "All P1 functional requirements have downstream PRD, EARS, SPEC, TDD, and IPLAN traceability."
+      - "Guarded execution blocks catastrophic framework-mediated order cases in the v1.0 test set."
+      - "Netting and hedging ownership behavior is validated for same-symbol strategy instances."
+      - "B3 futures sizing and broker-session behavior are validated for the v1 symbol set."
+      - "Trade intent and execution evidence is produced for accepted entry attempts."
+      - "Vendored standard-library version evidence is recorded."
+      - "Two reference strategies and strategy-authoring documentation are available."
+    should_have:
+      - "Matched benchmark overhead evidence is <=10% versus baseline."
+      - "Low-I/O idle path and optimization behavior are validated."
+      - "Architecture diagrams are migrated through charts-flow and linked to downstream artifacts."
+  post_launch_validation:
+    thirty_day_metrics:
+      - "At least two reference strategies compile and run through framework helpers."
+      - "No known framework-mediated catastrophic order path remains open."
+      - "No unresolved P1 safety finding remains in the v1.0 audit trail."
+    ninety_day_decision_gate:
+      continue: "Start the next BRD cycle for equities, pyramiding, or analytics if v1 platform safety and authoring goals pass."
+      pivot: "Revise architecture if account-mode isolation or recovery behavior fails validation."
+      maintain: "Maintain v1 if strategy authoring and safety goals pass but no new platform scope is justified."
+      shutdown: "Stop live-use progression if safety gates cannot be validated."
+
+## Business Risk Management
+risk_management:
+  risks:
+    - id: "BRD.01.12.5c81"
+      description: "A sizing or side logic defect could send unsafe order volume."
+      likelihood: Medium
+      impact: High
+      mitigation: "Require a single guarded trade path, catastrophic caps, and test evidence before live use."
+      owner: "Technical Lead"
+    - id: "BRD.01.12.5985"
+      description: "Strategy-scoped virtual ownership may drift from broker aggregate exposure on netting accounts."
+      likelihood: Medium
+      impact: High
+      mitigation: "Require ownership evidence, recovery rules, and halt-on-ambiguity behavior."
+      owner: "Technical Lead"
+    - id: "BRD.01.12.74e8"
+      description: "Silent terminal standard-library updates could change framework behavior between builds."
+      likelihood: Medium
+      impact: Medium
+      mitigation: "Vendor selected standard-library dependencies and record source terminal version."
+      owner: "Technical Lead"
+    - id: "BRD.01.12.0224"
+      description: "Planning documents and implementation decisions may diverge during phased build."
+      likelihood: Medium
+      impact: Medium
+      mitigation: "Use aidoc traceability, audits, and changelog governance before moving to implementation."
+      owner: "Product Owner"
+
+## Approval
+approval:
+  approvers:
+    - role: "Executive Sponsor"
+      name: "Paulo Henrique Barreto Reboucas"
+      title: "Owner"
+      date: "2026-06-01T13:55:00-03:00"
+    - role: "Product Owner"
+      name: "Paulo Henrique Barreto Reboucas"
+      title: "Owner"
+      date: "2026-06-01T13:55:00-03:00"
+    - role: "Business Lead"
+      name: "Paulo Henrique Barreto Reboucas"
+      title: "Owner"
+      date: "2026-06-01T13:55:00-03:00"
+    - role: "Technology Lead"
+      name: "Paulo Henrique Barreto Reboucas"
+      title: "Owner"
+      date: "2026-06-01T13:55:00-03:00"
+  criteria:
+    - "All P1 requirements are defined and traceable."
+    - "Critical trading risks have mitigation owners."
+    - "Platform scope is separated from deferred strategy expansions."
+    - "Downstream PRD generation can reference stable BRD IDs."
+
+## Traceability
+traceability:
+  tags: []
+  cross_links:
+    depends: []
+    discoverability:
+      - "@discoverability: BRD-01 (TradeSpine platform foundation for strategy-framework downstream artifacts)"
+  objectives_to_requirements:
+    - objective_id: "BRD.01.04.d58c"
+      objective: "Strategy authoring compression"
+      related_frs:
+        - "BRD.01.07.88a6"
+      coverage: Complete
+    - objective_id: "BRD.01.04.9f63"
+      objective: "Safety gate coverage"
+      related_frs:
+        - "BRD.01.07.a94e"
+        - "BRD.01.07.717b"
+      coverage: Complete
+    - objective_id: "BRD.01.04.7937"
+      objective: "Account-mode parity"
+      related_frs:
+        - "BRD.01.07.b44d"
+      coverage: Complete
+    - objective_id: "BRD.01.04.3030"
+      objective: "Reproducibility"
+      related_frs:
+        - "BRD.01.07.69ef"
+      coverage: Partial
+    - objective_id: "BRD.01.04.79f3"
+      objective: "Authoring readiness"
+      related_frs:
+        - "BRD.01.07.88a6"
+        - "BRD.01.07.8e15"
+      coverage: Complete
+  upstream:
+    artifacts:
+      - type: "Reference PRD"
+        reference: "../../../Project/PRD.md"
+        relevance: "Primary source brief for business goals, scope, risks, and roadmap."
+      - type: "Architecture diagram"
+        reference: "../../../Project/architecture-diagram.html"
+        relevance: "Source for diagram inventory and downstream diagram migration."
+      - type: "Reference registry"
+        reference: "../../00_REF/REF-01_tradespine_source_brief.md"
+        relevance: "Aidoc source-reference entry created during project initialization."
+  downstream_expected:
+    - type: PRD
+      layer: 2
+      description: "Product Requirements Document for product capabilities, KPIs, user stories, and BRD traceability."
+    - type: ADR
+      layer: 5
+      description: "Architecture Decision Records for selected and pending platform decision topics."
+  downstream_actual:
+    - type: PRD
+      id: PRD-01
+      status: Draft
+      reference: "../../02_PRD/PRD-01_tradespine_platform_requirements/PRD-01_tradespine_platform_requirements.yaml"
+      relationship: "Implements BRD-01 platform product requirements."
+  cross_brd_dependencies: []
+  health_score:
+    bo_fr_coverage: "100%"
+    cross_brd_validated: "N/A - first BRD"
+    target_score: ">=90/100"
+
+## Glossary
+glossary:
+  terms:
+    - term: B3
+      definition: "Brazilian exchange market targeted by the v1 futures scope."
+    - term: Expert Advisor
+      definition: "MetaTrader automated trading program."
+    - term: Framework-mediated order
+      definition: "Order request submitted through TradeSpine helper and guard paths."
+    - term: Netting
+      definition: "Account mode where the broker maintains one aggregate position per symbol."
+    - term: Hedging
+      definition: "Account mode where separate broker position tickets can coexist."
+    - term: Virtual ownership
+      definition: "TradeSpine strategy-scoped accounting used to separate same-symbol strategy exposure."
+    - term: Trade audit evidence
+      definition: "Paired intent and execution records used for post-trade review."
+    - term: Vendored standard library
+      definition: "Frozen in-repository copy of selected MetaQuotes standard-library files."
+
+## Appendix
+appendix:
+  lifecycle:
+    diagram:
+      type: flowchart
+      content: |
+        flowchart LR
+          BRD01[BRD-01 Platform Foundation] --> PRD01[PRD-01 Product Requirements]
+          PRD01 --> BUILD[v0.1-v1.0 phased build]
+          BUILD --> PROD[TradeSpine v1.0]
+          PROD --> FEEDBACK[Strategy authoring and safety feedback]
+          FEEDBACK --> BRD02[Next BRD cycle]
+    principles:
+      - "BRD-01 defines the platform foundation."
+      - "Downstream strategy or feature expansions should use new BRDs after v1.0 feedback."
+      - "Implementation detail belongs in PRD, ADR, SPEC, TDD, and IPLAN artifacts."
+      - "Safety and traceability gates block progression to code."
+    when_to_start_new_cycle:
+      - "v1.0 platform scope is implemented and validated."
+      - "Reference strategies expose a repeated unmet capability."
+      - "A deferred scope item becomes business-critical."
+      - "A live-use safety finding requires product-scope change."
+  next_cycle_roadmap:
+    - candidate_brd: "B3 equities strategy support"
+      trigger: "First equity strategy is prioritized."
+    - candidate_brd: "Advanced optimization analytics"
+      trigger: "Python-side optimization evidence becomes part of strategy selection."
+    - candidate_brd: "Portfolio and multi-symbol operation"
+      trigger: "Single-symbol strategy model no longer covers target use cases."

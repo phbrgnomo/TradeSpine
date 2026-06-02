@@ -1,0 +1,217 @@
+---
+document_type: adr-document
+artifact_type: ADR
+layer: 5
+deliverable_type: code
+id: ADR-09
+title: Strategy Lifecycle and Intent Pipeline
+status: Accepted
+created_date: "2026-06-01T21:10:00-03:00"
+last_updated: "2026-06-01T21:10:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Accepted
+  date: "2026-06-01"
+  decision_makers: ["Paulo Henrique Barreto Reboucas"]
+  author: "Codex"
+  version: "1.0"
+  originating_topic: "@prd: PRD.01.09.eaf3"
+  brd_reference: "@brd: BRD.01.07.88a6"
+  spec_ready_score: "94/100"
+  revision_history:
+    - version: "1.0"
+      date: "2026-06-01T21:10:00-03:00"
+      author: "Codex"
+      changes: "Initial accepted ADR added by ADR audit/fix cycle for lifecycle and pipeline coverage."
+
+## Section 2: Context
+context:
+  problem_statement: "TradeSpine strategy files must stay focused on signal logic while the framework owns lifecycle staging, helper routing, intent construction, execution coordination, and audit emission."
+  business_driver: "Strategy authors need a repeatable authoring path that avoids repeated broker, safety, and evidence infrastructure in every EA."
+  key_constraints:
+    - "Trading is allowed only after Construct, Framework-init, and Strategy-init phases complete."
+    - "Signal is a framework-internal intent representation, not a strategy-authored contract."
+    - "Entry helpers use the full sizing/stop/guard pipeline, while close helpers use a coordinator close branch without entry sizing or stop computation."
+  technical_context: "PRD.md P-6, P-7, section 7d, F-COORD-1, and F-STRAT-1 through F-STRAT-4 define lifecycle staging, Signal construction, helper routing, and the coordinator pipeline. BDD.01.03.aa68 and BDD.01.03.0073 validate helper routing and evidence order."
+
+## Section 3: Decision
+decision:
+  chosen_solution:
+    id: "ADR.09.03.84b9"
+    title: "Use framework-owned lifecycle staging and a canonical coordinator pipeline"
+    description: "CStrategyBase will own the EA lifecycle and expose strategy hooks. Strategy code calls OpenLong/OpenShort/Close helpers from hooks; those helpers build canonical Signal and TradeIntent data and delegate to CTradeCoordinator. CTradeCoordinator separates the entry branch from the close branch while preserving one audit path."
+  key_components:
+    - name: "CStrategyBase"
+      role: "Owns lifecycle phases, strategy hooks, helper methods, and event shims."
+    - name: "Signal"
+      role: "Internal canonical intent object constructed by helpers."
+    - name: "CTradeCoordinator"
+      role: "Runs the entry pipeline, close branch, state-machine update, and TradeLogger calls."
+  implementation_approach:
+    mvp_scope: "Four lifecycle phases, market-entry helpers, close helpers, indicator readiness, cheap Update pump, and paired evidence for accepted orders."
+    next_cycle_scope: "Pending entries, depth-of-market hooks, tester-pass hooks, and pyramiding can extend the pipeline without changing the strategy authoring model."
+
+## Section 4: Alternatives Considered
+alternatives:
+  options:
+    - id: "ADR.09.04.44c6"
+      name: "Framework-owned lifecycle and coordinator pipeline"
+      selected: true
+      description: "Keep lifecycle and intent construction in CStrategyBase and CTradeCoordinator."
+      pros: ["Minimizes strategy boilerplate", "Provides one evidence path", "Allows mocks around coordinator seams"]
+      cons: ["Requires strict hook documentation and pre-live trade rejection"]
+      estimated_cost: "Medium"
+      fit: Best
+    - id: "ADR.09.04.5a22"
+      name: "Strategy-authored Signal objects"
+      selected: false
+      description: "Require strategies to construct Signal and TradeIntent directly."
+      pros: ["More explicit strategy code"]
+      cons: ["Leaks internal pipeline schema", "Raises authoring error risk"]
+      rejection_reason: "Conflicts with the product goal that strategy files contain only strategy logic and behavior selection."
+      estimated_cost: "Low"
+      fit: Poor
+    - id: "ADR.09.04.a9d1"
+      name: "Direct component calls from strategies"
+      selected: false
+      description: "Let strategies call sizers, stops, trade ports, and loggers directly."
+      pros: ["Flexible for expert authors"]
+      cons: ["Breaks chokepoint and unified audit trail", "Reintroduces monolith-style infrastructure code"]
+      rejection_reason: "Fails P-1/P-7 and makes downstream tests less deterministic."
+      estimated_cost: "Medium"
+      fit: Poor
+
+## Section 5: Consequences
+consequences:
+  positive_outcomes:
+    - id: "ADR.09.05.81df"
+      outcome: "Strategy authors can focus on signal hooks and behavior policy selection."
+    - id: "ADR.09.05.f5a7"
+      outcome: "All supported entry and close helpers produce consistent state and evidence behavior."
+  tradeoffs_and_risks:
+    - id: "ADR.09.05.48e3"
+      tradeoff: "Strategy authors may expect OnTradeTransaction or raw Signal to be extension points."
+      impact: Medium
+      mitigation: "AUTHORING and SPEC must state that OnTradeTransaction is framework-internal and Signal is not strategy-authored."
+    - id: "ADR.09.05.909c"
+      tradeoff: "The coordinator becomes a central dependency for multiple components."
+      impact: Medium
+      mitigation: "Keep narrow interfaces for sizer, stop policy, trade port, position view, and logger."
+  cost_estimate:
+    mvp_cost: "Medium"
+    ongoing_monthly: "Low"
+    notes: "Cost is mostly interface design, hook documentation, and coordinator tests."
+
+## Section 6: Architecture Flow
+architecture_flow:
+  decision_sequence:
+    intent:
+      diagram_type: sequence
+      scope_boundary: "Strategy helper to broker evidence pipeline"
+      upstream_refs: "PRD.01.09.eaf3; BDD.01.03.aa68; BDD.01.03.0073"
+      downstream_refs: "SPEC strategy base, Signal, coordinator, and helper contracts"
+    tag: "@diagram: sequence-pipeline"
+    diagram:
+      type: sequenceDiagram
+      content: |
+        sequenceDiagram
+          participant Strategy
+          participant Base as CStrategyBase
+          participant Coord as CTradeCoordinator
+          participant Stop as IStopPolicy
+          participant Sizer as IPositionSizer
+          participant Guard as ITradePort
+          participant Log as TradeLogger
+          Strategy->>Base: OpenLong/OpenShort from lifecycle hook
+          Base->>Coord: ProcessSignal(Signal)
+          Coord->>Stop: Resolve missing SL/TP
+          Coord->>Sizer: Calculate lots
+          Coord->>Log: LogIntent
+          Coord->>Guard: Submit TradeIntent
+          Guard-->>Coord: GuardResult
+          Coord->>Log: LogExecution
+  integration_points:
+    - system: "MT5 event handlers"
+      integration_type: "shim delegation"
+      purpose: "Route terminal events into CStrategyBase without strategy-owned framework plumbing."
+    - system: "TradeLogger"
+      integration_type: "evidence emission"
+      purpose: "Pair intent before broker submission with execution after broker outcome."
+
+## Section 7: Implementation Assessment
+implementation_assessment:
+  mvp_phases:
+    - phase: "Lifecycle base"
+      scope: "Construct, framework-init, strategy-init, live gating, timer floor, and hook dispatch."
+      risk: "A trade helper fires before safety dependencies are initialized."
+    - phase: "Coordinator pipeline"
+      scope: "Signal construction, stop/sizer calls, guard submission, close branch, and evidence order."
+      risk: "Close operations accidentally run through entry sizing or stop computation."
+  rollback_plan:
+    strategy: "Block release for any helper that bypasses CTradeCoordinator or emits incomplete evidence."
+    trigger: "Raw broker path, pre-live trade, or missing intent/execution pair."
+    estimated_effort: "Medium"
+  monitoring_baseline:
+    - metric: "Framework-mediated helper bypass"
+      target: "0"
+      alert_threshold: "Any occurrence"
+
+## Section 8: Verification
+verification:
+  success_criteria:
+    - criterion: "Reference strategies delegate through documented helper calls."
+      measurement: "BDD.01.03.aa68 compile and authoring scenario passes."
+    - criterion: "Accepted entries write intent before broker submission and execution after outcome."
+      measurement: "BDD.01.03.0073 passes."
+  bdd_scenario_refs:
+    scenarios: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.9a8b"]
+
+## Section 9: Traceability
+traceability:
+  tags: ["@adr: ADR-09", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.eaf3", "@ears: EARS.01.03.b784", "@bdd: BDD.01.03.aa68"]
+  originating_topic: "@prd: PRD.01.09.eaf3"
+  upstream:
+    bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.9a8b"]
+    ears_references: ["@ears: EARS.01.03.b784", "@ears: EARS.01.03.0c0a", "@ears: EARS.01.03.222f", "@ears: EARS.01.03.a023", "@ears: EARS.01.03.6c85"]
+    prd_references: ["@prd: PRD.01.09.eaf3", "@prd: PRD.01.09.5ef1", "@prd: PRD.01.09.d74e", "@prd: PRD.01.09.9d68"]
+    brd_references: ["@brd: BRD.01.07.88a6", "@brd: BRD.01.07.a94e", "@brd: BRD.01.07.8e15"]
+  downstream_expected:
+    - type: SPEC
+      layer: 6
+      description: "CStrategyBase, Signal, TradeIntent, CTradeCoordinator, and helper behavior contracts."
+  cross_links:
+    depends: ["@depends: ADR-04", "@depends: ADR-08"]
+    discoverability: ["@discoverability: ADR-09 (strategy lifecycle and intent pipeline)"]
+  health_score:
+    spec_ready: "94%"
+    target_score: ">=90/100"
+
+## Section 10: Related Decisions
+related_decisions:
+  dependencies:
+    - adr: "ADR-04"
+      relationship: "Depends on"
+      rationale: "The lifecycle and pipeline route supported trade helpers into guarded execution."
+    - adr: "ADR-08"
+      relationship: "Depends on"
+      rationale: "Coordinator and lifecycle hooks drive the shared state machine."
+  supersedes:
+    items: []
+
+glossary:
+  terms:
+    - term: "Signal"
+      definition: "Framework-internal entry or close intent representation constructed by TradeSpine helpers."
+    - term: "Lifecycle phase"
+      definition: "One of the framework-controlled stages that gate when strategy logic and trading are allowed."
+
+appendix:
+  source_architecture_sections:
+    - "PRD.md P-6"
+    - "PRD.md P-7"
+    - "PRD.md Section 7d"
+    - "PRD.md F-COORD-1"
+    - "PRD.md F-STRAT-1 through F-STRAT-4"
+    - "architecture-diagram.html Fig 03 Intent Pipeline"
+    - "architecture-diagram.html Fig 06 Lifecycle Staging"

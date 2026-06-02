@@ -1,0 +1,193 @@
+---
+document_type: adr-document
+artifact_type: ADR
+layer: 5
+deliverable_type: code
+id: ADR-03
+title: Broker Terminal and Analytics Boundary
+status: Accepted
+created_date: "2026-06-01T20:35:00-03:00"
+last_updated: "2026-06-01T20:35:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Accepted
+  date: "2026-06-01"
+  decision_makers: ["Paulo Henrique Barreto Reboucas"]
+  author: "Codex"
+  version: "1.0"
+  originating_topic: "@prd: PRD.01.14.de0d"
+  brd_reference: "@brd: BRD.01.08.a20b"
+  spec_ready_score: "93/100"
+  revision_history:
+    - version: "1.0"
+      date: "2026-06-01T20:35:00-03:00"
+      author: "Codex"
+      changes: "Initial accepted ADR generated from approved BDD-01 and PRD v3.73 source."
+
+## Section 2: Context
+context:
+  problem_statement: "TradeSpine must execute inside MT5 while allowing Python/SQLite analytics outside the MQL5 runtime without introducing tester-hostile APIs."
+  business_driver: "The trader needs reliable broker execution and later post-trade analysis, but not synchronous external API calls from live EAs."
+  key_constraints:
+    - "MT5/MQL5 is the execution and tester environment."
+    - "Python analytics lives outside the MQL5 tree."
+    - "WebRequest and external APIs are deferred beyond v1."
+  technical_context: "BDD.01.03.d6ae validates evidence records for analysis, and BDD.01.03.b37d validates low-overhead performance budgets."
+
+## Section 3: Decision
+decision:
+  chosen_solution:
+    id: "ADR.03.03.4124"
+    title: "Keep execution in MT5 and export evidence for offline analytics"
+    description: "TradeSpine will use MT5 broker APIs for execution and write local evidence artifacts for later Python analysis. v1 will not call external services from the EA runtime."
+  key_components:
+    - name: "MT5 terminal"
+      role: "Execution, tester, broker metadata, and trade lifecycle host."
+    - name: "Evidence files"
+      role: "Local interface between EA runtime and external analytics."
+    - name: "Python analytics repository"
+      role: "Out-of-process post-trade analysis consumer."
+  implementation_approach:
+    mvp_scope: "File-based evidence handoff and terminal journal diagnostics."
+    next_cycle_scope: "External API integration only after v1 tester compatibility and performance are proven."
+
+## Section 4: Alternatives Considered
+alternatives:
+  options:
+    - id: "ADR.03.04.88b1"
+      name: "File-based analytics handoff"
+      selected: true
+      description: "Write evidence locally and process it outside MT5."
+      pros: ["Tester compatible", "Low operational complexity", "No live trading dependency on network calls"]
+      cons: ["Analytics is asynchronous and post-hoc"]
+      estimated_cost: "Low"
+      fit: Best
+    - id: "ADR.03.04.d3d6"
+      name: "Direct WebRequest analytics"
+      selected: false
+      description: "Send trade events from the EA to an external API."
+      pros: ["Near-real-time analytics possible"]
+      cons: ["Synchronous calls can block EAs", "Tester-hostile", "Requires permissions and endpoint operations"]
+      rejection_reason: "Out of v1 scope and conflicts with reliability/performance goals."
+      estimated_cost: "High"
+      fit: Poor
+    - id: "ADR.03.04.1509"
+      name: "Manual terminal export only"
+      selected: false
+      description: "Depend on tester reports and manual exports."
+      pros: ["Minimal implementation"]
+      cons: ["Cannot guarantee paired intent/execution evidence", "Poor reproducibility"]
+      rejection_reason: "Does not satisfy audit evidence requirements."
+      estimated_cost: "Low"
+      fit: Poor
+
+## Section 5: Consequences
+consequences:
+  positive_outcomes:
+    - id: "ADR.03.05.b78d"
+      outcome: "Live trading behavior does not depend on external analytics availability."
+  tradeoffs_and_risks:
+    - id: "ADR.03.05.9388"
+      tradeoff: "Analytics is delayed until evidence files are processed."
+      impact: Low
+      mitigation: "Use consistent daily file naming and append-only records for ingestion."
+  cost_estimate:
+    mvp_cost: "Low"
+    ongoing_monthly: "None"
+    notes: "External analytics infrastructure is outside v1."
+
+## Section 6: Architecture Flow
+architecture_flow:
+  decision_sequence:
+    intent:
+      diagram_type: sequence
+      scope_boundary: "MT5 execution to offline analytics"
+      upstream_refs: "PRD.01.14.de0d; BDD.01.03.d6ae"
+      downstream_refs: "SPEC evidence writer and analytics boundary"
+    tag: "@diagram: sequence-sync"
+    diagram:
+      type: sequenceDiagram
+      content: |
+        sequenceDiagram
+          participant EA as TradeSpine EA
+          participant Broker as MT5 Broker API
+          participant Files as MQL5 Files
+          participant Python as Python Analytics
+          EA->>Broker: Execute framework-mediated request
+          Broker-->>EA: Return trade outcome
+          EA->>Files: Append evidence records
+          Python->>Files: Read evidence after run/session
+  integration_points:
+    - system: "MT5 broker API"
+      integration_type: "terminal API"
+      purpose: "Authoritative execution and broker metadata boundary."
+    - system: "Python analytics"
+      integration_type: "file handoff"
+      purpose: "Post-trade evaluation outside the EA runtime."
+
+## Section 7: Implementation Assessment
+implementation_assessment:
+  mvp_phases:
+    - phase: "Evidence handoff"
+      scope: "Write intent/execution CSV files and document Python-side consumption boundary."
+      risk: "File schema changes can break analytics ingestion."
+  rollback_plan:
+    strategy: "Keep MT5 evidence files as the stable contract and revise Python consumers."
+    trigger: "Analytics consumer cannot parse release evidence."
+    estimated_effort: "Low to Medium"
+  monitoring_baseline:
+    - metric: "External runtime calls from EA"
+      target: "0 in v1"
+      alert_threshold: "Any WebRequest or external API dependency"
+
+## Section 8: Verification
+verification:
+  success_criteria:
+    - criterion: "Evidence is available without live external service calls."
+      measurement: "Repository checks and BDD evidence scenarios pass."
+  bdd_scenario_refs:
+    scenarios: ["@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.b37d", "@bdd: BDD.01.03.ef54"]
+
+## Section 9: Traceability
+traceability:
+  tags: ["@adr: ADR-03", "@brd: BRD.01.08.a20b", "@prd: PRD.01.14.de0d", "@ears: EARS.01.03.a023", "@bdd: BDD.01.03.d6ae"]
+  originating_topic: "@prd: PRD.01.14.de0d"
+  upstream:
+    bdd_references: ["@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.b37d", "@bdd: BDD.01.03.ef54"]
+    ears_references: ["@ears: EARS.01.03.a023", "@ears: EARS.01.03.fef3", "@ears: EARS.01.03.8044"]
+    prd_references: ["@prd: PRD.01.14.de0d"]
+    brd_references: ["@brd: BRD.01.08.a20b"]
+  downstream_expected:
+    - type: SPEC
+      layer: 6
+      description: "Evidence file contract and analytics boundary."
+  cross_links:
+    depends: ["@depends: ADR-01", "@depends: ADR-02"]
+    discoverability: ["@discoverability: ADR-03 (MT5 execution and offline analytics boundary)"]
+  health_score:
+    spec_ready: "93%"
+    target_score: ">=90/100"
+
+## Section 10: Related Decisions
+related_decisions:
+  dependencies:
+    - adr: "ADR-01"
+      relationship: "Depends on"
+      rationale: "The file handoff lives under the self-contained project/runtime layout."
+    - adr: "ADR-02"
+      relationship: "Depends on"
+      rationale: "Analytics consumes the audit evidence model selected there."
+  supersedes:
+    items: []
+
+glossary:
+  terms:
+    - term: "File handoff"
+      definition: "Evidence written locally by MT5 and read later by external tooling."
+    - term: "WebRequest"
+      definition: "MQL5 external HTTP call mechanism, deferred beyond v1."
+
+appendix:
+  lifecycle:
+    note: "Future real-time analytics requires a new ADR because it changes runtime coupling."

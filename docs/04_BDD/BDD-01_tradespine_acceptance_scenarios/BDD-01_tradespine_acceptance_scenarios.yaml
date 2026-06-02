@@ -1,0 +1,778 @@
+---
+document_type: bdd-document
+artifact_type: BDD
+layer: 4
+deliverable_type: code
+id: BDD-01
+title: TradeSpine Acceptance Scenarios
+metadata:
+  schema_version: "1.0"
+  document_type: bdd-document
+  artifact_type: BDD
+  layer: 4
+  deliverable_type: code
+  lifecycle: mvp-prod-newmvp
+  c4_level: none
+  diagram_standard:
+    tags:
+      - "@diagram: behavior"
+      - "@diagram: acceptance"
+status: Approved
+created_date: "2026-06-01T20:01:34-03:00"
+last_updated: "2026-06-01T20:35:00-03:00"
+
+## Document Control
+document_control:
+  version: "1.0"
+  status: Approved
+  date_created: "2026-06-01T20:01:34-03:00"
+  last_updated: "2026-06-01T20:35:00-03:00"
+  author: "Codex"
+  reviewer: "Paulo Henrique Barreto Reboucas"
+  priority: P1
+  source_document: "@ears: EARS-01"
+  prd_reference: "@prd: PRD-01"
+  brd_reference: "@brd: BRD-01"
+  adr_ready_score: "100/100"
+  source_refs:
+    - "../../03_EARS/EARS-01_tradespine_formal_requirements/EARS-01_tradespine_formal_requirements.yaml"
+    - "../../02_PRD/PRD-01_tradespine_platform_requirements/PRD-01_tradespine_platform_requirements.yaml"
+    - "../../../Project/PRD.md"
+    - "../../../Project/architecture-diagram.html"
+  revision_history:
+    - version: "1.0"
+      date: "2026-06-01T20:01:34-03:00"
+      author: "Codex"
+      changes: "Initial BDD acceptance suite generated from approved EARS-01."
+    - version: "1.0-approval"
+      date: "2026-06-01T20:35:00-03:00"
+      author: "Paulo Henrique Barreto Reboucas"
+      changes: "BDD approved for downstream ADR generation."
+
+## Feature Definition
+feature_definition:
+  feature_name: "TradeSpine v1 platform acceptance"
+  user_story: >
+    As an owner-operator trader, I want TradeSpine v1 platform behavior captured
+    as executable Given-When-Then scenarios, so that architecture and technical
+    specifications preserve the approved safety, execution, evidence, account
+    mode, market-session, and release-governance requirements.
+  business_value: >
+    Converts approved formal requirements into reviewable acceptance behavior
+    before ADR and SPEC decisions are made.
+  background:
+    timezone: "America/Bahia"
+    assumptions:
+      - "B3 futures symbols are the v1 market scope."
+      - "Broker server time is the source of truth for session checks."
+      - "TradeSpine helpers are the only supported path for framework-mediated order submission."
+      - "Manual live/demo evidence is required for concurrent same-symbol netting release sign-off."
+    gherkin: |
+      Background:
+        Given a TradeSpine v1 strategy instance is attached to one chart symbol
+        And the strategy has a unique account-symbol-magic identity
+        And required symbol metadata is available unless the scenario states otherwise
+        And diagnostic logging and trade-evaluation evidence stores are enabled
+
+## Scenario Structure
+scenario_structure:
+  scenario_id_pattern: "BDD.01.03.<hash>"
+  scenario_count: 23
+  categories:
+    success: 7
+    error: 6
+    recovery: 3
+    parameterized: 4
+    optional: 3
+  scenarios:
+    success:
+      - id: "BDD.01.03.aa68"
+        name: "Reference strategy authoring and packaging"
+        tags:
+          - "@brd:BRD.01.07.88a6"
+          - "@prd:PRD.01.09.5ef1"
+          - "@prd:PRD.01.09.eaf3"
+          - "@ears:EARS.01.03.4c3f"
+          - "@ears:EARS.01.03.b784"
+          - "@ears:EARS.01.03.0c0a"
+          - "@scenario-type:success"
+          - "@p1-high"
+          - "@scenario-id:BDD.01.03.aa68"
+        gherkin: |
+          Scenario: Reference strategy compiles and documents the supported authoring path
+            Given a strategy author follows the v1 implementation guide
+            And the strategy file delegates entries and exits through documented TradeSpine helpers
+            When the reference strategy is compiled for the v1 release gate
+            Then the compiled artifact consists of one strategy mq5 file plus shared TradeSpine includes
+            And the guide identifies file structure, lifecycle hooks, helper calls, common inputs, logging expectations, compile checklist, and reference walkthrough
+        threshold: "Release compile gate passes for the reference strategy."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.4c3f"
+            - "EARS.01.03.b784"
+            - "EARS.01.03.0c0a"
+          downstream: []
+
+      - id: "BDD.01.03.0073"
+        name: "Guarded order writes intent and execution evidence"
+        tags:
+          - "@brd:BRD.01.07.a94e"
+          - "@brd:BRD.01.07.8e15"
+          - "@prd:PRD.01.09.d74e"
+          - "@prd:PRD.01.09.9d68"
+          - "@ears:EARS.01.03.222f"
+          - "@ears:EARS.01.03.a0fa"
+          - "@ears:EARS.01.03.6c85"
+          - "@ears:EARS.01.03.a023"
+          - "@scenario-type:success"
+          - "@p0-critical"
+          - "@scenario-id:BDD.01.03.0073"
+        gherkin: |
+          Scenario: Accepted framework-mediated order records intent before broker submission and execution after outcome
+            Given a valid entry request is submitted through a TradeSpine helper
+            And catastrophic safety constraints pass
+            When the submit pipeline accepts the request
+            Then intent evidence is written before broker submission
+            When the broker returns an order or deal outcome
+            Then execution evidence is written in the reconciliation pipeline
+            And the strategy-run and order-intent identifiers pair the intent and execution records
+        threshold: "No broker-mediated accepted entry may lack paired intent and execution evidence."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.222f"
+            - "EARS.01.03.a0fa"
+            - "EARS.01.03.6c85"
+            - "EARS.01.03.a023"
+          downstream: []
+
+      - id: "BDD.01.03.5ede"
+        name: "Symbol metadata validates order definitions"
+        tags:
+          - "@brd:BRD.01.07.69ef"
+          - "@prd:PRD.01.09.fada"
+          - "@prd:PRD.01.09.60ad"
+          - "@ears:EARS.01.03.03b2"
+          - "@ears:EARS.01.03.ec72"
+          - "@scenario-type:success"
+          - "@p0-critical"
+          - "@scenario-id:BDD.01.03.5ede"
+        gherkin: |
+          Scenario: Order definition uses initialized symbol metadata
+            Given a supported B3 futures strategy instance is initializing
+            When the market context component loads symbol metadata
+            Then lot step, lot limits, price grid, tick size, tick value, contract size, digits, and trade mode are available before trading
+            When a framework-mediated order is defined
+            Then sizing, lots, stop prices, and price grid are validated against the initialized symbol information before submission
+        threshold: "Symbol metadata is mandatory for init and order calculation."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.03b2"
+            - "EARS.01.03.ec72"
+          downstream: []
+
+      - id: "BDD.01.03.a399"
+        name: "Trading session gates entries"
+        tags:
+          - "@brd:BRD.01.07.69ef"
+          - "@prd:PRD.01.09.efcd"
+          - "@ears:EARS.01.03.1a3e"
+          - "@ears:EARS.01.03.2be9"
+          - "@scenario-type:success"
+          - "@p1-high"
+          - "@scenario-id:BDD.01.03.a399"
+        gherkin: |
+          Scenario: Entries require market session and user-defined trading-hours session
+            Given the market trade session is open in broker server time
+            And the user-defined strategy trading-hours window is open
+            When the strategy evaluates a new entry
+            Then the session context allows the entry gate to continue
+            When the user-defined strategy trading-hours window is closed
+            Then the session context blocks new entries
+            And the block does not prevent managing or closing existing positions
+        threshold: "Entries require both sessions; exits remain allowed for risk and day-trade management."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.1a3e"
+            - "EARS.01.03.2be9"
+          downstream: []
+
+      - id: "BDD.01.03.d4a5"
+        name: "Day trade session closes exposure"
+        tags:
+          - "@brd:BRD.01.07.69ef"
+          - "@prd:PRD.01.09.d722"
+          - "@ears:EARS.01.03.7669"
+          - "@ears:EARS.01.03.3f57"
+          - "@scenario-type:success"
+          - "@p0-critical"
+          - "@scenario-id:BDD.01.03.d4a5"
+        gherkin: |
+          Scenario: Day-trade mode closes strategy exposure before market session close
+            Given day-trade mode is enabled
+            And strategy-owned positions or pending orders exist
+            When the close buffer before market trade session close begins
+            Then the framework closes all strategy-owned positions
+            And the framework cancels all strategy-owned pending orders
+            And no day-trade strategy-owned exposure is permitted to roll to the next broker day
+        threshold: "Day-trade exposure must not remain open beyond the market-session day boundary."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.7669"
+            - "EARS.01.03.3f57"
+          downstream: []
+
+      - id: "BDD.01.03.8180"
+        name: "Account mode ownership remains strategy scoped"
+        tags:
+          - "@brd:BRD.01.07.b44d"
+          - "@brd:BRD.01.10.b11c"
+          - "@prd:PRD.01.09.7767"
+          - "@prd:PRD.01.09.a252"
+          - "@prd:PRD.01.09.5cce"
+          - "@prd:PRD.01.12.9a32"
+          - "@ears:EARS.01.03.5d1b"
+          - "@ears:EARS.01.03.fb67"
+          - "@ears:EARS.01.03.4f9d"
+          - "@ears:EARS.01.03.dcc4"
+          - "@ears:EARS.01.03.95ea"
+          - "@scenario-type:success"
+          - "@p0-critical"
+          - "@scenario-id:BDD.01.03.8180"
+        gherkin: |
+          Scenario: Netting and hedging modes preserve strategy ownership
+            Given multiple strategies run on the same chart symbol with unique magic identities
+            When the account is netting or exchange-netting
+            Then the account-mode adapter preserves strategy-scoped virtual ownership outside the aggregate broker position
+            When the account is hedging
+            Then the account-mode adapter records strategy ownership against broker tickets or orders
+            And every adapter output exposes mode-specific tracking fields for release evidence
+        threshold: "Ownership evidence remains strategy-scoped in both supported account modes."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.5d1b"
+            - "EARS.01.03.fb67"
+            - "EARS.01.03.4f9d"
+            - "EARS.01.03.dcc4"
+            - "EARS.01.03.95ea"
+          downstream: []
+
+      - id: "BDD.01.03.ef54"
+        name: "Release governance validates evidence"
+        tags:
+          - "@brd:BRD.01.07.b44d"
+          - "@brd:BRD.01.07.717b"
+          - "@brd:BRD.01.04.3030"
+          - "@prd:PRD.01.09.0764"
+          - "@prd:PRD.01.09.4c66"
+          - "@prd:PRD.01.12.e9ec"
+          - "@ears:EARS.01.03.d7e9"
+          - "@ears:EARS.01.03.1d60"
+          - "@ears:EARS.01.03.b11a"
+          - "@ears:EARS.01.03.e20a"
+          - "@ears:EARS.01.03.8044"
+          - "@ears:EARS.01.04.93fd"
+          - "@scenario-type:success"
+          - "@p1-high"
+          - "@scenario-id:BDD.01.03.ef54"
+        gherkin: |
+          Scenario: Release candidate includes required governance evidence
+            Given a v1 release candidate is submitted for sign-off
+            When the release reviewer evaluates governance evidence
+            Then required docs, same-change documentation updates, Doxygen coverage if retained, CHANGELOG decision record, vendored dependency proof, broker-bypass scan, and performance evidence are present
+            And concurrent same-symbol netting sign-off includes a manual live or demo evidence pack
+            And BRD, PRD, EARS, BDD, ADR, SPEC, TDD, and IPLAN traceability is present for implementation scope
+        threshold: "Release sign-off cannot pass without required governance and traceability evidence."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.d7e9"
+            - "EARS.01.03.1d60"
+            - "EARS.01.03.b11a"
+            - "EARS.01.03.e20a"
+            - "EARS.01.03.8044"
+            - "EARS.01.04.93fd"
+          downstream: []
+
+    error:
+      - id: "BDD.01.03.9a8b"
+        name: "Unsafe order is rejected before broker handoff"
+        tags:
+          - "@brd:BRD.01.07.a94e"
+          - "@prd:PRD.01.09.d74e"
+          - "@ears:EARS.01.03.222f"
+          - "@ears:EARS.01.03.7a9c"
+          - "@scenario-type:error"
+          - "@p0-critical"
+          - "@scenario-id:BDD.01.03.9a8b"
+        gherkin: |
+          Scenario: Catastrophic safety violation blocks broker handoff
+            Given a framework-mediated order request violates catastrophic safety constraints
+            When the guarded execution path evaluates the request
+            Then the request is rejected before broker handoff
+            And no direct broker trade operation is invoked for that request
+        threshold: "Unsafe broker handoff count is zero."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.222f"
+            - "EARS.01.03.7a9c"
+          downstream: []
+
+      - id: "BDD.01.03.c0f6"
+        name: "Indicator readiness blocks entry"
+        tags:
+          - "@brd:BRD.01.07.a94e"
+          - "@prd:PRD.01.09.5963"
+          - "@ears:EARS.01.03.4e80"
+          - "@scenario-type:error"
+          - "@p1-high"
+          - "@scenario-id:BDD.01.03.c0f6"
+        gherkin: |
+          Scenario: Entry is blocked while a registered indicator is not ready
+            Given a registered indicator has incomplete history or is still loading
+            When a strategy requests a new entry
+            Then the coordinator blocks the entry request
+            And the broker submission pipeline is not reached
+        threshold: "Indicator-not-ready state prevents entries."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.4e80"
+          downstream: []
+
+      - id: "BDD.01.03.edae"
+        name: "Missing symbol metadata fails initialization"
+        tags:
+          - "@brd:BRD.01.07.69ef"
+          - "@prd:PRD.01.09.fada"
+          - "@ears:EARS.01.03.03b2"
+          - "@ears:EARS.01.03.e152"
+          - "@scenario-type:error"
+          - "@p0-critical"
+          - "@scenario-id:BDD.01.03.edae"
+        gherkin: |
+          Scenario: Strategy initialization fails when required symbol metadata cannot be loaded
+            Given a strategy instance starts on a supported symbol
+            And one or more required symbol metadata fields cannot be loaded
+            When initialization reaches market context setup
+            Then initialization fails before trading is enabled
+            And the failure identifies the missing metadata field
+        threshold: "Trading is disabled when required symbol metadata is unavailable."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.03b2"
+            - "EARS.01.03.e152"
+          downstream: []
+
+      - id: "BDD.01.03.4dcb"
+        name: "Unsupported futures symbol blocks validation"
+        tags:
+          - "@brd:BRD.01.07.69ef"
+          - "@prd:PRD.01.09.fada"
+          - "@ears:EARS.01.03.368c"
+          - "@scenario-type:error"
+          - "@p1-high"
+          - "@scenario-id:BDD.01.03.4dcb"
+        gherkin: |
+          Scenario: Unsupported symbol scope blocks release validation
+            Given a v1 strategy is configured for a non-supported symbol scope
+            When release validation evaluates the market context
+            Then the unsupported symbol scope is reported as a release blocker
+            And the strategy is not accepted as a supported B3 futures release artifact
+        threshold: "Unsupported market scope is rejected for v1 release evidence."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.368c"
+          downstream: []
+
+      - id: "BDD.01.03.a31d"
+        name: "Duplicate magic collision fails initialization"
+        tags:
+          - "@brd:BRD.01.07.b44d"
+          - "@prd:PRD.01.09.3f12"
+          - "@ears:EARS.01.03.7d34"
+          - "@scenario-type:error"
+          - "@p0-critical"
+          - "@scenario-id:BDD.01.03.a31d"
+        gherkin: |
+          Scenario: Duplicate account-symbol-magic identity is blocked
+            Given one strategy instance is already active for an account, symbol, and magic identity
+            When a second strategy instance initializes with the same account, symbol, and magic identity
+            Then initialization fails for the second instance
+            And the ownership registry remains unchanged for the existing instance
+        threshold: "Duplicate identity collisions cannot enable trading."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.7d34"
+          downstream: []
+
+      - id: "BDD.01.03.f415"
+        name: "Missing manual netting evidence blocks signoff"
+        tags:
+          - "@brd:BRD.01.07.b44d"
+          - "@prd:PRD.01.09.0764"
+          - "@ears:EARS.01.03.d7e9"
+          - "@ears:EARS.01.03.e1ae"
+          - "@scenario-type:error"
+          - "@p0-critical"
+          - "@scenario-id:BDD.01.03.f415"
+        gherkin: |
+          Scenario: Netting release sign-off fails without manual evidence
+            Given concurrent same-symbol netting support is in the release scope
+            And no manual live or demo evidence pack is attached
+            When the release reviewer evaluates account-mode validation
+            Then release sign-off fails
+            And the missing manual evidence gate is recorded as the blocker
+        threshold: "Concurrent netting cannot be approved from automated tester coverage alone."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.d7e9"
+            - "EARS.01.03.e1ae"
+          downstream: []
+
+    recovery:
+      - id: "BDD.01.03.e16a"
+        name: "Ambiguous async outcome enters halt"
+        tags:
+          - "@brd:BRD.01.07.a94e"
+          - "@prd:PRD.01.09.7608"
+          - "@ears:EARS.01.03.588b"
+          - "@ears:EARS.01.03.6bda"
+          - "@ears:EARS.01.04.68e2"
+          - "@scenario-type:recovery"
+          - "@p0-critical"
+          - "@scenario-id:BDD.01.03.e16a"
+        gherkin: |
+          Scenario: Ambiguous asynchronous broker outcome halts rather than guessing
+            Given an async fill, cancel, or reconciliation outcome cannot be disambiguated
+            When the framework evaluates the unresolved broker state
+            Then the strategy instance enters HALT
+            And non-emergency trading helpers are blocked
+            And last-known state is preserved for operator recovery
+        threshold: "Ambiguous broker outcome resolution always favors HALT over inferred ownership."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.588b"
+            - "EARS.01.03.6bda"
+            - "EARS.01.04.68e2"
+          downstream: []
+
+      - id: "BDD.01.03.9a7d"
+        name: "Day trade close failure enters halt"
+        tags:
+          - "@brd:BRD.01.07.69ef"
+          - "@prd:PRD.01.09.d722"
+          - "@ears:EARS.01.03.45ed"
+          - "@ears:EARS.01.03.3f57"
+          - "@ears:EARS.01.03.6bda"
+          - "@scenario-type:recovery"
+          - "@p0-critical"
+          - "@scenario-id:BDD.01.03.9a7d"
+        gherkin: |
+          Scenario: Failed day-trade close is escalated as unresolved exposure
+            Given day-trade mode is closing strategy-owned exposure before session close
+            And at least one close or cancel operation fails
+            When the day-trade close sequence completes reconciliation
+            Then the strategy enters HALT
+            And unresolved exposure evidence is written
+            And the position is not silently treated as closed
+        threshold: "Failed day-trade close produces HALT and evidence, not silent rollover."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.45ed"
+            - "EARS.01.03.3f57"
+            - "EARS.01.03.6bda"
+          downstream: []
+
+      - id: "BDD.01.03.4a71"
+        name: "Contract expiration warnings fire on session open"
+        tags:
+          - "@brd:BRD.01.07.69ef"
+          - "@prd:PRD.01.09.42eb"
+          - "@ears:EARS.01.03.db97"
+          - "@ears:EARS.01.03.e06b"
+          - "@fixed-threshold:PRD.01.market.expiration_warning_one_broker_day"
+          - "@scenario-type:recovery"
+          - "@p1-high"
+          - "@scenario-id:BDD.01.03.4a71"
+        gherkin: |
+          Scenario: Futures contract expiration warning appears at market-session open
+            Given a supported futures contract expires in one broker day
+            When the market trade session opens
+            Then the market context component surfaces a contract-expiration warning
+            When the supported futures contract is already expired
+            Then the market context component surfaces an expired-contract warning before trading decisions continue
+        threshold: "Expiration warning threshold is one broker day and is evaluated at session open."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.db97"
+            - "EARS.01.03.e06b"
+          downstream: []
+
+    parameterized:
+      - id: "BDD.01.03.e593"
+        name: "Sizing modes use initialized symbol data"
+        tags:
+          - "@brd:BRD.01.07.69ef"
+          - "@prd:PRD.01.09.60ad"
+          - "@ears:EARS.01.03.5e92"
+          - "@ears:EARS.01.03.bc8b"
+          - "@ears:EARS.01.03.932d"
+          - "@scenario-type:parameterized"
+          - "@p1-high"
+          - "@scenario-id:BDD.01.03.e593"
+        examples:
+          - sizing_mode: "SIZING_RISK_PERCENT"
+            expected: "broker-valid lots from risk percent and stop-loss distance"
+          - sizing_mode: "SIZING_FIXED_LOT"
+            expected: "fixed lots normalized to symbol lot step and limits"
+          - sizing_mode: "SIZING_EQUITY_PERCENT"
+            expected: "rejected as a v2 placeholder"
+        gherkin: |
+          Scenario Outline: Sizing mode behavior uses initialized symbol information
+            Given symbol metadata has been loaded during initialization
+            And the sizing mode is "<sizing_mode>"
+            When the position sizer calculates order lots
+            Then the result is "<expected>"
+            And the order definition remains broker-valid before submission
+
+            Examples:
+              | sizing_mode           | expected                                                |
+              | SIZING_RISK_PERCENT   | broker-valid lots from risk percent and stop-loss distance |
+              | SIZING_FIXED_LOT      | fixed lots normalized to symbol lot step and limits     |
+              | SIZING_EQUITY_PERCENT | rejected as a v2 placeholder                            |
+        threshold: "Only v1 sizing modes are executable; v2 placeholder selection is blocked."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.5e92"
+            - "EARS.01.03.bc8b"
+            - "EARS.01.03.932d"
+          downstream: []
+
+      - id: "BDD.01.03.f11f"
+        name: "Account modes preserve ownership under parameterization"
+        tags:
+          - "@brd:BRD.01.07.b44d"
+          - "@prd:PRD.01.09.7767"
+          - "@prd:PRD.01.09.a252"
+          - "@ears:EARS.01.03.5d1b"
+          - "@ears:EARS.01.03.fb67"
+          - "@ears:EARS.01.03.4f9d"
+          - "@scenario-type:parameterized"
+          - "@p0-critical"
+          - "@scenario-id:BDD.01.03.f11f"
+        examples:
+          - account_mode: "NETTING"
+            expected_tracking: "strategy-scoped virtual ownership outside aggregate broker position"
+          - account_mode: "EXCHANGE_NETTING"
+            expected_tracking: "strategy-scoped virtual ownership outside aggregate broker position"
+          - account_mode: "HEDGING"
+            expected_tracking: "strategy ownership on broker tickets or orders"
+        gherkin: |
+          Scenario Outline: Account-mode adapter exposes correct ownership tracking
+            Given the account mode is "<account_mode>"
+            When a strategy-owned order changes ownership state
+            Then ownership tracking records "<expected_tracking>"
+            And the release evidence identifies the mode-specific tracking field
+
+            Examples:
+              | account_mode     | expected_tracking                                          |
+              | NETTING          | strategy-scoped virtual ownership outside aggregate broker position |
+              | EXCHANGE_NETTING | strategy-scoped virtual ownership outside aggregate broker position |
+              | HEDGING          | strategy ownership on broker tickets or orders             |
+        threshold: "All supported account modes have explicit ownership evidence."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.5d1b"
+            - "EARS.01.03.fb67"
+            - "EARS.01.03.4f9d"
+          downstream: []
+
+      - id: "BDD.01.03.b37d"
+        name: "Performance budgets are evidenced"
+        tags:
+          - "@brd:BRD.01.07.bf02"
+          - "@prd:PRD.01.09.3092"
+          - "@ears:EARS.01.03.c5b7"
+          - "@ears:EARS.01.03.8044"
+          - "@ears:EARS.01.04.7c85"
+          - "@ears:EARS.01.04.fc86"
+          - "@ears:EARS.01.04.9c45"
+          - "@threshold:PRD.01.perf.tester_overhead"
+          - "@threshold:PRD.01.perf.memory_per_ea"
+          - "@threshold:PRD.01.perf.idle_tick"
+          - "@scenario-type:parameterized"
+          - "@p1-high"
+          - "@scenario-id:BDD.01.03.b37d"
+        examples:
+          - metric: "Strategy Tester overhead"
+            threshold: "<= 10 percent"
+          - metric: "Memory per EA instance"
+            threshold: "<= 2 MB"
+          - metric: "Idle tick overhead"
+            threshold: "<= 50 microseconds"
+        gherkin: |
+          Scenario Outline: Release evidence proves performance budgets
+            Given a v1 release candidate has performance evidence
+            When the release reviewer checks "<metric>"
+            Then the evidence demonstrates the threshold "<threshold>"
+            And idle tick paths show no GV writes, history scans, chart redraws, or order scans when no trade work exists
+
+            Examples:
+              | metric                    | threshold          |
+              | Strategy Tester overhead  | <= 10 percent      |
+              | Memory per EA instance    | <= 2 MB            |
+              | Idle tick overhead        | <= 50 microseconds |
+        threshold: "All three performance budgets and idle low-I/O behavior are release evidence."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.c5b7"
+            - "EARS.01.03.8044"
+            - "EARS.01.04.7c85"
+            - "EARS.01.04.fc86"
+            - "EARS.01.04.9c45"
+          downstream: []
+
+      - id: "BDD.01.03.d6ae"
+        name: "Evidence records remain paired and separated"
+        tags:
+          - "@brd:BRD.01.07.8e15"
+          - "@prd:PRD.01.09.9d68"
+          - "@prd:PRD.01.09.c1fc"
+          - "@prd:PRD.01.09.c622"
+          - "@ears:EARS.01.03.a023"
+          - "@ears:EARS.01.03.fef3"
+          - "@ears:EARS.01.03.a71c"
+          - "@ears:EARS.01.04.9de6"
+          - "@scenario-type:parameterized"
+          - "@p1-high"
+          - "@scenario-id:BDD.01.03.d6ae"
+        examples:
+          - record_type: "strategy diagnostic log"
+            expected_store: "diagnostic evidence only"
+          - record_type: "framework diagnostic log"
+            expected_store: "diagnostic evidence only"
+          - record_type: "trade evaluation record"
+            expected_store: "trade evaluation evidence with intended and actual fill fields"
+        gherkin: |
+          Scenario Outline: Logs and trade evidence stay separated and complete
+            Given diagnostic logging and trade evaluation evidence are enabled
+            When the framework writes a "<record_type>"
+            Then the record is written to "<expected_store>"
+            And broker execution records include intended versus actual fill capture where applicable
+            And paired intent and execution evidence can be reconciled by identifiers
+
+            Examples:
+              | record_type             | expected_store                                           |
+              | strategy diagnostic log | diagnostic evidence only                                 |
+              | framework diagnostic log| diagnostic evidence only                                 |
+              | trade evaluation record | trade evaluation evidence with intended and actual fill fields |
+        threshold: "Diagnostic logs and trade evaluation records cannot be conflated."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.a023"
+            - "EARS.01.03.fef3"
+            - "EARS.01.03.a71c"
+            - "EARS.01.04.9de6"
+          downstream: []
+
+    optional:
+      - id: "BDD.01.03.cb03"
+        name: "Equity sizing remains placeholder"
+        tags:
+          - "@brd:BRD.01.07.69ef"
+          - "@prd:PRD.01.09.60ad"
+          - "@ears:EARS.01.03.932d"
+          - "@scenario-type:optional"
+          - "@p2-medium"
+          - "@scenario-id:BDD.01.03.cb03"
+        gherkin: |
+          Scenario: Equity-percent sizing is visible but not executable in v1
+            Given a strategy input exposes an equity-percent sizing option as a future placeholder
+            When the operator selects the placeholder for a v1 strategy
+            Then initialization or configuration validation rejects the selection
+            And the operator sees that equity-percent sizing is reserved for a later release
+        threshold: "Future sizing placeholder cannot silently execute as v1 behavior."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.932d"
+          downstream: []
+
+      - id: "BDD.01.03.0ad7"
+        name: "Panic stop is strategy scoped"
+        tags:
+          - "@brd:BRD.01.07.a94e"
+          - "@prd:PRD.01.09.4fb4"
+          - "@ears:EARS.01.03.375b"
+          - "@ears:EARS.01.03.f562"
+          - "@scenario-type:optional"
+          - "@p0-critical"
+          - "@scenario-id:BDD.01.03.0ad7"
+        gherkin: |
+          Scenario: Panic stop refuses new entries and closes only strategy-owned exposure
+            Given panic stop is enabled for one strategy instance
+            When the operator trips the panic stop
+            Then runtime risk controls refuse new entries for that strategy instance
+            And the framework triggers strategy-scoped close behavior
+            And unrelated strategy ownership is not closed by that panic request
+        threshold: "Panic stop action is scoped to strategy-owned exposure."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.375b"
+            - "EARS.01.03.f562"
+          downstream: []
+
+      - id: "BDD.01.03.7b02"
+        name: "Documentation coverage gate is enforced"
+        tags:
+          - "@brd:BRD.01.07.717b"
+          - "@prd:PRD.01.09.4c66"
+          - "@ears:EARS.01.03.1d60"
+          - "@ears:EARS.01.03.9abb"
+          - "@scenario-type:optional"
+          - "@p1-high"
+          - "@scenario-id:BDD.01.03.7b02"
+        gherkin: |
+          Scenario: Doxygen coverage gate is checked when retained for v1
+            Given the release governance profile retains Doxygen coverage as a v1 gate
+            When a release candidate is reviewed
+            Then public strategy-facing functions have required documentation coverage
+            And missing same-change documentation updates block release sign-off
+        threshold: "If retained, Doxygen coverage is a release gate rather than advisory prose."
+        spec_trace:
+          upstream:
+            - "EARS.01.03.1d60"
+            - "EARS.01.03.9abb"
+          downstream: []
+
+## Traceability
+traceability:
+  upstream_sources:
+    brd:
+      - "BRD-01"
+    prd:
+      - "PRD-01"
+    ears:
+      - "EARS-01"
+  coverage:
+    ears_requirement_count: 49
+    covered_ears_requirement_count: 49
+    uncovered_ears_requirements: []
+  downstream_consumers:
+    adr:
+      status: "Pending"
+      expected_use: "Architecture decisions must preserve BDD acceptance behavior."
+    spec:
+      status: "Pending"
+      expected_use: "Technical specifications map component contracts to these scenarios."
+    tdd:
+      status: "Pending"
+      expected_use: "Test cases derive from scenario IDs and Given-When-Then steps."
+
+## Glossary
+glossary:
+  market_trade_session: "Broker/exchange trading session for the chart symbol."
+  user_trading_hours: "Operator-defined strategy entry window; exits and risk management remain allowed outside this window."
+  day_trade_mode: "Mode where strategy-owned positions and pending orders must be closed before the market session day boundary."
+  netting: "Account mode where the broker exposes an aggregate position per symbol and TradeSpine maintains strategy-scoped virtual ownership."
+  hedging: "Account mode where broker tickets or orders can represent separate strategy-owned exposure."
+  halt: "Safety state that blocks non-emergency trading helpers and preserves last-known state for operator review."
+  trade_evaluation_record: "Trade outcome evidence used for strategy evaluation, distinct from diagnostic logs."
+  diagnostic_log: "Strategy or framework diagnostic evidence used to audit code behavior."

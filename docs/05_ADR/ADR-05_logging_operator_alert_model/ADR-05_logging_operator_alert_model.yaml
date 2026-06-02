@@ -1,0 +1,199 @@
+---
+document_type: adr-document
+artifact_type: ADR
+layer: 5
+deliverable_type: code
+id: ADR-05
+title: Logging and Operator Alert Model
+status: Accepted
+created_date: "2026-06-01T20:35:00-03:00"
+last_updated: "2026-06-01T20:35:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Accepted
+  date: "2026-06-01"
+  decision_makers: ["Paulo Henrique Barreto Reboucas"]
+  author: "Codex"
+  version: "1.0"
+  originating_topic: "@prd: PRD.01.14.15fe"
+  brd_reference: "@brd: BRD.01.08.8cbc"
+  spec_ready_score: "94/100"
+  revision_history:
+    - version: "1.0"
+      date: "2026-06-01T20:35:00-03:00"
+      author: "Codex"
+      changes: "Initial accepted ADR generated from approved BDD-01 and PRD v3.73 source."
+
+## Section 2: Context
+context:
+  problem_statement: "TradeSpine must give operators actionable rejection, warning, and HALT information without mixing diagnostic logs with trade evaluation evidence."
+  business_driver: "Live operators need quick safety visibility, while analysts need clean trade records for strategy evaluation."
+  key_constraints:
+    - "Strategy and framework diagnostic logs are separate from trade evaluation records."
+    - "HALT must report last-known state and survive tester/live mode differences."
+    - "Optimization must not pay unnecessary logging or alert overhead."
+  technical_context: "BDD.01.03.d6ae validates evidence separation, BDD.01.03.e16a and BDD.01.03.9a7d validate HALT evidence, and BDD.01.03.4a71 validates operator warnings."
+
+## Section 3: Decision
+decision:
+  chosen_solution:
+    id: "ADR.05.03.2586"
+    title: "Separate diagnostic logs, trade evidence, and alert sink"
+    description: "TradeSpine will use Logger for diagnostic code-path evidence, TradeLogger for paired trade evaluation records, and an alert sink for operator-facing HALT/warning payloads. Live/visual contexts may raise terminal alerts; tester/non-visual/optimization contexts use mockable/log-only alert behavior."
+  key_components:
+    - name: "Logger"
+      role: "Diagnostic framework and strategy-code audit trail."
+    - name: "TradeLogger"
+      role: "Structured intent and execution records for trade evaluation."
+    - name: "Alert sink"
+      role: "Operator-facing halt and warning notifications with testable behavior."
+  implementation_approach:
+    mvp_scope: "Separated diagnostic/trade evidence outputs plus HALT alert payloads."
+    next_cycle_scope: "Additional UI or notification channels require a new decision."
+
+## Section 4: Alternatives Considered
+alternatives:
+  options:
+    - id: "ADR.05.04.c882"
+      name: "Separated logs, trade evidence, and alert sink"
+      selected: true
+      description: "Use distinct channels for diagnostics, trade evaluation, and operator alerts."
+      pros: ["Preserves clean analytics data", "Supports operator HALT visibility", "Mockable in tests"]
+      cons: ["More schemas and routing rules to maintain"]
+      estimated_cost: "Medium"
+      fit: Best
+    - id: "ADR.05.04.b084"
+      name: "Single unified CSV log"
+      selected: false
+      description: "Write diagnostics and trade evidence into one record stream."
+      pros: ["Simpler file handling"]
+      cons: ["Pollutes strategy evaluation data", "Harder to audit framework behavior separately"]
+      rejection_reason: "Fails the approved diagnostic/trade separation requirement."
+      estimated_cost: "Low"
+      fit: Poor
+    - id: "ADR.05.04.b281"
+      name: "Terminal Journal only"
+      selected: false
+      description: "Use Print/Journal output for all observability."
+      pros: ["Native terminal visibility"]
+      cons: ["Not structured enough for analytics", "Poor reproducibility"]
+      rejection_reason: "Does not satisfy paired evidence or post-trade review needs."
+      estimated_cost: "Low"
+      fit: Poor
+
+## Section 5: Consequences
+consequences:
+  positive_outcomes:
+    - id: "ADR.05.05.1ab5"
+      outcome: "Operators can see actionable halt and warning state while analysts consume clean trade records."
+  tradeoffs_and_risks:
+    - id: "ADR.05.05.6008"
+      tradeoff: "Multiple evidence channels can drift if identifiers are inconsistent."
+      impact: Medium
+      mitigation: "Use shared strategy-run, order-intent, symbol, magic, and virtual-position identifiers."
+  cost_estimate:
+    mvp_cost: "Medium"
+    ongoing_monthly: "None"
+    notes: "Cost is schema discipline and testable alert routing."
+
+## Section 6: Architecture Flow
+architecture_flow:
+  decision_sequence:
+    intent:
+      diagram_type: sequence
+      scope_boundary: "Diagnostic, trade, and alert evidence"
+      upstream_refs: "PRD.01.14.15fe; BDD.01.03.d6ae"
+      downstream_refs: "SPEC Logger, TradeLogger, and AlertSink contracts"
+    tag: "@diagram: sequence-sync"
+    diagram:
+      type: sequenceDiagram
+      content: |
+        sequenceDiagram
+          participant Runtime as TradeSpine Runtime
+          participant Logger
+          participant TradeLogger
+          participant Alert as AlertSink
+          Runtime->>Logger: Write diagnostic decision/rejection
+          Runtime->>TradeLogger: Write intent/execution record
+          alt HALT or operator warning
+            Runtime->>Alert: Send actionable payload
+          end
+  integration_points:
+    - system: "Terminal Journal"
+      integration_type: "diagnostic output"
+      purpose: "Human-visible code-path and HALT diagnostics."
+    - system: "CSV evidence files"
+      integration_type: "structured file output"
+      purpose: "Trade evaluation and analytics."
+
+## Section 7: Implementation Assessment
+implementation_assessment:
+  mvp_phases:
+    - phase: "Evidence schema"
+      scope: "Logger, TradeLogger, and shared identifiers."
+      risk: "Schema changes break downstream analytics."
+    - phase: "Alert sink"
+      scope: "Live/visual terminal alert and tester-safe mock/log behavior."
+      risk: "Alerts hide actionable state or become untestable."
+  rollback_plan:
+    strategy: "Keep trade CSV schema stable and route diagnostics through Logger only until alert sink is repaired."
+    trigger: "Alert sink blocks tests or live operation."
+    estimated_effort: "Medium"
+  monitoring_baseline:
+    - metric: "Missing HALT payload fields"
+      target: "0"
+      alert_threshold: "Any HALT without reason, symbol, magic, and state"
+
+## Section 8: Verification
+verification:
+  success_criteria:
+    - criterion: "Diagnostic logs and trade evaluation records remain separate."
+      measurement: "BDD.01.03.d6ae and evidence inspection pass."
+    - criterion: "HALT reports last-known state in live and testable contexts."
+      measurement: "BDD.01.03.e16a and BDD.01.03.9a7d pass."
+  bdd_scenario_refs:
+    scenarios: ["@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.9a7d", "@bdd: BDD.01.03.4a71"]
+
+## Section 9: Traceability
+traceability:
+  tags: ["@adr: ADR-05", "@brd: BRD.01.08.8cbc", "@prd: PRD.01.14.15fe", "@ears: EARS.01.03.a71c", "@bdd: BDD.01.03.d6ae"]
+  originating_topic: "@prd: PRD.01.14.15fe"
+  upstream:
+    bdd_references: ["@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.9a7d", "@bdd: BDD.01.03.4a71"]
+    ears_references: ["@ears: EARS.01.03.a71c", "@ears: EARS.01.03.a023", "@ears: EARS.01.03.fef3", "@ears: EARS.01.04.9de6", "@ears: EARS.01.03.6bda"]
+    prd_references: ["@prd: PRD.01.14.15fe"]
+    brd_references: ["@brd: BRD.01.08.8cbc"]
+  downstream_expected:
+    - type: SPEC
+      layer: 6
+      description: "Logger, TradeLogger, and alert sink component contracts."
+  cross_links:
+    depends: ["@depends: ADR-02", "@depends: ADR-03"]
+    discoverability: ["@discoverability: ADR-05 (logging and operator alert model)"]
+  health_score:
+    spec_ready: "94%"
+    target_score: ">=90/100"
+
+## Section 10: Related Decisions
+related_decisions:
+  dependencies:
+    - adr: "ADR-02"
+      relationship: "Depends on"
+      rationale: "Uses the selected state and CSV evidence model."
+    - adr: "ADR-03"
+      relationship: "Extends"
+      rationale: "Defines the operator and analytics outputs at the MT5 boundary."
+  supersedes:
+    items: []
+
+glossary:
+  terms:
+    - term: "Diagnostic log"
+      definition: "Evidence about code-path decisions, rejections, warnings, and recovery."
+    - term: "Alert sink"
+      definition: "Interface for operator-facing HALT and warning payloads."
+
+appendix:
+  lifecycle:
+    note: "Future UI or external notifications require a new ADR because they alter operator interaction."

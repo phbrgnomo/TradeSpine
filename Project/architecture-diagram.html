@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeSpine — Architecture v3.73</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
+<style>
+  :root{
+    --ink:#0d1b2a;
+    --paper:#f4f1ea;
+    --paper-line:#dcd6c8;
+    --blue:#1b3a5c;
+    --blue-bright:#2e6fb0;
+    --accent:#c2410c;
+    --accent-soft:#e8a87c;
+    --green:#2f6b4f;
+    --danger:#a4243b;
+    --grid:rgba(27,58,92,.07);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:28px 28px;
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px 120px;}
+
+  header.masthead{
+    padding:64px 0 36px;
+    border-bottom:3px double var(--blue);
+    margin-bottom:8px;
+  }
+  .kicker{
+    font-family:'Space Mono',monospace;
+    text-transform:uppercase;
+    letter-spacing:.32em;
+    font-size:.72rem;
+    color:var(--accent);
+    margin:0 0 14px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:clamp(2.1rem,5vw,3.6rem);
+    line-height:1.02;
+    margin:0 0 18px;
+    letter-spacing:-.01em;
+  }
+  h1 em{font-style:italic;color:var(--blue-bright);}
+  .sub{
+    max-width:64ch;font-size:1.02rem;color:#3a4a5a;margin:0;
+  }
+  .meta-row{
+    display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;
+    font-family:'Space Mono',monospace;font-size:.74rem;
+  }
+  .tag{
+    border:1px solid var(--blue);border-radius:2px;
+    padding:5px 11px;color:var(--blue);background:rgba(46,111,176,.06);
+    text-transform:uppercase;letter-spacing:.08em;
+  }
+  .tag.warn{border-color:var(--accent);color:var(--accent);background:rgba(194,65,12,.06);}
+
+  nav.toc{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));
+    gap:0;margin:34px 0 10px;
+    border:1px solid var(--paper-line);background:rgba(255,255,255,.4);
+  }
+  nav.toc a{
+    display:block;padding:14px 16px;text-decoration:none;color:var(--ink);
+    border-right:1px solid var(--paper-line);border-bottom:1px solid var(--paper-line);
+    font-size:.84rem;transition:background .15s,color .15s;
+  }
+  nav.toc a:hover{background:var(--blue);color:var(--paper);}
+  nav.toc a .n{
+    font-family:'Space Mono',monospace;font-size:.7rem;color:var(--accent);
+    display:block;margin-bottom:3px;
+  }
+  nav.toc a:hover .n{color:var(--accent-soft);}
+
+  section{margin-top:64px;scroll-margin-top:20px;}
+  .sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:6px;}
+  .sec-num{
+    font-family:'Space Mono',monospace;font-size:1.4rem;color:var(--accent);font-weight:700;
+  }
+  h2{
+    font-family:'Fraunces',serif;font-weight:600;font-size:1.7rem;
+    margin:0;letter-spacing:-.01em;
+  }
+  .caption{
+    max-width:74ch;color:#42505f;margin:8px 0 22px;font-size:.96rem;
+  }
+  .caption code{
+    font-family:'Space Mono',monospace;font-size:.85em;
+    background:rgba(27,58,92,.08);padding:1px 5px;border-radius:3px;color:var(--blue);
+  }
+
+  .diagram-card{
+    background:#fbfaf6;
+    border:1px solid var(--paper-line);
+    border-top:4px solid var(--blue);
+    box-shadow:0 1px 0 rgba(0,0,0,.04),0 18px 40px -28px rgba(13,27,42,.45);
+    padding:30px 22px;
+    overflow-x:auto;
+  }
+  .diagram-card .mermaid{display:flex;justify-content:center;min-width:min-content;}
+
+  .legend{
+    display:flex;flex-wrap:wrap;gap:18px;margin-top:16px;
+    font-size:.78rem;font-family:'Space Mono',monospace;color:#42505f;
+  }
+  .legend span{display:inline-flex;align-items:center;gap:7px;}
+  .swatch{width:13px;height:13px;border-radius:2px;display:inline-block;border:1px solid rgba(0,0,0,.2);}
+
+  footer{
+    margin-top:90px;padding-top:24px;border-top:1px solid var(--paper-line);
+    font-family:'Space Mono',monospace;font-size:.74rem;color:#6b7785;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  }
+  @media(max-width:600px){
+    .wrap{padding:0 16px 80px;}
+    nav.toc{grid-template-columns:1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="kicker">Technical Architecture · PRD v3.73</p>
+    <h1>TradeSpine<br><em>Architecture</em></h1>
+    <p class="sub">A modular, reproducible foundation for B3 futures strategies on MetaTrader 5. One strategy attaches to one chart symbol, one symbol may host multiple strategies, and all trade flow passes through guarded, strategy-scoped infrastructure.</p>
+    <div class="meta-row">
+      <span class="tag">Netting + Hedging</span>
+      <span class="tag">Futures v1</span>
+      <span class="tag">Multiple EAs / Symbol</span>
+      <span class="tag">GV-only State</span>
+      <span class="tag">Vendored StdLib</span>
+      <span class="tag warn">Catastrophic-Safe</span>
+      <span class="tag">Phased v0.1 → v1.0</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="#layers"><span class="n">FIG 01</span>Layered Module Map</a>
+    <a href="#composition"><span class="n">FIG 02</span>Object Composition</a>
+    <a href="#pipeline"><span class="n">FIG 03</span>Intent Pipeline</a>
+    <a href="#state"><span class="n">FIG 04</span>Position State Machine</a>
+    <a href="#netting"><span class="n">FIG 05</span>Netting Multi-EA Model</a>
+    <a href="#lifecycle"><span class="n">FIG 06</span>Lifecycle Staging</a>
+    <a href="#protection"><span class="n">FIG 07</span>Catastrophic Defense</a>
+  </nav>
+
+  <!-- ============ FIG 01 ============ -->
+  <section id="layers">
+    <div class="sec-head"><span class="sec-num">01</span><h2>Layered Module Map</h2></div>
+    <p class="caption">Dependencies point downward. A strategy file sits at the top and touches only <code>CStrategyBase</code>; everything beneath is shared infrastructure under <code>MQL5/Experts/Main/TradeSpine/</code> with quoted relative includes. v1 persistence is terminal-GV backed, while the <code>StdLib</code> foundation is a frozen in-repo copy of the MetaQuotes <code>Trade/</code> classes.</p>
+    <div class="diagram-card">
+      <pre class="mermaid">
+flowchart TB
+  subgraph L0["STRATEGY LAYER · Experts/Main/TradeSpine/Experts"]
+    direction LR
+    S1["DonchianBreakout.mq5"]
+    S2["MovingAverageCross.mq5"]
+  end
+  subgraph L1["AUTHORING · Strategy"]
+    direction LR
+    SB["CStrategyBase"]
+    NB["NewBarDetector"]
+    SIG["Signal struct"]
+    CI["CommonInputs"]
+  end
+  subgraph L2["PLUGGABLES"]
+    direction LR
+    ST["Stops/ IStopPolicy"]
+    TR["Trailing/ ITrailingStop"]
+    IND["Indicators/ IIndicator"]
+  end
+  subgraph L3["ORCHESTRATION · Coordination"]
+    CO["CTradeCoordinator"]
+  end
+  subgraph L4["DOMAIN SERVICES"]
+    direction LR
+    RK["Risk · IPositionSizer · KillSwitch"]
+    EX["Execution · ITradePort · GuardedTrade"]
+    PO["Position · StateMachine · Adapters · Virtual Ledger"]
+  end
+  subgraph L5["PLATFORM SERVICES"]
+    direction LR
+    MK["Market · Symbol/Account/Session"]
+    PE["Persistence · GV StateStore"]
+    CR["Core · OptCtx · Logger · TradeLogger · SafeMath"]
+  end
+  subgraph L6["FROZEN FOUNDATION · Include/StdLib"]
+    VEN["Vendored CTrade · CSymbolInfo · CAccountInfo · CPositionInfo · CObject"]
+  end
+
+  L0 --> L1
+  L1 --> L2
+  L1 --> L3
+  L3 --> L4
+  L4 --> L5
+  L5 --> L6
+  L4 --> L6
+
+  classDef strat fill:#1b3a5c,stroke:#0d1b2a,color:#f4f1ea;
+  classDef auth fill:#2e6fb0,stroke:#1b3a5c,color:#fff;
+  classDef plug fill:#e8a87c,stroke:#c2410c,color:#3a1d09;
+  classDef orch fill:#c2410c,stroke:#7a2808,color:#fff;
+  classDef dom fill:#dfe9f2,stroke:#2e6fb0,color:#13314d;
+  classDef plat fill:#eef0e8,stroke:#7a8a6f,color:#2c3a24;
+  classDef found fill:#0d1b2a,stroke:#000,color:#cfe0f0;
+  class S1,S2 strat;
+  class SB,NB,SIG,CI auth;
+  class ST,TR,IND plug;
+  class CO orch;
+  class RK,EX,PO dom;
+  class MK,PE,CR plat;
+  class VEN found;
+      </pre>
+    </div>
+    <div class="legend">
+      <span><i class="swatch" style="background:#1b3a5c"></i>Strategy file</span>
+      <span><i class="swatch" style="background:#2e6fb0"></i>Authoring base</span>
+      <span><i class="swatch" style="background:#e8a87c"></i>Pluggable (swap by override)</span>
+      <span><i class="swatch" style="background:#c2410c"></i>Pipeline orchestrator</span>
+      <span><i class="swatch" style="background:#dfe9f2"></i>Domain service</span>
+      <span><i class="swatch" style="background:#0d1b2a"></i>Frozen foundation</span>
+    </div>
+  </section>
+
+  <!-- ============ FIG 02 ============ -->
+  <section id="composition">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Object Composition &amp; Ownership</h2></div>
+    <p class="caption">Solid arrows are <strong>owns</strong> (a member instance); dashed arrows are <strong>uses-via-interface</strong>. The coordinator depends on narrow interfaces so tests can vary sizing, stops, position state, and submission independently. Netting state is strategy-scoped through the virtual gross-position ledger; duplicate magic and execution locks are terminal-local Global Variables. The inner <code>CTrade</code> is private inside <code>CGuardedTrade</code> — strategies cannot reach it.</p>
+    <div class="diagram-card">
+      <pre class="mermaid">
+flowchart TD
+  EA["Strategy .mq5<br><small>your class : CStrategyBase<br>calls OpenLong/OpenShort/Close*</small>"]
+  SB["CStrategyBase"]
+  CO["CTradeCoordinator"]
+  SZ(["IPositionSizer"])
+  SP(["IStopPolicy"])
+  TP(["ITradePort"])
+  PV(["IPositionView"])
+  GT["CGuardedTrade"]
+  CT["private CTrade<br><small>vendored</small>"]
+  PC["CPositionContext"]
+  AD(["IAccountModeAdapter"])
+  SM["CPositionStateMachine"]
+  TL["TradeLogger"]
+  KS["CKillSwitch"]
+  IDX["Indicators"]
+  TRL["Trailing"]
+  GV["CStateStore<br><small>terminal GVs only</small>"]
+  VL["VirtualGrossLedger<br><small>account+symbol+magic+virtual id</small>"]
+  OCO["PendingExitTracker<br><small>SL/TP sibling OCO</small>"]
+  ML["DuplicateMagicGuard<br><small>local terminal only</small>"]
+  LX["TradeSpineExecLock<br><small>short-lived symbol mutex</small>"]
+
+  EA -->|is-a| SB
+  SB -->|owns| CO
+  SB -->|owns| KS
+  SB -->|owns| IDX
+  SB -->|owns| TRL
+  SB -->|owns| GV
+  SB -->|claims| ML
+  CO -.->|uses| SZ
+  CO -.->|uses| SP
+  CO -.->|uses| TP
+  CO -.->|uses| PV
+  CO -->|owns| SM
+  CO -.->|uses| TL
+  TP -.->|impl| GT
+  PV -.->|impl| PC
+  GT -->|owns private| CT
+  PC -.->|selects| AD
+  PC -->|netting owns| VL
+  PC -->|netting owns| OCO
+  PC -.->|uses| LX
+  VL -.->|persists| GV
+  OCO -.->|persists tickets hi/lo| GV
+  ML -.->|marker GV| GV
+  LX -.->|lock GV| GV
+
+  classDef base fill:#2e6fb0,stroke:#1b3a5c,color:#fff;
+  classDef orch fill:#c2410c,stroke:#7a2808,color:#fff;
+  classDef iface fill:#fbfaf6,stroke:#c2410c,color:#7a2808,stroke-dasharray:4 3;
+  classDef concrete fill:#dfe9f2,stroke:#2e6fb0,color:#13314d;
+  classDef frozen fill:#0d1b2a,stroke:#000,color:#cfe0f0;
+  class EA,SB base;
+  class CO orch;
+  class SZ,SP,TP,PV,AD iface;
+  class GT,PC,SM,TL,KS,IDX,TRL,GV,VL,OCO,ML,LX concrete;
+  class CT frozen;
+      </pre>
+    </div>
+    <div class="legend">
+      <span><i class="swatch" style="background:#fbfaf6;border-style:dashed;border-color:#c2410c"></i>Interface (seam)</span>
+      <span><i class="swatch" style="background:#dfe9f2"></i>Concrete component</span>
+      <span><i class="swatch" style="background:#0d1b2a"></i>Private vendored CTrade</span>
+    </div>
+  </section>
+
+  <!-- ============ FIG 03 ============ -->
+  <section id="pipeline">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Intent → Execution Pipeline</h2></div>
+    <p class="caption">All entries flow through one imperative path: strategies call <code>OpenLong</code>/<code>OpenShort</code> from <code>OnNewBar</code> or <code>OnTickEvent</code>; close helpers in <code>OnManagePosition</code> route through the coordinator close branch. On netting, close means this EA's virtual exposure only, not the broker aggregate symbol position. The audit record is strategy-scoped and paired before/after execution.</p>
+    <div class="diagram-card">
+      <pre class="mermaid">
+flowchart TD
+  H1["OnNewBar<br><small>bar cadence</small>"] --> CALL
+  H2["OnTickEvent<br><small>tick cadence:<br>vol spikes, news, etc.</small>"] --> CALL
+  H3["OnManagePosition<br><small>existing position</small>"] -.->|close helpers| CALL
+  CALL["OpenLong / OpenShort<br>CloseAll / CloseLots"] --> P
+  P{"ProcessSignal"}
+  P --> C0{"type == SIGNAL_CLOSE?"}
+  C0 -->|yes| CL["close this EA exposure<br><small>hedging: own tickets<br>netting: virtual slice + pending exits</small>"] --> DONE1["done"]
+  C0 -->|no| G1{"this EA virtual state == FLAT?"}
+  G1 -->|no| R1["reject · DEBUG"]
+  G1 -->|yes| E{"entry_mode<br>== MARKET?"}
+  E -->|yes| EM["use market price"]
+  E -->|no, v2| EPS["use signal.entry_price<br><small>after wrong-side reject</small>"]
+  EM --> SLT
+  EPS --> SLT
+  SLT{"Signal SL/TP set?"}
+  SLT -->|yes| USE["use explicit SL/TP"]
+  SLT -->|no| POL["StopPolicy.ComputeStops"]
+  USE --> CHK
+  POL --> CHK{"sl_distance > 0?"}
+  CHK -->|no| R2["reject · ERROR"]
+  CHK -->|yes| SZ["Sizer.CalcLots"]
+  SZ --> SZK{"lots > 0?"}
+  SZK -->|no| R3["abort · ERROR"]
+  SZK -->|yes| BLD["build TradeIntent"]
+  BLD --> LOG1["TradeLogger.LogIntent"]
+  LOG1 --> SUB["ITradePort.Submit<br><small>→ guard stages (FIG 07)</small>"]
+  SUB --> LOG2["TradeLogger.LogExecution<br><small>incl. slippage, retries</small>"]
+  LOG2 --> ADV["advance this EA state machine<br><small>and GV ledger</small>"]
+
+  classDef hook fill:#2e6fb0,stroke:#1b3a5c,color:#fff;
+  classDef helper fill:#e8a87c,stroke:#c2410c,color:#3a1d09;
+  classDef gate fill:#fff,stroke:#1b3a5c,color:#13314d;
+  classDef good fill:#dff0e6,stroke:#2f6b4f,color:#1c4733;
+  classDef bad fill:#f4dde1,stroke:#a4243b,color:#6e1726;
+  class H1,H2,H3 hook;
+  class CALL helper;
+  class P,C0,G1,E,SLT,CHK,SZK gate;
+  class EM,EPS,USE,POL,SZ,BLD,LOG1,SUB,LOG2,ADV,CL good;
+  class R1,R2,R3 bad;
+      </pre>
+    </div>
+    <div class="legend">
+      <span><i class="swatch" style="background:#2e6fb0"></i>Entry point</span>
+      <span><i class="swatch" style="background:#fff"></i>Decision gate</span>
+      <span><i class="swatch" style="background:#dff0e6"></i>Pipeline step</span>
+      <span><i class="swatch" style="background:#f4dde1"></i>Reject / abort</span>
+    </div>
+  </section>
+
+  <!-- ============ FIG 04 ============ -->
+  <section id="state">
+    <div class="sec-head"><span class="sec-num">04</span><h2>Position State Machine</h2></div>
+    <p class="caption">This state machine is per strategy instance / virtual position lifecycle, not per broker aggregate symbol position. On netting, broker-flat can coexist with active opposing virtual positions from different EAs. Transitions are driven by canonical observable state plus this EA's GV-backed ledger, not just by transaction events. <strong>PENDING_ENTRY</strong> exits through success, broker rejection, or framework timeout; cancel-vs-reject remains distinct to avoid phantom-position bugs.</p>
+    <div class="diagram-card">
+      <pre class="mermaid">
+stateDiagram-v2
+  [*] --> FLAT
+  FLAT --> PENDING_ENTRY: entry submitted
+  PENDING_ENTRY --> ACTIVE: DEAL_ADD (in) confirmed
+  PENDING_ENTRY --> FLAT: broker REJECT/INVALID<br/>(origin a, immediate)
+  PENDING_ENTRY --> PENDING_CANCEL: framework timeout<br/>cancel requested
+  PENDING_CANCEL --> FLAT: cancel confirmed
+  PENDING_CANCEL --> HALT: cancel failed or<br/>no confirmation
+  ACTIVE --> PENDING_EXIT: close submitted
+  PENDING_EXIT --> FLAT: DEAL_ADD (out) confirmed
+  ACTIVE --> FLAT: external close<br/>(reason = External, WARN)
+  ACTIVE --> HALT: emergency SL failure<br/>(F-POS-19)
+  HALT --> FLAT: reconcile-safe auto-clear<br/>(F-POS-20; on restart)
+  HALT --> [*]: EA removed / OnDeinit
+
+  note right of PENDING_ENTRY
+    rejection path: ownership flag false
+    timeout path: InpFillTimeoutSecs (5s)
+    state machine tolerates skipped/
+    out-of-order tester events
+  end note
+  note right of PENDING_CANCEL
+    framework-initiated cancel
+    is itself async — must
+    distinguish from broker reject
+  end note
+  note right of ACTIVE
+    v1: this EA single-entry only
+    v2: PENDING_ADD for pyramiding
+  end note
+      </pre>
+    </div>
+  </section>
+
+  <!-- ============ FIG 05 ============ -->
+  <section id="netting">
+    <div class="sec-head"><span class="sec-num">05</span><h2>Netting Multi-EA Model</h2></div>
+    <p class="caption">A netting broker exposes one aggregate symbol position, but TradeSpine strategies do not use that aggregate as their state source. Each EA owns a virtual gross-position slice keyed by <code>account + symbol + magic + virtual_position_id</code>. Magic collisions are rejected only inside the local terminal; another terminal or VPS is operator-managed. Per-strategy SL/TP on netting is implemented with strategy-owned pending stop/limit exit orders and framework-managed OCO.</p>
+    <div class="diagram-card">
+      <pre class="mermaid">
+flowchart TB
+  subgraph TERM["Local MT5 terminal"]
+    direction TB
+    DM["DuplicateMagicGuard<br><small>GV marker: account+symbol+magic</small>"]
+    LK["TradeSpineExecLock<br><small>short-lived symbol mutex</small>"]
+    GV["CStateStore<br><small>terminal GVs only<br>ulong tickets as hi/lo chunks</small>"]
+  end
+
+  subgraph EA_A["EA A · WIN · magic 101"]
+    A_SIG["strategy logic"] --> A_LED["virtual position<br><small>+1 long</small>"]
+    A_LED --> A_EXIT["pending exits<br><small>sell stop SL · sell limit TP<br>OCO sibling links</small>"]
+  end
+
+  subgraph EA_B["EA B · WIN · magic 202"]
+    B_SIG["strategy logic"] --> B_LED["virtual position<br><small>-1 short</small>"]
+    B_LED --> B_EXIT["pending exits<br><small>buy stop SL · buy limit TP<br>OCO sibling links</small>"]
+  end
+
+  A_LED -.->|persist / reconcile| GV
+  B_LED -.->|persist / reconcile| GV
+  A_EXIT -.->|tickets hi/lo| GV
+  B_EXIT -.->|tickets hi/lo| GV
+  A_LED -.->|critical section| LK
+  B_LED -.->|critical section| LK
+  DM -.-> GV
+
+  A_LED -->|+1 deal| BROKER["Broker netting account<br><small>aggregate symbol exposure</small>"]
+  B_LED -->|-1 deal| BROKER
+  BROKER --> NET["derived broker exposure<br><small>+1 + -1 = 0 flat<br>strategies still ACTIVE</small>"]
+
+  A_EXIT -->|SL/TP fill closes only A| BROKER
+  B_EXIT -->|unchanged| B_LED
+  MAN["manual/non-TradeSpine order"] -.->|may alter aggregate| BROKER
+  MAN -.->|ignored by strategy logs/state| A_LED
+  MAN -.->|ignored by strategy logs/state| B_LED
+
+  classDef term fill:#eef0e8,stroke:#7a8a6f,color:#2c3a24;
+  classDef ea fill:#dfe9f2,stroke:#2e6fb0,color:#13314d;
+  classDef exit fill:#e8a87c,stroke:#c2410c,color:#3a1d09;
+  classDef broker fill:#0d1b2a,stroke:#000,color:#cfe0f0;
+  classDef warn fill:#f4dde1,stroke:#a4243b,color:#6e1726;
+  class DM,LK,GV term;
+  class A_SIG,A_LED,B_SIG,B_LED ea;
+  class A_EXIT,B_EXIT exit;
+  class BROKER,NET broker;
+  class MAN warn;
+      </pre>
+    </div>
+    <div class="legend">
+      <span><i class="swatch" style="background:#dfe9f2"></i>Strategy-scoped virtual state</span>
+      <span><i class="swatch" style="background:#e8a87c"></i>Strategy-owned pending exits</span>
+      <span><i class="swatch" style="background:#eef0e8"></i>Terminal-local GV services</span>
+      <span><i class="swatch" style="background:#0d1b2a"></i>Broker aggregate exposure</span>
+    </div>
+  </section>
+
+  <!-- ============ FIG 06 ============ -->
+  <section id="lifecycle">
+    <div class="sec-head"><span class="sec-num">06</span><h2>Lifecycle Staging</h2></div>
+    <p class="caption">Four guaranteed phases, each logged at INFO. Trading is allowed only in phase 4 — a trade call from a constructor or from <code>OnStrategyInit</code> fails fast with an error naming the stage, rather than firing an order before the guards are wired. This is the discipline borrowed from NautilusTrader's "don't touch services before registration" rule.</p>
+    <div class="diagram-card">
+      <pre class="mermaid">
+flowchart LR
+  C["① CONSTRUCT<br><small>members default-built<br>no framework services</small>"]
+  F["② FRAMEWORK-INIT<br><small>modules built · adapter selected<br>queries safe · NO trading</small>"]
+  S["③ STRATEGY-INIT<br><small>OnStrategyInit()<br>install deps · NO trading</small>"]
+  L["④ LIVE<br><small>event loop<br>trading ALLOWED</small>"]
+  C --> F --> S --> L
+  X["trade call before ④"] -.->|ERROR + return 0| BLK["blocked"]
+
+  classDef cold fill:#eef0e8,stroke:#7a8a6f,color:#2c3a24;
+  classDef warm fill:#dfe9f2,stroke:#2e6fb0,color:#13314d;
+  classDef live fill:#dff0e6,stroke:#2f6b4f,color:#1c4733;
+  classDef block fill:#f4dde1,stroke:#a4243b,color:#6e1726;
+  class C,F cold;
+  class S warm;
+  class L live;
+  class X,BLK block;
+      </pre>
+    </div>
+  </section>
+
+  <!-- ============ FIG 07 ============ -->
+  <section id="protection">
+    <div class="sec-head"><span class="sec-num">07</span><h2>Catastrophic Defense in Depth</h2></div>
+    <p class="caption">The 1066-lot scenario must be impossible. Three independent layers each get a veto, and the order only reaches the vendored <code>CTrade</code> after passing every guard stage. The seven sequential stages add a broker-level <code>OrderCheck</code> pre-flight (cumulative margin + trading-disabled detection) BEFORE our own margin check, then a retry loop on the inner execute stage handles REQUOTE/PRICE_CHANGED/connection-class retcodes with bounded retries — distinct from both rejections (re-arm) and timeouts (HALT).</p>
+    <div class="diagram-card">
+      <pre class="mermaid">
+flowchart TD
+  SZ["Layer A · Sizer<br><small>snaps to broker min/max/step<br>returns 0 to abort on anomaly</small>"]
+  SZ --> CAP["Layer B · User Caps<br><small>InpMin/MaxLotsPerOrder<br>CP-1 default skip / optional clamp down<br>CP-2 default skip / optional clamp up</small>"]
+  CAP --> SUB["Layer C · Guard Stages · Submit()"]
+
+  subgraph SUB_STAGES["CGuardedTrade.Submit — sequential vetoes"]
+    direction TB
+    G1["1 · symbolic: side, finite, SL/TP topology"]
+    G2["2 · caps re-applied"]
+    G3["3 · gates: kill-switch · spread · session · market open"]
+    G4["4 · OrderCheck: broker formal +<br>cumulative margin + trading-disabled"]
+    G5["5 · margin: OrderCalcMargin ≤ free × safety<br><small>authoritative for opposite-direction ops</small>"]
+    G6["6 · audit log<br><small>margin_level on success,<br>full projection on rejection</small>"]
+    G7["7 · filling-mode-aware execute<br><small>+ retry loop (F-EXEC-8) for<br>REQUOTE/PRICE_CHANGED/etc.</small>"]
+    G1 --> G2 --> G3 --> G4 --> G5 --> G6 --> G7
+  end
+  SUB --> SUB_STAGES
+  G7 --> CT["vendored private CTrade → OrderSend"]
+
+  KILL["Kill-switch triggers:<br><small>daily loss % · max lots · trades/day · panic · fill timeout</small>"]
+  KILL -.->|trip → reject all| G3
+
+  classDef layer fill:#c2410c,stroke:#7a2808,color:#fff;
+  classDef stage fill:#dfe9f2,stroke:#2e6fb0,color:#13314d;
+  classDef exec fill:#0d1b2a,stroke:#000,color:#cfe0f0;
+  classDef kill fill:#f4dde1,stroke:#a4243b,color:#6e1726;
+  class SZ,CAP,SUB layer;
+  class G1,G2,G3,G4,G5,G6,G7 stage;
+  class CT exec;
+  class KILL kill;
+      </pre>
+    </div>
+    <div class="legend">
+      <span><i class="swatch" style="background:#c2410c"></i>Independent layer</span>
+      <span><i class="swatch" style="background:#dfe9f2"></i>Guard stage</span>
+      <span><i class="swatch" style="background:#f4dde1"></i>Kill-switch veto</span>
+      <span><i class="swatch" style="background:#0d1b2a"></i>Broker boundary</span>
+    </div>
+  </section>
+
+  <footer>
+    <span>TRADESPINE · ARCHITECTURE v3.73</span>
+    <span>PRD v3.73 · 2026</span>
+  </footer>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad:true,
+    theme:'base',
+    themeVariables:{
+      fontFamily:"'IBM Plex Sans', sans-serif",
+      fontSize:'14px',
+      primaryColor:'#dfe9f2',
+      primaryTextColor:'#13314d',
+      primaryBorderColor:'#2e6fb0',
+      lineColor:'#1b3a5c',
+      tertiaryColor:'#f4f1ea'
+    },
+    flowchart:{curve:'basis',padding:14,nodeSpacing:48,rankSpacing:54,useMaxWidth:true},
+    state:{useMaxWidth:true}
+  });
+</script>
+</body>
+</html>

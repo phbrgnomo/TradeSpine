@@ -1,0 +1,192 @@
+---
+document_type: adr-document
+artifact_type: ADR
+layer: 5
+deliverable_type: code
+id: ADR-06
+title: Vendored MQL5 Standard Library Policy
+status: Accepted
+created_date: "2026-06-01T20:35:00-03:00"
+last_updated: "2026-06-01T20:35:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Accepted
+  date: "2026-06-01"
+  decision_makers: ["Paulo Henrique Barreto Reboucas"]
+  author: "Codex"
+  version: "1.0"
+  originating_topic: "@prd: PRD.01.14.518a"
+  brd_reference: "@brd: BRD.01.08.92f4"
+  spec_ready_score: "94/100"
+  revision_history:
+    - version: "1.0"
+      date: "2026-06-01T20:35:00-03:00"
+      author: "Codex"
+      changes: "Initial accepted ADR generated from approved BDD-01 and PRD v3.73 source."
+
+## Section 2: Context
+context:
+  problem_statement: "TradeSpine depends on selected MetaQuotes standard-library classes, but terminal updates can silently alter behavior if the framework includes terminal-global library files."
+  business_driver: "Real-money trading behavior must be reproducible across terminal updates and release builds."
+  key_constraints:
+    - "CTrade is composed privately inside CGuardedTrade, not exposed to strategies."
+    - "Selected standard-library files are copied under Include/StdLib and version-recorded."
+    - "Framework-authored code must not include terminal-global Trade/ or Expert/ headers."
+  technical_context: "BDD.01.03.ef54 validates vendored dependency release evidence, and BDD.01.03.aa68 validates reference strategy compile behavior."
+
+## Section 3: Decision
+decision:
+  chosen_solution:
+    id: "ADR.06.03.b277"
+    title: "Vendor the selected MQL5 standard-library subset"
+    description: "TradeSpine will vendor the selected MetaQuotes standard-library files under Include/StdLib, edit Object.mqh includes to relative paths where required, record the source terminal build in VERSION.md, and compile only against the vendored copy."
+  key_components:
+    - name: "Include/StdLib"
+      role: "Frozen in-repo copy of selected standard-library files."
+    - name: "VERSION.md"
+      role: "Records source terminal build and update procedure."
+    - name: "Grep release checks"
+      role: "Reject terminal-global Trade/Expert includes in framework-authored code."
+  implementation_approach:
+    mvp_scope: "Vendor Object.mqh, StdLibErr.mqh, selected Trade/*.mqh files, and AccountInfo/Symbol/Position/Deal/Order helpers used by v1."
+    next_cycle_scope: "Evaluate additional vendored files only when a concrete v2 feature needs them."
+
+## Section 4: Alternatives Considered
+alternatives:
+  options:
+    - id: "ADR.06.04.f806"
+      name: "Vendored selected standard-library subset"
+      selected: true
+      description: "Copy and freeze only the standard-library files TradeSpine uses."
+      pros: ["Reproducible across terminal updates", "Keeps CTrade behavior reviewable", "Limits vendored surface"]
+      cons: ["Requires explicit update procedure"]
+      estimated_cost: "Medium"
+      fit: Best
+    - id: "ADR.06.04.b409"
+      name: "Use terminal standard library directly"
+      selected: false
+      description: "Include MetaTrader's installed <Trade/...> files."
+      pros: ["No vendored maintenance"]
+      cons: ["Silent terminal updates can change behavior", "Less reproducible release evidence"]
+      rejection_reason: "Fails reproducibility requirement."
+      estimated_cost: "Low"
+      fit: Poor
+    - id: "ADR.06.04.bfec"
+      name: "No standard-library dependency"
+      selected: false
+      description: "Reimplement all broker helper behavior without MetaQuotes classes."
+      pros: ["Maximum control"]
+      cons: ["High implementation burden", "Higher chance of broker API mistakes"]
+      rejection_reason: "Unnecessary for v1 and riskier than vendoring selected stable helpers."
+      estimated_cost: "High"
+      fit: Good
+
+## Section 5: Consequences
+consequences:
+  positive_outcomes:
+    - id: "ADR.06.05.15d7"
+      outcome: "Release behavior is insulated from silent terminal standard-library updates."
+  tradeoffs_and_risks:
+    - id: "ADR.06.05.9cbf"
+      tradeoff: "Vendored files can become stale relative to a future terminal build."
+      impact: Medium
+      mitigation: "Update only through VERSION.md procedure, reapply include edits, and rerun release tests."
+  cost_estimate:
+    mvp_cost: "Medium"
+    ongoing_monthly: "Low"
+    notes: "Maintenance cost is bounded by the small selected subset."
+
+## Section 6: Architecture Flow
+architecture_flow:
+  decision_sequence:
+    intent:
+      diagram_type: sequence
+      scope_boundary: "Vendored standard-library compile path"
+      upstream_refs: "PRD.01.14.518a; BDD.01.03.ef54"
+      downstream_refs: "SPEC dependency and include policy"
+    tag: "@diagram: sequence-sync"
+    diagram:
+      type: sequenceDiagram
+      content: |
+        sequenceDiagram
+          participant Dev as Developer
+          participant Framework as TradeSpine Framework
+          participant StdLib as Include/StdLib
+          participant Terminal as MT5 Terminal StdLib
+          Dev->>Framework: Compile framework code
+          Framework->>StdLib: Include quoted vendored file
+          StdLib-->>Framework: Frozen helper behavior
+          Note over Framework,Terminal: Terminal-global Trade/Expert includes are forbidden
+  integration_points:
+    - system: "MetaQuotes standard library source"
+      integration_type: "vendored copy"
+      purpose: "Provide selected broker helper classes under release control."
+
+## Section 7: Implementation Assessment
+implementation_assessment:
+  mvp_phases:
+    - phase: "Vendored subset"
+      scope: "Copy selected files, apply relative Object.mqh edits, record VERSION.md."
+      risk: "A framework file accidentally includes terminal-global Trade/ headers."
+    - phase: "Release check"
+      scope: "Grep for prohibited terminal includes and raw broker bypasses."
+      risk: "False negatives if include patterns are incomplete."
+  rollback_plan:
+    strategy: "Pin current vendored subset and block update until compile/test suite passes."
+    trigger: "Vendored update changes behavior or breaks strict compile."
+    estimated_effort: "Medium"
+  monitoring_baseline:
+    - metric: "Terminal-global standard-library includes"
+      target: "0 in framework-authored code"
+      alert_threshold: "Any <Trade/...> or <Expert/...> include"
+
+## Section 8: Verification
+verification:
+  success_criteria:
+    - criterion: "Framework compiles against vendored standard-library files only."
+      measurement: "Strict compile and grep release checks pass."
+    - criterion: "Vendored dependency provenance is recorded."
+      measurement: "VERSION.md exists and source terminal build is recorded."
+  bdd_scenario_refs:
+    scenarios: ["@bdd: BDD.01.03.ef54", "@bdd: BDD.01.03.aa68"]
+
+## Section 9: Traceability
+traceability:
+  tags: ["@adr: ADR-06", "@brd: BRD.01.08.92f4", "@prd: PRD.01.14.518a", "@ears: EARS.01.03.b11a", "@bdd: BDD.01.03.ef54"]
+  originating_topic: "@prd: PRD.01.14.518a"
+  upstream:
+    bdd_references: ["@bdd: BDD.01.03.ef54", "@bdd: BDD.01.03.aa68"]
+    ears_references: ["@ears: EARS.01.03.b11a", "@ears: EARS.01.03.e20a", "@ears: EARS.01.03.4c3f"]
+    prd_references: ["@prd: PRD.01.14.518a"]
+    brd_references: ["@brd: BRD.01.08.92f4"]
+  downstream_expected:
+    - type: SPEC
+      layer: 6
+      description: "Vendored standard-library inventory, include policy, and update procedure."
+  cross_links:
+    depends: ["@depends: ADR-01"]
+    discoverability: ["@discoverability: ADR-06 (vendored MQL5 standard library policy)"]
+  health_score:
+    spec_ready: "94%"
+    target_score: ">=90/100"
+
+## Section 10: Related Decisions
+related_decisions:
+  dependencies:
+    - adr: "ADR-01"
+      relationship: "Depends on"
+      rationale: "Vendored files live under the self-contained project root."
+  supersedes:
+    items: []
+
+glossary:
+  terms:
+    - term: "Vendored StdLib"
+      definition: "Selected MetaQuotes standard-library files copied into the TradeSpine repository."
+    - term: "Terminal-global include"
+      definition: "An angle-bracket include resolved from the terminal installation instead of the project vendored copy."
+
+appendix:
+  lifecycle:
+    note: "Adding new vendored files is a dependency-scope change and should be recorded in the SPEC or a future ADR if architectural."

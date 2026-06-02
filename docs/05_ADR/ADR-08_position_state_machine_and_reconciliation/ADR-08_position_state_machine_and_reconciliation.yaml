@@ -1,0 +1,216 @@
+---
+document_type: adr-document
+artifact_type: ADR
+layer: 5
+deliverable_type: code
+id: ADR-08
+title: Position State Machine and Reconciliation
+status: Accepted
+created_date: "2026-06-01T21:10:00-03:00"
+last_updated: "2026-06-01T21:10:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Accepted
+  date: "2026-06-01"
+  decision_makers: ["Paulo Henrique Barreto Reboucas"]
+  author: "Codex"
+  version: "1.0"
+  originating_topic: "@prd: PRD.01.09.7608"
+  brd_reference: "@brd: BRD.01.07.a94e"
+  spec_ready_score: "95/100"
+  revision_history:
+    - version: "1.0"
+      date: "2026-06-01T21:10:00-03:00"
+      author: "Codex"
+      changes: "Initial accepted ADR added by ADR audit/fix cycle for state-machine coverage."
+
+## Section 2: Context
+context:
+  problem_statement: "TradeSpine must reconcile asynchronous broker outcomes, tester/live event differences, cancellation races, and restart recovery without guessing whether a strategy owns exposure."
+  business_driver: "Real-money safety requires ambiguous ownership to stop trading and preserve evidence rather than silently re-arm or flatten the wrong exposure."
+  key_constraints:
+    - "MQL5 OnTradeTransaction events are not a complete accounting source and differ between tester and live environments."
+    - "The state machine is per strategy instance and virtual position lifecycle, not per broker aggregate position."
+    - "Only one CPositionStateMachine instance may exist for a strategy lifecycle; router and coordinator paths share it by reference."
+  technical_context: "PRD.md P-3, F-POS-7, F-POS-10 through F-POS-14, F-POS-20, and F-POS-22 define shared ownership, HALT semantics, event tolerance, and recovery. BDD.01.03.e16a validates HALT on ambiguous broker outcomes."
+
+## Section 3: Decision
+decision:
+  chosen_solution:
+    id: "ADR.08.03.0a8f"
+    title: "Use one per-strategy state machine driven by transaction routing and reconciliation"
+    description: "CStrategyBase will create and own one CPositionStateMachine. CTradeTxRouter and CTradeCoordinator receive references to that same machine. Transaction events are hints; canonical broker/history/GV evidence decides state transitions. Ambiguous fill, cancel, or ownership state enters persisted HALT instead of inferred FLAT or ACTIVE."
+  key_components:
+    - name: "CPositionStateMachine"
+      role: "Owns FLAT, PENDING_ENTRY, ACTIVE, PENDING_EXIT, PENDING_CANCEL, and HALT lifecycle transitions."
+    - name: "CTradeTxRouter"
+      role: "Filters MT5 trade transactions by symbol and magic and fires event-driven transitions."
+    - name: "CTradeCoordinator.Update"
+      role: "Runs the cheap timeout/reconciliation pump against the same state machine."
+  implementation_approach:
+    mvp_scope: "Single-entry v1 lifecycle, cancel-origin disambiguation, async timeout handling, HALT persistence, and reconcile-safe auto-clear."
+    next_cycle_scope: "Pyramiding can add an ACTIVE -> PENDING_ADD -> ACTIVE path without changing state-machine ownership."
+
+## Section 4: Alternatives Considered
+alternatives:
+  options:
+    - id: "ADR.08.04.9d30"
+      name: "Shared per-strategy state machine"
+      selected: true
+      description: "Create one state machine in CStrategyBase and share it with router and coordinator paths."
+      pros: ["Avoids duplicate state", "Centralizes HALT semantics", "Supports tester/live event tolerance"]
+      cons: ["Requires disciplined ownership and constructor wiring"]
+      estimated_cost: "Medium"
+      fit: Best
+    - id: "ADR.08.04.5ad6"
+      name: "Separate router and coordinator state"
+      selected: false
+      description: "Let transaction routing and coordinator timeout paths each track their own lifecycle."
+      pros: ["Local code looks simpler"]
+      cons: ["Creates conflicting state sources", "Can miss cancellation races"]
+      rejection_reason: "Conflicts with PRD.md P-3 and F-COORD-1."
+      estimated_cost: "Medium"
+      fit: Poor
+    - id: "ADR.08.04.e342"
+      name: "Broker aggregate state only"
+      selected: false
+      description: "Use PositionSelect(symbol) and order history directly without a strategy lifecycle state machine."
+      pros: ["Less framework state"]
+      cons: ["Unsafe for netting virtual ownership", "Cannot preserve HALT evidence"]
+      rejection_reason: "Fails netting, async, and recovery requirements."
+      estimated_cost: "Low"
+      fit: Poor
+
+## Section 5: Consequences
+consequences:
+  positive_outcomes:
+    - id: "ADR.08.05.dadc"
+      outcome: "All broker-outcome ambiguity flows through one safety posture: HALT rather than guessed ownership."
+    - id: "ADR.08.05.a2f5"
+      outcome: "Tester/live event differences can be tolerated because canonical evidence, not event payload fields alone, drives accounting."
+  tradeoffs_and_risks:
+    - id: "ADR.08.05.84e7"
+      tradeoff: "HALT can block a strategy even when a human could infer the likely market state."
+      impact: High
+      mitigation: "Preserve last-known state and provide operator recovery guidance; auto-clear only when reconciliation proves safety."
+    - id: "ADR.08.05.119e"
+      tradeoff: "State-machine tests must cover cancel origin and timeout race paths."
+      impact: Medium
+      mitigation: "Map F-POS-12/F-POS-13/CP-13/CP-15/CP-20 to TDD cases."
+  cost_estimate:
+    mvp_cost: "Medium"
+    ongoing_monthly: "Low"
+    notes: "Cost is state transition design, mockable clocks, and recovery harness coverage."
+
+## Section 6: Architecture Flow
+architecture_flow:
+  decision_sequence:
+    intent:
+      diagram_type: sequence
+      scope_boundary: "Position state and reconciliation"
+      upstream_refs: "PRD.01.09.7608; BDD.01.03.e16a"
+      downstream_refs: "SPEC state machine, router, coordinator update, and HALT contracts"
+    tag: "@diagram: sequence-recovery"
+    diagram:
+      type: sequenceDiagram
+      content: |
+        sequenceDiagram
+          participant MT5
+          participant Base as CStrategyBase
+          participant Router as CTradeTxRouter
+          participant Coord as CTradeCoordinator
+          participant SM as CPositionStateMachine
+          participant Store as CStateStore
+          Base->>SM: Create one strategy-owned state machine
+          MT5->>Router: OnTradeTransaction event
+          Router->>SM: Fire filtered transition hint
+          Coord->>SM: Run timeout/reconciliation update
+          SM->>Store: Persist lifecycle and HALT evidence
+          alt canonical state proves safe
+            SM-->>Base: Continue or auto-clear HALT
+          else state is ambiguous
+            SM-->>Base: Enter HALT and block non-emergency helpers
+          end
+  integration_points:
+    - system: "MT5 trade transaction stream"
+      integration_type: "event hint"
+      purpose: "Trigger reconciliation without treating event payloads as the only truth."
+    - system: "GV and broker history"
+      integration_type: "canonical evidence"
+      purpose: "Prove state transitions or preserve HALT."
+
+## Section 7: Implementation Assessment
+implementation_assessment:
+  mvp_phases:
+    - phase: "State-machine core"
+      scope: "State enum, transition rules, cancel-origin flag, timeout, and HALT persistence."
+      risk: "A transition re-arms after broker cancellation that was really a fill race."
+    - phase: "Reconciliation integration"
+      scope: "Router, coordinator update, broker/history reads, and safe auto-clear."
+      risk: "Reconciliation reads too much on idle ticks or guesses from incomplete data."
+  rollback_plan:
+    strategy: "Block SPEC/TDD sign-off for any component that bypasses the shared state machine."
+    trigger: "Duplicate state-machine ownership or unresolved async outcome treated as safe FLAT."
+    estimated_effort: "Medium"
+  monitoring_baseline:
+    - metric: "Ambiguous outcome guessed safe"
+      target: "0"
+      alert_threshold: "Any occurrence"
+
+## Section 8: Verification
+verification:
+  success_criteria:
+    - criterion: "Ambiguous async fill, cancel, or reconciliation outcome enters HALT."
+      measurement: "BDD.01.03.e16a and state-machine tests pass."
+    - criterion: "Only CStrategyBase owns the state machine and both router/coordinator paths share it."
+      measurement: "SPEC component ownership and tests reference a single state-machine instance."
+  bdd_scenario_refs:
+    scenarios: ["@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.9a7d", "@bdd: BDD.01.03.8180"]
+
+## Section 9: Traceability
+traceability:
+  tags: ["@adr: ADR-08", "@brd: BRD.01.07.a94e", "@prd: PRD.01.09.7608", "@ears: EARS.01.03.588b", "@bdd: BDD.01.03.e16a"]
+  originating_topic: "@prd: PRD.01.09.7608"
+  upstream:
+    bdd_references: ["@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.9a7d", "@bdd: BDD.01.03.8180"]
+    ears_references: ["@ears: EARS.01.03.588b", "@ears: EARS.01.03.6bda", "@ears: EARS.01.04.68e2"]
+    prd_references: ["@prd: PRD.01.09.7608"]
+    brd_references: ["@brd: BRD.01.07.a94e"]
+  downstream_expected:
+    - type: SPEC
+      layer: 6
+      description: "CPositionStateMachine, CTradeTxRouter, coordinator update, HALT, and recovery contracts."
+  cross_links:
+    depends: ["@depends: ADR-02", "@depends: ADR-07"]
+    discoverability: ["@discoverability: ADR-08 (position state machine and reconciliation)"]
+  health_score:
+    spec_ready: "95%"
+    target_score: ">=90/100"
+
+## Section 10: Related Decisions
+related_decisions:
+  dependencies:
+    - adr: "ADR-02"
+      relationship: "Depends on"
+      rationale: "HALT state and recovery evidence are persisted through the GV state model."
+    - adr: "ADR-07"
+      relationship: "Depends on"
+      rationale: "State-machine ownership is per strategy/virtual position and must respect account-mode ownership."
+  supersedes:
+    items: []
+
+glossary:
+  terms:
+    - term: "HALT"
+      definition: "Persisted strategy safety state that blocks non-emergency helpers until reconciliation proves safe recovery."
+    - term: "Canonical evidence"
+      definition: "Broker, history, and GV evidence used to prove state instead of relying on a single event payload."
+
+appendix:
+  source_architecture_sections:
+    - "PRD.md P-3"
+    - "PRD.md F-POS-7"
+    - "PRD.md F-POS-10 through F-POS-14"
+    - "PRD.md F-POS-20 through F-POS-22"
+    - "architecture-diagram.html Fig 04 Position State Machine"

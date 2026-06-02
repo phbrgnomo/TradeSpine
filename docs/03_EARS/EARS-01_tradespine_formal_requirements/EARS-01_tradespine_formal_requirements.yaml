@@ -1,0 +1,481 @@
+---
+document_type: ears-document
+artifact_type: EARS
+layer: 3
+deliverable_type: code
+id: EARS-01
+title: TradeSpine Formal Requirements
+metadata:
+  schema_version: "1.0"
+  document_type: ears-document
+  artifact_type: EARS
+  layer: 3
+  deliverable_type: code
+  lifecycle: mvp-prod-newmvp
+  c4_level: none
+  diagram_standard:
+    tags:
+      - "@diagram: state"
+      - "@diagram: sequence"
+status: Approved
+created_date: "2026-06-01T19:30:00-03:00"
+last_updated: "2026-06-01T20:01:34-03:00"
+
+## Document Control
+document_control:
+  version: "1.0"
+  status: Approved
+  date_created: "2026-06-01T19:30:00-03:00"
+  last_updated: "2026-06-01T20:01:34-03:00"
+  author: "Codex"
+  reviewer: "Paulo Henrique Barreto Reboucas"
+  priority: P1
+  source_document: "@prd: PRD.01.09.9e71"
+  brd_reference: "@brd: BRD.01.03.d116"
+  bdd_ready_score: "100/100"
+  source_refs:
+    - "../../02_PRD/PRD-01_tradespine_platform_requirements/PRD-01_tradespine_platform_requirements.yaml"
+    - "../../../Project/PRD.md"
+    - "../../../Project/architecture-diagram.html"
+  revision_history:
+    - version: "1.0"
+      date: "2026-06-01T19:30:00-03:00"
+      author: "Codex"
+      changes: "Initial EARS generated from approved PRD-01 and TradeSpine source brief."
+    - version: "1.0.1"
+      date: "2026-06-01T19:49:37-03:00"
+      author: "Codex"
+      changes: "Clarified two-session behavior, one-day session-open expiration warnings, mandatory symbol-information validation, and day-trade no-overnight close."
+    - version: "1.0.2"
+      date: "2026-06-01T20:01:34-03:00"
+      author: "Paulo Henrique Barreto Reboucas"
+      changes: "Approved EARS-01 for downstream BDD generation."
+
+## Purpose and Context
+purpose_and_context:
+  purpose: >
+    Convert approved PRD-01 product capabilities into atomic, testable EARS
+    statements for downstream BDD scenarios.
+  scope: >
+    Covers TradeSpine v1 strategy authoring, guarded execution, runtime risk
+    controls, account-mode ownership, B3 futures market context, audit evidence,
+    release governance, and performance gates.
+  audience: "System architects, MQL5 developers, QA reviewers, and release reviewers."
+
+## Requirements
+requirements:
+  event_driven:
+    - id: "EARS.01.03.4c3f"
+      name: "Reference strategy packaging"
+      statement: >
+        WHEN a reference strategy is compiled, THE strategy artifact SHALL
+        consist of one strategy mq5 file plus shared TradeSpine includes WITHIN
+        the v1 release compile gate.
+      traceability: "@brd: BRD.01.07.88a6 | @prd: PRD.01.09.5ef1"
+    - id: "EARS.01.03.b784"
+      name: "Strategy helper routing"
+      statement: >
+        WHEN a strategy requests an entry or exit helper, THE strategy artifact
+        SHALL route the request through documented TradeSpine helper calls
+        WITHIN the strategy lifecycle hook that raised the request.
+      traceability: "@brd: BRD.01.07.88a6 | @prd: PRD.01.09.eaf3"
+    - id: "EARS.01.03.0c0a"
+      name: "Strategy implementation guide"
+      statement: >
+        WHEN a strategy author starts a new v1 strategy, THE documentation set
+        SHALL provide file structure, lifecycle hooks, helper calls, common
+        inputs, logging expectations, compile checklist, and reference walkthrough
+        WITHIN the authoring guide.
+      traceability: "@brd: BRD.01.07.88a6 | @prd: PRD.01.09.eaf3"
+    - id: "EARS.01.03.222f"
+      name: "Catastrophic safety rejection"
+      statement: >
+        WHEN a framework-mediated order request violates catastrophic safety
+        constraints, THE guarded execution path SHALL reject the request before
+        broker handoff WITHIN the submit pipeline.
+      traceability: "@brd: BRD.01.07.a94e | @prd: PRD.01.09.d74e"
+    - id: "EARS.01.03.375b"
+      name: "Runtime risk trip"
+      statement: >
+        WHEN daily loss, max open lots, max trades per day, or panic stop trips
+        for a strategy instance, THE runtime risk controls SHALL refuse new
+        entries and trigger strategy-scoped close behavior WITHIN the current
+        strategy lifecycle.
+      traceability: "@brd: BRD.01.07.a94e | @prd: PRD.01.09.4fb4"
+    - id: "EARS.01.03.4e80"
+      name: "Indicator readiness entry block"
+      statement: >
+        WHEN a registered indicator is not ready, THE coordinator SHALL block
+        new entries WITHIN the entry request.
+      traceability: "@brd: BRD.01.07.a94e | @prd: PRD.01.09.5963"
+    - id: "EARS.01.03.a0fa"
+      name: "Intent evidence before submission"
+      statement: >
+        WHEN a framework-mediated entry is accepted for submission, THE audit
+        evidence component SHALL write intent evidence before broker submission
+        WITHIN the submit pipeline.
+      traceability: "@brd: BRD.01.07.8e15 | @prd: PRD.01.09.9d68"
+    - id: "EARS.01.03.6c85"
+      name: "Execution evidence after broker outcome"
+      statement: >
+        WHEN the broker returns an order or deal outcome, THE audit evidence
+        component SHALL write execution evidence WITHIN the reconciliation
+        pipeline.
+      traceability: "@brd: BRD.01.07.8e15 | @prd: PRD.01.09.9d68"
+    - id: "EARS.01.03.7669"
+      name: "Day-trade close trigger"
+      statement: >
+        WHEN day-trade mode enters the close buffer before market trade session
+        close, THE framework SHALL close all strategy-owned positions and cancel
+        strategy-owned pending orders WITHIN the day-trade close sequence.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.d722"
+    - id: "EARS.01.03.db97"
+      name: "Expiration warning trigger"
+      statement: >
+        WHEN the market trade session opens and a supported futures contract
+        expires in one broker day, THE market context component SHALL surface a
+        contract-expiration warning WITHIN the session-open lifecycle event.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.42eb | @fixed-threshold: PRD.01.market.expiration_warning_one_broker_day"
+    - id: "EARS.01.03.03b2"
+      name: "Symbol metadata initialization"
+      statement: >
+        WHEN a strategy instance initializes, THE market context component SHALL
+        load required symbol information for lot step, lot limits, price grid,
+        tick size, tick value, contract size, digits, and trade mode WITHIN init.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.fada"
+    - id: "EARS.01.03.ec72"
+      name: "Order definition symbol validation"
+      statement: >
+        WHEN a framework-mediated order is defined, THE order definition path
+        SHALL validate sizing, lots, stop prices, and price grid against
+        initialized symbol information WITHIN the order calculation pipeline.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.60ad"
+    - id: "EARS.01.03.d7e9"
+      name: "Manual netting evidence gate"
+      statement: >
+        WHEN release sign-off validates concurrent same-symbol netting, THE
+        release reviewer SHALL require a manual live or demo evidence pack
+        WITHIN the v1 release gate.
+      traceability: "@brd: BRD.01.07.b44d | @prd: PRD.01.09.0764"
+    - id: "EARS.01.03.1d60"
+      name: "Documentation release gate"
+      statement: >
+        WHEN a v1 release candidate is reviewed, THE release reviewer SHALL
+        verify required docs, same-change documentation updates, Doxygen coverage
+        if retained, and CHANGELOG decision record WITHIN release sign-off.
+      traceability: "@brd: BRD.01.07.717b | @prd: PRD.01.09.4c66"
+  state_driven:
+    - id: "EARS.01.03.1a3e"
+      name: "User trading-hours entry gate"
+      statement: >
+        WHILE a strategy is evaluating a new entry, THE session context SHALL
+        allow the entry only when the market trade session is open and the
+        user-defined strategy trading-hours window both hold WITHIN broker server
+        time.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.efcd"
+    - id: "EARS.01.03.5d1b"
+      name: "Netting ownership invariant"
+      statement: >
+        WHILE an account is netting or exchange-netting, THE account-mode adapter
+        SHALL preserve strategy-scoped virtual ownership outside the aggregate
+        broker position WITHIN every ownership update.
+      traceability: "@brd: BRD.01.07.b44d | @prd: PRD.01.09.7767"
+    - id: "EARS.01.03.fb67"
+      name: "Hedging ownership invariant"
+      statement: >
+        WHILE an account is hedging, THE account-mode adapter SHALL record
+        strategy ownership against relevant broker tickets or orders WITHIN every
+        ownership update.
+      traceability: "@brd: BRD.01.07.b44d | @prd: PRD.01.09.a252"
+    - id: "EARS.01.03.a71c"
+      name: "Diagnostic log separation"
+      statement: >
+        WHILE diagnostic logging is enabled, THE logging components SHALL keep
+        strategy and framework diagnostic logs separate from trade evaluation
+        records WITHIN all evidence outputs.
+      traceability: "@brd: BRD.01.07.8e15 | @prd: PRD.01.09.c622"
+    - id: "EARS.01.03.6bda"
+      name: "Halt safety state"
+      statement: >
+        WHILE a strategy instance is in HALT, THE framework SHALL block
+        non-emergency trading helpers and preserve last-known state WITHIN the
+        persisted strategy lifecycle.
+      traceability: "@brd: BRD.01.07.a94e | @prd: PRD.01.09.7608"
+    - id: "EARS.01.03.c5b7"
+      name: "Idle path low I/O"
+      statement: >
+        WHILE the framework processes idle ticks without trade work, THE runtime
+        SHALL perform no GV writes, history scans, chart redraws, or order scans
+        WITHIN the idle tick path.
+      traceability: "@brd: BRD.01.07.bf02 | @prd: PRD.01.09.3092"
+    - id: "EARS.01.03.5e92"
+      name: "Futures risk percent sizing"
+      statement: >
+        WHILE calculating SIZING_RISK_PERCENT for a v1 futures strategy, THE
+        position sizer SHALL use initialized symbol information to calculate
+        broker-valid lots from risk percent and stop-loss distance WITHIN the
+        order calculation pipeline.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.60ad"
+    - id: "EARS.01.03.bc8b"
+      name: "Fixed lot sizing"
+      statement: >
+        WHILE calculating SIZING_FIXED_LOT for a v1 futures strategy, THE
+        position sizer SHALL normalize fixed lots against initialized symbol
+        information WITHIN the order calculation pipeline.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.60ad"
+  optional_feature:
+    - id: "EARS.01.03.932d"
+      name: "Equity sizing placeholder"
+      statement: >
+        WHERE SIZING_FIXED_CASH or SIZING_PCT_EQUITY is selected in v1, THE
+        position sizer SHALL reject the sizing request as a visible v2
+        placeholder.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.60ad"
+    - id: "EARS.01.03.f562"
+      name: "Strategy-scoped panic"
+      statement: >
+        WHERE InpPanicStop is true for a strategy instance, THE kill-switch SHALL
+        close only that strategy instance's virtual position or tickets.
+      traceability: "@brd: BRD.01.07.a94e | @prd: PRD.01.09.4fb4"
+    - id: "EARS.01.03.9abb"
+      name: "Doxygen coverage gate"
+      statement: >
+        WHERE Doxygen remains part of the implementation standard, THE release
+        reviewer SHALL verify API documentation coverage before v1 release
+        sign-off.
+      traceability: "@brd: BRD.01.07.717b | @prd: PRD.01.09.4c66"
+  unwanted_behavior:
+    - id: "EARS.01.03.7a9c"
+      name: "Unsafe broker handoff prevented"
+      statement: >
+        IF catastrophic guard validation fails, THE guarded execution path SHALL
+        return a rejection reason and prevent broker submission WITHIN the submit
+        pipeline.
+      traceability: "@brd: BRD.01.07.a94e | @prd: PRD.01.09.d74e"
+    - id: "EARS.01.03.588b"
+      name: "Ambiguous async outcome halt"
+      statement: >
+        IF async fill, cancel, or reconciliation state is ambiguous, THE state
+        manager SHALL enter HALT rather than infer ownership WITHIN reconciliation.
+      traceability: "@brd: BRD.01.07.a94e | @prd: PRD.01.09.7608"
+    - id: "EARS.01.03.7d34"
+      name: "Duplicate magic collision"
+      statement: >
+        IF another live strategy instance owns the same account symbol magic
+        identity in the same terminal, THE duplicate magic guard SHALL fail or
+        safely recover initialization WITHIN init.
+      traceability: "@brd: BRD.01.07.b44d | @prd: PRD.01.09.3f12"
+    - id: "EARS.01.03.e152"
+      name: "Missing symbol metadata"
+      statement: >
+        IF required symbol metadata is missing or invalid at init, THE market
+        context component SHALL fail initialization WITHIN init.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.fada"
+    - id: "EARS.01.03.368c"
+      name: "Unsupported symbol scope"
+      statement: >
+        IF a symbol is outside the validated v1 futures scope, THE market context
+        component SHALL block release validation for that symbol WITHIN symbol
+        validation.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.fada"
+    - id: "EARS.01.03.45ed"
+      name: "Day-trade close failure"
+      statement: >
+        IF day-trade forced close cannot complete before market trade session
+        end, THE framework SHALL enter HALT and preserve unresolved
+        strategy-owned exposure evidence WITHIN the day-trade close sequence.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.d722"
+    - id: "EARS.01.03.e06b"
+      name: "Contract expired warning"
+      statement: >
+        IF a supported futures contract is at or past expiration at session open,
+        THE market context component SHALL surface an expired-contract warning
+        WITHIN the session-open lifecycle event.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.42eb"
+    - id: "EARS.01.03.e1ae"
+      name: "Manual netting evidence missing"
+      statement: >
+        IF concurrent same-symbol netting lacks manual live or demo evidence, THE
+        release gate SHALL block v1 sign-off WITHIN release review.
+      traceability: "@brd: BRD.01.07.b44d | @prd: PRD.01.09.0764"
+  ubiquitous:
+    - id: "EARS.01.03.a023"
+      name: "Trade evidence pairing"
+      statement: >
+        THE audit evidence component SHALL pair intent and execution records for
+        each accepted framework-mediated entry for post-trade evaluation.
+      traceability: "@brd: BRD.01.07.8e15 | @prd: PRD.01.09.9d68"
+    - id: "EARS.01.03.fef3"
+      name: "Slippage fields"
+      statement: >
+        THE trade evaluation record SHALL include intended price, actual fill
+        price, and slippage points for entries and exits.
+      traceability: "@brd: BRD.01.07.8e15 | @prd: PRD.01.09.c1fc"
+    - id: "EARS.01.03.2be9"
+      name: "User trading-hours entry-only scope"
+      statement: >
+        THE session model SHALL keep market-session close handling independent
+        from the user-defined strategy trading-hours entry window for v1
+        day-trade operation.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.efcd"
+    - id: "EARS.01.03.3f57"
+      name: "Day-trade no overnight roll"
+      statement: >
+        THE day-trade mode SHALL prevent strategy-owned positions from rolling
+        into the next trading day for v1 day-trade operation.
+      traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.d722"
+    - id: "EARS.01.03.4f9d"
+      name: "Account mode parity"
+      statement: >
+        THE account-mode abstraction SHALL support netting, exchange-netting, and
+        hedging without strategy code changes for v1 supported account modes.
+      traceability: "@brd: BRD.01.07.b44d | @prd: PRD.01.09.5cce"
+    - id: "EARS.01.03.dcc4"
+      name: "One chart symbol scope"
+      statement: >
+        THE strategy runtime SHALL bind each strategy instance to one chart symbol
+        for v1 strategy execution.
+      traceability: "@brd: BRD.01.10.b11c | @prd: PRD.01.12.9a32"
+    - id: "EARS.01.03.95ea"
+      name: "Multiple strategies per symbol"
+      statement: >
+        THE framework SHALL support multiple same-symbol strategy instances with
+        distinct magic numbers for v1 supported account modes.
+      traceability: "@brd: BRD.01.07.b44d | @prd: PRD.01.09.5cce"
+    - id: "EARS.01.03.b11a"
+      name: "Vendored dependency policy"
+      statement: >
+        THE framework source SHALL use the vendored standard-library dependency
+        foundation for reproducible builds.
+      traceability: "@brd: BRD.01.04.3030 | @prd: PRD.01.12.e9ec"
+    - id: "EARS.01.03.e20a"
+      name: "Repository broker bypass check"
+      statement: >
+        THE repository checks SHALL detect prohibited direct broker submission in
+        strategy files for release sign-off.
+      traceability: "@brd: BRD.01.07.a94e | @prd: PRD.01.09.d74e"
+    - id: "EARS.01.03.8044"
+      name: "Performance budget release evidence"
+      statement: >
+        THE release evidence SHALL cover tester overhead, memory per EA,
+        idle-tick overhead, and low-I/O write budgets for v1 performance
+        sign-off.
+      traceability: "@brd: BRD.01.07.bf02 | @prd: PRD.01.09.3092 | @threshold: PRD.01.perf.tester_overhead | @threshold: PRD.01.perf.memory_per_ea | @threshold: PRD.01.perf.idle_tick"
+
+## Quality Attributes
+quality_attributes:
+  performance:
+    - id: "EARS.01.04.7c85"
+      statement: "THE framework benchmark SHALL keep matched tester overhead at or below the PRD tester overhead threshold for v1 release."
+      metric: "Tester overhead"
+      target: "p50 <=10%, p95 <=10%, p99 reported"
+      priority: P1
+      measurement: "Minimum benchmark protocol"
+      traceability: "@brd: BRD.01.07.bf02 | @prd: PRD.01.09.3092 | @threshold: PRD.01.perf.tester_overhead"
+    - id: "EARS.01.04.fc86"
+      statement: "THE framework runtime SHALL keep memory overhead at or below the PRD per-EA memory threshold for v1 release."
+      metric: "Memory overhead per EA"
+      target: "p50 <=2 MB, p95 <=2 MB, p99 reported"
+      priority: P1
+      measurement: "Release benchmark report"
+      traceability: "@brd: BRD.01.07.bf02 | @prd: PRD.01.09.3092 | @threshold: PRD.01.perf.memory_per_ea"
+    - id: "EARS.01.04.9c45"
+      statement: "THE framework idle path SHALL keep idle-tick overhead at or below the PRD idle tick threshold for v1 release."
+      metric: "Idle-tick overhead"
+      target: "p50 <=50 us, p95 <=50 us, p99 reported"
+      priority: P1
+      measurement: "Profiler and benchmark evidence"
+      traceability: "@brd: BRD.01.07.bf02 | @prd: PRD.01.09.3092 | @threshold: PRD.01.perf.idle_tick"
+  reliability:
+    - id: "EARS.01.04.9de6"
+      statement: "THE audit evidence component SHALL preserve paired intent and execution records for accepted entries with zero missing pairs in release tests."
+      metric: "Evidence pairing completeness"
+      target: "p50 100%, p95 100%, p99 100%"
+      priority: P1
+      measurement: "Trade evidence inspection"
+      traceability: "@brd: BRD.01.07.8e15 | @prd: PRD.01.09.9d68"
+    - id: "EARS.01.04.68e2"
+      statement: "THE HALT state SHALL survive restart and clear only through reconcile-safe recovery in release tests."
+      metric: "HALT persistence and recovery correctness"
+      target: "p50 pass, p95 pass, p99 pass across release scenarios"
+      priority: P1
+      measurement: "State recovery test report"
+      traceability: "@brd: BRD.01.07.a94e | @prd: PRD.01.09.7608"
+  security:
+    - id: "EARS.01.04.93fd"
+      statement: "THE release package SHALL trace every P1 EARS requirement to BRD and PRD sources before BDD generation."
+      control: "Traceability gate"
+      compliance: "aidoc-flow cumulative tag hierarchy"
+      priority: P1
+      measurement: "EARS audit and index review"
+      traceability: "@brd: BRD.01.03.d116 | @prd: PRD.01.09.841a"
+
+## Traceability
+traceability:
+  tags:
+    - "@ears: EARS-01"
+    - "@prd: PRD-01"
+    - "@brd: BRD-01"
+  upstream:
+    prd_references:
+      - "@prd: PRD.01.09.9e71"
+      - "@prd: PRD.01.09.88e3"
+      - "@prd: PRD.01.09.aaf8"
+      - "@prd: PRD.01.09.9cac"
+      - "@prd: PRD.01.09.baed"
+      - "@prd: PRD.01.09.841a"
+    brd_references:
+      - "@brd: BRD.01.03.d116"
+      - "@brd: BRD.01.07.88a6"
+      - "@brd: BRD.01.07.a94e"
+      - "@brd: BRD.01.07.b44d"
+      - "@brd: BRD.01.07.69ef"
+      - "@brd: BRD.01.07.8e15"
+      - "@brd: BRD.01.07.717b"
+      - "@brd: BRD.01.07.bf02"
+  downstream_expected:
+    - type: BDD
+      layer: 4
+      description: "Given-When-Then scenarios for each EARS requirement"
+  cross_links:
+    depends:
+      - "@depends: PRD-01"
+      - "@depends: BRD-01"
+    discoverability:
+      - "@discoverability: EARS-01 (formal TradeSpine v1 platform requirements)"
+  threshold_references:
+    items:
+      - tag: "@threshold: PRD.01.perf.tester_overhead"
+        category: "Performance"
+        value: "<=10% matched tester overhead"
+      - tag: "@threshold: PRD.01.perf.memory_per_ea"
+        category: "Performance"
+        value: "<=2 MB memory per EA"
+      - tag: "@threshold: PRD.01.perf.idle_tick"
+        category: "Performance"
+        value: "<=50 us idle tick"
+      - tag: "@fixed-threshold: PRD.01.market.expiration_warning_one_broker_day"
+        category: "Market"
+        value: "1 broker day before contract expiration"
+  health_score:
+    bdd_ready: "100%"
+    prd_coverage: "100%"
+    target_score: ">=90/100"
+
+## Glossary
+glossary:
+  terms:
+    - term: EARS
+      definition: "Easy Approach to Requirements Syntax."
+    - term: BDD-Ready
+      definition: "Score measuring EARS maturity for BDD transition."
+    - term: Framework-mediated trade
+      definition: "Trade action requested through TradeSpine helper and safety paths."
+    - term: Runtime risk controls
+      definition: "Per-EA daily loss, max open lots, max trades per day, and strategy-scoped panic stop controls."
+    - term: Two-layer session model
+      definition: "Entry gate requiring market trade-session availability and configured user trading-hours window."
+    - term: Manual netting evidence pack
+      definition: "Live or demo evidence for concurrent same-symbol netting behavior that Strategy Tester cannot automate."
+    - term: Trade evaluation record
+      definition: "Structured intent and execution evidence used to evaluate strategy trading outcomes."

@@ -1,0 +1,25 @@
+# OS e editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Ambientes e caches locais
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Dependencias JS
+node_modules/
+
+# Artefatos temporarios
+*.tmp
+*.temp
+
+# Artefatos de compilacao MetaTrader
+*.ex5
+
+# Logs locais
+*.log
+logs/

@@ -1,0 +1,218 @@
+---
+document_type: adr-document
+artifact_type: ADR
+layer: 5
+deliverable_type: code
+id: ADR-10
+title: Module Boundary and Dependency Model
+status: Accepted
+created_date: "2026-06-01T21:10:00-03:00"
+last_updated: "2026-06-01T21:10:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Accepted
+  date: "2026-06-01"
+  decision_makers: ["Paulo Henrique Barreto Reboucas"]
+  author: "Codex"
+  version: "1.0"
+  originating_topic: "@prd: PRD.01.09.5ef1"
+  brd_reference: "@brd: BRD.01.07.88a6"
+  spec_ready_score: "93/100"
+  revision_history:
+    - version: "1.0"
+      date: "2026-06-01T21:10:00-03:00"
+      author: "Codex"
+      changes: "Initial accepted ADR added by ADR audit/fix cycle for module boundary coverage."
+
+## Section 2: Context
+context:
+  problem_statement: "TradeSpine needs clear module boundaries before SPEC so implementation does not reintroduce a monolith or push pure calculations into unnecessary stateful classes."
+  business_driver: "The framework should let strategy authors swap behavior policies and test coordinator logic without reading or duplicating framework internals."
+  key_constraints:
+    - "Strategies depend on CStrategyBase and selected policy/indicator classes, not on platform or broker execution internals."
+    - "Stateful or polymorphic concerns use classes; pure calculations use namespace functions."
+    - "Coordinator dependencies must remain narrow interfaces so Tier-1 tests can inject mocks without a broker."
+  technical_context: "PRD.md P-4, P-8, P-10, section 8, F-COORD-1, F-TEST-2, and architecture-diagram Fig 01/Fig 02 define dependency direction, seams, and the class-versus-free-function split."
+
+## Section 3: Decision
+decision:
+  chosen_solution:
+    id: "ADR.10.03.51ea"
+    title: "Use layered module boundaries with policy interfaces and pure utility namespaces"
+    description: "TradeSpine will keep strategy files at the top, CStrategyBase and pluggable policies below them, coordination in the middle, domain/platform services below coordination, and vendored StdLib at the foundation. Stateful and polymorphic behavior uses classes and interfaces; pure input-output calculations remain free functions in namespaces."
+  key_components:
+    - name: "Layered Include modules"
+      role: "Separate Strategy, Coordination, Position, Execution, Risk, Market, Persistence, Indicators, Core, Testing, and StdLib responsibilities."
+    - name: "Policy interfaces"
+      role: "Expose sizer, stop, trailing, trade-port, and position-view seams for behavior selection and tests."
+    - name: "Pure utility namespaces"
+      role: "Hold stateless calculations such as SafeMath, sizing formulas, stop-distance math, and slippage computation."
+  implementation_approach:
+    mvp_scope: "SPEC must define component boundaries, public interfaces, allowed dependencies, and test seams using this layered model."
+    next_cycle_scope: "New indicators, sizing modes, and optional features should extend the same layer rules rather than add ad hoc cross-dependencies."
+
+## Section 4: Alternatives Considered
+alternatives:
+  options:
+    - id: "ADR.10.04.7612"
+      name: "Layered modules with interfaces and pure utilities"
+      selected: true
+      description: "Use dependency direction from strategy to foundation and select classes only where state or polymorphism is needed."
+      pros: ["Matches MQL5 OOP strengths", "Keeps tests mockable", "Prevents strategy files from becoming infrastructure-heavy"]
+      cons: ["Requires SPEC to document allowed dependencies and module scopes"]
+      estimated_cost: "Medium"
+      fit: Best
+    - id: "ADR.10.04.b094"
+      name: "Large facade module"
+      selected: false
+      description: "Expose most framework behavior through one broad include/facade."
+      pros: ["Simple include path for strategies"]
+      cons: ["Hides dependencies", "Encourages monolithic implementation", "Weakens unit-test seams"]
+      rejection_reason: "Conflicts with the stated replacement of the current monolith."
+      estimated_cost: "Low"
+      fit: Poor
+    - id: "ADR.10.04.03ef"
+      name: "Class wrapper for every function"
+      selected: false
+      description: "Implement all utilities as classes for stylistic consistency."
+      pros: ["Uniform-looking API"]
+      cons: ["Adds object overhead and artificial state", "Conflicts with PRD.md P-10"]
+      rejection_reason: "The source PRD explicitly requires paradigm by fit, not dogma."
+      estimated_cost: "Medium"
+      fit: Poor
+
+## Section 5: Consequences
+consequences:
+  positive_outcomes:
+    - id: "ADR.10.05.f019"
+      outcome: "SPEC can decompose TradeSpine into component contracts without inventing dependency direction."
+    - id: "ADR.10.05.6d99"
+      outcome: "Mock seams are preserved for coordinator, state, sizing, stop, and trade-port tests."
+  tradeoffs_and_risks:
+    - id: "ADR.10.05.44c8"
+      tradeoff: "Module movement inside the tree requires include-path updates."
+      impact: Medium
+      mitigation: "Keep module paths stable after SPEC and use same-change documentation updates."
+    - id: "ADR.10.05.a39a"
+      tradeoff: "Boundary rules can be missed if SPEC lists classes but omits allowed dependency direction."
+      impact: High
+      mitigation: "Require SPEC to include component dependencies, exported interfaces, and forbidden imports."
+  cost_estimate:
+    mvp_cost: "Medium"
+    ongoing_monthly: "Low"
+    notes: "Cost is mostly SPEC discipline and module-level documentation."
+
+## Section 6: Architecture Flow
+architecture_flow:
+  decision_sequence:
+    intent:
+      diagram_type: sequence
+      scope_boundary: "Module dependency and extension model"
+      upstream_refs: "PRD.01.09.5ef1; BDD.01.03.aa68; BDD.01.03.7b02"
+      downstream_refs: "SPEC component boundaries, interface contracts, and module docs"
+    tag: "@diagram: sequence-boundary"
+    diagram:
+      type: sequenceDiagram
+      content: |
+        sequenceDiagram
+          participant Spec as SPEC Author
+          participant Strategy as Strategy Layer
+          participant Coord as Coordination Layer
+          participant Domain as Domain Services
+          participant Platform as Platform Services
+          participant StdLib as Vendored StdLib
+          Spec->>Strategy: Define public authoring surface
+          Strategy->>Coord: Allowed helper/coordinator dependency
+          Coord->>Domain: Allowed interface dependencies
+          Domain->>Platform: Allowed state, market, and logging dependencies
+          Platform->>StdLib: Allowed vendored foundation dependency
+          Note over Spec,StdLib: No upward dependency or raw broker bypass
+  integration_points:
+    - system: "MQL5 include graph"
+      integration_type: "quoted relative include dependencies"
+      purpose: "Keep module dependencies reproducible and reviewable."
+    - system: "Testing modules"
+      integration_type: "mock seams"
+      purpose: "Allow component tests without live broker dependencies."
+
+## Section 7: Implementation Assessment
+implementation_assessment:
+  mvp_phases:
+    - phase: "SPEC decomposition"
+      scope: "Define component scopes, interfaces, data models, and allowed dependencies."
+      risk: "SPEC drifts into file-level code design before component contracts are stable."
+    - phase: "Module documentation"
+      scope: "Per-module docs, Doxygen/API coverage if retained, and same-change documentation gates."
+      risk: "Docs drift from module boundaries during implementation."
+  rollback_plan:
+    strategy: "Stop SPEC generation for any component whose dependencies violate the layer model."
+    trigger: "Upward dependency, broad facade, or raw broker execution path appears in a component contract."
+    estimated_effort: "Medium"
+  monitoring_baseline:
+    - metric: "Forbidden dependency direction"
+      target: "0"
+      alert_threshold: "Any occurrence in review or release scan"
+
+## Section 8: Verification
+verification:
+  success_criteria:
+    - criterion: "Reference strategy compiles as one strategy file plus shared framework includes."
+      measurement: "BDD.01.03.aa68 passes."
+    - criterion: "Release documentation and API docs preserve module contracts."
+      measurement: "BDD.01.03.7b02 and release documentation checks pass."
+  bdd_scenario_refs:
+    scenarios: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.7b02", "@bdd: BDD.01.03.ef54"]
+
+## Section 9: Traceability
+traceability:
+  tags: ["@adr: ADR-10", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.5ef1", "@ears: EARS.01.03.4c3f", "@bdd: BDD.01.03.aa68"]
+  originating_topic: "@prd: PRD.01.09.5ef1"
+  upstream:
+    bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.7b02", "@bdd: BDD.01.03.ef54"]
+    ears_references: ["@ears: EARS.01.03.4c3f", "@ears: EARS.01.03.b784", "@ears: EARS.01.03.0c0a", "@ears: EARS.01.03.1d60", "@ears: EARS.01.03.9abb"]
+    prd_references: ["@prd: PRD.01.09.5ef1", "@prd: PRD.01.09.eaf3", "@prd: PRD.01.09.4c66"]
+    brd_references: ["@brd: BRD.01.07.88a6", "@brd: BRD.01.07.717b"]
+  downstream_expected:
+    - type: SPEC
+      layer: 6
+      description: "Component boundaries, module dependencies, interfaces, documentation obligations, and test seam contracts."
+  cross_links:
+    depends: ["@depends: ADR-01", "@depends: ADR-06", "@depends: ADR-09"]
+    discoverability: ["@discoverability: ADR-10 (module boundary and dependency model)"]
+  health_score:
+    spec_ready: "93%"
+    target_score: ">=90/100"
+
+## Section 10: Related Decisions
+related_decisions:
+  dependencies:
+    - adr: "ADR-01"
+      relationship: "Depends on"
+      rationale: "Module paths and docs live under the self-contained project root."
+    - adr: "ADR-06"
+      relationship: "Depends on"
+      rationale: "The foundation layer uses the vendored standard-library policy."
+    - adr: "ADR-09"
+      relationship: "Depends on"
+      rationale: "Strategy and coordinator boundaries depend on the selected lifecycle and pipeline model."
+  supersedes:
+    items: []
+
+glossary:
+  terms:
+    - term: "Policy interface"
+      definition: "A narrow abstraction such as IPositionSizer or IStopPolicy used for behavior selection and testing."
+    - term: "Pure utility namespace"
+      definition: "A namespace that contains stateless input-output functions rather than stateful classes."
+
+appendix:
+  source_architecture_sections:
+    - "PRD.md P-4"
+    - "PRD.md P-8"
+    - "PRD.md P-10"
+    - "PRD.md Section 8"
+    - "PRD.md F-COORD-1"
+    - "PRD.md F-TEST-2"
+    - "architecture-diagram.html Fig 01 Layered Module Map"
+    - "architecture-diagram.html Fig 02 Object Composition and Ownership"

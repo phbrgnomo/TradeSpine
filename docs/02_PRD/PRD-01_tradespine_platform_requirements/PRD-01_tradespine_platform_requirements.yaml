@@ -1,0 +1,794 @@
+---
+document_type: prd-document
+artifact_type: PRD
+layer: 2
+deliverable_type: code
+id: PRD-01
+title: TradeSpine Platform Requirements
+metadata:
+  schema_version: "1.0"
+  document_type: prd-document
+  artifact_type: PRD
+  layer: 2
+  deliverable_type: code
+  lifecycle: mvp-prod-newmvp
+  c4_level: container
+  diagram_standard:
+    tags:
+      - "@diagram: c4-l2"
+      - "@diagram: dfd-l2"
+      - "@diagram: sequence-sync"
+status: Approved
+created_date: "2026-06-01T14:05:00-03:00"
+last_updated: "2026-06-01T19:49:37-03:00"
+
+## Document Control
+document_control:
+  product_name: TradeSpine
+  version: "1.0"
+  status: Approved
+  date_created: "2026-06-01T14:05:00-03:00"
+  last_updated: "2026-06-01T19:49:37-03:00"
+  author: "Codex"
+  reviewer: "Paulo Henrique Barreto Reboucas"
+  approver: "Paulo Henrique Barreto Reboucas"
+  brd_reference: "@brd: BRD.01.03.d116"
+  priority: High
+  target_release: "TradeSpine v1.0 after v0.1-v0.9 phased build"
+  ears_ready_score: "92/100"
+  source_refs:
+    - "../../01_BRD/BRD-01_platform_tradespine_framework/BRD-01_platform_tradespine_framework.yaml"
+    - "../../../Project/PRD.md"
+    - "../../../Project/architecture-diagram.html"
+  revision_history:
+    - version: "1.0"
+      date: "2026-06-01T14:05:00-03:00"
+      author: "Codex"
+      changes: "Initial PRD generated from approved BRD-01 and TradeSpine PRD v3.73."
+    - version: "1.0.1"
+      date: "2026-06-01T14:18:42-03:00"
+      author: "Codex"
+      changes: "Fixed section-scoped element IDs from PRD audit v001."
+    - version: "1.0.2"
+      date: "2026-06-01T14:31:40-03:00"
+      author: "Codex"
+      changes: "Clarified v1 strategy guide, evidence-stream separation, and account-mode ownership requirements."
+    - version: "1.0.3"
+      date: "2026-06-01T19:13:08-03:00"
+      author: "Codex"
+      changes: "Resolved PRD audit v004 source-drift findings for runtime risk controls, performance budgets, validation evidence, session and sizing scope, release governance, and v1 safety behaviors."
+    - version: "1.0-approval"
+      date: "2026-06-01T19:30:00-03:00"
+      author: "Paulo Henrique Barreto Reboucas"
+      changes: "PRD approved for downstream EARS generation."
+    - version: "1.0.4"
+      date: "2026-06-01T19:49:37-03:00"
+      author: "Codex"
+      changes: "Aligned EARS review clarifications for one-day contract-expiration warnings, explicit symbol-information validation, and day-trade no-overnight behavior."
+
+## Executive Summary
+executive_summary:
+  overview: >
+    TradeSpine is a MetaTrader 5 product platform for B3 futures strategy
+    authors. It gives the trader a single-file strategy authoring surface while
+    product-level framework capabilities provide guarded trade execution,
+    runtime risk controls, strategy-scoped account-mode ownership, audit
+    evidence, and release validation.
+  mvp_hypothesis:
+    statement: "We believe that the owner-operator trader will create safer B3 futures strategies if TradeSpine separates strategy logic from reusable trading infrastructure."
+    validation: "We will know this is true when two reference strategies compile, trade through framework helpers, and satisfy the v1.0 launch gates."
+  timeline:
+    - phase: "Foundation"
+      dates: "v0.1 to v0.3"
+      duration: "Phased build"
+    - phase: "Strategy lifecycle"
+      dates: "v0.4 to v0.6"
+      duration: "Phased build"
+    - phase: "Netting and reference delivery"
+      dates: "v0.7 to v0.9"
+      duration: "Phased build"
+    - phase: "MVP Launch"
+      dates: "v1.0"
+      duration: "Release gate"
+
+## Problem Statement
+problem_statement:
+  current_state:
+    - "Strategy files repeat execution, session, state, risk, logging, and recovery infrastructure."
+    - "Duplicated infrastructure increases real-money defect exposure when each EA re-solves broker and account-mode behavior."
+    - "The current monolithic reference strategy contains roughly 70% reusable infrastructure."
+  business_impact:
+    revenue: "Not estimated in source brief"
+    customer_satisfaction: "Owner-operator velocity and confidence are reduced by repeated infrastructure work."
+    competitive: "The framework must keep authoring speed without reducing trading safety."
+  opportunity: >
+    TradeSpine can turn repeated EA infrastructure into a reusable product
+    surface with auditable safety gates and reference strategy workflows.
+
+## Target Audience and User Personas
+target_audience:
+  primary_persona:
+    name: "Owner-Operator Trader"
+    role: "MQL5 strategy author and live operator"
+    key_characteristic: "Builds and operates B3 futures strategies in MT5."
+    main_pain_point: "Each strategy requires repeated broker, risk, state, and audit infrastructure."
+    success_criteria: "Can write a new strategy as one strategy file and rely on framework safety and evidence capabilities."
+    usage_frequency: "Every strategy build, backtest, optimization, and live deployment cycle."
+  secondary_personas:
+    - name: "Future MQL5 Developer"
+      role: "Strategy contributor"
+    - name: "Post-Trade Analyst"
+      role: "Python analytics consumer"
+
+## Success Metrics and KPIs
+success_metrics:
+  mvp_validation_30day:
+    - id: "PRD.01.05.129c"
+      metric: "Reference strategy packaging"
+      baseline: "Reference Turtle strategy has roughly 70% repeated infrastructure"
+      target: "Two v1 reference strategies use one strategy file plus shared framework services"
+      measurement: "Repository review and compile evidence"
+      brd_reference: "@brd: BRD.01.04.22e9"
+    - id: "PRD.01.05.680e"
+      metric: "Guarded helper coverage"
+      baseline: "Safety checks repeated per EA"
+      target: "100% of framework helper entry paths route through guarded execution"
+      measurement: "Code review plus test evidence"
+      brd_reference: "@brd: BRD.01.04.7b04"
+    - id: "PRD.01.05.bb1f"
+      metric: "Runtime risk controls"
+      baseline: "Daily loss, open-lot, trade-count, and panic controls are repeated or absent per EA"
+      target: "Per-EA daily loss, max open lots, max trades per day, and strategy-scoped panic stop are documented and release-tested"
+      measurement: "Risk-control test evidence and operator-input review"
+      brd_reference: "@brd: BRD.01.07.a94e"
+    - id: "PRD.01.05.f4c5"
+      metric: "Account-mode ownership validation"
+      baseline: "Netting same-symbol isolation is a known design risk"
+      target: "Same-symbol strategy ownership validated on netting, exchange-netting, and hedging modes, including manual concurrent netting evidence"
+      measurement: "Automated mode-specific report plus manual live/demo evidence pack"
+      brd_reference: "@brd: BRD.01.04.4fb6"
+    - id: "PRD.01.05.ecfb"
+      metric: "Manual netting evidence pack"
+      baseline: "Strategy Tester cannot validate true concurrent same-symbol netting contention"
+      target: "Concurrent multi-EA netting release sign-off includes manual live or demo evidence because Strategy Tester cannot validate true concurrency"
+      measurement: "Release evidence pack review"
+      brd_reference: "@brd: BRD.01.07.b44d"
+    - id: "PRD.01.05.4218"
+      metric: "Audit evidence pairing"
+      baseline: "Per-EA logging is inconsistent"
+      target: "Accepted entry attempts produce paired intent and execution evidence"
+      measurement: "Trade journal inspection"
+      brd_reference: "@brd: BRD.01.07.8e15"
+    - id: "PRD.01.05.9b99"
+      metric: "Strategy implementation guide"
+      baseline: "Strategy authoring knowledge is embedded in existing EA source"
+      target: "New strategy authors can create a v1 strategy from the guide without copying broker execution infrastructure"
+      measurement: "Documentation review plus reference-strategy walkthrough"
+      brd_reference: "@brd: BRD.01.07.88a6"
+    - id: "PRD.01.05.5be3"
+      metric: "Tester overhead"
+      baseline: "Hand-written equivalent strategy"
+      target: "<=10% median overhead"
+      measurement: "Minimum benchmark protocol"
+      brd_reference: "@brd: BRD.01.07.bf02"
+    - id: "PRD.01.05.9ccc"
+      metric: "Performance budget coverage"
+      baseline: "Only tester overhead is tracked"
+      target: "Release evidence covers tester overhead <=10%, memory <=2 MB per EA, idle tick <=50 us, and low-I/O write budgets"
+      measurement: "Benchmark report and release checklist"
+      brd_reference: "@brd: BRD.01.07.bf02"
+  business_90day:
+    - metric: "Reference strategy reuse"
+      target: "At least one new strategy starts from the TradeSpine template after v1.0"
+      decision_threshold: "No reuse means revisit authoring surface"
+  post_launch_validation:
+    day_7:
+      - metric: "Release evidence completeness"
+        target: "No missing P1 launch gate evidence"
+    day_30:
+      - metric: "Known safety blockers"
+        target: "0 unresolved P1 safety findings"
+  decision_gate:
+    proceed: "All P1 gates pass -> generate EARS and continue to implementation planning"
+    iterate: "Minor P2 findings remain -> fix before v1.0 release tag"
+    pivot: "Account-mode ownership or safety gates fail -> revise PRD and ADR topics"
+
+## Goals and Objectives
+goals_and_objectives:
+  primary:
+    - id: "PRD.01.06.4cf2"
+      goal: "Define the strategy authoring product surface"
+      metric: "Reference strategy shape"
+      target: "One `.mq5` strategy file per reference strategy"
+      timeline: "v1.0"
+      brd_reference: "@brd: BRD.01.07.88a6"
+    - id: "PRD.01.06.248e"
+      goal: "Define guarded trading behavior"
+      metric: "Helper-path coverage"
+      target: "100% framework helper routing through guarded execution"
+      timeline: "v1.0"
+      brd_reference: "@brd: BRD.01.07.a94e"
+    - id: "PRD.01.06.c9c6"
+      goal: "Define strategy-scoped account-mode behavior"
+      metric: "Same-symbol mode validation"
+      target: "Independent ownership evidence in supported account modes"
+      timeline: "v1.0"
+      brd_reference: "@brd: BRD.01.07.b44d"
+    - id: "PRD.01.06.da13"
+      goal: "Define audit evidence and analytics handoff behavior"
+      metric: "Intent and execution evidence pairing"
+      target: "Paired records for accepted entries"
+      timeline: "v1.0"
+      brd_reference: "@brd: BRD.01.07.8e15"
+  secondary:
+    - id: "PRD.01.06.ab24"
+      objective: "Keep optimization and idle operation within product overhead targets"
+      priority: P2
+      success_criteria: "Matched benchmark overhead <=10%, memory <=2 MB per EA instance, idle tick <=50 us, and low-I/O write budgets respected"
+  stretch_goals:
+    - goal: "Headless compile workflow"
+      condition: "If manual release gates become a recurring bottleneck"
+      benefit: "Repeatable release verification"
+
+## Scope and Requirements
+scope_and_requirements:
+  in_scope:
+    features:
+      - id: "PRD.01.07.2878"
+        name: "Strategy authoring workspace"
+        priority: P1-Must
+        description: "Template, implementation guide, and reference strategy structure that lets a strategy author focus on signal logic and behavior selection."
+        brd_reference: "@brd: BRD.01.07.88a6"
+      - id: "PRD.01.07.0b72"
+        name: "Execution safety path"
+        priority: P1-Must
+        description: "Product behavior that routes framework-mediated entries through safety, session, risk, broker, and evidence gates."
+        brd_reference: "@brd: BRD.01.07.a94e"
+      - id: "PRD.01.07.7733"
+        name: "Runtime risk controls"
+        priority: P1-Must
+        description: "Per-EA daily loss, max open lots, max trades per day, and strategy-scoped panic stop that can refuse entries or close this strategy when tripped."
+        brd_reference: "@brd: BRD.01.07.a94e"
+      - id: "PRD.01.07.6107"
+        name: "Account-mode ownership"
+        priority: P1-Must
+        description: "Product behavior that lets same-symbol strategies maintain strategy-scoped ownership across supported account modes."
+        brd_reference: "@brd: BRD.01.07.b44d"
+      - id: "PRD.01.07.3ab9"
+        name: "B3 futures market context"
+        priority: P1-Must
+        description: "Product behavior for v1 futures sizing modes, broker-session awareness, user trading-hours windows, and symbol metadata validation."
+        brd_reference: "@brd: BRD.01.07.69ef"
+      - id: "PRD.01.07.f540"
+        name: "Trade audit exports"
+        priority: P1-Must
+        description: "Separated diagnostic logs and structured trade evaluation evidence suitable for code audit and Python-side post-trade analysis."
+        brd_reference: "@brd: BRD.01.07.8e15"
+      - id: "PRD.01.07.1bce"
+        name: "Testability and release evidence"
+        priority: P1-Must
+        description: "Release gates that prove safety, mode ownership, manual netting evidence, reference strategy behavior, benchmark targets, and documentation governance before v1.0."
+        brd_reference: "@brd: BRD.01.07.717b"
+  dependencies:
+    technical: "MetaTrader 5, MQL5, selected vendored standard-library files, and local diagram rendering."
+    business: "Owner approval of BRD-01 and acceptance of v1 scope boundaries."
+    external: "Broker symbol metadata, account mode behavior, and B3 futures market-session data."
+  out_of_scope:
+    - "B3 equities sizing implementation; reserved for a later BRD cycle."
+    - "Pyramiding, partial-close manager, and advanced exit manager."
+    - "Multi-symbol, portfolio, UI panel, and WebRequest product surfaces."
+    - "Custom optimization criteria and Python analytics implementation."
+
+## User Stories and User Roles
+user_stories:
+  layer_separation_note: "Detailed behaviors live in EARS; executable scenarios live in BDD."
+  roles:
+    - role: "Strategy Author"
+      description: "Creates and tests strategy files that call TradeSpine helpers."
+    - role: "Live Operator"
+      description: "Configures risk, session, and safety inputs before trading."
+    - role: "Post-Trade Analyst"
+      description: "Reviews exported trade evidence outside the MQL5 tree."
+    - role: "Release Reviewer"
+      description: "Confirms tests, diagrams, docs, and launch gates before progression."
+  stories:
+    - id: "PRD.01.08.03b6"
+      role: "Strategy Author"
+      want: "to write a strategy as one strategy file"
+      so_that: "signal logic is not mixed with repeated execution infrastructure"
+      priority: P1
+      acceptance_criteria:
+        - "The reference strategy compiles without direct broker execution includes in the strategy file."
+        - "The strategy calls documented framework helpers for entries and exits."
+        - "The v1 strategy implementation guide explains the strategy file structure, lifecycle hooks, helper calls, common inputs, logging expectations, compile checklist, and reference-strategy walkthrough."
+      brd_reference: "@brd: BRD.01.07.88a6"
+    - id: "PRD.01.08.fde4"
+      role: "Live Operator"
+      want: "to configure safety, session, and sizing behavior per chart"
+      so_that: "framework-mediated trades respect the intended operating limits"
+      priority: P1
+      acceptance_criteria:
+        - "Unsafe framework-mediated entry attempts are rejected before broker handoff."
+        - "Daily loss, max open lots, max trades per day, and panic stop controls can stop this strategy instance."
+        - "Session and market-availability states can block new entries."
+        - "The user trading-hours window and broker trading session must both allow entries."
+      brd_reference: "@brd: BRD.01.07.a94e"
+    - id: "PRD.01.08.2f83"
+      role: "Post-Trade Analyst"
+      want: "to review trade evaluation evidence separately from diagnostic logs"
+      so_that: "strategy performance can be evaluated without mixing it with framework or strategy-code audit trails"
+      priority: P1
+      acceptance_criteria:
+        - "Intent evidence is available before broker submission."
+        - "Execution evidence includes broker outcome, intended price, actual fill price, slippage points, and strategy ownership context."
+        - "Strategy/framework diagnostic logs are separated from trade evaluation records."
+      brd_reference: "@brd: BRD.01.07.8e15"
+    - id: "PRD.01.08.628e"
+      role: "Release Reviewer"
+      want: "to validate release gates from documented evidence"
+      so_that: "the framework does not progress to code or release with unresolved P1 risks"
+      priority: P1
+      acceptance_criteria:
+        - "P1 product gates have corresponding validation evidence."
+        - "Concurrent same-symbol netting sign-off includes manual live/demo evidence because Strategy Tester cannot validate true concurrency."
+        - "Release governance checks required docs, same-change documentation updates, and CHANGELOG decision records."
+        - "Deferred scope is explicit and does not block v1.0."
+      brd_reference: "@brd: BRD.01.07.717b"
+
+## Functional Requirements
+functional_requirements:
+  core_capabilities:
+    - id: "PRD.01.09.9e71"
+      name: "Strategy authoring surface"
+      description: "TradeSpine shall expose a documented strategy template, implementation guide, lifecycle hooks, behavior-selection points, and reference strategies for B3 futures authors."
+      priority: P1
+      acceptance_criteria:
+        - id: "PRD.01.09.5ef1"
+          criterion: "Reference strategy packaging"
+          target: "Two reference strategies compile as one strategy file each plus shared framework includes"
+        - id: "PRD.01.09.eaf3"
+          criterion: "New strategy implementation guide"
+          target: "Guide covers file structure, lifecycle hooks, helper calls, common inputs, logging expectations, compile checklist, and reference strategy walkthrough"
+      brd_reference: "@brd: BRD.01.07.88a6"
+    - id: "PRD.01.09.88e3"
+      name: "Guarded execution"
+      description: "TradeSpine shall route framework-mediated entries through product safety checks before broker submission."
+      priority: P1
+      acceptance_criteria:
+        - id: "PRD.01.09.d74e"
+          criterion: "Catastrophic safety coverage"
+          target: "Unsafe framework-mediated order scenarios are rejected before broker handoff"
+        - id: "PRD.01.09.4fb4"
+          criterion: "Runtime risk controls"
+          target: "Per-EA daily loss %, max open lots, max trades per day, and strategy-scoped panic stop are available as v1 operator controls"
+        - id: "PRD.01.09.5963"
+          criterion: "Indicator readiness gate"
+          target: "Registered indicators that are not ready block entries until ready"
+        - id: "PRD.01.09.7608"
+          criterion: "Ambiguous fill or cancel ownership halts"
+          target: "Ambiguous async fill, cancel, or reconciliation state enters HALT rather than guessing ownership"
+      brd_reference: "@brd: BRD.01.07.a94e"
+    - id: "PRD.01.09.aaf8"
+      name: "Account-mode ownership"
+      description: "TradeSpine shall keep strategy ownership separate from broker exposure across netting, exchange-netting, and hedging account modes."
+      priority: P1
+      acceptance_criteria:
+        - id: "PRD.01.09.5cce"
+          criterion: "Supported account-mode validation"
+          target: "Same-symbol strategy instances keep independent ownership evidence"
+        - id: "PRD.01.09.7767"
+          criterion: "Netting ownership invariant"
+          target: "Netting and exchange-netting validation treats broker exposure as symbol-aggregate and requires strategy-scoped ownership evidence outside the aggregate broker position"
+        - id: "PRD.01.09.a252"
+          criterion: "Hedging ownership invariant"
+          target: "Hedging validation records strategy ownership per relevant broker ticket/order while preserving the same strategy-scoped evidence model"
+        - id: "PRD.01.09.3f12"
+          criterion: "Duplicate magic guard"
+          target: "Same-terminal duplicate account symbol magic attachment fails or recovers only through documented stale-marker rules"
+      brd_reference: "@brd: BRD.01.07.b44d"
+    - id: "PRD.01.09.9cac"
+      name: "B3 futures market context"
+      description: "TradeSpine shall validate symbol metadata, broker session state, and futures sizing inputs for v1 B3 futures use."
+      priority: P1
+      acceptance_criteria:
+        - id: "PRD.01.09.fada"
+          criterion: "Supported futures scope"
+          target: "WIN, WDO, IND, and DOL validation evidence exists before v1.0"
+        - id: "PRD.01.09.efcd"
+          criterion: "Two-layer session model"
+          target: "Entries require both market trade-session availability and the user trading-hours window in broker server time"
+        - id: "PRD.01.09.60ad"
+          criterion: "V1 sizing and v2 placeholder boundary"
+          target: "V1 supports futures SIZING_RISK_PERCENT and SIZING_FIXED_LOT using initialized symbol information, while equity sizing modes remain visible v2 placeholders"
+        - id: "PRD.01.09.d722"
+          criterion: "Day-trade auto-close"
+          target: "Day-trade mode performs a complete strategy stop before market session close, prevents overnight rollover, and blocks new entries for the remainder of the session"
+        - id: "PRD.01.09.42eb"
+          criterion: "Contract expiration warning"
+          target: "Supported futures symbols surface a warning at session open when the contract expires in one broker day"
+      brd_reference: "@brd: BRD.01.07.69ef"
+    - id: "PRD.01.09.baed"
+      name: "Audit evidence"
+      description: "TradeSpine shall separate strategy/framework diagnostic logs from structured trade evaluation records, while producing paired intent and execution evidence that external analytics can consume."
+      priority: P1
+      acceptance_criteria:
+        - id: "PRD.01.09.9d68"
+          criterion: "Evidence pairing"
+          target: "Accepted entry attempts have intent and execution records"
+        - id: "PRD.01.09.c622"
+          criterion: "Diagnostic and trade-evaluation evidence separation"
+          target: "Strategy/framework diagnostic logs are separate from structured trade intent and execution evidence used for strategy evaluation"
+        - id: "PRD.01.09.c1fc"
+          criterion: "Slippage evidence fields"
+          target: "Trade evaluation records capture intended price, actual fill price, and slippage points for entries and exits"
+      brd_reference: "@brd: BRD.01.07.8e15"
+    - id: "PRD.01.09.841a"
+      name: "Testability and release readiness"
+      description: "TradeSpine shall provide release evidence that validates safety, ownership, performance, and documentation gates."
+      priority: P1
+      acceptance_criteria:
+        - id: "PRD.01.09.4054"
+          criterion: "Documentation and test readiness"
+          target: "Authoring docs, reference strategies, and test evidence exist before downstream implementation sign-off"
+        - id: "PRD.01.09.0764"
+          criterion: "Manual concurrent netting evidence"
+          target: "Concurrent same-symbol netting sign-off includes a manual live or demo evidence pack in addition to automated harnesses"
+        - id: "PRD.01.09.4c66"
+          criterion: "Documentation and release governance"
+          target: "Release sign-off checks required docs, Doxygen coverage if retained, same-change documentation updates, and CHANGELOG decision record"
+        - id: "PRD.01.09.3092"
+          criterion: "Performance budgets"
+          target: "Release evidence covers tester overhead <=10%, memory <=2 MB per EA, idle tick <=50 us, and low-I/O write budgets"
+      brd_reference: "@brd: BRD.01.07.717b"
+  user_journey:
+    id: "PRD.01.09.9db1"
+    diagram:
+      type: sequenceDiagram
+      content: |
+        sequenceDiagram
+          participant Trader
+          participant Strategy
+          participant TradeSpine
+          participant Broker
+          participant Evidence
+          Trader->>Strategy: Configure inputs and start EA
+          Strategy->>TradeSpine: Request framework-mediated trade
+          alt Safety gates pass
+            TradeSpine->>Broker: Submit trade request
+            Broker-->>TradeSpine: Return outcome
+            TradeSpine->>Evidence: Write intent and execution records
+          else Safety gates fail
+            TradeSpine-->>Strategy: Reject with reason
+            TradeSpine->>Evidence: Record rejection evidence
+          end
+          Evidence-->>Trader: Support review
+  diagram_contract:
+    tags:
+      - "@diagram: c4-l2"
+      - "@diagram: dfd-l2"
+      - "@diagram: sequence-sync"
+    files:
+      - "diagrams/PRD-01-diag_container_map.md"
+      - "diagrams/PRD-01-diag_feature_data_flow.md"
+      - "diagrams/PRD-01-diag_user_journey.md"
+    rendered_svgs:
+      - "diagrams/PRD-01-diag_container_map-1.svg"
+      - "diagrams/PRD-01-diag_feature_data_flow-1.svg"
+      - "diagrams/PRD-01-diag_user_journey-1.svg"
+
+## Customer-Facing Content and Messaging
+customer_facing_content:
+  positioning: >
+    TradeSpine is a MetaTrader 5 strategy framework for B3 futures traders who
+    want strategy files to contain strategy logic while shared framework
+    services handle safety, ownership, and audit evidence.
+  key_messages:
+    - "Write strategy logic once and route framework-mediated trades through shared safety gates."
+    - "Run multiple same-symbol TradeSpine strategies with strategy-scoped ownership evidence."
+    - "Export paired trade intent and execution evidence for post-trade review."
+  feature_descriptions:
+    - name: "Strategy template"
+      description: "A starting point for creating a B3 futures strategy that uses the framework authoring surface."
+    - name: "Guarded execution"
+      description: "A product path that checks risk, session, market, and broker readiness before framework-mediated trade submission."
+    - name: "Audit exports"
+      description: "Paired records that document trade intent and broker outcome for later analysis."
+  documentation_requirements:
+    - "P1 new strategy implementation guide covering file structure, lifecycle hooks, helper calls, common inputs, logging expectations, compile checklist, and reference-strategy walkthrough."
+    - "Input reference for common risk, session, logging, and safety settings."
+    - "Evidence guide that separates strategy/framework diagnostic logs from trade evaluation records."
+    - "Testing guide for Tier-1 and release-gate validation."
+    - "Release documentation inventory covering README, ARCHITECTURE, AUTHORING, RECIPES, INPUTS_REFERENCE, TESTING, per-module docs, template README, and CHANGELOG.md as the canonical decision log."
+    - "Same-change documentation update gate and Doxygen/API documentation coverage gate if Doxygen remains part of the implementation standard."
+  error_messages:
+    - trigger: "Unsafe order request"
+      message: "Trade rejected by TradeSpine safety gate."
+      guidance: "Review lot, stop, session, and risk settings before retrying."
+    - trigger: "Ambiguous strategy ownership"
+      message: "Strategy halted until ownership state is resolved."
+      guidance: "Review the halt report and broker state before restarting."
+  success_messages:
+    - trigger: "Strategy initialized"
+      message: "TradeSpine strategy ready."
+      channel: "Journal or chart status"
+    - trigger: "Trade evidence written"
+      message: "Trade evidence recorded."
+      channel: "Journal or CSV audit output"
+
+## Acceptance Criteria
+acceptance_criteria:
+  launch_gates:
+    items:
+      - category: Functional
+        criterion: "All P1 product capabilities have downstream EARS-ready requirements."
+        threshold: "100%"
+        validation: "PRD audit and traceability review"
+      - category: Safety
+        criterion: "Framework-mediated catastrophic order scenarios are rejected before broker handoff."
+        threshold: "Pass"
+        validation: "Safety test suite"
+      - category: Risk
+        criterion: "Runtime risk controls cover daily loss %, max open lots, max trades per day, and strategy-scoped panic stop."
+        threshold: "Pass"
+        validation: "Risk-control test evidence and operator-input review"
+      - category: Ownership
+        criterion: "Same-symbol strategy ownership works in supported account modes, including manual concurrent netting evidence."
+        threshold: "Pass"
+        validation: "Automated mode-specific tests plus manual live/demo evidence pack"
+      - category: Session
+        criterion: "Entries require both broker trading-session availability and the configured user trading-hours window in broker/server time."
+        threshold: "Pass"
+        validation: "Session test evidence"
+      - category: Sizing
+        criterion: "v1 validates symbol information at init and uses it for sizing, lot, and price-grid order definition."
+        threshold: "Pass"
+        validation: "Input reference and sizing test review"
+      - category: Audit
+        criterion: "Strategy/framework diagnostic logs are separated from paired trade intent and execution records."
+        threshold: "Pass"
+        validation: "Diagnostic log and trade evidence inspection"
+      - category: Documentation
+        criterion: "New strategy implementation guide and release-governance documentation set are complete for v1 strategy authors and release reviewers."
+        threshold: "Pass"
+        validation: "Documentation review, reference-strategy walkthrough, same-change docs check, and CHANGELOG review"
+      - category: Performance
+        criterion: "Matched tester overhead, memory, idle-tick, and low-I/O budgets stay within benchmark targets."
+        threshold: "<=10% tester overhead; <=2 MB memory per EA; <=50 us idle tick; low-I/O write budgets pass"
+        validation: "Minimum benchmark protocol and release checklist"
+  business_acceptance:
+    - "Strategy author can create a reference strategy from the v1 implementation guide without duplicating broker execution infrastructure."
+    - "Operator can identify why a framework-mediated trade was rejected or accepted."
+    - "Analyst can evaluate trade records without parsing strategy/framework diagnostic logs."
+    - "Release reviewer can trace every P1 product capability to BRD source elements."
+  technical_acceptance:
+    - "Strict compile passes for framework and reference strategies."
+    - "Tier-1 test suite passes before release sign-off."
+    - "Repository checks detect prohibited direct broker submission in strategy files."
+
+## Constraints and Assumptions
+constraints_and_assumptions:
+  constraints:
+    - id: "PRD.01.12.e9ec"
+      category: Technical
+      description: "MetaTrader 5 and MQL5 are mandatory runtime and authoring targets."
+      impact: "Non-MT5 runtimes and MQL4 compatibility are out of scope."
+      brd_reference: "@brd: BRD.01.10.8d76"
+    - id: "PRD.01.12.9a32"
+      category: Product
+      description: "v1 strategy instances attach to one chart symbol."
+      impact: "Multi-symbol and portfolio behavior move to later cycles."
+      brd_reference: "@brd: BRD.01.10.b11c"
+    - id: "PRD.01.12.67aa"
+      category: Release
+      description: "v1 compile workflow uses MetaEditor."
+      impact: "Headless compile automation is deferred unless later justified."
+      brd_reference: "@brd: BRD.01.10.32c6"
+    - id: "PRD.01.12.9a58"
+      category: Product
+      description: "B3 futures sizing modes are v1 scope; equity sizing modes are visible placeholders for v2."
+      impact: "Equity sizing behavior must not be implemented or implied as production-ready in v1."
+      brd_reference: "@brd: BRD.01.10.b11c"
+  assumptions:
+    - id: "PRD.01.12.68cf"
+      assumption: "Broker metadata is sufficient for B3 futures operation."
+      validation_method: "Validate symbol, session, and account-mode behavior during release testing."
+      impact_if_false: "Block unsupported symbols or brokers."
+      brd_reference: "@brd: BRD.01.10.88ee"
+    - id: "PRD.01.12.f293"
+      assumption: "The operator manages strategy parameters and risk limits per chart."
+      validation_method: "Document inputs, default behavior, and runtime risk-control effects."
+      impact_if_false: "Block release or create a risk-policy change request."
+      brd_reference: "@brd: BRD.01.10.c6f8"
+
+## Risk Assessment
+risk_assessment:
+  risks:
+    - id: "PRD.01.13.093a"
+      description: "Unsafe framework-mediated order reaches the broker."
+      likelihood: Medium
+      impact: High
+      mitigation: "Require guarded helper routing, safety tests, and rejection evidence."
+      owner: "Technical Lead"
+      brd_reference: "@brd: BRD.01.12.5c81"
+    - id: "PRD.01.13.e18a"
+      description: "Strategy ownership drifts from broker aggregate exposure or broker ticket-level state."
+      likelihood: Medium
+      impact: High
+      mitigation: "Require explicit netting, exchange-netting, and hedging ownership evidence, account-mode tests, manual live/demo concurrent netting evidence, and halt-on-ambiguity behavior."
+      owner: "Technical Lead"
+      brd_reference: "@brd: BRD.01.12.5985"
+    - id: "PRD.01.13.9c2d"
+      description: "Release sign-off may overstate same-symbol netting safety if manual live/demo concurrency evidence is missing."
+      likelihood: Medium
+      impact: High
+      mitigation: "Require a manual concurrent netting evidence pack in addition to automated tests because Strategy Tester cannot validate true concurrency."
+      owner: "Technical Lead"
+      brd_reference: "@brd: BRD.01.12.5985"
+    - id: "PRD.01.13.f493"
+      description: "Operator may run without intended daily loss, open lots, trade count, or panic controls."
+      likelihood: Medium
+      impact: High
+      mitigation: "Expose runtime risk controls as P1 inputs and require risk-control test evidence before v1.0 sign-off."
+      owner: "Product Owner"
+      brd_reference: "@brd: BRD.01.12.5c81"
+    - id: "PRD.01.13.3e77"
+      description: "Product requirements drift from implementation during phased build."
+      likelihood: Medium
+      impact: Medium
+      mitigation: "Use aidoc traceability, audits, and same-change documentation updates."
+      owner: "Product Owner"
+      brd_reference: "@brd: BRD.01.12.0224"
+    - id: "PRD.01.13.be4b"
+      description: "Framework overhead exceeds tester or idle-operation targets."
+      likelihood: Medium
+      impact: Medium
+      mitigation: "Require benchmark evidence and low-I/O validation before v1.0 sign-off."
+      owner: "Technical Lead"
+      brd_reference: "@brd: BRD.01.07.bf02"
+    - id: "PRD.01.13.edc4"
+      description: "Release may diverge from canonical docs or changelog if same-change updates and decision records are not checked."
+      likelihood: Medium
+      impact: Medium
+      mitigation: "Require same-change documentation updates, Doxygen/API documentation gate if retained, and CHANGELOG.md release-decision review."
+      owner: "Product Owner"
+      brd_reference: "@brd: BRD.01.12.0224"
+
+## Traceability
+traceability:
+  tags:
+    - "@prd: PRD-01"
+    - "@brd: BRD.01.03.d116"
+    - "@brd: BRD.01.07.88a6"
+    - "@brd: BRD.01.07.a94e"
+    - "@brd: BRD.01.07.b44d"
+    - "@brd: BRD.01.07.69ef"
+    - "@brd: BRD.01.07.8e15"
+    - "@brd: BRD.01.07.717b"
+    - "@brd: BRD.01.07.bf02"
+    - "@brd: BRD.01.08.ab58"
+    - "@brd: BRD.01.08.cea7"
+    - "@brd: BRD.01.08.a20b"
+    - "@brd: BRD.01.08.0ce5"
+    - "@brd: BRD.01.08.8cbc"
+    - "@brd: BRD.01.08.92f4"
+  upstream:
+    brd_references:
+      - "@brd: BRD.01.03.d116"
+      - "@brd: BRD.01.04.22e9"
+      - "@brd: BRD.01.04.7b04"
+      - "@brd: BRD.01.04.4fb6"
+      - "@brd: BRD.01.07.88a6"
+      - "@brd: BRD.01.07.a94e"
+      - "@brd: BRD.01.07.b44d"
+      - "@brd: BRD.01.07.69ef"
+      - "@brd: BRD.01.07.8e15"
+      - "@brd: BRD.01.07.717b"
+      - "@brd: BRD.01.07.bf02"
+      - "@brd: BRD.01.08.ab58"
+      - "@brd: BRD.01.08.cea7"
+      - "@brd: BRD.01.08.a20b"
+      - "@brd: BRD.01.08.0ce5"
+      - "@brd: BRD.01.08.8cbc"
+      - "@brd: BRD.01.08.92f4"
+  downstream_expected:
+    - type: EARS
+      layer: 3
+      description: "Formal requirements from PRD product capabilities"
+    - type: BDD
+      layer: 4
+      description: "Executable scenarios for user journeys and acceptance gates"
+    - type: ADR
+      layer: 5
+      description: "Architecture decisions for PRD elaborated topics"
+  adr_topic_elaboration:
+    topics:
+      - id: "PRD.01.14.484d"
+        topic: "Self-contained MT5 project layout"
+        brd_reference: "@brd: BRD.01.08.ab58"
+        status: Selected-for-evaluation
+        business_driver: "Strategies must appear in MT5 Navigator while framework source stays version-controlled."
+        options: "Evaluate self-contained root, terminal include installation, and symlink-based installation against clone-to-compile workflow, permissions, and source reproducibility."
+      - id: "PRD.01.14.737b"
+        topic: "State and audit evidence model"
+        brd_reference: "@brd: BRD.01.08.cea7"
+        status: Pending
+        business_driver: "Strategy ownership and post-trade analysis require recoverable evidence."
+        options: "Evaluate terminal global variables, file snapshots, and hybrid evidence models against durability, low-I/O behavior, and recovery safety."
+      - id: "PRD.01.14.de0d"
+        topic: "Broker terminal and analytics boundary"
+        brd_reference: "@brd: BRD.01.08.a20b"
+        status: Selected-for-evaluation
+        business_driver: "MT5 is the execution environment and Python remains the analytics environment."
+        options: "Evaluate file-based handoff, terminal journal evidence, and future external API handoff against tester compatibility and operational cost."
+      - id: "PRD.01.14.8720"
+        topic: "Trading safety and bypass policy"
+        brd_reference: "@brd: BRD.01.08.0ce5"
+        status: Pending
+        business_driver: "Real-money trading requires unsafe framework-mediated requests to stop before broker handoff."
+        options: "Evaluate guard-only enforcement, repository policy checks, and release-gate tests against language-level bypass limits."
+      - id: "PRD.01.14.15fe"
+        topic: "Logging and operator alert model"
+        brd_reference: "@brd: BRD.01.08.8cbc"
+        status: Pending
+        business_driver: "Operators need clear rejection, halt, and trade outcome evidence."
+        options: "Evaluate terminal journal logging, chart status, CSV evidence, and alert-sink behavior against live and tester modes."
+      - id: "PRD.01.14.518a"
+        topic: "MQL5 stack and vendored dependency policy"
+        brd_reference: "@brd: BRD.01.08.92f4"
+        status: Selected-for-evaluation
+        business_driver: "Framework behavior must remain reproducible across terminal updates."
+        options: "Evaluate vendored standard-library subset, direct terminal standard-library use, and no-standard-library implementation against maintenance risk and reproducibility."
+  cross_links:
+    depends:
+      - "@depends: BRD-01"
+    discoverability:
+      - "@discoverability: PRD-01 (TradeSpine platform product requirements from approved BRD-01)"
+  health_score:
+    brd_coverage: "100%"
+    target_score: ">=90/100"
+  ears_cross_reference:
+    note: "EARS will formalize PRD capabilities and acceptance gates; no EARS IDs exist yet."
+
+## Glossary
+glossary:
+  terms:
+    - term: TradeSpine
+      definition: "MT5 strategy framework product for B3 futures."
+    - term: Framework-mediated trade
+      definition: "Trade action requested through TradeSpine helper and safety paths."
+    - term: Strategy ownership
+      definition: "Strategy-scoped accounting and evidence that separates one strategy from another."
+    - term: Diagnostic log
+      definition: "Strategy and framework audit trail for code-path decisions, rejections, halts, and recovery behavior."
+    - term: Trade evaluation record
+      definition: "Structured intent and execution evidence used to evaluate strategy trading outcomes."
+    - term: Netting ownership invariant
+      definition: "In netting and exchange-netting account modes, broker exposure is symbol-aggregate, so TradeSpine must preserve strategy-scoped ownership evidence outside the aggregate broker position."
+    - term: Hedging ownership invariant
+      definition: "In hedging account mode, TradeSpine records ownership against relevant broker tickets or orders while preserving the same strategy-scoped evidence model."
+    - term: Runtime risk controls
+      definition: "Per-EA limits for daily loss, max open lots, max trades per day, and a strategy-scoped panic stop."
+    - term: Strategy-scoped panic stop
+      definition: "Operator control that stops the current TradeSpine strategy instance without claiming to manage unrelated strategies."
+    - term: Two-layer session model
+      definition: "Entry gating model requiring both market trade-session availability and the configured user trading-hours window in broker/server time."
+    - term: Manual netting evidence pack
+      definition: "Live or demo evidence used to validate concurrent same-symbol netting behavior that the MT5 Strategy Tester cannot automate."
+    - term: Placeholder sizing mode
+      definition: "Visible but non-production sizing option reserved for a later release boundary."
+    - term: Duplicate magic guard
+      definition: "Initialization safety check that prevents or safely recovers duplicate account-symbol-magic ownership collisions."
+    - term: Day-trade auto-close
+      definition: "Mode that performs a complete strategy stop before market session close and prevents strategy-owned positions from rolling overnight."
+    - term: Indicator-readiness gate
+      definition: "Entry gate that blocks strategy entries while required indicator data is still loading."
+    - term: Contract expiration warning
+      definition: "Operator-facing warning at session open when a supported futures contract expires in one broker day."
+    - term: Slippage points
+      definition: "Difference between intended trade price and actual fill price recorded for trade evaluation."
+    - term: Intent evidence
+      definition: "Pre-submission record of the strategy trade request."
+    - term: Execution evidence
+      definition: "Post-submission record of broker outcome and strategy ownership state."
+    - term: EARS
+      definition: "Layer 3 formal requirements syntax used after this PRD."

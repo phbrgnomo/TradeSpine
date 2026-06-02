@@ -1,0 +1,195 @@
+---
+document_type: adr-document
+artifact_type: ADR
+layer: 5
+deliverable_type: code
+id: ADR-02
+title: GV State and CSV Audit Evidence
+status: Accepted
+created_date: "2026-06-01T20:35:00-03:00"
+last_updated: "2026-06-01T20:35:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Accepted
+  date: "2026-06-01"
+  decision_makers: ["Paulo Henrique Barreto Reboucas"]
+  author: "Codex"
+  version: "1.0"
+  originating_topic: "@prd: PRD.01.14.737b"
+  brd_reference: "@brd: BRD.01.08.cea7"
+  spec_ready_score: "94/100"
+  revision_history:
+    - version: "1.0"
+      date: "2026-06-01T20:35:00-03:00"
+      author: "Codex"
+      changes: "Initial accepted ADR generated from approved BDD-01 and PRD v3.73 source."
+
+## Section 2: Context
+context:
+  problem_statement: "TradeSpine must preserve strategy-scoped ownership and post-trade evidence without adding high-I/O live-market durability mechanisms in v1."
+  business_driver: "Operators need recoverable state and analysts need paired trade records, but performance targets forbid heavy idle-tick work."
+  key_constraints:
+    - "v1 state persistence is terminal Global Variable backed."
+    - "CSV trade evidence is written through TradeLogger under the MQL5 Files sandbox."
+    - "Ambiguous recovery must enter HALT rather than infer ownership."
+  technical_context: "BDD.01.03.0073 covers paired intent/execution evidence, BDD.01.03.d6ae covers separated logs and trade records, and BDD.01.03.e16a covers HALT-on-ambiguity."
+
+## Section 3: Decision
+decision:
+  chosen_solution:
+    id: "ADR.02.03.c7dd"
+    title: "Use terminal GV state plus paired CSV audit evidence"
+    description: "v1 stores strategy lifecycle, duplicate markers, execution locks, and virtual-ledger fields in terminal Global Variables, while TradeLogger writes paired intent and execution CSV records for trade evaluation. No custom file snapshot layer ships in v1."
+  key_components:
+    - name: "CStateStore"
+      role: "Owns GV-backed strategy state and recovery evidence."
+    - name: "TradeLogger"
+      role: "Writes paired CSV intent and execution evidence."
+    - name: "HALT state"
+      role: "Stops non-emergency behavior when recovery evidence is ambiguous."
+  implementation_approach:
+    mvp_scope: "GV state, magic-filtered broker history reconciliation, paired CSV records, and HALT on ambiguity."
+    next_cycle_scope: "Optional file snapshot or forced flush durability only if v1 evidence justifies extra I/O."
+
+## Section 4: Alternatives Considered
+alternatives:
+  options:
+    - id: "ADR.02.04.584c"
+      name: "GV state plus paired CSV evidence"
+      selected: true
+      description: "Use terminal-managed Global Variables for state and CSV files for evidence."
+      pros: ["Low idle-path I/O", "Works inside MT5 tester/live constraints", "Matches PRD recovery posture"]
+      cons: ["GV loss can force HALT instead of automatic recovery"]
+      estimated_cost: "Medium"
+      fit: Best
+    - id: "ADR.02.04.dd1d"
+      name: "Custom file snapshot state"
+      selected: false
+      description: "Persist full state snapshots to project files."
+      pros: ["Potentially stronger crash recovery"]
+      cons: ["More file I/O", "More schema/versioning work", "Tester contamination risk"]
+      rejection_reason: "Conflicts with v1 low-I/O targets until evidence proves need."
+      estimated_cost: "High"
+      fit: Good
+    - id: "ADR.02.04.f17e"
+      name: "In-memory state only"
+      selected: false
+      description: "Use runtime flags and broker state without durable local state."
+      pros: ["Lowest implementation complexity"]
+      cons: ["Cannot preserve virtual netting ownership across restart"]
+      rejection_reason: "Unsafe for netting and HALT recovery requirements."
+      estimated_cost: "Low"
+      fit: Poor
+
+## Section 5: Consequences
+consequences:
+  positive_outcomes:
+    - id: "ADR.02.05.dc3c"
+      outcome: "State recovery and audit evidence are separated but correlated by strategy-run and order-intent identifiers."
+  tradeoffs_and_risks:
+    - id: "ADR.02.05.ec17"
+      tradeoff: "GV state can be insufficient after crash or manual intervention."
+      impact: High
+      mitigation: "Enter HALT and preserve last-known state instead of guessing ownership."
+  cost_estimate:
+    mvp_cost: "Medium"
+    ongoing_monthly: "None"
+    notes: "Cost is state schema, reconciliation, and evidence formatting."
+
+## Section 6: Architecture Flow
+architecture_flow:
+  decision_sequence:
+    intent:
+      diagram_type: sequence
+      scope_boundary: "State persistence and audit evidence"
+      upstream_refs: "PRD.01.14.737b; BDD.01.03.0073; BDD.01.03.e16a"
+      downstream_refs: "SPEC state store, trade logger, recovery contracts"
+    tag: "@diagram: sequence-sync"
+    diagram:
+      type: sequenceDiagram
+      content: |
+        sequenceDiagram
+          participant Strategy
+          participant State as CStateStore
+          participant Broker
+          participant Log as TradeLogger
+          Strategy->>State: Update virtual lifecycle state
+          Strategy->>Log: Write intent record
+          Strategy->>Broker: Submit framework-mediated request
+          Broker-->>Strategy: Return outcome
+          Strategy->>State: Reconcile ownership
+          Strategy->>Log: Write execution record
+  integration_points:
+    - system: "MT5 Global Variables"
+      integration_type: "terminal state"
+      purpose: "Persist strategy-scoped state without per-tick file snapshots."
+    - system: "MQL5 Files sandbox"
+      integration_type: "CSV files"
+      purpose: "Export trade evidence for later analysis."
+
+## Section 7: Implementation Assessment
+implementation_assessment:
+  mvp_phases:
+    - phase: "State foundation"
+      scope: "CKeyBuilder, GV state store, ticket hi/lo storage, recovery matrix."
+      risk: "Incorrect reconstruction of virtual netting ownership."
+    - phase: "Evidence foundation"
+      scope: "TradeLogger intent/execution records and slippage fields."
+      risk: "Evidence pair drift if broker outcome handling is incomplete."
+  rollback_plan:
+    strategy: "Restrict release to hedging/single-EA flows until recovery evidence is fixed."
+    trigger: "Unresolved state drift in release tests."
+    estimated_effort: "High"
+  monitoring_baseline:
+    - metric: "Unresolved ownership HALT rate"
+      target: "0 in release harness except forced ambiguity cases"
+      alert_threshold: "Any unexpected HALT"
+
+## Section 8: Verification
+verification:
+  success_criteria:
+    - criterion: "Accepted entries produce paired evidence and recoverable state."
+      measurement: "BDD scenarios and state/recovery tests pass."
+  bdd_scenario_refs:
+    scenarios: ["@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.e16a"]
+
+## Section 9: Traceability
+traceability:
+  tags: ["@adr: ADR-02", "@brd: BRD.01.08.cea7", "@prd: PRD.01.14.737b", "@ears: EARS.01.03.a023", "@bdd: BDD.01.03.0073"]
+  originating_topic: "@prd: PRD.01.14.737b"
+  upstream:
+    bdd_references: ["@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.e16a"]
+    ears_references: ["@ears: EARS.01.03.a023", "@ears: EARS.01.03.fef3", "@ears: EARS.01.03.a71c", "@ears: EARS.01.03.588b", "@ears: EARS.01.04.9de6"]
+    prd_references: ["@prd: PRD.01.14.737b"]
+    brd_references: ["@brd: BRD.01.08.cea7"]
+  downstream_expected:
+    - type: SPEC
+      layer: 6
+      description: "State store, TradeLogger, recovery, and HALT component contracts."
+  cross_links:
+    depends: ["@depends: ADR-01"]
+    discoverability: ["@discoverability: ADR-02 (GV state and CSV audit evidence)"]
+  health_score:
+    spec_ready: "94%"
+    target_score: ">=90/100"
+
+## Section 10: Related Decisions
+related_decisions:
+  dependencies:
+    - adr: "ADR-01"
+      relationship: "Depends on"
+      rationale: "State and evidence files live under the self-contained project/runtime boundary."
+  supersedes:
+    items: []
+
+glossary:
+  terms:
+    - term: "Global Variable"
+      definition: "MT5 terminal-managed key/value persistence used for v1 strategy state."
+    - term: "Trade evaluation record"
+      definition: "CSV evidence used to analyze strategy trading outcomes."
+
+appendix:
+  lifecycle:
+    note: "If v1 evidence proves GV-only recovery too weak, a new ADR should evaluate durability expansion."

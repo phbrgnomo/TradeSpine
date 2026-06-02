@@ -1,0 +1,10 @@
+schema_version: "1.0.0"
+active_layers: [BRD, PRD, EARS, BDD, ADR, SPEC, TDD, IPLAN]
+section_toggles: {}
+audit_threshold: {}
+glossary:
+  "user": "trader"
+  "resource item": "position"
+  "account holder": "trader"
+  "order": "trade order"
+review_mode: team

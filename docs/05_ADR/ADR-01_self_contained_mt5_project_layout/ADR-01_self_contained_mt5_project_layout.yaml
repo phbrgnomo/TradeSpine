@@ -1,0 +1,184 @@
+---
+document_type: adr-document
+artifact_type: ADR
+layer: 5
+deliverable_type: code
+id: ADR-01
+title: Self-Contained MT5 Project Layout
+status: Accepted
+created_date: "2026-06-01T20:35:00-03:00"
+last_updated: "2026-06-01T20:35:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Accepted
+  date: "2026-06-01"
+  decision_makers: ["Paulo Henrique Barreto Reboucas"]
+  author: "Codex"
+  version: "1.0"
+  originating_topic: "@prd: PRD.01.14.484d"
+  brd_reference: "@brd: BRD.01.08.ab58"
+  spec_ready_score: "94/100"
+  revision_history:
+    - version: "1.0"
+      date: "2026-06-01T20:35:00-03:00"
+      author: "Codex"
+      changes: "Initial accepted ADR generated from approved BDD-01 and PRD v3.73 source."
+
+## Section 2: Context
+context:
+  problem_statement: "TradeSpine must be visible to MetaTrader 5 as Expert Advisors while keeping framework source, docs, tests, and vendored dependencies version-controlled under one project root."
+  business_driver: "Strategy authors need clone-to-compile behavior without copying support files into terminal-wide include locations."
+  key_constraints:
+    - "EAs must live under MQL5/Experts to appear in MT5 Navigator."
+    - "Framework includes must be quoted relative includes; symlinks and terminal-wide installation are not required."
+    - "The project root is MQL5/Experts/Main/TradeSpine."
+  technical_context: "PRD.md and architecture-diagram.html both define MQL5/Experts/Main/TradeSpine as the active root. BDD.01.03.aa68 validates reference strategy packaging, and BDD.01.03.ef54 validates release governance evidence."
+
+## Section 3: Decision
+decision:
+  chosen_solution:
+    id: "ADR.01.03.42e3"
+    title: "Use a self-contained MT5 Experts project root"
+    description: "TradeSpine will live under MQL5/Experts/Main/TradeSpine. Strategies live under Experts/, framework modules under Include/, docs and tests remain under the same root, and source files use quoted relative includes."
+  key_components:
+    - name: "Experts/"
+      role: "Holds user-visible strategy mq5 files."
+    - name: "Include/"
+      role: "Holds framework modules and vendored dependencies."
+    - name: "docs/"
+      role: "Holds aidoc-flow artifacts and release evidence."
+  implementation_approach:
+    mvp_scope: "Use the self-contained root and quoted relative includes for v1 reference strategies."
+    next_cycle_scope: "No terminal-wide installer is planned unless future distribution needs justify it."
+
+## Section 4: Alternatives Considered
+alternatives:
+  options:
+    - id: "ADR.01.04.3f9c"
+      name: "Self-contained project root"
+      selected: true
+      description: "Keep all TradeSpine project files under MQL5/Experts/Main/TradeSpine."
+      pros: ["Clone-to-compile workflow", "Version-controlled docs and dependencies", "No terminal Include pollution"]
+      cons: ["Relative include depth varies for nested strategy folders"]
+      estimated_cost: "Low"
+      fit: Best
+    - id: "ADR.01.04.dfd2"
+      name: "Terminal-wide Include installation"
+      selected: false
+      description: "Install framework files under MQL5/Include."
+      pros: ["Shorter include statements"]
+      cons: ["Breaks project self-containment", "Harder to reproduce on another terminal"]
+      rejection_reason: "Conflicts with reproducibility and repository ownership."
+      estimated_cost: "Medium"
+      fit: Poor
+    - id: "ADR.01.04.b4d5"
+      name: "Symlink-based project layout"
+      selected: false
+      description: "Keep source elsewhere and symlink into terminal folders."
+      pros: ["Could separate repo location from terminal tree"]
+      cons: ["Adds platform-specific setup", "Can fail under Windows/Wine permissions"]
+      rejection_reason: "Adds setup risk without improving v1 behavior."
+      estimated_cost: "Medium"
+      fit: Poor
+
+## Section 5: Consequences
+consequences:
+  positive_outcomes:
+    - id: "ADR.01.05.0ee2"
+      outcome: "Reference strategies can compile from a clean checkout without global terminal setup."
+  tradeoffs_and_risks:
+    - id: "ADR.01.05.f3d1"
+      tradeoff: "Strategy folders deeper than one level require longer relative include paths."
+      impact: Medium
+      mitigation: "Document include examples in AUTHORING and keep reference strategies shallow."
+  cost_estimate:
+    mvp_cost: "Low"
+    ongoing_monthly: "None"
+    notes: "Cost is documentation and compile-check discipline."
+
+## Section 6: Architecture Flow
+architecture_flow:
+  decision_sequence:
+    intent:
+      diagram_type: sequence
+      scope_boundary: "Strategy compile and include resolution"
+      upstream_refs: "PRD.01.14.484d; BDD.01.03.aa68"
+      downstream_refs: "SPEC project layout and include policy"
+    tag: "@diagram: sequence-sync"
+    diagram:
+      type: sequenceDiagram
+      content: |
+        sequenceDiagram
+          participant Author as Strategy Author
+          participant Strategy as Strategy .mq5
+          participant Include as TradeSpine Include
+          participant MetaEditor as MetaEditor
+          Author->>Strategy: Compile from Experts/Main/TradeSpine/Experts
+          Strategy->>Include: Resolve quoted relative include
+          Include-->>MetaEditor: Provide framework modules
+          MetaEditor-->>Author: Compile result
+  integration_points:
+    - system: "MetaTrader 5 Navigator"
+      integration_type: "filesystem"
+      purpose: "Discover EA files under MQL5/Experts."
+
+## Section 7: Implementation Assessment
+implementation_assessment:
+  mvp_phases:
+    - phase: "v0.1 scaffolding"
+      scope: "Create root folders and reference include paths."
+      risk: "Nested folders may use wrong relative include depth."
+  rollback_plan:
+    strategy: "Move only if an installer/distribution ADR supersedes this decision."
+    trigger: "Self-contained root blocks required distribution workflow."
+    estimated_effort: "Medium"
+  monitoring_baseline:
+    - metric: "Clean checkout compile"
+      target: "Pass"
+      alert_threshold: "Any missing include failure"
+
+## Section 8: Verification
+verification:
+  success_criteria:
+    - criterion: "Reference strategies compile from the self-contained root."
+      measurement: "MetaEditor strict compile and grep for prohibited angle-bracket framework includes."
+  bdd_scenario_refs:
+    scenarios: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.ef54"]
+
+## Section 9: Traceability
+traceability:
+  tags: ["@adr: ADR-01", "@brd: BRD.01.08.ab58", "@prd: PRD.01.14.484d", "@ears: EARS.01.03.4c3f", "@bdd: BDD.01.03.aa68"]
+  originating_topic: "@prd: PRD.01.14.484d"
+  upstream:
+    bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.ef54"]
+    ears_references: ["@ears: EARS.01.03.4c3f", "@ears: EARS.01.03.b784", "@ears: EARS.01.03.b11a"]
+    prd_references: ["@prd: PRD.01.14.484d"]
+    brd_references: ["@brd: BRD.01.08.ab58"]
+  downstream_expected:
+    - type: SPEC
+      layer: 6
+      description: "Project layout, include policy, and compile gate specification."
+  cross_links:
+    depends: []
+    discoverability: ["@discoverability: ADR-01 (self-contained MT5 project layout)"]
+  health_score:
+    spec_ready: "94%"
+    target_score: ">=90/100"
+
+## Section 10: Related Decisions
+related_decisions:
+  dependencies: []
+  supersedes:
+    items: []
+
+glossary:
+  terms:
+    - term: "Quoted relative include"
+      definition: "An MQL5 include path resolved from the including file location."
+    - term: "Self-contained root"
+      definition: "A project folder that carries strategies, framework modules, docs, tests, and vendored dependencies together."
+
+appendix:
+  lifecycle:
+    note: "If distribution requirements change, supersede this ADR rather than broadening it."

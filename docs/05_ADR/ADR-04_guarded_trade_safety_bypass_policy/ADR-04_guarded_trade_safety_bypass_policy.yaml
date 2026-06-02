@@ -1,0 +1,199 @@
+---
+document_type: adr-document
+artifact_type: ADR
+layer: 5
+deliverable_type: code
+id: ADR-04
+title: Guarded Trade Safety and Bypass Policy
+status: Accepted
+created_date: "2026-06-01T20:35:00-03:00"
+last_updated: "2026-06-01T20:35:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Accepted
+  date: "2026-06-01"
+  decision_makers: ["Paulo Henrique Barreto Reboucas"]
+  author: "Codex"
+  version: "1.0"
+  originating_topic: "@prd: PRD.01.14.8720"
+  brd_reference: "@brd: BRD.01.08.0ce5"
+  spec_ready_score: "95/100"
+  revision_history:
+    - version: "1.0"
+      date: "2026-06-01T20:35:00-03:00"
+      author: "Codex"
+      changes: "Initial accepted ADR generated from approved BDD-01 and PRD v3.73 source."
+
+## Section 2: Context
+context:
+  problem_statement: "TradeSpine must prevent catastrophic framework-mediated orders while acknowledging that MQL5 cannot technically prevent a strategy author from writing raw OrderSend code outside the framework."
+  business_driver: "Real-money operation requires unsafe helper-driven order paths to stop before broker handoff and direct broker bypasses to fail release governance."
+  key_constraints:
+    - "All supported strategy entry/exit helpers route through CTradeCoordinator and CGuardedTrade."
+    - "Language-level bypass remains possible and is controlled by repository policy and release checks."
+    - "Runtime risk controls and panic stop are strategy-scoped in v1."
+  technical_context: "BDD.01.03.9a8b validates unsafe order rejection, BDD.01.03.0ad7 validates strategy-scoped panic, and BDD.01.03.ef54 validates broker-bypass release evidence."
+
+## Section 3: Decision
+decision:
+  chosen_solution:
+    id: "ADR.04.03.7277"
+    title: "Use a single guarded trade path plus repository bypass checks"
+    description: "TradeSpine will enforce safety inside the supported helper path through CGuardedTrade, OrderCheck, margin checks, runtime risk controls, and HALT behavior, while release governance rejects strategy files that include raw broker execution bypasses."
+  key_components:
+    - name: "CTradeCoordinator"
+      role: "Builds the framework-mediated intent and routes order requests."
+    - name: "CGuardedTrade"
+      role: "Composes the private vendored CTrade and applies safety gates before broker submission."
+    - name: "Repository bypass check"
+      role: "Detects raw OrderSend and prohibited terminal trade includes in strategy files."
+  implementation_approach:
+    mvp_scope: "Guarded helper path, runtime risk controls, direct-broker bypass grep checks, and rejection evidence."
+    next_cycle_scope: "System-wide panic can be evaluated after v1 strategy-scoped controls are proven."
+
+## Section 4: Alternatives Considered
+alternatives:
+  options:
+    - id: "ADR.04.04.5842"
+      name: "Guarded helper path plus release bypass checks"
+      selected: true
+      description: "Enforce safety on framework-mediated requests and fail release if strategy code bypasses the framework."
+      pros: ["Prevents unsafe supported-path broker handoff", "Honest about MQL5 language limits", "Testable with mocks and grep checks"]
+      cons: ["Cannot prevent malicious raw MQL5 code outside release policy"]
+      estimated_cost: "Medium"
+      fit: Best
+    - id: "ADR.04.04.89e1"
+      name: "Guard-only enforcement"
+      selected: false
+      description: "Only implement CGuardedTrade and do not enforce repository bypass checks."
+      pros: ["Simpler release process"]
+      cons: ["A strategy can bypass the safe path unnoticed"]
+      rejection_reason: "Fails the real-money governance requirement."
+      estimated_cost: "Low"
+      fit: Poor
+    - id: "ADR.04.04.dc1a"
+      name: "Account-wide terminal panic and lock"
+      selected: false
+      description: "Try to enforce global account-wide safety from v1."
+      pros: ["Broader operator control"]
+      cons: ["Can affect unrelated strategies", "Requires cross-EA coordination beyond v1"]
+      rejection_reason: "Overreaches the v1 strategy-scoped safety boundary."
+      estimated_cost: "High"
+      fit: Good
+
+## Section 5: Consequences
+consequences:
+  positive_outcomes:
+    - id: "ADR.04.05.01eb"
+      outcome: "Every supported framework-mediated order path is safety-checked before broker handoff."
+  tradeoffs_and_risks:
+    - id: "ADR.04.05.10ca"
+      tradeoff: "Policy checks must remain part of release governance because MQL5 cannot block all raw broker calls."
+      impact: High
+      mitigation: "Keep grep checks and documentation release gates mandatory for v1 release sign-off."
+  cost_estimate:
+    mvp_cost: "Medium"
+    ongoing_monthly: "None"
+    notes: "Cost is guard implementation, test harnesses, and release checks."
+
+## Section 6: Architecture Flow
+architecture_flow:
+  decision_sequence:
+    intent:
+      diagram_type: sequence
+      scope_boundary: "Framework-mediated trade safety"
+      upstream_refs: "PRD.01.14.8720; BDD.01.03.9a8b"
+      downstream_refs: "SPEC guarded trade and repository policy checks"
+    tag: "@diagram: sequence-error"
+    diagram:
+      type: sequenceDiagram
+      content: |
+        sequenceDiagram
+          participant Strategy
+          participant Coordinator as CTradeCoordinator
+          participant Guard as CGuardedTrade
+          participant Broker
+          Strategy->>Coordinator: OpenLong/OpenShort/Close helper
+          Coordinator->>Guard: Submit TradeIntent
+          Guard->>Guard: Apply catastrophic, session, risk, OrderCheck, margin gates
+          alt gates pass
+            Guard->>Broker: Submit via private CTrade
+          else gates fail
+            Guard-->>Coordinator: Reject with reason
+          end
+  integration_points:
+    - system: "MT5 broker boundary"
+      integration_type: "private CTrade composition"
+      purpose: "Only reached after guarded checks pass."
+
+## Section 7: Implementation Assessment
+implementation_assessment:
+  mvp_phases:
+    - phase: "Guarded execution"
+      scope: "CGuardedTrade stages, runtime risk controls, and rejection evidence."
+      risk: "A direct broker call enters strategy code outside helpers."
+    - phase: "Release enforcement"
+      scope: "Grep checks and documentation policy for prohibited bypasses."
+      risk: "Release process skips repository checks."
+  rollback_plan:
+    strategy: "Disable live release until bypass checks and guard tests pass."
+    trigger: "Any unsafe broker handoff or direct broker bypass in release scope."
+    estimated_effort: "Medium"
+  monitoring_baseline:
+    - metric: "Unsafe broker handoff"
+      target: "0"
+      alert_threshold: "Any occurrence"
+
+## Section 8: Verification
+verification:
+  success_criteria:
+    - criterion: "Unsafe framework-mediated order scenarios are rejected before broker handoff."
+      measurement: "Safety test suite and BDD.01.03.9a8b pass."
+    - criterion: "Strategy files contain no raw broker bypass."
+      measurement: "Repository grep checks pass."
+  bdd_scenario_refs:
+    scenarios: ["@bdd: BDD.01.03.9a8b", "@bdd: BDD.01.03.0ad7", "@bdd: BDD.01.03.ef54"]
+
+## Section 9: Traceability
+traceability:
+  tags: ["@adr: ADR-04", "@brd: BRD.01.08.0ce5", "@prd: PRD.01.14.8720", "@ears: EARS.01.03.222f", "@bdd: BDD.01.03.9a8b"]
+  originating_topic: "@prd: PRD.01.14.8720"
+  upstream:
+    bdd_references: ["@bdd: BDD.01.03.9a8b", "@bdd: BDD.01.03.0ad7", "@bdd: BDD.01.03.ef54", "@bdd: BDD.01.03.c0f6"]
+    ears_references: ["@ears: EARS.01.03.222f", "@ears: EARS.01.03.7a9c", "@ears: EARS.01.03.375b", "@ears: EARS.01.03.f562", "@ears: EARS.01.03.e20a"]
+    prd_references: ["@prd: PRD.01.14.8720"]
+    brd_references: ["@brd: BRD.01.08.0ce5"]
+  downstream_expected:
+    - type: SPEC
+      layer: 6
+      description: "Guarded trade, risk-control, and repository-policy component contracts."
+  cross_links:
+    depends: ["@depends: ADR-01", "@depends: ADR-06"]
+    discoverability: ["@discoverability: ADR-04 (guarded trade safety and bypass policy)"]
+  health_score:
+    spec_ready: "95%"
+    target_score: ">=90/100"
+
+## Section 10: Related Decisions
+related_decisions:
+  dependencies:
+    - adr: "ADR-01"
+      relationship: "Depends on"
+      rationale: "Repository bypass checks run against the self-contained project layout."
+    - adr: "ADR-06"
+      relationship: "Depends on"
+      rationale: "CGuardedTrade composes the vendored CTrade selected in ADR-06."
+  supersedes:
+    items: []
+
+glossary:
+  terms:
+    - term: "Framework-mediated order"
+      definition: "Trade action requested through TradeSpine helpers and guarded by framework safety checks."
+    - term: "Bypass"
+      definition: "Direct broker call outside the supported TradeSpine helper path."
+
+appendix:
+  lifecycle:
+    note: "Account-wide panic is a separate future decision, not an expansion of this ADR."
