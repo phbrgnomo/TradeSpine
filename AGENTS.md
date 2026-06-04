@@ -1,0 +1,1 @@
+Read [CLAUDE.md](CLAUDE.md) for guidance specific to working with the TradeSpine repository.
