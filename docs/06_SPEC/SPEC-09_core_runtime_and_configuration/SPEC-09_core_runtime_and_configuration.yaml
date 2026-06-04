@@ -1,0 +1,231 @@
+---
+document_type: spec-document
+artifact_type: SPEC
+layer: 6
+deliverable_type: code
+id: SPEC-09
+title: Core Runtime and Configuration
+status: Draft
+created_date: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-02T00:20:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-02T00:20:00-03:00"
+  author: "Codex"
+  component: "OptContext, SafeMath, Profiler, CommonInputs, CNewBarDetector"
+  tdd_ready_score: "93/100"
+
+## Section 2: Component Overview
+component_overview:
+  description: "The core runtime component provides shared configuration binding, optimization-mode awareness, safe numeric helpers, low-overhead profiling hooks, and bar/time detection primitives consumed by strategy, coordinator, execution, persistence, and testing modules."
+  architecture_decision: "@adr: ADR.10.03.51ea"
+  diagram:
+    tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
+    mermaid: |
+      flowchart LR
+        Inputs["CommonInputs"] --> Runtime["OptContext"]
+        Runtime --> Coordinator["CTradeCoordinator"]
+        Runtime --> Logging["Evidence/logging"]
+        SafeMath["SafeMath"] --> Sizing["Sizing/stops"]
+        Profiler["Profiler"] --> Release["Performance evidence"]
+        Bars["CNewBarDetector"] --> Strategy["Strategy hooks"]
+  language: "MQL5"
+  dependencies:
+    - name: "MQL5 terminal environment"
+      version: "v1"
+      purpose: "Provides tester, optimization, time, symbol, and account primitives."
+    - name: "Persistence boundary"
+      version: "v1"
+      purpose: "Consumes optimization-aware logging and profiling decisions."
+    - name: "Strategy authoring surface"
+      version: "v1"
+      purpose: "Consumes common inputs and new-bar/time helpers."
+
+## Section 3: Interfaces
+interfaces:
+  exports:
+    - name: "IClock"
+      type: "interface"
+      signature: "interface IClock"
+      description: "Time source seam for broker time, local test time, timeout checks, and deterministic test advancement."
+      errors:
+        - "None; unavailable runtime time sources are surfaced by concrete implementations."
+    - name: "CommonInputs"
+      type: "struct"
+      signature: "struct CommonInputs"
+      description: "Canonical framework input binding for magic, mode, session, sizing, risk, logging, and documentation-visible strategy settings."
+      errors:
+        - "INIT_FAILED when required input combinations are invalid or unsupported in v1."
+    - name: "OptContext"
+      type: "class"
+      signature: "class OptContext"
+      description: "Detects tester/optimization/live mode and exposes policy decisions for logging, diagnostics, profiling, and release evidence."
+      errors:
+        - "None; invalid environment reads default to conservative live-safe behavior."
+    - name: "SafeMath"
+      type: "namespace"
+      signature: "namespace SafeMath"
+      description: "Shared numeric normalization, finite-value, price-grid, lot-grid, and comparison helpers."
+      errors:
+        - "False/0.0 sentinel when value cannot be normalized safely."
+    - name: "Profiler"
+      type: "class"
+      signature: "class Profiler"
+      description: "Low-overhead timing and memory-budget evidence helper gated by runtime context."
+      errors:
+        - "Disabled in hot paths unless explicitly enabled for evidence."
+    - name: "CNewBarDetector"
+      type: "class"
+      signature: "class CNewBarDetector"
+      description: "Bar-transition detector used by strategies to avoid duplicate per-bar signal evaluation."
+      errors:
+        - "False when history/time context is unavailable."
+
+## Section 4: Data Models
+data_models:
+  models:
+    - name: "CommonInputs"
+      type: "struct"
+      fields:
+        - name: "magic"
+          type: "ulong"
+          required: true
+          description: "Strategy magic number used for ownership, duplicate detection, and evidence."
+        - name: "account_mode_policy"
+          type: "ENUM_ACCOUNT_MODE_POLICY"
+          required: true
+          description: "Account-mode declaration: hedging is executable in v1; netting and exchange-netting are selectable diagnostics that fail initialization as deferred v2+ modes."
+        - name: "session_mode"
+          type: "ENUM_SESSION_MODE"
+          required: true
+          description: "Market day-trade or user-defined entry-session behavior."
+        - name: "sizing_mode"
+          type: "ENUM_SIZING_MODE"
+          required: true
+          description: "v1 fixed-lot or futures risk-percent mode; v2 placeholders are rejected visibly."
+        - name: "audit_in_optimization"
+          type: "bool"
+          required: true
+          description: "Controls whether high-volume evidence is enabled during optimization passes."
+    - name: "RuntimeMode"
+      type: "struct"
+      fields:
+        - name: "is_tester"
+          type: "bool"
+          required: true
+          description: "Whether execution is inside Strategy Tester."
+        - name: "is_optimization"
+          type: "bool"
+          required: true
+          description: "Whether execution is an optimization pass."
+        - name: "diagnostics_enabled"
+          type: "bool"
+          required: true
+          description: "Whether detailed diagnostics are allowed for the current runtime mode."
+    - name: "ProfileSample"
+      type: "struct"
+      fields:
+        - name: "scope"
+          type: "string"
+          required: true
+          description: "Measured component or operation."
+        - name: "elapsed_us"
+          type: "long"
+          required: true
+          description: "Measured elapsed time in microseconds."
+        - name: "enabled"
+          type: "bool"
+          required: true
+          description: "Whether this sample was collected under the active profiling policy."
+    - name: "BenchmarkBaseline"
+      type: "struct"
+      fields:
+        - name: "scenario"
+          type: "string"
+          required: true
+          description: "Benchmark harness scenario name."
+        - name: "baseline_memory"
+          type: "long"
+          required: true
+          description: "Memory reading captured before component under test is attached."
+        - name: "component_memory_delta"
+          type: "long"
+          required: true
+          description: "Measured memory delta used for per-EA budget evidence."
+        - name: "timing_source"
+          type: "string"
+          required: true
+          description: "Runtime timing source used by the benchmark harness."
+
+## Section 5: Behavior
+behavior:
+  validation_rules:
+    - rule: "CommonInputs SHALL expose the documented v1 strategy authoring settings and reject unsupported v2 placeholder selections visibly."
+      source: "@ears: EARS.01.03.0c0a"
+    - rule: "Optimization-mode logging and profiling SHALL avoid high-I/O work unless explicitly enabled for audit evidence."
+      source: "@ears: EARS.01.03.c5b7"
+    - rule: "SafeMath SHALL centralize finite-number, price-grid, lot-grid, and tolerance checks used by sizing, stops, and execution guards."
+      source: "@ears: EARS.01.03.ec72"
+    - rule: "Performance evidence SHALL include tester overhead, per-EA memory, and idle-tick overhead budgets."
+      source: "@ears: EARS.01.03.8044"
+    - rule: "Memory-budget evidence SHALL use a documented baseline-and-delta harness rather than claiming exact per-object memory attribution."
+      source: "@ears: EARS.01.03.8044"
+  state_transitions:
+    - from: "RuntimeUnbound"
+      to: "RuntimeReady"
+      trigger: "CommonInputs and OptContext initialize successfully."
+      source: "@bdd: BDD.01.03.aa68"
+  error_handling:
+    - condition: "Unsupported v2 placeholder input is selected in v1."
+      response: "Fail initialization or visibly reject the feature without silently mapping it to a v1 behavior."
+      source: "@bdd: BDD.01.03.cb03"
+    - condition: "Profiler is invoked on a disabled hot path."
+      response: "Return without I/O or persistent writes."
+      source: "@bdd: BDD.01.03.b37d"
+
+## Section 6: Implementation Notes
+implementation_notes:
+  constraints:
+    - "Core runtime utilities MUST NOT call broker execution APIs."
+    - "Profiler and OptContext MUST be dependency-injectable for Tier-1 tests."
+    - "CommonInputs is the canonical source for framework-wide input names; strategy templates document only their strategy-specific additions."
+    - "Memory evidence MUST record the benchmark baseline, component delta, terminal/build context, and scenario name."
+  patterns:
+    - "Use pure functions in SafeMath where no terminal state is needed."
+    - "Use lightweight runtime-mode predicates before diagnostic or evidence writes."
+    - "Use CNewBarDetector inside strategy hook code, not as a framework-level hidden signal scheduler."
+    - "Use documented MQL runtime timing and memory introspection APIs through Profiler rather than direct calls scattered across components."
+  performance_considerations:
+    - "Runtime helpers must respect @threshold: PRD.01.perf.idle_tick, @threshold: PRD.01.perf.memory_per_ea, and @threshold: PRD.01.perf.tester_overhead."
+
+## Section 7: Downstream TDD Contracts
+tdd_contracts:
+  tdd_document: "@tdd: TDD.09.04.f745"
+  test_files:
+    - path: "Scripts/Tests/Test_CommonInputs.mq5"
+      covers: "Input validation, v1/v2 boundary rejection, and strategy guide alignment."
+    - path: "Scripts/Tests/Test_OptContextProfiler.mq5"
+      covers: "Tester/optimization policy, diagnostic gating, and profile sample enablement."
+    - path: "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
+      covers: "Numeric normalization, grid snapping, finite checks, and new-bar detection."
+
+## Section 8: Traceability
+traceability:
+  tags: ["@spec: SPEC-09", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.841a", "@ears: EARS.01.03.0c0a", "@bdd: BDD.01.03.aa68", "@adr: ADR.10.03.51ea"]
+  upstream:
+    adr_references: ["@adr: ADR.03.03.4124", "@adr: ADR.09.03.84b9", "@adr: ADR.10.03.51ea"]
+    bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.b37d", "@bdd: BDD.01.03.cb03"]
+    ears_references: ["@ears: EARS.01.03.0c0a", "@ears: EARS.01.03.c5b7", "@ears: EARS.01.03.ec72", "@ears: EARS.01.03.8044"]
+    prd_references: ["@prd: PRD.01.09.841a", "@prd: PRD.01.09.3092", "@prd: PRD.01.14.8720", "@prd: PRD.01.13.edc4"]
+    brd_references: ["@brd: BRD.01.07.88a6", "@brd: BRD.01.08.0ce5"]
+  downstream:
+    - type: TDD
+      layer: 7
+      description: "Core runtime, common input, profiling, SafeMath, and new-bar utility tests."
+  health_score:
+    tdd_ready: "93%"
+    target_score: ">=90/100"

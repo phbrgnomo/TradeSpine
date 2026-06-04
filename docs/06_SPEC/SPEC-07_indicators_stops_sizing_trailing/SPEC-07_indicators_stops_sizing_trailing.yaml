@@ -1,0 +1,228 @@
+---
+document_type: spec-document
+artifact_type: SPEC
+layer: 6
+deliverable_type: code
+id: SPEC-07
+title: Indicators Stops Sizing and Trailing
+status: Draft
+created_date: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-02T00:40:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Draft
+  version: "1.1"
+  date_created: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-02T00:40:00-03:00"
+  author: "Codex"
+  component: "IIndicator, stop, sizing, and trailing policy modules"
+  tdd_ready_score: "93/100"
+
+## Section 2: Component Overview
+component_overview:
+  description: "The pluggable behavior component defines the indicator wrappers, stop-policy interface, futures sizing modes, v2 sizing placeholders, and trailing policy contracts used by strategy classes. Strategy code owns indicator-readiness decisions and trailing invocation; the coordinator consumes only normalized stop and sizing outputs for TradeIntent construction."
+  architecture_decision: "@adr: ADR.10.03.51ea"
+  diagram:
+    tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
+    mermaid: |
+      flowchart LR
+        Strategy["Strategy class"] --> Indicators["IIndicator"]
+        Strategy --> Stops["IStopPolicy"]
+        Strategy --> Sizer["IPositionSizer"]
+        Strategy --> Trail["ITrailingStop"]
+        Indicators --> StrategyReady["Strategy readiness gate"]
+        Stops --> Coordinator
+        Sizer --> Coordinator
+        Trail --> Position["Position operations"]
+  language: "MQL5"
+  dependencies:
+    - name: "CSymbolContext"
+      version: "v1"
+      purpose: "Provides symbol metadata for sizing, price grid, and lot normalization."
+    - name: "CTradeCoordinator"
+      version: "v1"
+      purpose: "Consumes stop and sizing policy outputs."
+    - name: "CPositionContext"
+      version: "v1"
+      purpose: "Applies trailing and management operations to strategy-owned exposure."
+
+## Section 3: Interfaces
+interfaces:
+  exports:
+    - name: "IIndicator"
+      type: "interface"
+      signature: "interface IIndicator"
+      description: "Indicator readiness and handle contract for native and custom wrappers consumed by strategy-layer readiness checks."
+      errors:
+        - "NotReady: indicator history or buffer data is unavailable."
+    - name: "CIndicatorBase"
+      type: "class"
+      signature: "class CIndicatorBase : public IIndicator"
+      description: "Base wrapper for handle lifecycle, buffer reads, and readiness."
+      errors:
+        - "InitFailed: indicator handle cannot be created."
+    - name: "IStopPolicy"
+      type: "interface"
+      signature: "interface IStopPolicy { StopLevels ComputeStops(const Signal &signal, double entry); }"
+      description: "Computes initial SL/TP when a strategy helper leaves stops unset."
+      errors:
+        - "InvalidStops: returns unusable stop distance for coordinator rejection."
+    - name: "IPositionSizer"
+      type: "interface"
+      signature: "interface IPositionSizer { double CalcLots(const SizingRequest &request); }"
+      description: "Calculates broker-normalized lots for supported sizing modes."
+      errors:
+        - "0.0: sizing anomaly or v2 placeholder selection."
+    - name: "ITrailingStop"
+      type: "interface"
+      signature: "interface ITrailingStop { double ProposeNewSL(ulong ticket, double current_price); }"
+      description: "Proposes tighten-only ongoing stop movement."
+      errors:
+        - "0.0: no trailing change."
+    - name: "IndATR, IndMA, IndDonchian, IndSupertrend"
+      type: "classes"
+      signature: "class IndATR/IndMA/IndDonchian/IndSupertrend : public CIndicatorBase"
+      description: "v1 concrete indicator wrappers for the simple samples and approved hedging port dependencies."
+      errors:
+        - "InitFailed or NotReady when handle creation, history loading, or buffer reads are unavailable."
+    - name: "CStopATR, CStopFixed, CStopSwing"
+      type: "classes"
+      signature: "class CStopATR/CStopFixed/CStopSwing : public IStopPolicy"
+      description: "v1 initial stop policies for ATR distance, fixed distance, and swing-level stops."
+      errors:
+        - "InvalidStops: no executable risk distance can be produced."
+    - name: "CTrailATRMultiple, CTrailBreakeven"
+      type: "classes"
+      signature: "class CTrailATRMultiple/CTrailBreakeven : public ITrailingStop"
+      description: "v1 strategy-owned trailing policies for ATR-multiple and breakeven stop proposals."
+      errors:
+        - "0.0: no tighten-only stop change is valid."
+
+## Section 4: Data Models
+data_models:
+  models:
+    - name: "StopLevels"
+      type: "struct"
+      fields:
+        - name: "sl_price"
+          type: "double"
+          required: true
+          description: "Initial stop loss price or unset marker."
+        - name: "tp_price"
+          type: "double"
+          required: false
+          description: "Initial take profit price or unset marker."
+        - name: "sl_distance"
+          type: "double"
+          required: true
+          description: "Positive risk distance required for executable risk sizing."
+    - name: "SizingRequest"
+      type: "struct"
+      fields:
+        - name: "side"
+          type: "ENUM_POSITION_SIDE"
+          required: true
+          description: "Long or short side."
+        - name: "entry"
+          type: "double"
+          required: true
+          description: "Resolved entry price."
+        - name: "sl_price"
+          type: "double"
+          required: true
+          description: "Resolved stop-loss price."
+        - name: "risk_percent"
+          type: "double"
+          required: true
+          description: "Strategy risk percentage input."
+    - name: "IndicatorValue"
+      type: "struct"
+      fields:
+        - name: "ready"
+          type: "bool"
+          required: true
+          description: "Whether value is safe for strategy use."
+        - name: "value"
+          type: "double"
+          required: false
+          description: "Indicator buffer value."
+
+## Section 5: Behavior
+behavior:
+  validation_rules:
+    - rule: "Registered indicators that are not ready SHALL block entries."
+      source: "@ears: EARS.01.03.4e80"
+    - rule: "Indicator readiness SHALL be checked at the strategy layer before helper requests are sent to the coordinator."
+      source: "@ears: EARS.01.03.4e80"
+    - rule: "Futures risk-percent sizing SHALL use initialized symbol information."
+      source: "@ears: EARS.01.03.5e92"
+    - rule: "Fixed-lot sizing SHALL normalize fixed lots against initialized symbol information."
+      source: "@ears: EARS.01.03.bc8b"
+    - rule: "Equity sizing modes selected in v1 SHALL reject as visible v2 placeholders."
+      source: "@ears: EARS.01.03.932d"
+    - rule: "All v1 concrete stop and sizing policies SHALL validate symbol-derived lot, price-grid, and stop-distance constraints before coordinator submission."
+      source: "@ears: EARS.01.03.ec72"
+    - rule: "Trailing policies SHALL only propose tighten-only stop changes and SHALL be invoked by strategy management code, not by the framework idle path."
+      source: "@prd: PRD.01.09.5963"
+  state_transitions:
+    - from: "IndicatorNotReady"
+      to: "IndicatorReady"
+      trigger: "Registered indicator reports required history and buffer readiness."
+      source: "@bdd: BDD.01.03.c0f6"
+  error_handling:
+    - condition: "Sizing mode cannot produce executable lots."
+      response: "Return 0.0 and let coordinator reject without broker submission."
+      source: "@bdd: BDD.01.03.e593"
+    - condition: "Equity sizing placeholder is selected in v1."
+      response: "Reject visibly and do not execute as futures sizing."
+      source: "@bdd: BDD.01.03.cb03"
+    - condition: "Concrete indicator wrapper cannot create a handle or read required buffers."
+      response: "Report not-ready or init failure and block entries using that dependency."
+      source: "@bdd: BDD.01.03.c0f6"
+    - condition: "Stop policy computes a side-inverted, off-grid, or zero-distance stop."
+      response: "Return InvalidStops so the coordinator rejects before sizing."
+      source: "@bdd: BDD.01.03.e593"
+
+## Section 6: Implementation Notes
+implementation_notes:
+  constraints:
+    - "v1 active sizing modes are futures risk percent and fixed lot; equity modes are placeholders."
+    - "v1 active native indicators are limited to wrappers required by the simple samples, approved hedging ports, and approved custom indicators."
+    - "Trailing is strategy-owned in OnManagePosition and the framework MUST NOT auto-call trailing."
+    - "Indicator readiness is strategy-owned; the coordinator may defensively reject unresolved requests but MUST NOT own indicator-readiness decisions."
+  patterns:
+    - "Use enum-selected member policy objects rather than conditional feature branches."
+    - "Use one file per indicator wrapper under Native or Custom."
+    - "Use pure namespace functions for stateless sizing and stop-distance math."
+    - "Map v1 enum values explicitly to IndATR, IndMA, IndDonchian, IndSupertrend, CStopATR, CStopFixed, CStopSwing, CTrailATRMultiple, and CTrailBreakeven."
+  performance_considerations:
+    - "Indicator caching is optional and off by default unless a SPEC/TDD case proves safe value reuse."
+
+## Section 7: Downstream TDD Contracts
+tdd_contracts:
+  tdd_document: "@tdd: TDD.07.04.a6d8"
+  test_files:
+    - path: "Scripts/Tests/Test_Indicators.mq5"
+      covers: "Handle lifecycle, readiness, CopyBufferSafe, and reference wrappers."
+    - path: "Scripts/Tests/Test_Sizers.mq5"
+      covers: "Futures risk percent, fixed lot, broker snap/clamp, anomalies, and v2 placeholders."
+    - path: "Scripts/Tests/Test_StopsAndTrailing.mq5"
+      covers: "Stop policies, invalid stop sentinel, tighten-only trailing, and layered exit coexistence."
+
+## Section 8: Traceability
+traceability:
+  tags: ["@spec: SPEC-07", "@brd: BRD.01.07.69ef", "@prd: PRD.01.09.60ad", "@ears: EARS.01.03.5e92", "@bdd: BDD.01.03.e593", "@adr: ADR.10.03.51ea"]
+  upstream:
+    adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.09.03.84b9", "@adr: ADR.10.03.51ea"]
+    bdd_references: ["@bdd: BDD.01.03.c0f6", "@bdd: BDD.01.03.e593", "@bdd: BDD.01.03.cb03", "@bdd: BDD.01.03.aa68"]
+    ears_references: ["@ears: EARS.01.03.4e80", "@ears: EARS.01.03.5e92", "@ears: EARS.01.03.bc8b", "@ears: EARS.01.03.932d", "@ears: EARS.01.03.ec72"]
+    prd_references: ["@prd: PRD.01.09.5963", "@prd: PRD.01.09.60ad", "@prd: PRD.01.09.eaf3"]
+    brd_references: ["@brd: BRD.01.07.69ef", "@brd: BRD.01.07.88a6"]
+  downstream:
+    - type: TDD
+      layer: 7
+      description: "Indicator, stop, sizing, and trailing policy test cases."
+  health_score:
+    tdd_ready: "93%"
+    target_score: ">=90/100"

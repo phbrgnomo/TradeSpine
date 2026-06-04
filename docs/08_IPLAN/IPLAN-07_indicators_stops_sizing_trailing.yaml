@@ -1,0 +1,139 @@
+metadata:
+  schema_version: "1.0"
+  document_type: "iplan-document"
+  artifact_type: "IPLAN"
+  layer: 8
+  iplan_id: "IPLAN-07"
+  source_spec: "@spec: SPEC-07"
+  source_tdd: "@tdd: TDD.07.04.a6d8"
+  total_sections: 6
+  last_updated: "2026-06-03T00:00:00-03:00"
+  tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
+
+document_control:
+  iplan_id: "IPLAN-07"
+  source_spec: "@spec: SPEC-07"
+  source_tdd: "@tdd: TDD.07.04.a6d8"
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-03T00:00:00-03:00"
+  author: "Codex"
+  component: "IIndicator, stop, sizing, and trailing policy modules"
+  complexity: 5
+  estimated_files: 8
+  session_count: 0
+  readiness_gate: "TDD-07 audit PASS 94/100"
+  source_inputs:
+    - "../07_TDD/TDD-07_indicators_stops_sizing_trailing/TDD-07_indicators_stops_sizing_trailing.yaml"
+    - "../06_SPEC/SPEC-07_indicators_stops_sizing_trailing/SPEC-07_indicators_stops_sizing_trailing.yaml"
+    - "../../Project/PRD.md"
+    - "../../Project/architecture-diagram.html"
+
+file_manifest:
+  files:
+    - path: "Scripts/Tests/Test_Indicators.mq5"
+      order: 1
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Handle lifecycle, readiness, CopyBufferSafe, and reference wrapper tests."
+    - path: "Scripts/Tests/Test_Sizers.mq5"
+      order: 2
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Futures risk percent, fixed lot, broker snap/clamp, anomalies, and v2 placeholder tests."
+    - path: "Scripts/Tests/Test_StopsAndTrailing.mq5"
+      order: 3
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Stop policy, invalid stop sentinel, tighten-only trailing, and layered-exit tests."
+    - path: "Include/Indicators/IndicatorBase.mqh"
+      order: 4
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "IIndicator interface, handle lifecycle, readiness, and CopyBuffer helper."
+    - path: "Include/Indicators/NativeIndicators.mqh"
+      order: 5
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "IndATR, IndMA, IndDonchian, and IndSupertrend wrappers."
+    - path: "Include/Strategy/Stops/StopPolicies.mqh"
+      order: 6
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "IStopPolicy, CStopATR, CStopFixed, and CStopSwing."
+    - path: "Include/Strategy/Sizing/Sizers.mqh"
+      order: 7
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "IPositionSizer, futures risk-percent sizing, fixed lot, and v2 placeholders."
+    - path: "Include/Strategy/Trailing/TrailingStops.mqh"
+      order: 8
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "ITrailingStop, ATR multiple, and breakeven tighten-only policies."
+
+execution_commands:
+  cwd: "MQL5/Experts/Main/TradeSpine"
+  setup:
+    - "mkdir -p Include/Indicators Include/Strategy/Stops Include/Strategy/Sizing Include/Strategy/Trailing Scripts/Tests"
+  implementation:
+    - "# Write TDD-07 tests first, then implement indicator wrappers, stop policies, sizers, and trailing policies."
+    - "# Keep indicator readiness strategy-owned and make v2 equity sizing placeholders visibly reject in v1."
+  validation:
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_Indicators.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_Sizers.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_StopsAndTrailing.mq5"
+
+implementation_contracts:
+  provided:
+    contracts:
+      - name: "Pluggable behavior interfaces"
+        type: "Protocol Interface"
+        files: ["Include/Indicators/IndicatorBase.mqh", "Include/Strategy/Stops/StopPolicies.mqh", "Include/Strategy/Sizing/Sizers.mqh", "Include/Strategy/Trailing/TrailingStops.mqh"]
+        summary: "Strategies compose indicators, stop policies, sizers, and trailing policies as swappable members."
+      - name: "Sizing and stop data contract"
+        type: "Data Model"
+        files: ["Include/Strategy/Stops/StopPolicies.mqh", "Include/Strategy/Sizing/Sizers.mqh"]
+        summary: "StopLevels and SizingRequest preserve executable stop distance and broker-normalized lot behavior."
+  consumed:
+    dependencies:
+      - "@iplan: IPLAN-06"
+      - "@iplan: IPLAN-09"
+      - "@iplan: IPLAN-11"
+
+session_handoff:
+  sessions:
+    - date: "2026-06-03"
+      agent: "Codex IPLAN autopilot"
+      files_touched: []
+      partial_work: "No implementation started; this seed session only created the execution plan."
+      blockers: "Requires market symbol metadata, runtime helpers, and test support."
+      next_session_directive: "Start with Scripts/Tests/Test_Indicators.mq5 and implement IndicatorBase readiness semantics."
+      validation_results:
+        tests_passing: null
+        coverage: null
+        lint_clean: null
+
+traceability:
+  upstream:
+    spec_references: ["@spec: SPEC-07"]
+    tdd_references: ["@tdd: TDD.07.04.a6d8"]
+    brd_references: ["@brd: BRD.01.07.69ef", "@brd: BRD.01.07.88a6"]
+    prd_references: ["@prd: PRD.01.09.5963", "@prd: PRD.01.09.60ad", "@prd: PRD.01.09.eaf3"]
+    ears_references: ["@ears: EARS.01.03.4e80", "@ears: EARS.01.03.5e92", "@ears: EARS.01.03.bc8b", "@ears: EARS.01.03.932d", "@ears: EARS.01.03.ec72"]
+    bdd_references: ["@bdd: BDD.01.03.c0f6", "@bdd: BDD.01.03.e593", "@bdd: BDD.01.03.cb03", "@bdd: BDD.01.03.aa68"]
+    adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.09.03.84b9", "@adr: ADR.10.03.51ea"]
+  downstream:
+    code_paths: ["@code: Include/Indicators/IndicatorBase.mqh", "@code: Include/Indicators/NativeIndicators.mqh", "@code: Include/Strategy/Stops/StopPolicies.mqh", "@code: Include/Strategy/Sizing/Sizers.mqh", "@code: Include/Strategy/Trailing/TrailingStops.mqh"]
+    test_paths: ["@tests: Scripts/Tests/Test_Indicators.mq5", "@tests: Scripts/Tests/Test_Sizers.mq5", "@tests: Scripts/Tests/Test_StopsAndTrailing.mq5"]
+  code_inventory:
+    files: []

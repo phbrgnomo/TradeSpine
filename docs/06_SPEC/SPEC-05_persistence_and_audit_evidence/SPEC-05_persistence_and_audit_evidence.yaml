@@ -1,0 +1,230 @@
+---
+document_type: spec-document
+artifact_type: SPEC
+layer: 6
+deliverable_type: code
+id: SPEC-05
+title: Persistence and Audit Evidence
+status: Draft
+created_date: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-02T00:20:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-02T00:20:00-03:00"
+  author: "Codex"
+  component: "CStateStore, CKeyBuilder, TradeLogger, Logger, AlertSink"
+  tdd_ready_score: "94/100"
+
+## Section 2: Component Overview
+component_overview:
+  description: "The persistence and evidence component stores low-I/O strategy state in terminal Global Variables, builds deterministic hashed keys, writes paired trade evidence CSV records, keeps diagnostic logs separate, and raises operator alerts for HALT and unsafe states."
+  architecture_decision: "@adr: ADR.02.03.c7dd"
+  diagram:
+    tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
+    mermaid: |
+      flowchart LR
+        Strategy["Strategy/Coordinator"] --> Key["CKeyBuilder"]
+        Key --> Store["CStateStore"]
+        Store --> GV["MT5 Global Variables"]
+        Strategy --> TradeLog["TradeLogger"]
+        TradeLog --> CSV["MQL5 Files CSV"]
+        Logger["Logger"] --> Journal["Terminal Journal"]
+        Logger --> Alert["IAlertSink"]
+  language: "MQL5"
+  dependencies:
+    - name: "MT5 Global Variables"
+      version: "terminal-managed"
+      purpose: "Persist scalar double-encoded strategy state, duplicate markers, locks, and HALT flags under documented terminal key constraints."
+    - name: "MQL5 Files sandbox"
+      version: "terminal-managed"
+      purpose: "Write trade evaluation CSV records and optional diagnostic files."
+    - name: "OptContext"
+      version: "v1"
+      purpose: "Suppress nonessential logging and persistence during optimization."
+
+## Section 3: Interfaces
+interfaces:
+  exports:
+    - name: "IStateStore"
+      type: "interface"
+      signature: "interface IStateStore"
+      description: "Persistence seam for scalar state, hedging ticket state, identity markers, duplicate markers, deferred-mode diagnostics, and HALT flags. Virtual ledger fragments are v2+ scope."
+      errors:
+        - "StateCorruption: identity mismatch or unrecoverable missing active ownership evidence."
+    - name: "CKeyBuilder"
+      type: "class"
+      signature: "class CKeyBuilder"
+      description: "Builds deterministic hashed GV names from canonical strategy identity fields."
+      errors:
+        - "KeyCollision: stored identity hash does not match expected identity."
+    - name: "CStateStore"
+      type: "class"
+      signature: "class CStateStore : public IStateStore"
+      description: "Reads and writes GV-backed strategy state with lossless ticket storage."
+      errors:
+        - "StateCorruption: identity mismatch or unrecoverable missing active ownership evidence."
+    - name: "TradeLogger"
+      type: "class"
+      signature: "class TradeLogger"
+      description: "Writes paired intent and execution records for trade evaluation."
+      errors:
+        - "LogFailure: evidence write failed; component returns status for caller policy."
+    - name: "Logger"
+      type: "class"
+      signature: "class Logger"
+      description: "Writes leveled diagnostic messages separate from trade evaluation records."
+      errors:
+        - "None; logging failures are reported as diagnostics where possible."
+    - name: "IAlertSink"
+      type: "interface"
+      signature: "interface IAlertSink"
+      description: "Routes HALT and operator-facing alert payloads by runtime mode."
+      errors:
+        - "None; unavailable UI alerts degrade to log-only sink."
+
+## Section 4: Data Models
+data_models:
+  models:
+    - name: "CanonicalIdentity"
+      type: "struct"
+      fields:
+        - name: "account"
+          type: "long"
+          required: true
+          description: "Account login."
+        - name: "symbol"
+          type: "string"
+          required: true
+          description: "Strategy symbol."
+        - name: "magic"
+          type: "ulong"
+          required: true
+          description: "Strategy magic number."
+        - name: "scope"
+          type: "string"
+          required: true
+          description: "GV namespace scope."
+    - name: "TradeEvidenceRecord"
+      type: "struct"
+      fields:
+        - name: "record_type"
+          type: "ENUM_TRADE_RECORD_TYPE"
+          required: true
+          description: "Intent or execution."
+        - name: "strategy_run_id"
+          type: "string"
+          required: true
+          description: "Correlates records within one strategy lifecycle."
+        - name: "order_intent_id"
+          type: "string"
+          required: true
+          description: "Pairs intent and execution rows."
+        - name: "broker_outcome"
+          type: "string"
+          required: false
+          description: "Broker retcode, deal, order, fill, or rejection evidence."
+    - name: "HaltEvidence"
+      type: "struct"
+      fields:
+        - name: "reason"
+          type: "string"
+          required: true
+          description: "HALT reason."
+        - name: "last_known_state"
+          type: "ENUM_POSITION_STATE"
+          required: true
+          description: "Preserved lifecycle state."
+        - name: "operator_action"
+          type: "string"
+          required: true
+          description: "Recovery instruction shown to the operator."
+    - name: "GlobalVariableScalarState"
+      type: "struct"
+      fields:
+        - name: "key"
+          type: "string"
+          required: true
+          description: "Deterministic hashed terminal Global Variable key that respects documented terminal key constraints."
+        - name: "value"
+          type: "double"
+          required: true
+          description: "Scalar value stored in terminal Global Variables."
+        - name: "encoding"
+          type: "ENUM_GV_VALUE_ENCODING"
+          required: true
+          description: "Flag, timestamp, volume, hash fragment, or split identifier part encoding."
+
+## Section 5: Behavior
+behavior:
+  validation_rules:
+    - rule: "Trade evidence SHALL pair intent and execution records."
+      source: "@ears: EARS.01.03.a023"
+    - rule: "Diagnostic logs SHALL remain separate from trade evaluation records."
+      source: "@ears: EARS.01.03.a71c"
+    - rule: "Idle-path persistence and evidence work SHALL honor low-I/O requirements."
+      source: "@ears: EARS.01.03.c5b7"
+    - rule: "GV-backed state SHALL store only scalar double-compatible values; string payloads and rich evidence SHALL remain in files, logs, or documentation evidence packs."
+      source: "@ears: EARS.01.03.c5b7"
+  state_transitions:
+    - from: "Recoverable evidence"
+      to: "Restored state"
+      trigger: "GV and broker/history evidence prove current ownership."
+      source: "@bdd: BDD.01.03.e16a"
+    - from: "Ambiguous evidence"
+      to: "HALT"
+      trigger: "Hedging ticket ownership cannot be proven; pending-exit relationships are v2+ scope."
+      source: "@bdd: BDD.01.03.e16a"
+  error_handling:
+    - condition: "GV identity hash mismatch."
+      response: "Fail init before live trading or enter HALT if detected live."
+      source: "@bdd: BDD.01.03.a31d"
+    - condition: "Trade evidence write fails."
+      response: "Log diagnostic failure and preserve broker safety outcome."
+      source: "@bdd: BDD.01.03.d6ae"
+
+## Section 6: Implementation Notes
+implementation_notes:
+  constraints:
+    - "v1 uses terminal GV state and does not ship a custom file snapshot layer."
+    - "Ticket, deal, and order identifiers MUST be stored losslessly, not packed into imprecise double integers."
+    - "Raw account, symbol, and magic identity appears in logs/docs, not GV names."
+    - "GV keys MUST use deterministic hashing and respect documented terminal Global Variable key constraints."
+    - "Lossless identifiers in GV state MUST be split into exact-safe scalar parts or stored outside GV state as file evidence."
+  patterns:
+    - "Use deterministic canonical identity strings before hashing GV keys."
+    - "Use separate sinks for diagnostic logs, trade records, and alerts."
+    - "Use GlobalVariableSetOnCondition-compatible scalar values for duplicate markers; execution mutex state is v2+ with netting/exchange support."
+  performance_considerations:
+    - "State writes occur on meaningful transitions, not every tick, and release evidence must cover @threshold: PRD.01.perf.idle_tick."
+
+## Section 7: Downstream TDD Contracts
+tdd_contracts:
+  tdd_document: "@tdd: TDD.05.04.e64a"
+  test_files:
+    - path: "Scripts/Tests/Test_StateStore.mq5"
+      covers: "GV key generation, hi/lo identifier storage, duplicate markers, and HALT persistence."
+    - path: "Scripts/Tests/Test_TradeLogger.mq5"
+      covers: "Intent/execution pairing, CSV field coverage, and log separation."
+    - path: "Scripts/Tests/Test_AlertSink.mq5"
+      covers: "Live, visual tester, non-visual tester, and optimization alert behavior."
+
+## Section 8: Traceability
+traceability:
+  tags: ["@spec: SPEC-05", "@brd: BRD.01.08.cea7", "@prd: PRD.01.14.737b", "@ears: EARS.01.03.a023", "@bdd: BDD.01.03.0073", "@adr: ADR.02.03.c7dd"]
+  upstream:
+    adr_references: ["@adr: ADR.02.03.c7dd", "@adr: ADR.03.03.4124", "@adr: ADR.05.03.2586"]
+    bdd_references: ["@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.b37d"]
+    ears_references: ["@ears: EARS.01.03.a023", "@ears: EARS.01.03.fef3", "@ears: EARS.01.03.a71c", "@ears: EARS.01.03.c5b7", "@ears: EARS.01.03.588b"]
+    prd_references: ["@prd: PRD.01.14.737b", "@prd: PRD.01.09.9d68", "@prd: PRD.01.09.c622", "@prd: PRD.01.09.3092"]
+    brd_references: ["@brd: BRD.01.08.cea7", "@brd: BRD.01.07.8e15", "@brd: BRD.01.07.bf02"]
+  downstream:
+    - type: TDD
+      layer: 7
+      description: "Persistence, evidence, logging, and alert-sink test cases."
+  health_score:
+    tdd_ready: "94%"
+    target_score: ">=90/100"

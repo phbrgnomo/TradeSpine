@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradeSpine — Architecture v3.73</title>
+<title>TradeSpine — Architecture v3.75</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -139,11 +139,12 @@
 <div class="wrap">
 
   <header class="masthead">
-    <p class="kicker">Technical Architecture · PRD v3.73</p>
+    <p class="kicker">Technical Architecture · PRD v3.75</p>
     <h1>TradeSpine<br><em>Architecture</em></h1>
     <p class="sub">A modular, reproducible foundation for B3 futures strategies on MetaTrader 5. One strategy attaches to one chart symbol, one symbol may host multiple strategies, and all trade flow passes through guarded, strategy-scoped infrastructure.</p>
     <div class="meta-row">
-      <span class="tag">Netting + Hedging</span>
+      <span class="tag">Hedging Default v1</span>
+      <span class="tag">Netting/Exchange v2+</span>
       <span class="tag">Futures v1</span>
       <span class="tag">Multiple EAs / Symbol</span>
       <span class="tag">GV-only State</span>
@@ -158,7 +159,7 @@
     <a href="#composition"><span class="n">FIG 02</span>Object Composition</a>
     <a href="#pipeline"><span class="n">FIG 03</span>Intent Pipeline</a>
     <a href="#state"><span class="n">FIG 04</span>Position State Machine</a>
-    <a href="#netting"><span class="n">FIG 05</span>Netting Multi-EA Model</a>
+    <a href="#netting"><span class="n">FIG 05</span>Deferred Netting Model</a>
     <a href="#lifecycle"><span class="n">FIG 06</span>Lifecycle Staging</a>
     <a href="#protection"><span class="n">FIG 07</span>Catastrophic Defense</a>
   </nav>
@@ -174,6 +175,8 @@ flowchart TB
     direction LR
     S1["DonchianBreakout.mq5"]
     S2["MovingAverageCross.mq5"]
+    S3["1minscalpv3_hedging.mq5<br><small>ported strategy</small>"]
+    S4["BullishBearish Engulfing all v7 hedging.mq5<br><small>ported strategy</small>"]
   end
   subgraph L1["AUTHORING · Strategy"]
     direction LR
@@ -265,10 +268,10 @@ flowchart TD
   IDX["Indicators"]
   TRL["Trailing"]
   GV["CStateStore<br><small>terminal GVs only</small>"]
-  VL["VirtualGrossLedger<br><small>account+symbol+magic+virtual id</small>"]
-  OCO["PendingExitTracker<br><small>SL/TP sibling OCO</small>"]
+  VL["VirtualGrossLedger<br><small>deferred v2+</small>"]
+  OCO["PendingExitTracker<br><small>deferred v2+ OCO</small>"]
   ML["DuplicateMagicGuard<br><small>local terminal only</small>"]
-  LX["TradeSpineExecLock<br><small>short-lived symbol mutex</small>"]
+  LX["TradeSpineExecLock<br><small>deferred v2+</small>"]
 
   EA -->|is-a| SB
   SB -->|owns| CO
@@ -287,11 +290,11 @@ flowchart TD
   PV -.->|impl| PC
   GT -->|owns private| CT
   PC -.->|selects| AD
-  PC -->|netting owns| VL
-  PC -->|netting owns| OCO
-  PC -.->|uses| LX
-  VL -.->|persists| GV
-  OCO -.->|persists tickets hi/lo| GV
+  PC -.->|v2 netting only| VL
+  PC -.->|v2 netting only| OCO
+  PC -.->|v2 netting only| LX
+  VL -.->|v2 persists| GV
+  OCO -.->|v2 persists tickets hi/lo| GV
   ML -.->|marker GV| GV
   LX -.->|lock GV| GV
 
@@ -317,7 +320,7 @@ flowchart TD
   <!-- ============ FIG 03 ============ -->
   <section id="pipeline">
     <div class="sec-head"><span class="sec-num">03</span><h2>Intent → Execution Pipeline</h2></div>
-    <p class="caption">All entries flow through one imperative path: strategies call <code>OpenLong</code>/<code>OpenShort</code> from <code>OnNewBar</code> or <code>OnTickEvent</code>; close helpers in <code>OnManagePosition</code> route through the coordinator close branch. On netting, close means this EA's virtual exposure only, not the broker aggregate symbol position. The audit record is strategy-scoped and paired before/after execution.</p>
+    <p class="caption">All entries flow through one imperative path: strategies call <code>OpenLong</code>/<code>OpenShort</code> from <code>OnNewBar</code> or <code>OnTickEvent</code>; close helpers in <code>OnManagePosition</code> route through the coordinator close branch. v1 executes only on <code>RETAIL_HEDGING</code>, where close means this EA's magic-filtered tickets. Netting and exchange-netting selections fail initialization as deferred v2+ modes. The audit record is strategy-scoped and paired before/after execution.</p>
     <div class="diagram-card">
       <pre class="mermaid">
 flowchart TD
@@ -327,8 +330,8 @@ flowchart TD
   CALL["OpenLong / OpenShort<br>CloseAll / CloseLots"] --> P
   P{"ProcessSignal"}
   P --> C0{"type == SIGNAL_CLOSE?"}
-  C0 -->|yes| CL["close this EA exposure<br><small>hedging: own tickets<br>netting: virtual slice + pending exits</small>"] --> DONE1["done"]
-  C0 -->|no| G1{"this EA virtual state == FLAT?"}
+  C0 -->|yes| CL["close this EA exposure<br><small>v1 hedging: own tickets<br>netting/exchange: init failed</small>"] --> DONE1["done"]
+  C0 -->|no| G1{"this EA strategy state == FLAT?"}
   G1 -->|no| R1["reject · DEBUG"]
   G1 -->|yes| E{"entry_mode<br>== MARKET?"}
   E -->|yes| EM["use market price"]
@@ -373,7 +376,7 @@ flowchart TD
   <!-- ============ FIG 04 ============ -->
   <section id="state">
     <div class="sec-head"><span class="sec-num">04</span><h2>Position State Machine</h2></div>
-    <p class="caption">This state machine is per strategy instance / virtual position lifecycle, not per broker aggregate symbol position. On netting, broker-flat can coexist with active opposing virtual positions from different EAs. Transitions are driven by canonical observable state plus this EA's GV-backed ledger, not just by transaction events. <strong>PENDING_ENTRY</strong> exits through success, broker rejection, or framework timeout; cancel-vs-reject remains distinct to avoid phantom-position bugs.</p>
+    <p class="caption">This state machine is per strategy instance lifecycle. In v1 hedging mode, strategy ownership maps to this EA's magic-filtered broker tickets and GV-backed state. Netting aggregate-position and virtual-ledger lifecycles are deferred to v2+. <strong>PENDING_ENTRY</strong> exits through success, broker rejection, or framework timeout; cancel-vs-reject remains distinct to avoid phantom-position bugs.</p>
     <div class="diagram-card">
       <pre class="mermaid">
 stateDiagram-v2
@@ -412,25 +415,25 @@ stateDiagram-v2
 
   <!-- ============ FIG 05 ============ -->
   <section id="netting">
-    <div class="sec-head"><span class="sec-num">05</span><h2>Netting Multi-EA Model</h2></div>
-    <p class="caption">A netting broker exposes one aggregate symbol position, but TradeSpine strategies do not use that aggregate as their state source. Each EA owns a virtual gross-position slice keyed by <code>account + symbol + magic + virtual_position_id</code>. Magic collisions are rejected only inside the local terminal; another terminal or VPS is operator-managed. Per-strategy SL/TP on netting is implemented with strategy-owned pending stop/limit exit orders and framework-managed OCO.</p>
+    <div class="sec-head"><span class="sec-num">05</span><h2>Deferred Netting Multi-EA Model</h2></div>
+    <p class="caption">This figure is retained as v2+ design context only. In v1, selecting <code>RETAIL_NETTING</code> or <code>EXCHANGE</code> fails initialization before any order path, virtual ledger, pending-exit/OCO tracker, or execution mutex is active. A future netting adapter will need per-EA virtual gross-position ownership keyed by account, symbol, magic, and virtual position id.</p>
     <div class="diagram-card">
       <pre class="mermaid">
 flowchart TB
   subgraph TERM["Local MT5 terminal"]
     direction TB
     DM["DuplicateMagicGuard<br><small>GV marker: account+symbol+magic</small>"]
-    LK["TradeSpineExecLock<br><small>short-lived symbol mutex</small>"]
+    LK["TradeSpineExecLock<br><small>deferred v2+ mutex</small>"]
     GV["CStateStore<br><small>terminal GVs only<br>ulong tickets as hi/lo chunks</small>"]
   end
 
   subgraph EA_A["EA A · WIN · magic 101"]
-    A_SIG["strategy logic"] --> A_LED["virtual position<br><small>+1 long</small>"]
+    A_SIG["strategy logic"] --> A_LED["virtual position<br><small>v2: +1 long</small>"]
     A_LED --> A_EXIT["pending exits<br><small>sell stop SL · sell limit TP<br>OCO sibling links</small>"]
   end
 
   subgraph EA_B["EA B · WIN · magic 202"]
-    B_SIG["strategy logic"] --> B_LED["virtual position<br><small>-1 short</small>"]
+    B_SIG["strategy logic"] --> B_LED["virtual position<br><small>v2: -1 short</small>"]
     B_LED --> B_EXIT["pending exits<br><small>buy stop SL · buy limit TP<br>OCO sibling links</small>"]
   end
 
@@ -442,8 +445,8 @@ flowchart TB
   B_LED -.->|critical section| LK
   DM -.-> GV
 
-  A_LED -->|+1 deal| BROKER["Broker netting account<br><small>aggregate symbol exposure</small>"]
-  B_LED -->|-1 deal| BROKER
+  A_LED -->|v2 +1 deal| BROKER["Broker netting account<br><small>deferred v2+ aggregate exposure</small>"]
+  B_LED -->|v2 -1 deal| BROKER
   BROKER --> NET["derived broker exposure<br><small>+1 + -1 = 0 flat<br>strategies still ACTIVE</small>"]
 
   A_EXIT -->|SL/TP fill closes only A| BROKER
@@ -465,8 +468,8 @@ flowchart TB
       </pre>
     </div>
     <div class="legend">
-      <span><i class="swatch" style="background:#dfe9f2"></i>Strategy-scoped virtual state</span>
-      <span><i class="swatch" style="background:#e8a87c"></i>Strategy-owned pending exits</span>
+      <span><i class="swatch" style="background:#dfe9f2"></i>Deferred v2+ virtual state</span>
+      <span><i class="swatch" style="background:#e8a87c"></i>Deferred v2+ pending exits</span>
       <span><i class="swatch" style="background:#eef0e8"></i>Terminal-local GV services</span>
       <span><i class="swatch" style="background:#0d1b2a"></i>Broker aggregate exposure</span>
     </div>
@@ -545,8 +548,8 @@ flowchart TD
   </section>
 
   <footer>
-    <span>TRADESPINE · ARCHITECTURE v3.73</span>
-    <span>PRD v3.73 · 2026</span>
+    <span>TRADESPINE · ARCHITECTURE v3.75</span>
+    <span>PRD v3.75 · 2026</span>
   </footer>
 
 </div>

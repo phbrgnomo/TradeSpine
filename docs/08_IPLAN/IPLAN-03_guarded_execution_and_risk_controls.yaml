@@ -1,0 +1,143 @@
+metadata:
+  schema_version: "1.0"
+  document_type: "iplan-document"
+  artifact_type: "IPLAN"
+  layer: 8
+  iplan_id: "IPLAN-03"
+  source_spec: "@spec: SPEC-03"
+  source_tdd: "@tdd: TDD.03.04.1f65"
+  total_sections: 6
+  last_updated: "2026-06-03T00:00:00-03:00"
+  tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
+
+document_control:
+  iplan_id: "IPLAN-03"
+  source_spec: "@spec: SPEC-03"
+  source_tdd: "@tdd: TDD.03.04.1f65"
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-03T00:00:00-03:00"
+  author: "Codex"
+  component: "CGuardedTrade and CRiskManager"
+  complexity: 5
+  estimated_files: 8
+  session_count: 0
+  readiness_gate: "TDD-03 audit PASS 95/100"
+  source_inputs:
+    - "../07_TDD/TDD-03_guarded_execution_and_risk_controls/TDD-03_guarded_execution_and_risk_controls.yaml"
+    - "../06_SPEC/SPEC-03_guarded_execution_and_risk_controls/SPEC-03_guarded_execution_and_risk_controls.yaml"
+    - "../../Project/PRD.md"
+    - "../../Project/architecture-diagram.html"
+
+file_manifest:
+  files:
+    - path: "Scripts/Tests/Test_GuardedTrade.mq5"
+      order: 1
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "TradeIntent consistency, catastrophic caps, preflight, fill-mode, and retcode classification tests."
+    - path: "Scripts/Tests/Test_RiskManager.mq5"
+      order: 2
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Daily loss, open lots, trade count, and panic-stop tests."
+    - path: "Scripts/Tests/Test_BrokerBypassScan.mq5"
+      order: 3
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Release scan for raw broker bypass and terminal-global Trade includes."
+    - path: "Include/Execution/GuardResult.mqh"
+      order: 4
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Guard outcome, retcode, retryable, ambiguous, and ticket data model."
+    - path: "Include/Execution/GuardedTrade.mqh"
+      order: 5
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Private vendored CTrade boundary and guarded submission implementation."
+    - path: "Include/Execution/FillingPolicy.mqh"
+      order: 6
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Broker-supported fill-mode selection and validation."
+    - path: "Include/Execution/SpreadGuard.mqh"
+      order: 7
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Symbol-aware spread and price-grid guard."
+    - path: "Include/Risk/RiskManager.mqh"
+      order: 8
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Strategy-scoped runtime risk controls and panic-stop state."
+
+execution_commands:
+  cwd: "MQL5/Experts/Main/TradeSpine"
+  setup:
+    - "mkdir -p Include/Execution Include/Risk Scripts/Tests"
+  implementation:
+    - "# Write TDD-03 tests first, then implement GuardResult, CGuardedTrade, guard helpers, and CRiskManager."
+    - "# Verify private vendored CTrade composition and reject unknown retcodes as failsafe ambiguity."
+  validation:
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_GuardedTrade.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_RiskManager.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_BrokerBypassScan.mq5"
+    - "! (rg -n \"#include <(Trade|Expert)[/\\\\]|OrderSend|OrderSendAsync|CTrade\" Include Experts | rg -v \"Include/Execution/(GuardedTrade|CGuardedTrade)\\.mqh\")"
+
+implementation_contracts:
+  provided:
+    contracts:
+      - name: "ITradePort guarded boundary"
+        type: "Protocol Interface"
+        files: ["Include/Execution/GuardedTrade.mqh", "Include/Execution/GuardResult.mqh"]
+        summary: "CGuardedTrade implements the only framework broker submission port and returns GuardResult for every outcome."
+      - name: "Runtime risk state"
+        type: "State Machine"
+        files: ["Include/Risk/RiskManager.mqh", "Scripts/Tests/Test_RiskManager.mq5"]
+        summary: "Risk trips refuse new entries and request strategy-scoped close behavior without submitting orders directly."
+  consumed:
+    dependencies:
+      - "@iplan: IPLAN-02"
+      - "@iplan: IPLAN-04"
+      - "@iplan: IPLAN-05"
+      - "@iplan: IPLAN-06"
+      - "@iplan: IPLAN-09"
+      - "@iplan: IPLAN-11"
+
+session_handoff:
+  sessions:
+    - date: "2026-06-03"
+      agent: "Codex IPLAN autopilot"
+      files_touched: []
+      partial_work: "No implementation started; this seed session only created the execution plan."
+      blockers: "Requires TradeIntent, position context, persistence, market, runtime, and test support contracts."
+      next_session_directive: "Start with Scripts/Tests/Test_GuardedTrade.mq5 and GuardResult before implementing GuardedTrade."
+      validation_results:
+        tests_passing: null
+        coverage: null
+        lint_clean: null
+
+traceability:
+  upstream:
+    spec_references: ["@spec: SPEC-03"]
+    tdd_references: ["@tdd: TDD.03.04.1f65"]
+    brd_references: ["@brd: BRD.01.07.a94e", "@brd: BRD.01.08.0ce5"]
+    prd_references: ["@prd: PRD.01.09.d74e", "@prd: PRD.01.09.4fb4", "@prd: PRD.01.14.8720"]
+    ears_references: ["@ears: EARS.01.03.222f", "@ears: EARS.01.03.7a9c", "@ears: EARS.01.03.375b", "@ears: EARS.01.03.f562", "@ears: EARS.01.03.e20a"]
+    bdd_references: ["@bdd: BDD.01.03.9a8b", "@bdd: BDD.01.03.0ad7", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.ef54"]
+    adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.09.03.84b9"]
+  downstream:
+    code_paths: ["@code: Include/Execution/GuardResult.mqh", "@code: Include/Execution/GuardedTrade.mqh", "@code: Include/Execution/FillingPolicy.mqh", "@code: Include/Execution/SpreadGuard.mqh", "@code: Include/Risk/RiskManager.mqh"]
+    test_paths: ["@tests: Scripts/Tests/Test_GuardedTrade.mq5", "@tests: Scripts/Tests/Test_RiskManager.mq5", "@tests: Scripts/Tests/Test_BrokerBypassScan.mq5"]
+  code_inventory:
+    files: []

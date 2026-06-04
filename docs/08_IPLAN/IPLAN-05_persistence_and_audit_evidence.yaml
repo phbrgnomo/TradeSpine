@@ -1,0 +1,138 @@
+metadata:
+  schema_version: "1.0"
+  document_type: "iplan-document"
+  artifact_type: "IPLAN"
+  layer: 8
+  iplan_id: "IPLAN-05"
+  source_spec: "@spec: SPEC-05"
+  source_tdd: "@tdd: TDD.05.04.e64a"
+  total_sections: 6
+  last_updated: "2026-06-03T00:00:00-03:00"
+  tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
+
+document_control:
+  iplan_id: "IPLAN-05"
+  source_spec: "@spec: SPEC-05"
+  source_tdd: "@tdd: TDD.05.04.e64a"
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-03T00:00:00-03:00"
+  author: "Codex"
+  component: "CStateStore, CKeyBuilder, TradeLogger, Logger, AlertSink"
+  complexity: 4
+  estimated_files: 8
+  session_count: 0
+  readiness_gate: "TDD-05 audit PASS 95/100"
+  source_inputs:
+    - "../07_TDD/TDD-05_persistence_and_audit_evidence/TDD-05_persistence_and_audit_evidence.yaml"
+    - "../06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
+    - "../../Project/PRD.md"
+    - "../../Project/architecture-diagram.html"
+
+file_manifest:
+  files:
+    - path: "Scripts/Tests/Test_StateStore.mq5"
+      order: 1
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "GV key generation, exact identifier storage, duplicate markers, and HALT persistence tests."
+    - path: "Scripts/Tests/Test_TradeLogger.mq5"
+      order: 2
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Intent/execution pairing, CSV field coverage, and log separation tests."
+    - path: "Scripts/Tests/Test_AlertSink.mq5"
+      order: 3
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Live, visual tester, non-visual tester, and optimization alert tests."
+    - path: "Include/Persistence/KeyBuilder.mqh"
+      order: 4
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Canonical identity hashing and terminal Global Variable key builder."
+    - path: "Include/Persistence/StateStore.mqh"
+      order: 5
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "GV-backed scalar state, duplicate marker, and HALT persistence seam."
+    - path: "Include/Persistence/TradeLogger.mqh"
+      order: 6
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Paired intent and execution CSV evidence writer."
+    - path: "Include/Persistence/Logger.mqh"
+      order: 7
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Leveled diagnostic logger separate from trade evaluation records."
+    - path: "Include/Persistence/AlertSink.mqh"
+      order: 8
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "HALT and operator alert sink abstraction."
+
+execution_commands:
+  cwd: "MQL5/Experts/Main/TradeSpine"
+  setup:
+    - "mkdir -p Include/Persistence Scripts/Tests"
+  implementation:
+    - "# Write TDD-05 tests first, then implement key builder, state store, trade logger, logger, and alert sink."
+    - "# Keep diagnostic logs separate from trade evidence and avoid nonessential optimization-mode I/O."
+  validation:
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_StateStore.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_TradeLogger.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_AlertSink.mq5"
+
+implementation_contracts:
+  provided:
+    contracts:
+      - name: "State persistence contract"
+        type: "Protocol Interface"
+        files: ["Include/Persistence/KeyBuilder.mqh", "Include/Persistence/StateStore.mqh"]
+        summary: "Scalar GV state uses deterministic keys and exact-safe identifier storage."
+      - name: "Evidence sink contract"
+        type: "Data Model"
+        files: ["Include/Persistence/TradeLogger.mqh", "Include/Persistence/Logger.mqh", "Include/Persistence/AlertSink.mqh"]
+        summary: "Trade evaluation, diagnostics, and operator alerts remain separate evidence streams."
+  consumed:
+    dependencies:
+      - "@iplan: IPLAN-09"
+      - "@iplan: IPLAN-11"
+
+session_handoff:
+  sessions:
+    - date: "2026-06-03"
+      agent: "Codex IPLAN autopilot"
+      files_touched: []
+      partial_work: "No implementation started; this seed session only created the execution plan."
+      blockers: "Requires runtime mode helpers and test fakes for optimization-aware behavior."
+      next_session_directive: "Start with Scripts/Tests/Test_StateStore.mq5 and KeyBuilder before implementing GV-backed StateStore."
+      validation_results:
+        tests_passing: null
+        coverage: null
+        lint_clean: null
+
+traceability:
+  upstream:
+    spec_references: ["@spec: SPEC-05"]
+    tdd_references: ["@tdd: TDD.05.04.e64a"]
+    brd_references: ["@brd: BRD.01.08.cea7", "@brd: BRD.01.07.8e15", "@brd: BRD.01.07.bf02"]
+    prd_references: ["@prd: PRD.01.14.737b", "@prd: PRD.01.09.9d68", "@prd: PRD.01.09.c622", "@prd: PRD.01.09.3092"]
+    ears_references: ["@ears: EARS.01.03.a023", "@ears: EARS.01.03.fef3", "@ears: EARS.01.03.a71c", "@ears: EARS.01.03.c5b7", "@ears: EARS.01.03.588b"]
+    bdd_references: ["@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.b37d"]
+    adr_references: ["@adr: ADR.02.03.c7dd", "@adr: ADR.03.03.4124", "@adr: ADR.05.03.2586"]
+  downstream:
+    code_paths: ["@code: Include/Persistence/KeyBuilder.mqh", "@code: Include/Persistence/StateStore.mqh", "@code: Include/Persistence/TradeLogger.mqh", "@code: Include/Persistence/Logger.mqh", "@code: Include/Persistence/AlertSink.mqh"]
+    test_paths: ["@tests: Scripts/Tests/Test_StateStore.mq5", "@tests: Scripts/Tests/Test_TradeLogger.mq5", "@tests: Scripts/Tests/Test_AlertSink.mq5"]
+  code_inventory:
+    files: []

@@ -1,0 +1,204 @@
+---
+document_type: spec-document
+artifact_type: SPEC
+layer: 6
+deliverable_type: process
+id: SPEC-08
+title: Release Testing and Documentation Governance
+status: Draft
+created_date: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-02T00:20:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-02T00:20:00-03:00"
+  author: "Codex"
+  component: "Release evidence, test harnesses, and documentation gates"
+  tdd_ready_score: "92/100"
+
+## Section 2: Component Overview
+component_overview:
+  description: "The release governance component defines the evidence gates, automated and manual test harness boundaries, documentation inventory, Doxygen/API documentation gate if retained, bypass scans, vendored dependency proof, performance evidence, and changelog decision review required before v1 sign-off."
+  architecture_decision: "@adr: ADR.10.03.51ea"
+  diagram:
+    tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
+    mermaid: |
+      flowchart LR
+        Candidate["Release candidate"] --> Unit["Tier-1 script tests"]
+        Candidate --> Tester["Tier-2 Strategy Tester"]
+        Candidate --> Mode["Deferred account-mode evidence"]
+        Candidate --> Docs["Documentation gates"]
+        Candidate --> Scan["Bypass and vendored dependency scans"]
+        Candidate --> Bench["Performance evidence"]
+        Unit --> Gate["ReleaseEvidenceGate"]
+        Tester --> Gate
+        Mode --> Gate
+        Docs --> Gate
+        Scan --> Gate
+        Bench --> Gate
+  language: "MQL5 and documentation process"
+  dependencies:
+    - name: "RunAllTests.mq5"
+      version: "v1"
+      purpose: "Aggregates Tier-1 script tests."
+    - name: "Strategy Tester harness"
+      version: "v1"
+      purpose: "Runs Tier-2 broker-facing single-EA checks."
+    - name: "Docs"
+      version: "v1"
+      purpose: "Holds AUTHORING, TESTING, RECIPES, INPUTS_REFERENCE, per-module docs, and template README."
+
+## Section 3: Interfaces
+interfaces:
+  exports:
+    - name: "ReleaseEvidenceGate"
+      type: "process component"
+      signature: "bool ValidateReleaseEvidence(const ReleaseEvidencePack &pack)"
+      description: "Evaluates whether required automated, manual, documentation, dependency, bypass, and benchmark evidence is present."
+      errors:
+        - "false: required evidence is missing or failed."
+    - name: "RunAllTests"
+      type: "script"
+      signature: "int RunAllTests()"
+      description: "Runs Tier-1 script tests and prints pass/fail summary."
+      errors:
+        - "Nonzero failure count: at least one Tier-1 test failed."
+    - name: "DeferredAccountModeEvidenceChecklist"
+      type: "document contract"
+      signature: "DeferredAccountModeEvidencePack"
+      description: "Defines v1 evidence that netting/exchange-netting modes fail initialization before trading."
+      errors:
+        - "MissingEvidence: deferred account-mode release sign-off is blocked."
+    - name: "DocumentationGate"
+      type: "process component"
+      signature: "bool ValidateDocumentationGate(const DocumentationInventory &inventory)"
+      description: "Checks required docs, same-change docs updates, Doxygen/API coverage if retained, and changelog review."
+      errors:
+        - "false: documentation release evidence is incomplete."
+
+## Section 4: Data Models
+data_models:
+  models:
+    - name: "ReleaseEvidencePack"
+      type: "struct"
+      fields:
+        - name: "tier1_summary"
+          type: "string"
+          required: true
+          description: "RunAllTests pass/fail summary."
+        - name: "tier2_summary"
+          type: "string"
+          required: true
+          description: "Strategy Tester harness evidence."
+        - name: "deferred_account_mode_pack"
+          type: "DeferredAccountModeEvidencePack"
+          required: true
+          description: "Evidence that RETAIL_NETTING and EXCHANGE fail initialization with no trade-path side effects."
+        - name: "documentation_inventory"
+          type: "DocumentationInventory"
+          required: true
+          description: "Required docs and documentation-gate results."
+        - name: "benchmark_evidence"
+          type: "BenchmarkEvidence"
+          required: true
+          description: "Performance thresholds and low-I/O evidence."
+    - name: "DeferredAccountModeEvidencePack"
+      type: "struct"
+      fields:
+        - name: "scenario_checklist"
+          type: "string"
+          required: true
+          description: "Parameters, expected deferred-mode outcomes, and reproducible steps."
+        - name: "journal_excerpt"
+          type: "string"
+          required: true
+          description: "Terminal Journal excerpt for deferred account-mode diagnostic."
+        - name: "audit_csv_excerpt"
+          type: "string"
+          required: false
+          description: "Optional evidence that no trade CSV row was produced on deferred-mode init failure."
+        - name: "verdict"
+          type: "string"
+          required: true
+          description: "Timestamped pass/fail execution summary."
+    - name: "DocumentationInventory"
+      type: "struct"
+      fields:
+        - name: "required_docs"
+          type: "string list"
+          required: true
+          description: "README, ARCHITECTURE, AUTHORING, RECIPES, INPUTS_REFERENCE, TESTING, module docs, and template README."
+        - name: "same_change_updates"
+          type: "bool"
+          required: true
+          description: "Whether API-affecting changes update docs in the same change."
+        - name: "doxygen_gate_retained"
+          type: "bool"
+          required: true
+          description: "Whether Doxygen/API coverage is retained for v1."
+
+## Section 5: Behavior
+behavior:
+  validation_rules:
+    - rule: "Release reviewer SHALL require evidence that netting and exchange-netting fail initialization with deferred-mode diagnostics in v1."
+      source: "@ears: EARS.01.03.d7e9"
+    - rule: "Release reviewer SHALL verify required docs, same-change documentation updates, Doxygen coverage if retained, and CHANGELOG decision record."
+      source: "@ears: EARS.01.03.1d60"
+    - rule: "Vendored dependency policy SHALL be verified before release."
+      source: "@ears: EARS.01.03.b11a"
+    - rule: "Doxygen coverage SHALL be checked if retained by the implementation standard."
+      source: "@ears: EARS.01.03.9abb"
+  state_transitions:
+    - from: "ReleaseCandidate"
+      to: "ReleaseBlocked"
+      trigger: "Deferred account-mode init-failure evidence is missing."
+      source: "@bdd: BDD.01.03.f415"
+    - from: "ReleaseCandidate"
+      to: "ReleaseApprovedForBuild"
+      trigger: "Governance evidence, tests, docs, scans, and benchmarks pass."
+      source: "@bdd: BDD.01.03.ef54"
+  error_handling:
+    - condition: "Documentation coverage gate fails."
+      response: "Block release sign-off until docs and coverage evidence are updated."
+      source: "@bdd: BDD.01.03.7b02"
+    - condition: "Performance evidence misses product thresholds."
+      response: "Block release sign-off or record explicit nonconformance before downstream implementation sign-off."
+      source: "@bdd: BDD.01.03.b37d"
+
+## Section 6: Implementation Notes
+implementation_notes:
+  constraints:
+    - "Strategy Tester cannot validate true concurrent same-symbol netting contention; manual live/demo netting evidence is deferred to v2+ executable netting scope."
+    - "v1 evidence verifies RETAIL_NETTING and EXCHANGE deferred-mode init failure and no side effects."
+    - "Release governance must include broker-bypass scans for raw execution calls."
+  patterns:
+    - "Store evidence pack references with release notes and Docs/TESTING.md."
+    - "Keep CHANGELOG.md as the canonical PRD/version decision log."
+  performance_considerations:
+    - "Benchmark evidence must reference @threshold: PRD.01.perf.tester_overhead, @threshold: PRD.01.perf.memory_per_ea, and @threshold: PRD.01.perf.idle_tick."
+
+## Section 7: Downstream TDD Contracts
+  tdd_contracts:
+    tdd_document: null
+    tdd_contract_note: "Not applicable: SPEC-08 is documentation/process governance scope; no explicit TDD-08 or IPLAN-08 artifact is required."
+    test_files: []
+
+## Section 8: Traceability
+traceability:
+  tags: ["@spec: SPEC-08", "@brd: BRD.01.07.717b", "@prd: PRD.01.09.4c66", "@ears: EARS.01.03.1d60", "@bdd: BDD.01.03.ef54", "@adr: ADR.10.03.51ea"]
+  upstream:
+    adr_references: ["@adr: ADR.06.03.b277", "@adr: ADR.07.03.6df1", "@adr: ADR.10.03.51ea"]
+    bdd_references: ["@bdd: BDD.01.03.ef54", "@bdd: BDD.01.03.f415", "@bdd: BDD.01.03.7b02", "@bdd: BDD.01.03.b37d"]
+    ears_references: ["@ears: EARS.01.03.d7e9", "@ears: EARS.01.03.1d60", "@ears: EARS.01.03.b11a", "@ears: EARS.01.03.9abb", "@ears: EARS.01.03.e1ae"]
+    prd_references: ["@prd: PRD.01.09.4c66", "@prd: PRD.01.09.0764", "@prd: PRD.01.14.518a"]
+    brd_references: ["@brd: BRD.01.07.717b", "@brd: BRD.01.07.b44d", "@brd: BRD.01.08.92f4"]
+  downstream:
+    - type: DocumentationCloseout
+      layer: 8
+      description: "Release governance, evidence, and documentation obligations close through the final IPLAN registry documentation step."
+  health_score:
+    tdd_ready: "N/A - process governance scope"
+    target_score: ">=90/100"

@@ -7,15 +7,15 @@ id: ADR-07
 title: Account Mode Ownership Model
 status: Accepted
 created_date: "2026-06-01T21:10:00-03:00"
-last_updated: "2026-06-01T21:10:00-03:00"
+last_updated: "2026-06-02T00:00:00-03:00"
 
 ## Section 1: Document Control
 document_control:
   status: Accepted
-  date: "2026-06-01"
+  date: "2026-06-02"
   decision_makers: ["phbr"]
   author: "Codex"
-  version: "1.0"
+  version: "1.1"
   originating_topic: "@prd: PRD.01.09.5cce"
   brd_reference: "@brd: BRD.01.07.b44d"
   spec_ready_score: "95/100"
@@ -24,45 +24,59 @@ document_control:
       date: "2026-06-01T21:10:00-03:00"
       author: "Codex"
       changes: "Initial accepted ADR added by ADR audit/fix cycle for account-mode ownership coverage."
+    - version: "1.1"
+      date: "2026-06-02T00:00:00-03:00"
+      author: "Codex"
+      changes: "Changed v1 account-mode decision to hedging-first execution with netting/exchange deferred-mode init failure; moved virtual ledger, pending exits, execution mutex, and manual netting evidence to v2+."
 
 ## Section 2: Context
 context:
-  problem_statement: "TradeSpine must let multiple strategies run on the same symbol in netting, exchange-netting, and hedging accounts without strategy code knowing the broker account mode."
-  business_driver: "The owner-operator needs one strategy authoring model that preserves per-strategy ownership evidence across B3 futures brokers and account modes."
+  problem_statement: "TradeSpine must let multiple strategies run on the same symbol in v1 without forcing the risky netting virtual-ledger model into the first release."
+  business_driver: "The owner-operator needs a v1 implementation path that is safe to build and validate on hedging accounts while preserving a clean adapter boundary for future netting/exchange support."
   key_constraints:
     - "Hedging accounts can use broker-native tickets as the primary ownership surface."
     - "Netting and exchange-netting accounts expose one aggregate broker position per symbol, so broker aggregate state cannot identify one strategy's virtual exposure."
-    - "Exclusive one-EA-per-symbol locking on netting is rejected by the source PRD because it would reduce netting accounts below hedging usefulness."
-  technical_context: "PRD.md G-4a and F-POS-1/F-POS-16/F-POS-19 define the adapter boundary, virtual gross-position ledger, and strategy-owned pending exits. BDD.01.03.8180 and BDD.01.03.f11f validate account-mode ownership evidence."
+    - "v1 must fail safely before trading when RETAIL_NETTING or EXCHANGE is selected or detected."
+    - "Virtual gross-position ledger, pending-exit/OCO behavior, execution mutex, and manual concurrent netting evidence are deferred to v2+."
+  technical_context: "PRD.md G-4a and F-POS-1/F-POS-16/F-POS-19 define the adapter boundary and now mark netting/exchange execution as v2+ deferred. BDD.01.03.8180 and BDD.01.03.f11f validate hedging ownership and deferred-mode init failure."
 
 ## Section 3: Decision
 decision:
   chosen_solution:
     id: "ADR.07.03.6df1"
-    title: "Use account-mode adapters with strategy-scoped ownership evidence"
-    description: "TradeSpine will keep strategy code mode-agnostic above IAccountModeAdapter. Hedging ownership is broker-native through magic-filtered tickets and orders. Netting and exchange-netting ownership is framework-native through a per-EA virtual gross-position ledger plus linked strategy-owned pending SL/TP exit orders."
+    title: "Use account-mode adapters with hedging-first v1 execution"
+    description: "TradeSpine will keep strategy code mode-agnostic above IAccountModeAdapter. v1 activates CHedgingAdapter only: ownership is broker-native through magic-filtered tickets and orders. Netting and exchange-netting are selectable/detectable but fail initialization with a deferred-mode diagnostic before any trade path, virtual ledger, pending-exit tracker, or execution mutex becomes active."
   key_components:
     - name: "IAccountModeAdapter"
       role: "Defines the mode-agnostic ownership and operation contract used by the coordinator and strategy base."
     - name: "CHedgingAdapter"
       role: "Maps ownership to broker tickets and per-ticket operations."
     - name: "CNettingAdapter"
-      role: "Maps ownership to virtual ledger state and strategy-owned pending exits while broker exposure remains aggregate."
+      role: "Deferred v2+ adapter placeholder/design scope for virtual ledger state and strategy-owned pending exits while broker exposure remains aggregate."
   implementation_approach:
-    mvp_scope: "Support RETAIL_HEDGING, RETAIL_NETTING, and EXCHANGE with independent per-strategy ownership and manual live/demo evidence for true concurrent same-symbol netting."
-    next_cycle_scope: "Pyramiding, portfolio-level allocation, and system-wide panic may extend the same adapter boundary in later versions."
+    mvp_scope: "Support RETAIL_HEDGING execution with independent per-strategy ticket ownership. RETAIL_NETTING and EXCHANGE fail initialization with deferred-mode diagnostics and no side effects."
+    next_cycle_scope: "Executable netting/exchange adapters, virtual ledger, pending exits/OCO, execution mutex, manual concurrent netting evidence, pyramiding, portfolio-level allocation, and system-wide panic may extend the same adapter boundary in later versions."
 
 ## Section 4: Alternatives Considered
 alternatives:
   options:
     - id: "ADR.07.04.38a9"
-      name: "Adapter with virtual netting ledger"
+      name: "Hedging-first adapter boundary with deferred netting"
       selected: true
-      description: "Use mode-specific adapters and virtual ownership for netting while preserving one strategy-facing API."
-      pros: ["Preserves multiple same-symbol strategies", "Keeps strategy code mode-agnostic", "Matches MT5 netting and hedging semantics"]
-      cons: ["Requires virtual ledger, pending-exit ownership, and manual netting evidence"]
-      estimated_cost: "High"
+      description: "Use the account-mode adapter boundary, execute hedging in v1, and fail netting/exchange initialization until v2+ implements virtual ownership."
+      pros: ["Preserves strategy-facing API", "Keeps v1 implementation smaller and safer", "Prevents incomplete netting logic from trading real money"]
+      cons: ["Does not execute on netting/exchange accounts in v1", "Requires explicit deferred-mode documentation and tests"]
+      estimated_cost: "Medium"
       fit: Best
+    - id: "ADR.07.04.7b7e"
+      name: "Implement virtual netting ledger in v1"
+      selected: false
+      description: "Use mode-specific adapters and virtual ownership for netting while preserving one strategy-facing API."
+      pros: ["Would preserve multiple same-symbol strategies across account modes in v1"]
+      cons: ["Requires virtual ledger, pending-exit ownership, execution mutex, and manual netting evidence before the first release"]
+      rejection_reason: "Too much architectural risk for v1; moved to v2+ by PRD v3.74."
+      estimated_cost: "High"
+      fit: Deferred
     - id: "ADR.07.04.9c21"
       name: "One EA per symbol on netting"
       selected: false
@@ -86,22 +100,22 @@ alternatives:
 consequences:
   positive_outcomes:
     - id: "ADR.07.05.d2e4"
-      outcome: "Strategy code can use the same helpers and queries on hedging, netting, and exchange-netting accounts."
+      outcome: "Strategy code can use the same helpers and queries on hedging accounts while the adapter boundary remains ready for v2 netting/exchange support."
     - id: "ADR.07.05.4a6b"
-      outcome: "Netting broker-flat states can coexist with active opposing virtual positions without corrupting either strategy."
+      outcome: "Unsupported v1 account modes fail before trading, preventing incomplete virtual-ledger behavior from affecting live accounts."
   tradeoffs_and_risks:
     - id: "ADR.07.05.61fb"
-      tradeoff: "True concurrent same-symbol netting contention cannot be fully automated in Strategy Tester."
+      tradeoff: "v1 cannot execute on netting or exchange-netting accounts."
       impact: High
-      mitigation: "Keep the manual live/demo evidence pack as a release gate and cover deterministic ledger behavior with Tier-1.5 scripts."
+      mitigation: "Fail initialization with an explicit deferred-mode diagnostic and document netting/exchange as v2+ scope."
     - id: "ADR.07.05.8aa7"
-      tradeoff: "Netting pending exits have residual offline OCO risk."
+      tradeoff: "v2 netting pending exits will still have residual offline OCO risk when implemented."
       impact: High
-      mitigation: "Reconcile strategy-owned pending exits on restart and enter HALT when sibling relationships are ambiguous."
+      mitigation: "Keep pending-exit/OCO rules as v2 design context and require a future ADR/spec update before executable support."
   cost_estimate:
-    mvp_cost: "High"
+    mvp_cost: "Medium"
     ongoing_monthly: "Low"
-    notes: "Cost is concentrated in adapter tests, ledger reconciliation, and manual evidence collection."
+    notes: "v1 cost is concentrated in hedging ownership tests and deferred-mode failure evidence; virtual ledger and manual netting evidence move to v2+."
 
 ## Section 6: Architecture Flow
 architecture_flow:
@@ -110,7 +124,7 @@ architecture_flow:
       diagram_type: sequence
       scope_boundary: "Account-mode ownership"
       upstream_refs: "PRD.01.09.5cce; BDD.01.03.8180; BDD.01.03.f11f"
-      downstream_refs: "SPEC account-mode adapter and virtual ledger contracts"
+      downstream_refs: "SPEC account-mode adapter, hedging ownership, and deferred netting/exchange boundary contracts"
     tag: "@diagram: sequence-ownership"
     diagram:
       type: sequenceDiagram
@@ -126,17 +140,17 @@ architecture_flow:
           Pos->>Adapter: Delegate by ACCOUNT_MARGIN_MODE
           alt hedging
             Adapter->>Broker: Operate on magic-filtered tickets
-          else netting or exchange
-            Adapter->>Adapter: Update virtual ledger and linked pending exits
-            Adapter->>Broker: Submit aggregate-effect deal/order
+          else netting or exchange in v1
+            Adapter-->>Pos: INIT_FAILED deferred account mode
+            Pos-->>Strategy: Operator-facing deferred-mode diagnostic
           end
   integration_points:
     - system: "MT5 account mode"
       integration_type: "adapter selection"
-      purpose: "Select hedging or netting ownership mechanism at init."
+      purpose: "Select hedging ownership mechanism at init or fail deferred netting/exchange modes before trading."
     - system: "MT5 broker order book"
       integration_type: "ticket/order evidence"
-      purpose: "Carry magic-filtered ownership evidence where broker surfaces allow it."
+      purpose: "Carry magic-filtered hedging ownership evidence in v1."
 
 ## Section 7: Implementation Assessment
 implementation_assessment:
@@ -144,13 +158,13 @@ implementation_assessment:
     - phase: "Hedging adapter"
       scope: "Ticket filtering, close, partial close, modify, and trailing behavior."
       risk: "Incorrect magic/symbol filtering touches another strategy."
-    - phase: "Netting adapter"
-      scope: "Virtual ledger, pending exits, execution mutex, OCO recovery, and manual evidence pack."
-      risk: "Broker aggregate exposure is mistaken for per-strategy state."
+    - phase: "Deferred account-mode gate"
+      scope: "RETAIL_NETTING and EXCHANGE init failure, diagnostic logging, and no-side-effect evidence."
+      risk: "Unsupported account mode reaches a live trade path."
   rollback_plan:
-    strategy: "Block v1 sign-off for affected account modes until adapter evidence passes."
-    trigger: "Any test or manual evidence showing cross-strategy ownership leakage."
-    estimated_effort: "High"
+    strategy: "Block v1 sign-off until hedging evidence and deferred-mode init-failure evidence pass."
+    trigger: "Any test showing netting/exchange can reach a trade path in v1 or hedging can touch another strategy's ticket."
+    estimated_effort: "Medium"
   monitoring_baseline:
     - metric: "Cross-strategy ownership leak"
       target: "0"
@@ -159,8 +173,8 @@ implementation_assessment:
 ## Section 8: Verification
 verification:
   success_criteria:
-    - criterion: "Netting and exchange-netting preserve strategy-scoped virtual ownership outside the broker aggregate position."
-      measurement: "BDD.01.03.8180 and BDD.01.03.f11f pass with Tier-1.5 and manual evidence."
+    - criterion: "Netting and exchange-netting fail initialization before any v1 trade path or virtual ownership mechanism is active."
+      measurement: "BDD.01.03.8180 and BDD.01.03.f11f pass with deferred-mode evidence."
     - criterion: "Hedging ownership is recorded against strategy-owned tickets/orders."
       measurement: "Mode-specific tests and release evidence identify the tracking surface."
   bdd_scenario_refs:
@@ -168,7 +182,7 @@ verification:
 
 ## Section 9: Traceability
 traceability:
-  tags: ["@adr: ADR-07", "@brd: BRD.01.07.b44d", "@prd: PRD.01.09.5cce", "@ears: EARS.01.03.5d1b", "@bdd: BDD.01.03.8180"]
+  tags: ["@adr: ADR.07.03.6df1", "@brd: BRD.01.07.b44d", "@prd: PRD.01.09.5cce", "@ears: EARS.01.03.5d1b", "@bdd: BDD.01.03.8180"]
   originating_topic: "@prd: PRD.01.09.5cce"
   upstream:
     bdd_references: ["@bdd: BDD.01.03.8180", "@bdd: BDD.01.03.f11f", "@bdd: BDD.01.03.f415"]
@@ -178,7 +192,7 @@ traceability:
   downstream_expected:
     - type: SPEC
       layer: 6
-      description: "IAccountModeAdapter, CHedgingAdapter, CNettingAdapter, virtual ledger, and pending-exit ownership contracts."
+      description: "IAccountModeAdapter, CHedgingAdapter, deferred CNettingAdapter boundary, and account-mode init-failure contracts."
   cross_links:
     depends: ["@depends: ADR-01", "@depends: ADR-02", "@depends: ADR-04"]
     discoverability: ["@discoverability: ADR-07 (account mode ownership model)"]
@@ -194,7 +208,7 @@ related_decisions:
       rationale: "Adapters and evidence live under the self-contained TradeSpine project layout."
     - adr: "ADR-02"
       relationship: "Depends on"
-      rationale: "Netting virtual ownership uses GV state and recovery evidence."
+      rationale: "Hedging ownership and deferred netting/exchange state use GV-backed diagnostics and recovery evidence."
     - adr: "ADR-04"
       relationship: "Depends on"
       rationale: "Adapter operations remain behind guarded trade safety."
@@ -204,7 +218,7 @@ related_decisions:
 glossary:
   terms:
     - term: "Virtual gross-position ledger"
-      definition: "TradeSpine state that records one strategy instance's signed exposure on a netting or exchange-netting symbol."
+      definition: "Deferred v2+ TradeSpine state that records one strategy instance's signed exposure on a netting or exchange-netting symbol."
     - term: "Broker aggregate position"
       definition: "The single symbol position exposed by MT5 in netting and exchange-netting accounts."
 
@@ -214,4 +228,4 @@ appendix:
     - "PRD.md F-POS-1"
     - "PRD.md F-POS-16"
     - "PRD.md F-POS-19"
-    - "architecture-diagram.html Fig 05 Netting Multi-EA Model"
+    - "architecture-diagram.html Fig 05 Deferred Netting Multi-EA Model"

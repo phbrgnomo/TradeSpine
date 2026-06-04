@@ -46,9 +46,9 @@ No blocking findings.
 
 ## Recommendations
 
-- Owner approval should update `BDD-01` from Draft to Approved before ADR generation.
-- ADR generation should use `BDD-01` scenario IDs as the behavioral acceptance boundary for architecture decisions.
+- Historical audit note: BDD-01 has since been approved and consumed by ADR, SPEC, TDD, and IPLAN artifacts.
+- Future changes should preserve `BDD-01` scenario IDs as the behavioral acceptance boundary for architecture decisions.
 
 ## Gate Decision
 
-BDD-01 is ADR-ready after owner approval.
+BDD-01 passed the ADR-readiness gate in this historical audit and is now part of the approved downstream corpus.

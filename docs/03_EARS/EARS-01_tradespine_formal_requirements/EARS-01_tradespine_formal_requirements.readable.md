@@ -38,9 +38,9 @@ Audience: system architects, MQL5 developers, QA reviewers, and release reviewer
 
 | ID | Name | Statement | Traceability |
 | --- | --- | --- | --- |
-| EARS.01.03.4c3f | Reference strategy packaging | WHEN a reference strategy is compiled, THE strategy artifact SHALL consist of one strategy mq5 file plus shared TradeSpine includes WITHIN the v1 release compile gate. | @brd: BRD.01.07.88a6 \| @prd: PRD.01.09.5ef1 |
+| EARS.01.03.4c3f | Shipped strategy packaging | WHEN a shipped v1 strategy artifact is compiled, THE strategy artifact SHALL consist of one strategy mq5 file plus shared TradeSpine includes WITHIN the v1 release compile gate. | @brd: BRD.01.07.88a6 \| @prd: PRD.01.09.5ef1 |
 | EARS.01.03.b784 | Strategy helper routing | WHEN a strategy requests an entry or exit helper, THE strategy artifact SHALL route the request through documented TradeSpine helper calls WITHIN the strategy lifecycle hook that raised the request. | @brd: BRD.01.07.88a6 \| @prd: PRD.01.09.eaf3 |
-| EARS.01.03.0c0a | Strategy implementation guide | WHEN a strategy author starts a new v1 strategy, THE documentation set SHALL provide file structure, lifecycle hooks, helper calls, common inputs, logging expectations, compile checklist, and reference walkthrough WITHIN the authoring guide. | @brd: BRD.01.07.88a6 \| @prd: PRD.01.09.eaf3 |
+| EARS.01.03.0c0a | Strategy implementation guide | WHEN a strategy author starts a new v1 strategy or ports an existing hedging strategy, THE documentation set SHALL provide file structure, lifecycle hooks, helper calls, common inputs, logging expectations, compile checklist, simple-sample walkthrough, and hedging-port expectations WITHIN the authoring guide. | @brd: BRD.01.07.88a6 \| @prd: PRD.01.09.eaf3 |
 | EARS.01.03.222f | Catastrophic safety rejection | WHEN a framework-mediated order request violates catastrophic safety constraints, THE guarded execution path SHALL reject the request before broker handoff WITHIN the submit pipeline. | @brd: BRD.01.07.a94e \| @prd: PRD.01.09.d74e |
 | EARS.01.03.375b | Runtime risk trip | WHEN daily loss, max open lots, max trades per day, or panic stop trips for a strategy instance, THE runtime risk controls SHALL refuse new entries and trigger strategy-scoped close behavior WITHIN the current strategy lifecycle. | @brd: BRD.01.07.a94e \| @prd: PRD.01.09.4fb4 |
 | EARS.01.03.4e80 | Indicator readiness entry block | WHEN a registered indicator is not ready, THE coordinator SHALL block new entries WITHIN the entry request. | @brd: BRD.01.07.a94e \| @prd: PRD.01.09.5963 |
@@ -50,7 +50,7 @@ Audience: system architects, MQL5 developers, QA reviewers, and release reviewer
 | EARS.01.03.db97 | Expiration warning trigger | WHEN the market trade session opens and a supported futures contract expires in one broker day, THE market context component SHALL surface a contract-expiration warning WITHIN the session-open lifecycle event. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.42eb \| @fixed-threshold: PRD.01.market.expiration_warning_one_broker_day |
 | EARS.01.03.03b2 | Symbol metadata initialization | WHEN a strategy instance initializes, THE market context component SHALL load required symbol information for lot step, lot limits, price grid, tick size, tick value, contract size, digits, and trade mode WITHIN init. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.fada |
 | EARS.01.03.ec72 | Order definition symbol validation | WHEN a framework-mediated order is defined, THE order definition path SHALL validate sizing, lots, stop prices, and price grid against initialized symbol information WITHIN the order calculation pipeline. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.60ad |
-| EARS.01.03.d7e9 | Manual netting evidence gate | WHEN release sign-off validates concurrent same-symbol netting, THE release reviewer SHALL require a manual live or demo evidence pack WITHIN the v1 release gate. | @brd: BRD.01.07.b44d \| @prd: PRD.01.09.0764 |
+| EARS.01.03.d7e9 | Deferred account-mode evidence gate | WHEN release sign-off validates v1 account-mode behavior, THE release reviewer SHALL require evidence that netting and exchange-netting modes fail initialization with a deferred-mode diagnostic WITHIN the v1 release gate. | @brd: BRD.01.07.b44d \| @prd: PRD.01.09.0764 |
 | EARS.01.03.1d60 | Documentation release gate | WHEN a v1 release candidate is reviewed, THE release reviewer SHALL verify required docs, same-change documentation updates, Doxygen coverage if retained, and CHANGELOG decision record WITHIN release sign-off. | @brd: BRD.01.07.717b \| @prd: PRD.01.09.4c66 |
 
 ### State-Driven
@@ -58,7 +58,7 @@ Audience: system architects, MQL5 developers, QA reviewers, and release reviewer
 | ID | Name | Statement | Traceability |
 | --- | --- | --- | --- |
 | EARS.01.03.1a3e | User trading-hours entry gate | WHILE a strategy is evaluating a new entry, THE session context SHALL allow the entry only when the market trade session is open and the user-defined strategy trading-hours window both hold WITHIN broker server time. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.efcd |
-| EARS.01.03.5d1b | Netting ownership invariant | WHILE an account is netting or exchange-netting, THE account-mode adapter SHALL preserve strategy-scoped virtual ownership outside the aggregate broker position WITHIN every ownership update. | @brd: BRD.01.07.b44d \| @prd: PRD.01.09.7767 |
+| EARS.01.03.5d1b | Netting/exchange deferred-mode invariant | WHILE an account is netting or exchange-netting in v1, THE account-mode adapter SHALL fail initialization before any trade path, virtual ledger, pending-exit tracker, or execution mutex becomes active. | @brd: BRD.01.07.b44d \| @prd: PRD.01.09.7767 |
 | EARS.01.03.fb67 | Hedging ownership invariant | WHILE an account is hedging, THE account-mode adapter SHALL record strategy ownership against relevant broker tickets or orders WITHIN every ownership update. | @brd: BRD.01.07.b44d \| @prd: PRD.01.09.a252 |
 | EARS.01.03.a71c | Diagnostic log separation | WHILE diagnostic logging is enabled, THE logging components SHALL keep strategy and framework diagnostic logs separate from trade evaluation records WITHIN all evidence outputs. | @brd: BRD.01.07.8e15 \| @prd: PRD.01.09.c622 |
 | EARS.01.03.6bda | Halt safety state | WHILE a strategy instance is in HALT, THE framework SHALL block non-emergency trading helpers and preserve last-known state WITHIN the persisted strategy lifecycle. | @brd: BRD.01.07.a94e \| @prd: PRD.01.09.7608 |
@@ -71,7 +71,7 @@ Audience: system architects, MQL5 developers, QA reviewers, and release reviewer
 | ID | Name | Statement | Traceability |
 | --- | --- | --- | --- |
 | EARS.01.03.932d | Equity sizing placeholder | WHERE SIZING_FIXED_CASH or SIZING_PCT_EQUITY is selected in v1, THE position sizer SHALL reject the sizing request as a visible v2 placeholder. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.60ad |
-| EARS.01.03.f562 | Strategy-scoped panic | WHERE InpPanicStop is true for a strategy instance, THE kill-switch SHALL close only that strategy instance's virtual position or tickets. | @brd: BRD.01.07.a94e \| @prd: PRD.01.09.4fb4 |
+| EARS.01.03.f562 | Strategy-scoped panic | WHERE InpPanicStop is true for a v1 hedging strategy instance, THE kill-switch SHALL close only that strategy instance's owned tickets. | @brd: BRD.01.07.a94e \| @prd: PRD.01.09.4fb4 |
 | EARS.01.03.9abb | Doxygen coverage gate | WHERE Doxygen remains part of the implementation standard, THE release reviewer SHALL verify API documentation coverage before v1 release sign-off. | @brd: BRD.01.07.717b \| @prd: PRD.01.09.4c66 |
 
 ### Unwanted Behavior
@@ -85,7 +85,7 @@ Audience: system architects, MQL5 developers, QA reviewers, and release reviewer
 | EARS.01.03.368c | Unsupported symbol scope | IF a symbol is outside the validated v1 futures scope, THE market context component SHALL block release validation for that symbol WITHIN symbol validation. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.fada |
 | EARS.01.03.45ed | Day-trade close failure | IF day-trade forced close cannot complete before market trade session end, THE framework SHALL enter HALT and preserve unresolved strategy-owned exposure evidence WITHIN the day-trade close sequence. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.d722 |
 | EARS.01.03.e06b | Contract expired warning | IF a supported futures contract is at or past expiration at session open, THE market context component SHALL surface an expired-contract warning WITHIN the session-open lifecycle event. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.42eb |
-| EARS.01.03.e1ae | Manual netting evidence missing | IF concurrent same-symbol netting lacks manual live or demo evidence, THE release gate SHALL block v1 sign-off WITHIN release review. | @brd: BRD.01.07.b44d \| @prd: PRD.01.09.0764 |
+| EARS.01.03.e1ae | Deferred account-mode evidence missing | IF netting or exchange-netting deferred-mode init-failure evidence is missing, THE release gate SHALL block v1 sign-off WITHIN release review. | @brd: BRD.01.07.b44d \| @prd: PRD.01.09.0764 |
 
 ### Ubiquitous
 
@@ -95,9 +95,9 @@ Audience: system architects, MQL5 developers, QA reviewers, and release reviewer
 | EARS.01.03.fef3 | Slippage fields | THE trade evaluation record SHALL include intended price, actual fill price, and slippage points for entries and exits. | @brd: BRD.01.07.8e15 \| @prd: PRD.01.09.c1fc |
 | EARS.01.03.2be9 | User trading-hours entry-only scope | THE session model SHALL keep market-session close handling independent from the user-defined strategy trading-hours entry window for v1 day-trade operation. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.efcd |
 | EARS.01.03.3f57 | Day-trade no overnight roll | THE day-trade mode SHALL prevent strategy-owned positions from rolling into the next trading day for v1 day-trade operation. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.d722 |
-| EARS.01.03.4f9d | Account mode parity | THE account-mode abstraction SHALL support netting, exchange-netting, and hedging without strategy code changes for v1 supported account modes. | @brd: BRD.01.07.b44d \| @prd: PRD.01.09.5cce |
+| EARS.01.03.4f9d | Hedging-first account mode boundary | THE account-mode abstraction SHALL support hedging execution in v1 and expose netting and exchange-netting as deferred modes that fail initialization before trading. | @brd: BRD.01.07.b44d \| @prd: PRD.01.09.5cce |
 | EARS.01.03.dcc4 | One chart symbol scope | THE strategy runtime SHALL bind each strategy instance to one chart symbol for v1 strategy execution. | @brd: BRD.01.10.b11c \| @prd: PRD.01.12.9a32 |
-| EARS.01.03.95ea | Multiple strategies per symbol | THE framework SHALL support multiple same-symbol strategy instances with distinct magic numbers for v1 supported account modes. | @brd: BRD.01.07.b44d \| @prd: PRD.01.09.5cce |
+| EARS.01.03.95ea | Multiple strategies per symbol | THE framework SHALL support multiple same-symbol strategy instances with distinct magic numbers on hedging accounts in v1. | @brd: BRD.01.07.b44d \| @prd: PRD.01.09.5cce |
 | EARS.01.03.b11a | Vendored dependency policy | THE framework source SHALL use the vendored standard-library dependency foundation for reproducible builds. | @brd: BRD.01.04.3030 \| @prd: PRD.01.12.e9ec |
 | EARS.01.03.e20a | Repository broker bypass check | THE repository checks SHALL detect prohibited direct broker submission in strategy files for release sign-off. | @brd: BRD.01.07.a94e \| @prd: PRD.01.09.d74e |
 | EARS.01.03.8044 | Performance budget release evidence | THE release evidence SHALL cover tester overhead, memory per EA, idle-tick overhead, and low-I/O write budgets for v1 performance sign-off. | @brd: BRD.01.07.bf02 \| @prd: PRD.01.09.3092 \| @threshold: PRD.01.perf.tester_overhead \| @threshold: PRD.01.perf.memory_per_ea \| @threshold: PRD.01.perf.idle_tick |
@@ -153,5 +153,5 @@ Audience: system architects, MQL5 developers, QA reviewers, and release reviewer
 | Framework-mediated trade | Trade action requested through TradeSpine helper and safety paths. |
 | Runtime risk controls | Per-EA daily loss, max open lots, max trades per day, and strategy-scoped panic stop controls. |
 | Two-layer session model | Entry gate requiring market trade-session availability and configured user trading-hours window. |
-| Manual netting evidence pack | Live or demo evidence for concurrent same-symbol netting behavior that Strategy Tester cannot automate. |
+| Manual netting evidence pack | Deferred v2+ live or demo evidence for concurrent same-symbol netting behavior that Strategy Tester cannot automate. |
 | Trade evaluation record | Structured intent and execution evidence used to evaluate strategy trading outcomes. |

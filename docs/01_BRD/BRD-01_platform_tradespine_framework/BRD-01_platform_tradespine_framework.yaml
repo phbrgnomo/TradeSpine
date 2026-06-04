@@ -20,15 +20,15 @@ metadata:
       - "@diagram: dfd-l1"
 status: Approved
 created_date: "2026-06-01T13:20:00-03:00"
-last_updated: "2026-06-01T13:20:00-03:00"
+last_updated: "2026-06-03T00:00:00-03:00"
 
 ## Document Control
 document_control:
   project_name: TradeSpine
-  version: "1.0"
+  version: "1.0.1"
   status: Approved
   date_created: "2026-06-01T13:20:00-03:00"
-  last_updated: "2026-06-01T13:20:00-03:00"
+  last_updated: "2026-06-03T00:00:00-03:00"
   author: "phbr"
   prepared_by: "Codex"
   mvp_target_launch: "v1.0 after phased v0.1-v0.9 build validation"
@@ -39,6 +39,7 @@ document_control:
     - "../../00_REF/REF-01_tradespine_source_brief.md"
     - "../../../Project/PRD.md"
     - "../../../Project/architecture-diagram.html"
+  source_snapshot: "Project/PRD.md v3.75 with CHANGELOG v3.74/v3.75 scope corrections; TradeSpine/docs is the authoritative aidoc corpus."
   revision_history:
     entries:
       - version: "1.0"
@@ -50,6 +51,11 @@ document_control:
         date: "2026-06-01T13:55:00-03:00"
         author: "phbr"
         changes: "BRD approved for downstream PRD generation."
+        approver: "phbr"
+      - version: "1.0.1"
+        date: "2026-06-03T00:00:00-03:00"
+        author: "Codex"
+        changes: "Updated source provenance to Project/PRD.md v3.75 and marked TradeSpine/docs as the authoritative aidoc corpus."
         approver: "phbr"
 
 ## Executive Summary
@@ -126,7 +132,7 @@ business_objectives:
     validation_questions:
       - "Can a reference strategy be authored as one strategy file with shared infrastructure outside the strategy file?"
       - "Can framework-mediated orders pass through safety checks that prevent catastrophic order submission?"
-      - "Can netting and hedging accounts support multiple same-symbol strategy instances without strategy-code changes?"
+      - "Can hedging accounts support multiple same-symbol strategy instances while netting and exchange-netting modes fail safely as deferred v2+ modes?"
   problem_statement:
     problem: "Each custom EA repeats critical infrastructure, increasing delivery time and real-money defect exposure."
     impact: "The source brief estimates the reference Turtle EA at 4,081 lines with roughly 70% reusable infrastructure."
@@ -141,9 +147,9 @@ business_objectives:
       baseline: "Safety checks are repeated per EA."
       target: "All framework helper order flow passes through a guarded path before broker submission."
     - id: "BRD.01.04.4fb6"
-      statement: "Preserve same-symbol multi-strategy operation across supported account modes."
-      baseline: "Netting isolation is a known design risk."
-      target: "Both netting and hedging modes demonstrate independent strategy ownership for same-symbol strategies."
+      statement: "Preserve same-symbol multi-strategy operation for v1 hedging accounts while deferring netting and exchange-netting execution."
+      baseline: "Netting isolation is a known design risk and is no longer v1 executable scope."
+      target: "Hedging mode demonstrates independent same-symbol strategy ownership, and netting/exchange-netting modes fail initialization with a deferred-mode diagnostic."
     - id: "BRD.01.04.3030"
       statement: "Make framework builds reproducible across terminal updates."
       baseline: "MetaTrader standard-library behavior may change with terminal updates."
@@ -151,7 +157,7 @@ business_objectives:
     - id: "BRD.01.04.79f3"
       statement: "Enable strategy authoring without reading framework internals."
       baseline: "Current strategy authoring requires infrastructure knowledge."
-      target: "v1.0 ships a template, two reference strategies, and authoring documentation."
+      target: "v1.0 ships a template, two simple reference samples, two additional hedging strategy ports, and authoring documentation."
   success_metrics:
     - id: "BRD.01.04.d58c"
       objective: "Strategy authoring compression"
@@ -164,14 +170,14 @@ business_objectives:
       target: "100% routed through guarded execution"
       period: "v1.0 sign-off"
     - id: "BRD.01.04.7937"
-      objective: "Account-mode parity"
+      objective: "Account-mode v1 safety"
       metric: "Supported account modes"
-      target: "Netting, exchange-netting, and hedging behavior validated"
+      target: "RETAIL_HEDGING behavior validated; RETAIL_NETTING and EXCHANGE deferred-mode init failure validated"
       period: "v1.0 sign-off"
   expected_benefits:
     quantifiable:
       - "Reduce repeated infrastructure from the reference baseline toward a single shared layer."
-      - "Ship two reference strategies for validation and examples."
+      - "Ship two simple reference samples plus two additional hedging strategy ports for validation and examples."
       - "Complete phased build gates from v0.1 through v1.0."
     qualitative:
       - "Centralized review surface for safety-critical trading behavior."
@@ -197,11 +203,11 @@ project_scope:
     p1_must_have:
       - "Single-file strategy authoring model."
       - "Guarded framework-mediated trade execution."
-      - "Strategy-scoped netting and hedging ownership."
+      - "Strategy-scoped hedging ownership, with netting/exchange-netting executable support deferred to v2+."
       - "B3 futures sizing and session support."
       - "Trade intent and execution audit evidence."
       - "Vendored standard-library dependency foundation."
-      - "Reference strategy template and two working reference strategies."
+      - "Reference strategy template, two simple reference samples, and two additional hedging strategy ports."
     p2_should_have:
       - "Low-I/O optimization and idle-path behavior."
       - "Operator-facing documentation for strategy authors."
@@ -285,7 +291,7 @@ functional_requirements:
         items:
           - id: "BRD.01.07.71d6"
             criterion: "Reference strategy packaging"
-            target: "Each v1 reference strategy is one `.mq5` strategy file plus shared framework includes."
+            target: "Each shipped v1 strategy artifact is one `.mq5` strategy file plus shared framework includes, including the two simple samples and the two hedging ports."
     - id: "BRD.01.07.a94e"
       title: "Guarded trade flow"
       capability: "System must ensure every framework-mediated entry passes through one guarded trade path before broker submission."
@@ -305,8 +311,8 @@ functional_requirements:
             criterion: "Guard coverage"
             target: "100% of framework helper entry paths route through the guarded execution path."
     - id: "BRD.01.07.b44d"
-      title: "Account-mode independent strategy ownership"
-      capability: "System must support strategy-scoped ownership on netting, exchange-netting, and hedging accounts."
+      title: "Hedging-first account-mode strategy ownership"
+      capability: "System must support strategy-scoped ownership on hedging accounts and fail safely for deferred netting/exchange-netting modes."
       priority: P1
       complexity:
         rating: "5/5"
@@ -315,13 +321,14 @@ functional_requirements:
         - "Allow multiple TradeSpine strategies on the same symbol with distinct strategy identity."
         - "Keep strategy code mode-agnostic."
       business_rules:
-        - "Exclusive same-symbol locking on netting accounts is not acceptable."
+        - "Netting and exchange-netting executable ownership is deferred to v2+."
+        - "v1 must fail initialization before trading when a deferred account mode is selected or detected."
         - "Manual activity outside the strategy is outside strategy ownership."
       acceptance_criteria:
         items:
           - id: "BRD.01.07.49b8"
             criterion: "Same-symbol strategy independence"
-            target: "Two same-symbol strategy instances can maintain independent ownership evidence in supported account modes."
+            target: "Two same-symbol strategy instances can maintain independent ownership evidence on hedging accounts; netting/exchange-netting modes produce deferred-mode init failure."
     - id: "BRD.01.07.69ef"
       title: "B3 futures MVP scope"
       capability: "System must support B3 futures strategy development for WIN, WDO, IND, and DOL in v1."
@@ -331,7 +338,7 @@ functional_requirements:
         rationale: "Trader -> broker symbol metadata; exchange trading constraints; futures sizing and session rules."
       business_needs:
         - "Use broker-provided symbol and session information for trading decisions."
-        - "Support futures risk sizing for v1 reference strategies."
+        - "Support futures risk sizing for v1 simple samples and hedging strategy ports."
       business_rules:
         - "B3 equities remain deferred to a later BRD cycle."
         - "Fallback constants for symbol data are rejected."
@@ -530,23 +537,23 @@ acceptance_criteria:
     must_have:
       - "All P1 functional requirements have downstream PRD, EARS, SPEC, TDD, and IPLAN traceability."
       - "Guarded execution blocks catastrophic framework-mediated order cases in the v1.0 test set."
-      - "Netting and hedging ownership behavior is validated for same-symbol strategy instances."
+      - "Hedging ownership behavior is validated for same-symbol strategy instances, and netting/exchange-netting modes fail safely as deferred v2+ modes."
       - "B3 futures sizing and broker-session behavior are validated for the v1 symbol set."
       - "Trade intent and execution evidence is produced for accepted entry attempts."
       - "Vendored standard-library version evidence is recorded."
-      - "Two reference strategies and strategy-authoring documentation are available."
+      - "Two simple reference samples, two additional hedging strategy ports, and strategy-authoring documentation are available."
     should_have:
       - "Matched benchmark overhead evidence is <=10% versus baseline."
       - "Low-I/O idle path and optimization behavior are validated."
       - "Architecture diagrams are migrated through charts-flow and linked to downstream artifacts."
   post_launch_validation:
     thirty_day_metrics:
-      - "At least two reference strategies compile and run through framework helpers."
+      - "At least four shipped v1 strategy artifacts compile and run through framework helpers: two simple samples and two hedging ports."
       - "No known framework-mediated catastrophic order path remains open."
       - "No unresolved P1 safety finding remains in the v1.0 audit trail."
     ninety_day_decision_gate:
       continue: "Start the next BRD cycle for equities, pyramiding, or analytics if v1 platform safety and authoring goals pass."
-      pivot: "Revise architecture if account-mode isolation or recovery behavior fails validation."
+      pivot: "Revise architecture if hedging account-mode ownership, recovery behavior, or deferred-mode init failure cannot be validated."
       maintain: "Maintain v1 if strategy authoring and safety goals pass but no new platform scope is justified."
       shutdown: "Stop live-use progression if safety gates cannot be validated."
 
@@ -560,10 +567,10 @@ risk_management:
       mitigation: "Require a single guarded trade path, catastrophic caps, and test evidence before live use."
       owner: "Technical Lead"
     - id: "BRD.01.12.5985"
-      description: "Strategy-scoped virtual ownership may drift from broker aggregate exposure on netting accounts."
+      description: "Deferred netting/exchange design could be mistakenly treated as v1 executable scope."
       likelihood: Medium
       impact: High
-      mitigation: "Require ownership evidence, recovery rules, and halt-on-ambiguity behavior."
+      mitigation: "Require explicit v1 hedging scope, deferred-mode init failure evidence, and v2+ labeling for virtual-ledger ownership."
       owner: "Technical Lead"
     - id: "BRD.01.12.74e8"
       description: "Silent terminal standard-library updates could change framework behavior between builds."
@@ -623,7 +630,7 @@ traceability:
         - "BRD.01.07.717b"
       coverage: Complete
     - objective_id: "BRD.01.04.7937"
-      objective: "Account-mode parity"
+      objective: "Account-mode v1 safety"
       related_frs:
         - "BRD.01.07.b44d"
       coverage: Complete
@@ -682,7 +689,7 @@ glossary:
     - term: Hedging
       definition: "Account mode where separate broker position tickets can coexist."
     - term: Virtual ownership
-      definition: "TradeSpine strategy-scoped accounting used to separate same-symbol strategy exposure."
+      definition: "Deferred v2+ TradeSpine strategy-scoped accounting used to separate same-symbol strategy exposure on netting/exchange-netting accounts."
     - term: Trade audit evidence
       definition: "Paired intent and execution records used for post-trade review."
     - term: Vendored standard library

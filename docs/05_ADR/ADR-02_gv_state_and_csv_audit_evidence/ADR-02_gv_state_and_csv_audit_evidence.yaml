@@ -40,7 +40,7 @@ decision:
   chosen_solution:
     id: "ADR.02.03.c7dd"
     title: "Use terminal GV state plus paired CSV audit evidence"
-    description: "v1 stores strategy lifecycle, duplicate markers, execution locks, and virtual-ledger fields in terminal Global Variables, while TradeLogger writes paired intent and execution CSV records for trade evaluation. No custom file snapshot layer ships in v1."
+    description: "v1 stores scalar strategy lifecycle state, duplicate markers, hedging ticket ownership state, HALT/recovery markers, and deferred-mode diagnostics in terminal Global Variables, while TradeLogger writes paired intent and execution CSV records for trade evaluation. Execution mutex fields, pending-exit queues, virtual-ledger fields, and executable netting/exchange ownership are v2+ scope. No custom file snapshot layer ships in v1."
   key_components:
     - name: "CStateStore"
       role: "Owns GV-backed strategy state and recovery evidence."
@@ -49,8 +49,8 @@ decision:
     - name: "HALT state"
       role: "Stops non-emergency behavior when recovery evidence is ambiguous."
   implementation_approach:
-    mvp_scope: "GV state, magic-filtered broker history reconciliation, paired CSV records, and HALT on ambiguity."
-    next_cycle_scope: "Optional file snapshot or forced flush durability only if v1 evidence justifies extra I/O."
+    mvp_scope: "GV scalar state, hedging ticket state, duplicate markers, deferred-mode diagnostics, magic-filtered broker history reconciliation, paired CSV records, and HALT on ambiguity."
+    next_cycle_scope: "Execution mutex, pending-exit queues, virtual-ledger fields, executable netting/exchange ownership, optional file snapshot, or forced flush durability only if post-v1 evidence justifies extra I/O."
 
 ## Section 4: Alternatives Considered
 alternatives:
@@ -77,8 +77,8 @@ alternatives:
       selected: false
       description: "Use runtime flags and broker state without durable local state."
       pros: ["Lowest implementation complexity"]
-      cons: ["Cannot preserve virtual netting ownership across restart"]
-      rejection_reason: "Unsafe for netting and HALT recovery requirements."
+      cons: ["Cannot preserve v2+ virtual netting ownership across restart"]
+      rejection_reason: "Unsafe for HALT recovery and future netting requirements."
       estimated_cost: "Low"
       fit: Poor
 
@@ -133,7 +133,7 @@ implementation_assessment:
   mvp_phases:
     - phase: "State foundation"
       scope: "CKeyBuilder, GV state store, ticket hi/lo storage, recovery matrix."
-      risk: "Incorrect reconstruction of virtual netting ownership."
+      risk: "Incorrect reconstruction of hedging ticket state or future virtual netting ownership."
     - phase: "Evidence foundation"
       scope: "TradeLogger intent/execution records and slippage fields."
       risk: "Evidence pair drift if broker outcome handling is incomplete."
@@ -156,7 +156,7 @@ verification:
 
 ## Section 9: Traceability
 traceability:
-  tags: ["@adr: ADR-02", "@brd: BRD.01.08.cea7", "@prd: PRD.01.14.737b", "@ears: EARS.01.03.a023", "@bdd: BDD.01.03.0073"]
+  tags: ["@adr: ADR.02.03.c7dd", "@brd: BRD.01.08.cea7", "@prd: PRD.01.14.737b", "@ears: EARS.01.03.a023", "@bdd: BDD.01.03.0073"]
   originating_topic: "@prd: PRD.01.14.737b"
   upstream:
     bdd_references: ["@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.e16a"]

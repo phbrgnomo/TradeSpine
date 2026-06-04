@@ -1,0 +1,228 @@
+---
+document_type: spec-document
+artifact_type: SPEC
+layer: 6
+deliverable_type: code
+id: SPEC-03
+title: Guarded Execution and Risk Controls
+status: Draft
+created_date: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-02T00:40:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Draft
+  version: "1.1"
+  date_created: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-02T00:40:00-03:00"
+  author: "Codex"
+  component: "CGuardedTrade and CRiskManager"
+  tdd_ready_score: "94/100"
+
+## Section 2: Component Overview
+component_overview:
+  description: "Guarded execution is the broker boundary component that validates framework-mediated TradeIntent objects for internal consistency, applies per-order catastrophic guards, performs broker preflight checks, and submits through a private vendored CTrade instance. Runtime account/strategy risk controls are a separate CRiskManager module that evaluates daily loss, open lots, trade count, and panic-stop state before entries and emergency closes."
+  architecture_decision: "@adr: ADR.04.03.7277"
+  diagram:
+    tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
+    mermaid: |
+      flowchart LR
+        Coord["CTradeCoordinator"] --> Port["ITradePort"]
+        Port --> Guard["CGuardedTrade"]
+        Risk["CRiskManager"] --> Coord["CTradeCoordinator"]
+        Risk --> Guard
+        Market["Market/Symbol Context"] --> Guard
+        Guard --> Vendored["Private vendored CTrade"]
+        Guard --> Result["GuardResult"]
+  language: "MQL5"
+  dependencies:
+    - name: "Vendored CTrade"
+      version: "frozen StdLib VERSION.md"
+      purpose: "Executes only after all guard stages pass."
+    - name: "CSymbolContext"
+      version: "v1"
+      purpose: "Provides lot, price, stop, fill-mode, and market metadata."
+    - name: "CAccountContext"
+      version: "v1"
+      purpose: "Provides account state for margin and mode diagnostics."
+
+## Section 3: Interfaces
+interfaces:
+  exports:
+    - name: "ITradePort"
+      type: "interface"
+      signature: "interface ITradePort { GuardResult Submit(const TradeIntent &intent); }"
+      description: "Submission seam used by coordinator and mocks."
+      errors:
+        - "GuardResult rejected: validation, risk, market, OrderCheck, margin, fill, or broker outcome failed."
+    - name: "CGuardedTrade"
+      type: "class"
+      signature: "class CGuardedTrade : public ITradePort"
+      description: "Validates and submits TradeIntent through a private vendored CTrade."
+      errors:
+        - "GuardResult halted: broker outcome is ambiguous or ownership cannot be proven."
+    - name: "CRiskManager"
+      type: "class"
+      signature: "class CRiskManager"
+      description: "Tracks strategy-scoped daily loss, open lots, trade count, and panic-stop state independently from per-order guarded execution."
+      errors:
+        - "RiskTrip: new entries are refused and strategy-scoped close behavior is requested."
+    - name: "FillingPolicy"
+      type: "class"
+      signature: "class FillingPolicy"
+      description: "Selects and validates broker-supported fill mode from initialized symbol metadata before submission."
+      errors:
+        - "UnsupportedFill: no allowed filling mode is compatible with the requested order."
+    - name: "SpreadGuard"
+      type: "class"
+      signature: "class SpreadGuard"
+      description: "Applies symbol-aware spread and price-grid checks before broker handoff."
+      errors:
+        - "SpreadBlocked: current market spread exceeds configured strategy guard."
+    - name: "GuardResult"
+      type: "struct"
+      signature: "struct GuardResult"
+      description: "Submission outcome returned to the coordinator."
+      errors:
+        - "None; contains status and reason fields."
+
+## Section 4: Data Models
+data_models:
+  models:
+    - name: "GuardResult"
+      type: "struct"
+      fields:
+        - name: "status"
+          type: "ENUM_GUARD_STATUS"
+          required: true
+          description: "Accepted, rejected, pending, filled, or halted."
+        - name: "retcode"
+          type: "uint"
+          required: false
+          description: "Broker retcode when a broker boundary was reached."
+        - name: "ordercheck_retcode"
+          type: "uint"
+          required: false
+          description: "OrderCheck retcode captured before broker submission when preflight reaches the terminal."
+        - name: "reason"
+          type: "string"
+          required: true
+          description: "Operator-facing rejection or outcome reason."
+        - name: "ticket"
+          type: "ulong"
+          required: false
+          description: "Broker order, deal, or position ticket when available."
+        - name: "submitted_lots"
+          type: "double"
+          required: false
+          description: "Lots sent to broker after guard normalization."
+        - name: "submitted_price"
+          type: "double"
+          required: false
+          description: "Price submitted to broker after price-grid normalization."
+        - name: "retryable"
+          type: "bool"
+          required: true
+          description: "Whether the failure is eligible for a bounded retry policy."
+        - name: "ambiguous"
+          type: "bool"
+          required: true
+          description: "Whether state reconciliation must HALT rather than infer the outcome."
+    - name: "RiskControlState"
+      type: "struct"
+      fields:
+        - name: "daily_loss_trip"
+          type: "bool"
+          required: true
+          description: "Whether the strategy-scoped daily loss control is tripped."
+        - name: "max_open_lots_trip"
+          type: "bool"
+          required: true
+          description: "Whether open lots exceed configured strategy control."
+        - name: "max_trades_per_day_trip"
+          type: "bool"
+          required: true
+          description: "Whether strategy trade count exceeded the configured daily limit."
+        - name: "panic_stop"
+          type: "bool"
+          required: true
+          description: "Runtime panic flag for this strategy instance."
+
+## Section 5: Behavior
+behavior:
+  validation_rules:
+    - rule: "Framework-mediated catastrophic safety violations SHALL be rejected before broker handoff."
+      source: "@ears: EARS.01.03.222f"
+    - rule: "Daily loss, max open lots, max trades per day, and panic trips SHALL refuse new entries and trigger strategy-scoped close behavior."
+      source: "@ears: EARS.01.03.375b"
+    - rule: "CRiskManager SHALL own daily-loss, max-open-lots, max-trades-per-day, and panic-stop evaluation; CGuardedTrade SHALL own per-order TradeIntent consistency, catastrophic caps, broker preflight, and private CTrade submission."
+      source: "@prd: PRD.01.09.d74e"
+    - rule: "CGuardedTrade SHALL reject internally inconsistent order definitions before broker handoff, including non-positive lots, invalid entry price, side-inverted stops, zero risk distance, and off-grid lots or prices."
+      source: "@ears: EARS.01.03.ec72"
+    - rule: "Panic stop SHALL close only the strategy instance's virtual position or tickets."
+      source: "@ears: EARS.01.03.f562"
+    - rule: "Filling mode, lot grid, price grid, stop distance, spread, margin, and OrderCheck SHALL all pass before private CTrade submission."
+      source: "@ears: EARS.01.03.ec72"
+    - rule: "Unknown broker retcodes or unresolved retry outcomes SHALL be treated as failsafe ambiguity, not as success."
+      source: "@ears: EARS.01.03.588b"
+  state_transitions:
+    - from: "RiskControlState clear"
+      to: "RiskControlState tripped"
+      trigger: "Runtime risk control trips."
+      source: "@bdd: BDD.01.03.0ad7"
+  error_handling:
+    - condition: "Catastrophic validation fails."
+      response: "Return rejection and do not call private CTrade."
+      source: "@bdd: BDD.01.03.9a8b"
+    - condition: "Broker or retcode outcome is ambiguous after submission."
+      response: "Request HALT through state-machine/reconciliation path."
+      source: "@bdd: BDD.01.03.e16a"
+    - condition: "Retryable broker retcode is returned."
+      response: "Apply the configured bounded retry policy; HALT if final outcome remains ambiguous."
+      source: "@ears: EARS.01.03.588b"
+    - condition: "OrderCheck or margin validation fails."
+      response: "Reject with preflight evidence and do not call private CTrade."
+      source: "@bdd: BDD.01.03.9a8b"
+
+## Section 6: Implementation Notes
+implementation_notes:
+  constraints:
+    - "CGuardedTrade owns the only private CTrade instance reachable from framework-mediated execution."
+    - "Strategy files MUST NOT include terminal-global Trade.mqh or call raw broker execution APIs."
+    - "OrderCheck and explicit margin validation are separate guard stages."
+    - "CGuardedTrade MUST NOT become the owner of daily-loss, max-open-lots, max-trades-per-day, or panic-stop policy; it consumes CRiskManager state as an environmental gate only."
+    - "CRiskManager MUST NOT submit broker orders directly; emergency close requests route back through strategy/coordinator/guarded execution paths."
+  patterns:
+    - "Use composition around vendored CTrade because convenience methods are not virtual."
+    - "Classify retcodes into success, pending, retryable, terminal failure, and unknown-failsafe groups."
+    - "Store normalized submitted price/lots and broker retcodes in GuardResult so trade evidence can compare intended versus actual outcome."
+  performance_considerations:
+    - "Rejected orders should emit diagnostics without adding optimization-mode I/O unless audit in optimization is enabled."
+
+## Section 7: Downstream TDD Contracts
+tdd_contracts:
+  tdd_document: "@tdd: TDD.03.04.1f65"
+  test_files:
+    - path: "Scripts/Tests/Test_GuardedTrade.mq5"
+      covers: "TradeIntent consistency validation, catastrophic caps, OrderCheck, margin, fill-mode, retcode classification, and private CTrade boundary."
+    - path: "Scripts/Tests/Test_RiskManager.mq5"
+      covers: "CRiskManager daily loss, open lots, trade count, and panic-stop trips."
+    - path: "Scripts/Tests/Test_BrokerBypassScan.mq5"
+      covers: "Release scan for raw broker bypass and terminal-global Trade includes."
+
+## Section 8: Traceability
+traceability:
+  tags: ["@spec: SPEC-03", "@brd: BRD.01.07.a94e", "@prd: PRD.01.09.d74e", "@ears: EARS.01.03.222f", "@bdd: BDD.01.03.9a8b", "@adr: ADR.04.03.7277"]
+  upstream:
+    adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.09.03.84b9"]
+    bdd_references: ["@bdd: BDD.01.03.9a8b", "@bdd: BDD.01.03.0ad7", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.ef54"]
+    ears_references: ["@ears: EARS.01.03.222f", "@ears: EARS.01.03.7a9c", "@ears: EARS.01.03.375b", "@ears: EARS.01.03.f562", "@ears: EARS.01.03.e20a"]
+    prd_references: ["@prd: PRD.01.09.d74e", "@prd: PRD.01.09.4fb4", "@prd: PRD.01.14.8720"]
+    brd_references: ["@brd: BRD.01.07.a94e", "@brd: BRD.01.08.0ce5"]
+  downstream:
+    - type: TDD
+      layer: 7
+      description: "Guarded execution, retcode, and runtime risk tests."
+  health_score:
+    tdd_ready: "94%"
+    target_score: ">=90/100"

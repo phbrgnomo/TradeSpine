@@ -1,0 +1,141 @@
+---
+id: CHG-02
+title: "v1 Shipped Strategy Set Expansion"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-02"
+  change_level:
+    value: C3
+  change_source:
+    value: upstream
+
+change_control:
+  chg_id: "CHG-02"
+  status: Approved
+  change_level: C3
+  change_source: upstream
+  entry_gate: GATE-01
+  semver_impact: null
+  author: "Codex"
+  date_proposed: "2026-06-02T00:00:00-03:00"
+  date_approved: "2026-06-02T00:00:00-03:00"
+  date_implemented: "2026-06-02T00:00:00-03:00"
+  supersedes: []
+
+change_description:
+  what: |
+    Expand the v1 shipped strategy set from two simple reference strategies to
+    four strategy artifacts: Donchian breakout and Moving-Average crossing remain
+    simple implementation samples, while `1minscalpv3_hedging.mq5` and
+    `BullishBearish Engulfing all v7 hedging.mq5` become additional hedging
+    ports.
+  why: |
+    The simple samples are still needed for low-friction authoring examples, but
+    v1 also needs evidence that real existing hedging strategy code can be ported
+    into the TradeSpine framework surface.
+  trigger: |
+    Product owner request to include two existing hedging EAs as additional v1
+    ports without replacing the simple sample strategies.
+
+impact_assessment:
+  affected_layers:
+    - layer: Source
+      artifacts: ["Project PRD", "architecture-diagram.html", "CHANGELOG.md"]
+      impact: "Canonical v1 shipped strategy set, roadmap, acceptance criteria, and diagram updated."
+    - layer: BRD
+      artifacts: ["BRD-01"]
+      impact: "Business objectives and launch gates updated from two reference strategies to two simple samples plus two hedging ports."
+    - layer: PRD
+      artifacts: ["PRD-01"]
+      impact: "Metrics, functional acceptance, and release expectations updated for four shipped strategy artifacts."
+    - layer: EARS
+      artifacts: ["EARS-01"]
+      impact: "Packaging and authoring guide requirements expanded to include hedging ports."
+    - layer: BDD
+      artifacts: ["BDD-01"]
+      impact: "Compile/package scenario expanded to include Donchian, MA-cross, 1minscalpv3_hedging, and BullishBearish Engulfing v7 hedging."
+    - layer: ADR
+      artifacts: ["ADR-01", "ADR-06", "ADR-10"]
+      impact: "Layout, vendored dependency, and module-boundary decisions now reference simple samples plus hedging ports."
+    - layer: SPEC
+      artifacts: ["SPEC-01", "SPEC-07"]
+      impact: "Authoring and indicator dependency contracts updated for simple samples and approved hedging port dependencies."
+  cascade_direction: upstream-to-downstream
+  risk_level: Medium
+
+implementation:
+  steps:
+    - step: "Updated source PRD, changelog, and architecture diagram for the expanded shipped strategy set."
+      artifact: "Project PRD"
+      status: Completed
+    - step: "Cascaded sample/port scope through BRD, PRD, EARS, BDD, ADR, and SPEC artifacts."
+      artifact: "SDD corpus"
+      status: Completed
+    - step: "Validated YAML parse and searched for stale two-reference-only wording."
+      artifact: "SDD corpus"
+      status: Completed
+  artifacts_modified:
+    - id: "Project PRD"
+      file: "Experts/Main/TradeSpine/Project/PRD.md"
+      change_type: modified
+    - id: "Architecture Diagram"
+      file: "Experts/Main/TradeSpine/Project/architecture-diagram.html"
+      change_type: modified
+    - id: "BRD-01"
+      file: "Experts/Main/TradeSpine/docs/01_BRD/BRD-01_platform_tradespine_framework/"
+      change_type: modified
+    - id: "PRD-01"
+      file: "Experts/Main/TradeSpine/docs/02_PRD/PRD-01_tradespine_platform_requirements/"
+      change_type: modified
+    - id: "EARS-01"
+      file: "Experts/Main/TradeSpine/docs/03_EARS/EARS-01_tradespine_formal_requirements/"
+      change_type: modified
+    - id: "BDD-01"
+      file: "Experts/Main/TradeSpine/docs/04_BDD/BDD-01_tradespine_acceptance_scenarios/"
+      change_type: modified
+    - id: "ADR-01"
+      file: "Experts/Main/TradeSpine/docs/05_ADR/ADR-01_self_contained_mt5_project_layout/ADR-01_self_contained_mt5_project_layout.yaml"
+      change_type: modified
+    - id: "SPEC-01"
+      file: "Experts/Main/TradeSpine/docs/06_SPEC/SPEC-01_strategy_authoring_surface/"
+      change_type: modified
+    - id: "CHG-02"
+      file: "Experts/Main/TradeSpine/docs/governance/chg/CHG-02_v1_shipped_strategy_set_expansion.yaml"
+      change_type: created
+
+verification:
+  checks:
+    - check: "Source EA existence"
+      result: Pass
+      method: "Verified Experts/Main/1minscalpv3_hedging.mq5 and Experts/Main/BullishBearish Engulfing all v7 hedging.mq5 exist."
+    - check: "YAML syntax validation"
+      result: Pass
+      method: "Parsed active Aidoc YAML files with PyYAML."
+    - check: "Stale two-reference-only wording scan"
+      result: Pass
+      method: "Targeted rg scan for two-reference-only release wording; remaining generic references are descriptive or historical."
+
+gate_approval:
+  gate: GATE-01
+  approver: "Product owner"
+  approval_date: "2026-06-02T00:00:00-03:00"
+  conditions:
+    - "Approved by product owner in documentation workflow."
+
+rollback_plan:
+  strategy: manual-fix
+  steps:
+    - "Return G-8 and downstream strategy packaging criteria to the prior two-sample scope."
+    - "Remove port-specific acceptance wording and rerun affected audits."
+  estimated_effort: Medium
+
+emergency_change: null
+
+glossary:
+  terms:
+    - term: Simple sample strategy
+      definition: "Small v1 strategy artifact optimized for teaching the TradeSpine authoring pattern."
+    - term: Hedging port
+      definition: "Existing hedging EA migrated into the TradeSpine framework surface as a v1 shipped strategy artifact."

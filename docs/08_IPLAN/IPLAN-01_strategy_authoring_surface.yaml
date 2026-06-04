@@ -1,0 +1,142 @@
+metadata:
+  schema_version: "1.0"
+  document_type: "iplan-document"
+  artifact_type: "IPLAN"
+  layer: 8
+  iplan_id: "IPLAN-01"
+  source_spec: "@spec: SPEC-01"
+  source_tdd: "@tdd: TDD.01.04.c4a3"
+  total_sections: 6
+  last_updated: "2026-06-03T00:00:00-03:00"
+  tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
+
+document_control:
+  iplan_id: "IPLAN-01"
+  source_spec: "@spec: SPEC-01"
+  source_tdd: "@tdd: TDD.01.04.c4a3"
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-03T00:00:00-03:00"
+  author: "Codex"
+  component: "CStrategyBase and strategy template surface"
+  complexity: 5
+  estimated_files: 8
+  session_count: 0
+  readiness_gate: "TDD-01 audit PASS 94/100"
+  source_inputs:
+    - "../07_TDD/TDD-01_strategy_authoring_surface/TDD-01_strategy_authoring_surface.yaml"
+    - "../06_SPEC/SPEC-01_strategy_authoring_surface/SPEC-01_strategy_authoring_surface.yaml"
+    - "../../Project/PRD.md"
+    - "../../Project/architecture-diagram.html"
+
+file_manifest:
+  files:
+    - path: "Scripts/Tests/Test_StrategyBase.mq5"
+      order: 1
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Lifecycle phase, helper routing, exit hook, and indicator registration tests from TDD-01."
+    - path: "Scripts/Tests/Test_StrategyTemplateCompile.mq5"
+      order: 2
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Template, simple sample, and hedging port packaging compile checks."
+    - path: "Scripts/Tests/Test_AuthoringDocsChecklist.mq5"
+      order: 3
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Authoring guide, strategy input, and indicator input coverage checks."
+    - path: "Include/Strategy/StrategyBase.mqh"
+      order: 4
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Base lifecycle, helper methods, hooks, and registered indicator gate."
+    - path: "Experts/_Template/StrategyTemplate.mq5"
+      order: 5
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Reference one-file strategy template with quoted relative includes."
+    - path: "Experts/DonchianBreakout.mq5"
+      order: 6
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Primary simple sample strategy artifact."
+    - path: "Experts/MovingAverageCross.mq5"
+      order: 7
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Secondary simple sample strategy artifact."
+    - path: "Docs/AUTHORING.md"
+      order: 8
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Developer authoring guide and compile checklist."
+
+execution_commands:
+  cwd: "MQL5/Experts/Main/TradeSpine"
+  setup:
+    - "mkdir -p Include/Strategy Experts/_Template Scripts/Tests Docs"
+  implementation:
+    - "# Write TDD-01 tests first, then implement StrategyBase and strategy artifacts in file_manifest order."
+    - "# Keep strategy files broker-API-free; entries and exits route through CStrategyBase helpers."
+  validation:
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_StrategyBase.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_StrategyTemplateCompile.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_AuthoringDocsChecklist.mq5"
+    - "! rg -n \"#include <(Trade|Expert)[/\\\\]|OrderSend|OrderSendAsync|CTrade\" Experts Include/Strategy"
+
+implementation_contracts:
+  provided:
+    contracts:
+      - name: "CStrategyBase lifecycle contract"
+        type: "State Machine"
+        files: ["Include/Strategy/StrategyBase.mqh", "Scripts/Tests/Test_StrategyBase.mq5"]
+        summary: "Construct, framework-init, strategy-init, and live phases gate every helper call."
+      - name: "Strategy artifact include contract"
+        type: "Protocol Interface"
+        files: ["Experts/_Template/StrategyTemplate.mq5", "Experts/DonchianBreakout.mq5", "Experts/MovingAverageCross.mq5"]
+        summary: "Strategies include TradeSpine through quoted relative paths and expose strategy plus indicator inputs."
+  consumed:
+    dependencies:
+      - "@iplan: IPLAN-02"
+      - "@iplan: IPLAN-04"
+      - "@iplan: IPLAN-07"
+      - "@iplan: IPLAN-09"
+      - "@iplan: IPLAN-10"
+
+session_handoff:
+  sessions:
+    - date: "2026-06-03"
+      agent: "Codex IPLAN autopilot"
+      files_touched: []
+      partial_work: "No implementation started; this seed session only created the execution plan."
+      blockers: "Begin only after IPLAN-02, IPLAN-04, IPLAN-07, IPLAN-09, and IPLAN-10 have stable public contracts."
+      next_session_directive: "Start with Scripts/Tests/Test_StrategyBase.mq5, then implement Include/Strategy/StrategyBase.mqh against TDD-01."
+      validation_results:
+        tests_passing: null
+        coverage: null
+        lint_clean: null
+
+traceability:
+  upstream:
+    spec_references: ["@spec: SPEC-01"]
+    tdd_references: ["@tdd: TDD.01.04.c4a3"]
+    brd_references: ["@brd: BRD.01.07.88a6", "@brd: BRD.01.07.a94e"]
+    prd_references: ["@prd: PRD.01.09.5ef1", "@prd: PRD.01.09.eaf3", "@prd: PRD.01.09.5963"]
+    ears_references: ["@ears: EARS.01.03.4c3f", "@ears: EARS.01.03.b784", "@ears: EARS.01.03.0c0a", "@ears: EARS.01.03.4e80"]
+    bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.c0f6", "@bdd: BDD.01.03.7b02"]
+    adr_references: ["@adr: ADR.01.03.42e3", "@adr: ADR.09.03.84b9", "@adr: ADR.10.03.51ea"]
+  downstream:
+    code_paths: ["@code: Include/Strategy/StrategyBase.mqh", "@code: Experts/_Template/StrategyTemplate.mq5", "@code: Experts/DonchianBreakout.mq5", "@code: Experts/MovingAverageCross.mq5", "@code: Docs/AUTHORING.md"]
+    test_paths: ["@tests: Scripts/Tests/Test_StrategyBase.mq5", "@tests: Scripts/Tests/Test_StrategyTemplateCompile.mq5", "@tests: Scripts/Tests/Test_AuthoringDocsChecklist.mq5"]
+  code_inventory:
+    files: []

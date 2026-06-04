@@ -4,6 +4,14 @@ All notable changes to the PRD, most recent first.
 
 ---
 
+## v3.75 (June 2, 2026)
+
+v1 shipped strategy set expanded. Donchian breakout and Moving-Average crossing remain the simple implementation samples and primary authoring walkthroughs. Two existing hedging EAs are now required as additional v1 TradeSpine ports: `1minscalpv3_hedging.mq5` and `BullishBearish Engulfing all v7 hedging.mq5`. Acceptance criteria, roadmap, and downstream Aidoc artifacts are aligned so the ports prove real-strategy migration without replacing the simple samples.
+
+## v3.74 (June 2, 2026)
+
+Account-mode architecture change for v1. `RETAIL_HEDGING` is now the default and only executable v1 account mode. `RETAIL_NETTING` and `EXCHANGE` remain selectable/detectable diagnostics but must fail initialization with an operator-facing deferred-mode error before any trade path becomes active. Netting virtual gross-position ledger, pending-exit/OCO model, execution mutex, manual concurrent netting evidence, and executable netting/exchange adapter support move to v2+. Roadmap, risks, acceptance criteria, and architecture diagram are aligned to the hedging-first v1 scope.
+
 ## v3.73 (June 1, 2026)
 
 Implementation-plan readiness cleanup. (1) Root path corrected to `MQL5/Experts/Main/TradeSpine/` throughout active PRD requirements. (2) Vendored StdLib subset corrected against live terminal source: add `StdLibErr.mqh` and `AccountInfo.mqh`; seven selected `Trade/*.mqh` files require `<Object.mqh>` → `"../Object.mqh"` edits; `TerminalInfo.mqh` is explicitly not vendored in v1 because unused. (3) `TradeIntent.magic` changed to `ulong` to match `CTrade::SetExpertMagicNumber`. (4) `TradeLogger` schema expanded with virtual-position/OCO/ledger-state fields. (5) `CTradeCoordinator.Update()` clarified as cheap per-tick pump; OCO/history scans move to init/transaction/timer reconciliation. (6) NF-6 grep exclusions extended to `Include/Testing/` and `Scripts/Tests/`; HALT alert behavior routed through a testable alert sink; v0.9 profiler wording aligned with v0.1 scope. (7) Contract-expiration warning fixed to one broker day with no operator input, and architecture diagram labels updated to PRD v3.73/current project root.

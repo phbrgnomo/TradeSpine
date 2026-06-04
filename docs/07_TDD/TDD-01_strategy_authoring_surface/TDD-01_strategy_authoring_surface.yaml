@@ -1,0 +1,264 @@
+---
+document_type: tdd-document
+artifact_type: TDD
+layer: 7
+deliverable_type: code
+id: TDD-01
+title: "Strategy Authoring Surface Test-Driven Development Guide"
+status: Draft
+created_date: "2026-06-02T00:00:00-03:00"
+last_updated: "2026-06-02T00:00:00-03:00"
+metadata:
+  schema_version: "1.0"
+  document_type: tdd-document
+  artifact_type: TDD
+  layer: 7
+  deliverable_type: code
+  lifecycle: mvp-prod-newmvp
+  c4_level: none
+  diagram_standard:
+    tags:
+      - "@diagram: tdd"
+      - "@diagram: test-pyramid"
+
+document_control:
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-02T00:00:00-03:00"
+  last_updated: "2026-06-02T00:00:00-03:00"
+  author: "Codex"
+  component: "CStrategyBase and strategy template surface"
+  spec_reference: "@spec: SPEC-01"
+  source_spec: "../../06_SPEC/SPEC-01_strategy_authoring_surface/SPEC-01_strategy_authoring_surface.yaml"
+  iplan_ready_score: "94/100"
+  mode: generated
+  source_inputs:
+    - "../../../Project/PRD.md"
+    - "../../../Project/architecture-diagram.html"
+    - "../../00_REF/REF-01_tradespine_source_brief.md"
+
+test_pyramid:
+  distribution:
+    unit: 70
+    integration: 20
+    e2e: 10
+  rationale:
+    - "Unit tests validate SPEC interfaces, data models, and local error paths."
+    - "Integration tests validate component contracts with fakes before broker-facing checks."
+    - "E2E tests cover the BDD acceptance path assigned to this SPEC."
+  diagram: |
+    flowchart TD
+      UT[Unit: interfaces and data models] --> IT[Integration: component contracts]
+      IT --> E2E[E2E: BDD acceptance workflows]
+
+test_mapping:
+  scenarios:
+    - bdd_scenario: "@bdd: BDD.01.03.aa68"
+      description: "Shipped strategy authoring, porting, and packaging"
+      tests:
+        - type: unit
+          file: "Scripts/Tests/Test_StrategyBase.mq5"
+          function: "test_strategy_authoring_surface_aa68_unit"
+          status: pending
+        - type: integration
+          file: "Scripts/Tests/Test_StrategyTemplateCompile.mq5"
+          function: "test_strategy_authoring_surface_aa68_integration"
+          status: pending
+        - type: e2e
+          file: "Scripts/Tests/Test_AuthoringDocsChecklist.mq5"
+          function: "test_strategy_authoring_surface_aa68_e2e"
+          status: pending
+    - bdd_scenario: "@bdd: BDD.01.03.c0f6"
+      description: "Indicator readiness blocks entry"
+      tests:
+        - type: unit
+          file: "Scripts/Tests/Test_StrategyBase.mq5"
+          function: "test_strategy_authoring_surface_c0f6_unit"
+          status: pending
+        - type: integration
+          file: "Scripts/Tests/Test_StrategyTemplateCompile.mq5"
+          function: "test_strategy_authoring_surface_c0f6_integration"
+          status: pending
+        - type: e2e
+          file: "Scripts/Tests/Test_AuthoringDocsChecklist.mq5"
+          function: "test_strategy_authoring_surface_c0f6_e2e"
+          status: pending
+    - bdd_scenario: "@bdd: BDD.01.03.7b02"
+      description: "Documentation coverage gate is enforced"
+      tests:
+        - type: unit
+          file: "Scripts/Tests/Test_StrategyBase.mq5"
+          function: "test_strategy_authoring_surface_7b02_unit"
+          status: pending
+        - type: integration
+          file: "Scripts/Tests/Test_StrategyTemplateCompile.mq5"
+          function: "test_strategy_authoring_surface_7b02_integration"
+          status: pending
+        - type: e2e
+          file: "Scripts/Tests/Test_AuthoringDocsChecklist.mq5"
+          function: "test_strategy_authoring_surface_7b02_e2e"
+          status: pending
+  coverage_table:
+    columns: [BDD Scenario, Unit, Integration, E2E, Total]
+    rows:
+      - ["@bdd: BDD.01.03.aa68", 1, 1, 1, 3]
+      - ["@bdd: BDD.01.03.c0f6", 1, 1, 1, 3]
+      - ["@bdd: BDD.01.03.7b02", 1, 1, 1, 3]
+
+test_cases:
+  unit_tests:
+    cases:
+      - id: "TDD.01.04.c4a3"
+        type: unit
+        name: "Lifecycle rejects helper before Live"
+        spec_ref: "@spec: SPEC-01"
+        target: "CStrategyBase.OpenLong"
+        test_file: "Scripts/Tests/Test_StrategyBase.mq5"
+        test_function: "test_strategy_authoring_surface_unit_contract"
+        inputs:
+          - name: fixture
+            type: string
+            value: "phase=StrategyInit, comment=prelive"
+        expected_output:
+          type: contract-result
+          value: "0 ticket and no coordinator call"
+        edge_cases:
+          - condition: "Live phase with registered ready indicators routes through coordinator"
+            expected: "Case remains deterministic and broker-safe."
+  integration_tests:
+    cases:
+      - id: "TDD.01.04.65b2"
+        type: integration
+        name: "Strategy helper routes entries and exits through coordinator"
+        spec_ref: "@spec: SPEC-01"
+        contract: "CStrategyBase plus mock CTradeCoordinator"
+        test_file: "Scripts/Tests/Test_StrategyTemplateCompile.mq5"
+        test_function: "test_strategy_authoring_surface_integration_contract"
+        setup:
+          - "Assemble component with deterministic fakes for broker, clock, store, symbol, and logs where required."
+          - "Load SPEC-defined configuration and BDD trace tags."
+        action:
+          description: "Assemble strategy, call OpenLong and CloseAll after Live"
+        expected_state:
+          - "Entry and close branches receive normalized requests; strategy does not call broker APIs"
+        error_paths:
+          - condition: "Missing required override returns INIT_FAILED"
+            expected_error: "SPEC-defined rejection or HALT path."
+  e2e_tests:
+    cases:
+      - id: "TDD.01.04.fe35"
+        type: e2e
+        name: "Shipped strategy artifacts compile with shared includes"
+        bdd_ref: "@bdd: BDD.01.03.aa68"
+        spec_ref: "@spec: SPEC-01"
+        test_file: "Scripts/Tests/Test_AuthoringDocsChecklist.mq5"
+        test_function: "test_strategy_authoring_surface_e2e_acceptance"
+        workflow:
+          - step: 1
+            action: "Compile DonchianBreakout sample"
+            expected: "One mq5 strategy plus shared includes per artifact"
+          - step: 2
+            action: "Compile MovingAverageCross sample"
+            expected: "No raw broker API bypass in strategy files"
+          - step: 3
+            action: "Compile approved hedging ports"
+            expected: "Authoring checklist evidence is present"
+        timeout_seconds: 300
+        cleanup: "Clear fake broker state, fake stores, generated evidence files, and chart objects under the strategy prefix."
+  security_tests:
+    cases: []
+
+thresholds:
+  unit:
+    coverage_target: ">=90%"
+    pass_criteria:
+      - "All declared unit cases pass."
+      - "No broker API calls occur from unit tests."
+    fail_action: "Block IPLAN Green phase."
+  integration:
+    coverage_target: ">=85%"
+    pass_criteria:
+      - "All declared integration contracts pass."
+      - "Fake-boundary assertions prove the expected side effects."
+    fail_action: "Block IPLAN Green phase."
+  e2e:
+    coverage_target: ">=75% of mapped happy paths"
+    timeout_budget: "<=300s"
+    pass_criteria:
+      - "Critical BDD workflow passes."
+      - "Required evidence artifacts are present."
+    fail_action: "Block release-candidate gate."
+  security:
+    coverage_target: "Not mandated by parent SPEC."
+    pass_criteria:
+      - "No security cases are required for this component."
+    fail_action: "Add cases if a later ADR or SPEC mandates security coverage."
+
+tdd_order:
+  phases:
+    - phase: 1
+      name: "Write Tests"
+      action: "Create the test files declared in test_mapping and test_cases before implementation files."
+      output: "Pending MQL5 test scripts and support includes."
+    - phase: 2
+      name: "Run Tests (Red)"
+      action: "Run Tier-1 scripts or harness checks and confirm failure against missing implementation."
+      output: "Red failure report linked to this TDD."
+    - phase: 3
+      name: "Implement"
+      action: "Implement the smallest component code needed for the failing cases."
+      output: "TradeSpine source files for the parent SPEC."
+    - phase: 4
+      name: "Verify (Green)"
+      action: "Run the declared tests and confirm the expected pass criteria."
+      output: "Green test report and evidence pack."
+    - phase: 5
+      name: "Refactor"
+      action: "Clean implementation without changing the test-observed behavior."
+      output: "Refactored source with tests still green."
+
+traceability:
+  tags:
+    - "@tdd: TDD.01.04.c4a3"
+    - "@spec: SPEC-01"
+    - "@brd: BRD.01.07.88a6"
+    - "@brd: BRD.01.07.a94e"
+    - "@prd: PRD.01.09.5ef1"
+    - "@prd: PRD.01.09.eaf3"
+    - "@ears: EARS.01.03.4c3f"
+    - "@ears: EARS.01.03.b784"
+    - "@bdd: BDD.01.03.aa68"
+    - "@bdd: BDD.01.03.c0f6"
+    - "@adr: ADR.01.03.42e3"
+    - "@adr: ADR.09.03.84b9"
+  upstream:
+    spec_references:
+      - "@spec: SPEC-01"
+    adr_references:
+      - "@adr: ADR.01.03.42e3"
+      - "@adr: ADR.09.03.84b9"
+      - "@adr: ADR.10.03.51ea"
+    bdd_references:
+      - "@bdd: BDD.01.03.aa68"
+      - "@bdd: BDD.01.03.c0f6"
+      - "@bdd: BDD.01.03.7b02"
+    ears_references:
+      - "@ears: EARS.01.03.4c3f"
+      - "@ears: EARS.01.03.b784"
+      - "@ears: EARS.01.03.0c0a"
+      - "@ears: EARS.01.03.4e80"
+    prd_references:
+      - "@prd: PRD.01.09.5ef1"
+      - "@prd: PRD.01.09.eaf3"
+      - "@prd: PRD.01.09.5963"
+    brd_references:
+      - "@brd: BRD.01.07.88a6"
+      - "@brd: BRD.01.07.a94e"
+  downstream:
+    - type: IPLAN
+      layer: 8
+      target: "IPLAN-01"
+      description: "Implementation plan must generate tests before component code."
+  health_score:
+    iplan_ready: "94%"
+    target_score: ">=90/100"

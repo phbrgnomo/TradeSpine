@@ -66,11 +66,11 @@ purpose_and_context:
 requirements:
   event_driven:
     - id: "EARS.01.03.4c3f"
-      name: "Reference strategy packaging"
+      name: "Shipped strategy packaging"
       statement: >
-        WHEN a reference strategy is compiled, THE strategy artifact SHALL
-        consist of one strategy mq5 file plus shared TradeSpine includes WITHIN
-        the v1 release compile gate.
+        WHEN a shipped v1 strategy artifact is compiled, THE strategy artifact
+        SHALL consist of one strategy mq5 file plus shared TradeSpine includes
+        WITHIN the v1 release compile gate.
       traceability: "@brd: BRD.01.07.88a6 | @prd: PRD.01.09.5ef1"
     - id: "EARS.01.03.b784"
       name: "Strategy helper routing"
@@ -82,10 +82,11 @@ requirements:
     - id: "EARS.01.03.0c0a"
       name: "Strategy implementation guide"
       statement: >
-        WHEN a strategy author starts a new v1 strategy, THE documentation set
-        SHALL provide file structure, lifecycle hooks, helper calls, common
-        inputs, logging expectations, compile checklist, and reference walkthrough
-        WITHIN the authoring guide.
+        WHEN a strategy author starts a new v1 strategy or ports an existing
+        hedging strategy, THE documentation set SHALL provide file structure,
+        lifecycle hooks, helper calls, common inputs, logging expectations,
+        compile checklist, simple-sample walkthrough, and hedging-port
+        expectations WITHIN the authoring guide.
       traceability: "@brd: BRD.01.07.88a6 | @prd: PRD.01.09.eaf3"
     - id: "EARS.01.03.222f"
       name: "Catastrophic safety rejection"
@@ -151,11 +152,12 @@ requirements:
         initialized symbol information WITHIN the order calculation pipeline.
       traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.60ad"
     - id: "EARS.01.03.d7e9"
-      name: "Manual netting evidence gate"
+      name: "Deferred account-mode evidence gate"
       statement: >
-        WHEN release sign-off validates concurrent same-symbol netting, THE
-        release reviewer SHALL require a manual live or demo evidence pack
-        WITHIN the v1 release gate.
+        WHEN release sign-off validates v1 account-mode behavior, THE release
+        reviewer SHALL require evidence that netting and exchange-netting modes
+        fail initialization with a deferred-mode diagnostic WITHIN the v1 release
+        gate.
       traceability: "@brd: BRD.01.07.b44d | @prd: PRD.01.09.0764"
     - id: "EARS.01.03.1d60"
       name: "Documentation release gate"
@@ -174,11 +176,11 @@ requirements:
         time.
       traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.efcd"
     - id: "EARS.01.03.5d1b"
-      name: "Netting ownership invariant"
+      name: "Netting/exchange deferred-mode invariant"
       statement: >
-        WHILE an account is netting or exchange-netting, THE account-mode adapter
-        SHALL preserve strategy-scoped virtual ownership outside the aggregate
-        broker position WITHIN every ownership update.
+        WHILE an account is netting or exchange-netting in v1, THE account-mode
+        adapter SHALL fail initialization before any trade path, virtual ledger,
+        pending-exit tracker, or execution mutex becomes active.
       traceability: "@brd: BRD.01.07.b44d | @prd: PRD.01.09.7767"
     - id: "EARS.01.03.fb67"
       name: "Hedging ownership invariant"
@@ -234,8 +236,8 @@ requirements:
     - id: "EARS.01.03.f562"
       name: "Strategy-scoped panic"
       statement: >
-        WHERE InpPanicStop is true for a strategy instance, THE kill-switch SHALL
-        close only that strategy instance's virtual position or tickets.
+        WHERE InpPanicStop is true for a v1 hedging strategy instance, THE
+        kill-switch SHALL close only that strategy instance's owned tickets.
       traceability: "@brd: BRD.01.07.a94e | @prd: PRD.01.09.4fb4"
     - id: "EARS.01.03.9abb"
       name: "Doxygen coverage gate"
@@ -293,10 +295,10 @@ requirements:
         WITHIN the session-open lifecycle event.
       traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.42eb"
     - id: "EARS.01.03.e1ae"
-      name: "Manual netting evidence missing"
+      name: "Deferred account-mode evidence missing"
       statement: >
-        IF concurrent same-symbol netting lacks manual live or demo evidence, THE
-        release gate SHALL block v1 sign-off WITHIN release review.
+        IF netting or exchange-netting deferred-mode init-failure evidence is
+        missing, THE release gate SHALL block v1 sign-off WITHIN release review.
       traceability: "@brd: BRD.01.07.b44d | @prd: PRD.01.09.0764"
   ubiquitous:
     - id: "EARS.01.03.a023"
@@ -325,10 +327,11 @@ requirements:
         into the next trading day for v1 day-trade operation.
       traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.d722"
     - id: "EARS.01.03.4f9d"
-      name: "Account mode parity"
+      name: "Hedging-first account mode boundary"
       statement: >
-        THE account-mode abstraction SHALL support netting, exchange-netting, and
-        hedging without strategy code changes for v1 supported account modes.
+        THE account-mode abstraction SHALL support hedging execution in v1 and
+        expose netting and exchange-netting as deferred modes that fail
+        initialization before trading.
       traceability: "@brd: BRD.01.07.b44d | @prd: PRD.01.09.5cce"
     - id: "EARS.01.03.dcc4"
       name: "One chart symbol scope"
@@ -340,7 +343,7 @@ requirements:
       name: "Multiple strategies per symbol"
       statement: >
         THE framework SHALL support multiple same-symbol strategy instances with
-        distinct magic numbers for v1 supported account modes.
+        distinct magic numbers on hedging accounts in v1.
       traceability: "@brd: BRD.01.07.b44d | @prd: PRD.01.09.5cce"
     - id: "EARS.01.03.b11a"
       name: "Vendored dependency policy"
@@ -413,9 +416,9 @@ quality_attributes:
 ## Traceability
 traceability:
   tags:
-    - "@ears: EARS-01"
-    - "@prd: PRD-01"
-    - "@brd: BRD-01"
+    - "@ears: EARS.01.04.93fd"
+    - "@prd: PRD.01.09.9e71"
+    - "@brd: BRD.01.03.d116"
   upstream:
     prd_references:
       - "@prd: PRD.01.09.9e71"
@@ -476,6 +479,6 @@ glossary:
     - term: Two-layer session model
       definition: "Entry gate requiring market trade-session availability and configured user trading-hours window."
     - term: Manual netting evidence pack
-      definition: "Live or demo evidence for concurrent same-symbol netting behavior that Strategy Tester cannot automate."
+      definition: "Deferred v2+ live or demo evidence for concurrent same-symbol netting behavior that Strategy Tester cannot automate."
     - term: Trade evaluation record
       definition: "Structured intent and execution evidence used to evaluate strategy trading outcomes."

@@ -35,7 +35,7 @@ TradeSpine is a MetaTrader 5 product platform for B3 futures strategy authors. I
 
 We believe that the owner-operator trader will create safer B3 futures strategies if TradeSpine separates strategy logic from reusable trading infrastructure.
 
-We will know this is true when two reference strategies compile, trade through framework helpers, and satisfy the v1.0 launch gates.
+We will know this is true when two simple reference samples and two additional hedging strategy ports compile, trade through framework helpers, and satisfy the v1.0 launch gates.
 
 ### Timeline
 
@@ -85,11 +85,11 @@ TradeSpine can turn repeated EA infrastructure into a reusable product surface w
 
 | ID | Metric | Baseline | Target | Measurement | BRD |
 | --- | --- | --- | --- | --- | --- |
-| PRD.01.05.129c | Reference strategy packaging | Reference Turtle strategy has roughly 70% repeated infrastructure | Two v1 reference strategies use one strategy file plus shared framework services | Repository review and compile evidence | @brd: BRD.01.04.22e9 |
+| PRD.01.05.129c | Reference strategy packaging | Reference Turtle strategy has roughly 70% repeated infrastructure | Two simple v1 reference samples and two additional hedging strategy ports use one strategy file plus shared framework services | Repository review and compile evidence | @brd: BRD.01.04.22e9 |
 | PRD.01.05.680e | Guarded helper coverage | Safety checks repeated per EA | 100% of framework helper entry paths route through guarded execution | Code review plus test evidence | @brd: BRD.01.04.7b04 |
 | PRD.01.05.bb1f | Runtime risk controls | Daily loss, open-lot, trade-count, and panic controls are repeated or absent per EA | Per-EA daily loss, max open lots, max trades per day, and strategy-scoped panic stop are documented and release-tested | Risk-control test evidence and operator-input review | @brd: BRD.01.07.a94e |
-| PRD.01.05.f4c5 | Account-mode ownership validation | Netting same-symbol isolation is a known design risk | Same-symbol strategy ownership validated on netting, exchange-netting, and hedging modes, including manual concurrent netting evidence | Automated mode-specific report plus manual live/demo evidence pack | @brd: BRD.01.04.4fb6 |
-| PRD.01.05.ecfb | Manual netting evidence pack | Strategy Tester cannot validate true concurrent same-symbol netting contention | Concurrent multi-EA netting release sign-off includes manual live or demo evidence because Strategy Tester cannot validate true concurrency | Release evidence pack review | @brd: BRD.01.07.b44d |
+| PRD.01.05.f4c5 | Account-mode v1 ownership and deferral validation | Netting same-symbol isolation is a known design risk and is deferred from v1 executable scope | Same-symbol strategy ownership validated on hedging accounts; netting and exchange-netting selections fail initialization with deferred-mode diagnostics | Automated hedging ownership report plus deferred-mode init-failure evidence | @brd: BRD.01.04.4fb6 |
+| PRD.01.05.ecfb | Deferred account-mode evidence | Strategy Tester cannot validate true concurrent same-symbol netting contention, and v1 no longer implements executable netting/exchange modes | Release sign-off confirms netting/exchange modes are deferred by init failure; manual concurrent netting evidence is deferred to v2+ | Release evidence pack review | @brd: BRD.01.07.b44d |
 | PRD.01.05.4218 | Audit evidence pairing | Per-EA logging is inconsistent | Accepted entry attempts produce paired intent and execution evidence | Trade journal inspection | @brd: BRD.01.07.8e15 |
 | PRD.01.05.9b99 | Strategy implementation guide | Strategy authoring knowledge is embedded in existing EA source | New strategy authors can create a v1 strategy from the guide without copying broker execution infrastructure | Documentation review plus reference-strategy walkthrough | @brd: BRD.01.07.88a6 |
 | PRD.01.05.5be3 | Tester overhead | Hand-written equivalent strategy | <=10% median overhead | Minimum benchmark protocol | @brd: BRD.01.07.bf02 |
@@ -107,9 +107,9 @@ TradeSpine can turn repeated EA infrastructure into a reusable product surface w
 
 | ID | Goal | Metric | Target | Timeline | BRD |
 | --- | --- | --- | --- | --- | --- |
-| PRD.01.06.4cf2 | Define the strategy authoring product surface | Reference strategy shape | One `.mq5` strategy file per reference strategy | v1.0 | @brd: BRD.01.07.88a6 |
+| PRD.01.06.4cf2 | Define the strategy authoring product surface | Reference strategy shape | One `.mq5` strategy file per shipped simple sample or hedging port | v1.0 | @brd: BRD.01.07.88a6 |
 | PRD.01.06.248e | Define guarded trading behavior | Helper-path coverage | 100% framework helper routing through guarded execution | v1.0 | @brd: BRD.01.07.a94e |
-| PRD.01.06.c9c6 | Define strategy-scoped account-mode behavior | Same-symbol mode validation | Independent ownership evidence in supported account modes | v1.0 | @brd: BRD.01.07.b44d |
+| PRD.01.06.c9c6 | Define strategy-scoped account-mode behavior | Same-symbol mode validation | Independent ownership evidence on hedging accounts plus deferred-mode failure evidence for netting/exchange | v1.0 | @brd: BRD.01.07.b44d |
 | PRD.01.06.da13 | Define audit evidence and analytics handoff behavior | Intent and execution evidence pairing | Paired records for accepted entries | v1.0 | @brd: BRD.01.07.8e15 |
 
 ## Scope and Requirements
@@ -121,10 +121,10 @@ TradeSpine can turn repeated EA infrastructure into a reusable product surface w
 | PRD.01.07.2878 | Strategy authoring workspace | P1-Must | Template, implementation guide, and reference strategy structure that lets a strategy author focus on signal logic and behavior selection. | @brd: BRD.01.07.88a6 |
 | PRD.01.07.0b72 | Execution safety path | P1-Must | Product behavior that routes framework-mediated entries through safety, session, risk, broker, and evidence gates. | @brd: BRD.01.07.a94e |
 | PRD.01.07.7733 | Runtime risk controls | P1-Must | Per-EA daily loss, max open lots, max trades per day, and strategy-scoped panic stop that can refuse entries or close this strategy when tripped. | @brd: BRD.01.07.a94e |
-| PRD.01.07.6107 | Account-mode ownership | P1-Must | Product behavior that lets same-symbol strategies maintain strategy-scoped ownership across supported account modes. | @brd: BRD.01.07.b44d |
+| PRD.01.07.6107 | Account-mode ownership | P1-Must | Product behavior that lets same-symbol strategies maintain strategy-scoped ownership on hedging accounts and fail safely for deferred netting/exchange modes. | @brd: BRD.01.07.b44d |
 | PRD.01.07.3ab9 | B3 futures market context | P1-Must | Product behavior for v1 futures sizing modes, broker-session awareness, user trading-hours windows, and symbol metadata validation. | @brd: BRD.01.07.69ef |
 | PRD.01.07.f540 | Trade audit exports | P1-Must | Separated diagnostic logs and structured trade evaluation evidence suitable for code audit and Python-side post-trade analysis. | @brd: BRD.01.07.8e15 |
-| PRD.01.07.1bce | Testability and release evidence | P1-Must | Release gates that prove safety, mode ownership, manual netting evidence, reference strategy behavior, benchmark targets, and documentation governance before v1.0. | @brd: BRD.01.07.717b |
+| PRD.01.07.1bce | Testability and release evidence | P1-Must | Release gates that prove safety, hedging ownership, deferred account-mode behavior, reference strategy behavior, benchmark targets, and documentation governance before v1.0. | @brd: BRD.01.07.717b |
 
 ### Dependencies
 
@@ -161,7 +161,7 @@ As a Strategy Author, I want to write a strategy as one strategy file so that si
 Priority: P1
 
 Acceptance criteria:
-- The reference strategy compiles without direct broker execution includes in the strategy file.
+- Each simple sample and hedging port strategy artifact compiles without direct broker execution includes in the strategy file.
 - The strategy calls documented framework helpers for entries and exits.
 - The v1 strategy implementation guide explains the strategy file structure, lifecycle hooks, helper calls, common inputs, logging expectations, compile checklist, and reference-strategy walkthrough.
 
@@ -202,7 +202,7 @@ Priority: P1
 
 Acceptance criteria:
 - P1 product gates have corresponding validation evidence.
-- Concurrent same-symbol netting sign-off includes manual live/demo evidence because Strategy Tester cannot validate true concurrency.
+- Netting and exchange-netting selections fail initialization with deferred-mode diagnostics; concurrent same-symbol netting evidence is deferred to v2+.
 - Release governance checks required docs, same-change documentation updates, and CHANGELOG decision records.
 - Deferred scope is explicit and does not block v1.0.
 
@@ -214,7 +214,7 @@ BRD: @brd: BRD.01.07.717b
 | --- | --- | --- | --- | --- |
 | PRD.01.09.9e71 | Strategy authoring surface | P1 | TradeSpine shall expose a documented strategy template, implementation guide, lifecycle hooks, behavior-selection points, and reference strategies for B3 futures authors. | @brd: BRD.01.07.88a6 |
 | PRD.01.09.88e3 | Guarded execution | P1 | TradeSpine shall route framework-mediated entries through product safety checks before broker submission. | @brd: BRD.01.07.a94e |
-| PRD.01.09.aaf8 | Account-mode ownership | P1 | TradeSpine shall keep strategy ownership separate from broker exposure across netting, exchange-netting, and hedging account modes. | @brd: BRD.01.07.b44d |
+| PRD.01.09.aaf8 | Account-mode ownership | P1 | TradeSpine shall keep strategy ownership separate on hedging accounts and fail safely before trading on deferred netting/exchange-netting account modes. | @brd: BRD.01.07.b44d |
 | PRD.01.09.9cac | B3 futures market context | P1 | TradeSpine shall validate symbol metadata, broker session state, and futures sizing inputs for v1 B3 futures use. | @brd: BRD.01.07.69ef |
 | PRD.01.09.baed | Audit evidence | P1 | TradeSpine shall separate strategy/framework diagnostic logs from structured trade evaluation records, while producing paired intent and execution evidence that external analytics can consume. | @brd: BRD.01.07.8e15 |
 | PRD.01.09.841a | Testability and release readiness | P1 | TradeSpine shall provide release evidence that validates safety, ownership, performance, and documentation gates. | @brd: BRD.01.07.717b |
@@ -222,10 +222,11 @@ BRD: @brd: BRD.01.07.717b
 ### Functional Acceptance Highlights
 
 - Guarded execution includes runtime risk controls, indicator-readiness gating, and HALT behavior for ambiguous async fill, cancel, or reconciliation state.
-- Account-mode ownership includes a duplicate account-symbol-magic guard and explicit netting and hedging ownership invariants.
+- Strategy authoring includes two simple samples plus two hedging ports: DonchianBreakout, MovingAverageCross, `1minscalpv3_hedging.mq5`, and `BullishBearish Engulfing all v7 hedging.mq5`.
+- Account-mode ownership includes a duplicate account-symbol-magic guard, hedging ticket ownership invariant, and explicit netting/exchange deferred-mode invariant.
 - B3 futures context includes the two-layer session model, initialized symbol-information validation, v1 futures sizing modes, day-trade no-overnight close, and one-day session-open contract-expiration warnings.
 - Audit evidence includes intended price, actual fill price, and slippage points for trade evaluation.
-- Release readiness includes manual concurrent netting evidence, documentation/release governance, and the full performance budget set.
+- Release readiness includes deferred account-mode evidence, documentation/release governance, and the full performance budget set.
 
 ### Product Journey Diagram
 
@@ -240,7 +241,7 @@ TradeSpine is a MetaTrader 5 strategy framework for B3 futures traders who want 
 ### Key Messages
 
 - Write strategy logic once and route framework-mediated trades through shared safety gates.
-- Run multiple same-symbol TradeSpine strategies with strategy-scoped ownership evidence.
+- Run multiple same-symbol TradeSpine strategies with hedging ticket ownership evidence.
 - Export paired trade intent and execution evidence for post-trade review.
 
 ### Feature Descriptions
@@ -274,7 +275,7 @@ TradeSpine is a MetaTrader 5 strategy framework for B3 futures traders who want 
 | Functional | All P1 product capabilities have downstream EARS-ready requirements. | 100% | PRD audit and traceability review |
 | Safety | Framework-mediated catastrophic order scenarios are rejected before broker handoff. | Pass | Safety test suite |
 | Risk | Runtime risk controls cover daily loss %, max open lots, max trades per day, and strategy-scoped panic stop. | Pass | Risk-control test evidence and operator-input review |
-| Ownership | Same-symbol strategy ownership works in supported account modes, including manual concurrent netting evidence. | Pass | Automated mode-specific tests plus manual live/demo evidence pack |
+| Ownership | Same-symbol strategy ownership works on hedging accounts, and deferred account modes fail initialization before trading. | Pass | Automated hedging ownership tests plus deferred-mode init-failure evidence |
 | Session | Entries require both broker trading-session availability and the configured user trading-hours window in broker/server time. | Pass | Session test evidence |
 | Sizing | v1 validates symbol information at init and uses it for sizing, lot, and price-grid order definition. | Pass | Input reference and sizing test review |
 | Audit | Strategy/framework diagnostic logs are separated from paired trade intent and execution records. | Pass | Diagnostic log and trade evidence inspection |
@@ -283,14 +284,14 @@ TradeSpine is a MetaTrader 5 strategy framework for B3 futures traders who want 
 
 ### Business Acceptance
 
-- Strategy author can create a reference strategy from the v1 implementation guide without duplicating broker execution infrastructure.
+- Strategy author can create a simple reference strategy or port an existing hedging strategy from the v1 implementation guide without duplicating broker execution infrastructure.
 - Operator can identify why a framework-mediated trade was rejected or accepted.
 - Analyst can evaluate trade records without parsing strategy/framework diagnostic logs.
 - Release reviewer can trace every P1 product capability to BRD source elements.
 
 ### Technical Acceptance
 
-- Strict compile passes for framework and reference strategies.
+- Strict compile passes for framework, simple reference samples, and additional hedging strategy ports.
 - Tier-1 test suite passes before release sign-off.
 - Repository checks detect prohibited direct broker submission in strategy files.
 
@@ -317,8 +318,8 @@ TradeSpine is a MetaTrader 5 strategy framework for B3 futures traders who want 
 | ID | Description | Likelihood | Impact | Mitigation | Owner | BRD |
 | --- | --- | --- | --- | --- | --- | --- |
 | PRD.01.13.093a | Unsafe framework-mediated order reaches the broker. | Medium | High | Require guarded helper routing, safety tests, and rejection evidence. | Technical Lead | @brd: BRD.01.12.5c81 |
-| PRD.01.13.e18a | Strategy ownership drifts from broker aggregate exposure or broker ticket-level state. | Medium | High | Require explicit netting, exchange-netting, and hedging ownership evidence, account-mode tests, manual live/demo concurrent netting evidence, and halt-on-ambiguity behavior. | Technical Lead | @brd: BRD.01.12.5985 |
-| PRD.01.13.9c2d | Release sign-off may overstate same-symbol netting safety if manual live/demo concurrency evidence is missing. | Medium | High | Require a manual concurrent netting evidence pack in addition to automated tests because Strategy Tester cannot validate true concurrency. | Technical Lead | @brd: BRD.01.12.5985 |
+| PRD.01.13.e18a | Deferred netting/exchange design is accidentally treated as v1 executable scope, or hedging ticket ownership drifts from broker state. | Medium | High | Require explicit hedging ownership evidence, deferred-mode account tests, v2+ labeling for netting/exchange, and halt-on-ambiguity behavior. | Technical Lead | @brd: BRD.01.12.5985 |
+| PRD.01.13.9c2d | Release sign-off may overstate v1 account-mode scope if deferred netting/exchange modes are not shown to fail safely. | Medium | High | Require deferred-mode init-failure evidence in v1 and move manual concurrent netting evidence to v2+ executable netting scope. | Technical Lead | @brd: BRD.01.12.5985 |
 | PRD.01.13.f493 | Operator may run without intended daily loss, open lots, trade count, or panic controls. | Medium | High | Expose runtime risk controls as P1 inputs and require risk-control test evidence before v1.0 sign-off. | Product Owner | @brd: BRD.01.12.5c81 |
 | PRD.01.13.3e77 | Product requirements drift from implementation during phased build. | Medium | Medium | Use aidoc traceability, audits, and same-change documentation updates. | Product Owner | @brd: BRD.01.12.0224 |
 | PRD.01.13.be4b | Framework overhead exceeds tester or idle-operation targets. | Medium | Medium | Require benchmark evidence and low-I/O validation before v1.0 sign-off. | Technical Lead | @brd: BRD.01.07.bf02 |
@@ -374,12 +375,12 @@ TradeSpine is a MetaTrader 5 strategy framework for B3 futures traders who want 
 | Strategy ownership | Strategy-scoped accounting and evidence that separates one strategy from another. |
 | Diagnostic log | Strategy and framework audit trail for code-path decisions, rejections, halts, and recovery behavior. |
 | Trade evaluation record | Structured intent and execution evidence used to evaluate strategy trading outcomes. |
-| Netting ownership invariant | In netting and exchange-netting account modes, broker exposure is symbol-aggregate, so TradeSpine must preserve strategy-scoped ownership evidence outside the aggregate broker position. |
+| Netting ownership invariant | Deferred v2+ invariant: in netting and exchange-netting account modes, broker exposure is symbol-aggregate, so TradeSpine must preserve strategy-scoped ownership evidence outside the aggregate broker position. |
 | Hedging ownership invariant | In hedging account mode, TradeSpine records ownership against relevant broker tickets or orders while preserving the same strategy-scoped evidence model. |
 | Runtime risk controls | Per-EA limits for daily loss, max open lots, max trades per day, and a strategy-scoped panic stop. |
 | Strategy-scoped panic stop | Operator control that stops the current TradeSpine strategy instance without claiming to manage unrelated strategies. |
 | Two-layer session model | Entry gating model requiring both market trade-session availability and the configured user trading-hours window in broker/server time. |
-| Manual netting evidence pack | Live or demo evidence used to validate concurrent same-symbol netting behavior that the MT5 Strategy Tester cannot automate. |
+| Manual netting evidence pack | Deferred v2+ live or demo evidence used to validate concurrent same-symbol netting behavior that the MT5 Strategy Tester cannot automate. |
 | Placeholder sizing mode | Visible but non-production sizing option reserved for a later release boundary. |
 | Duplicate magic guard | Initialization safety check that prevents or safely recovers duplicate account-symbol-magic ownership collisions. |
 | Day-trade auto-close | Mode that performs a complete strategy stop before market session close and prevents strategy-owned positions from rolling overnight. |

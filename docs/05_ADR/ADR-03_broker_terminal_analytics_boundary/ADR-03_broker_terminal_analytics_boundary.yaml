@@ -151,7 +151,7 @@ verification:
 
 ## Section 9: Traceability
 traceability:
-  tags: ["@adr: ADR-03", "@brd: BRD.01.08.a20b", "@prd: PRD.01.14.de0d", "@ears: EARS.01.03.a023", "@bdd: BDD.01.03.d6ae"]
+  tags: ["@adr: ADR.03.03.4124", "@brd: BRD.01.08.a20b", "@prd: PRD.01.14.de0d", "@ears: EARS.01.03.a023", "@bdd: BDD.01.03.d6ae"]
   originating_topic: "@prd: PRD.01.14.de0d"
   upstream:
     bdd_references: ["@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.b37d", "@bdd: BDD.01.03.ef54"]

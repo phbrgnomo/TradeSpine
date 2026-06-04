@@ -1,0 +1,126 @@
+metadata:
+  schema_version: "1.0"
+  document_type: "iplan-document"
+  artifact_type: "IPLAN"
+  layer: 8
+  iplan_id: "IPLAN-06"
+  source_spec: "@spec: SPEC-06"
+  source_tdd: "@tdd: TDD.06.04.8f4d"
+  total_sections: 6
+  last_updated: "2026-06-03T00:00:00-03:00"
+  tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
+
+document_control:
+  iplan_id: "IPLAN-06"
+  source_spec: "@spec: SPEC-06"
+  source_tdd: "@tdd: TDD.06.04.8f4d"
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-03T00:00:00-03:00"
+  author: "Codex"
+  component: "CSymbolContext, CSessionContext, CMarketContext"
+  complexity: 4
+  estimated_files: 6
+  session_count: 0
+  readiness_gate: "TDD-06 audit PASS 93/100"
+  source_inputs:
+    - "../07_TDD/TDD-06_market_session_and_symbol_context/TDD-06_market_session_and_symbol_context.yaml"
+    - "../06_SPEC/SPEC-06_market_session_and_symbol_context/SPEC-06_market_session_and_symbol_context.yaml"
+    - "../../Project/PRD.md"
+    - "../../Project/architecture-diagram.html"
+
+file_manifest:
+  files:
+    - path: "Scripts/Tests/Test_SymbolContext.mq5"
+      order: 1
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Required metadata loading, invalid metadata failure, and lot/price-grid validation tests."
+    - path: "Scripts/Tests/Test_SessionContext.mq5"
+      order: 2
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Market session, user trading-hours gate, and day-trade close trigger tests."
+    - path: "Scripts/Tests/Test_ContractLifecycle.mq5"
+      order: 3
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "One-broker-day expiration warning tests."
+    - path: "Include/Market/SymbolContext.mqh"
+      order: 4
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Vendored CSymbolInfo wrapper and immutable symbol metadata reads."
+    - path: "Include/Market/SessionContext.mqh"
+      order: 5
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Broker-session, user-hours, and day-trade close window evaluation."
+    - path: "Include/Market/MarketContext.mqh"
+      order: 6
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Symbol, account, session, and contract lifecycle context facade."
+
+execution_commands:
+  cwd: "MQL5/Experts/Main/TradeSpine"
+  setup:
+    - "mkdir -p Include/Market Scripts/Tests"
+  implementation:
+    - "# Write TDD-06 tests first, then implement symbol, session, and market context."
+    - "# Use broker/server time as authoritative and keep session gates separate from emergency close paths."
+  validation:
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_SymbolContext.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_SessionContext.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_ContractLifecycle.mq5"
+
+implementation_contracts:
+  provided:
+    contracts:
+      - name: "Market validation contract"
+        type: "Protocol Interface"
+        files: ["Include/Market/SymbolContext.mqh", "Include/Market/MarketContext.mqh"]
+        summary: "Order definitions validate lots, stops, prices, and trade mode against initialized symbol metadata."
+      - name: "Session window contract"
+        type: "Data Model"
+        files: ["Include/Market/SessionContext.mqh", "Scripts/Tests/Test_SessionContext.mq5"]
+        summary: "Market session, user trading-hours gate, and day-trade close trigger are explicit and testable."
+  consumed:
+    dependencies:
+      - "@iplan: IPLAN-09"
+      - "@iplan: IPLAN-11"
+
+session_handoff:
+  sessions:
+    - date: "2026-06-03"
+      agent: "Codex IPLAN autopilot"
+      files_touched: []
+      partial_work: "No implementation started; this seed session only created the execution plan."
+      blockers: "Requires runtime helpers and test support for deterministic clock/symbol metadata fakes."
+      next_session_directive: "Start with Scripts/Tests/Test_SymbolContext.mq5 and implement SymbolContext metadata validation."
+      validation_results:
+        tests_passing: null
+        coverage: null
+        lint_clean: null
+
+traceability:
+  upstream:
+    spec_references: ["@spec: SPEC-06"]
+    tdd_references: ["@tdd: TDD.06.04.8f4d"]
+    brd_references: ["@brd: BRD.01.07.69ef"]
+    prd_references: ["@prd: PRD.01.09.fada", "@prd: PRD.01.09.60ad", "@prd: PRD.01.09.efcd", "@prd: PRD.01.09.d722", "@prd: PRD.01.09.42eb"]
+    ears_references: ["@ears: EARS.01.03.03b2", "@ears: EARS.01.03.ec72", "@ears: EARS.01.03.1a3e", "@ears: EARS.01.03.7669", "@ears: EARS.01.03.db97", "@ears: EARS.01.03.e152", "@ears: EARS.01.03.368c"]
+    bdd_references: ["@bdd: BDD.01.03.edae", "@bdd: BDD.01.03.a399", "@bdd: BDD.01.03.d4a5", "@bdd: BDD.01.03.4dcb", "@bdd: BDD.01.03.4a71", "@bdd: BDD.01.03.e593"]
+    adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.10.03.51ea"]
+  downstream:
+    code_paths: ["@code: Include/Market/SymbolContext.mqh", "@code: Include/Market/SessionContext.mqh", "@code: Include/Market/MarketContext.mqh"]
+    test_paths: ["@tests: Scripts/Tests/Test_SymbolContext.mq5", "@tests: Scripts/Tests/Test_SessionContext.mq5", "@tests: Scripts/Tests/Test_ContractLifecycle.mq5"]
+  code_inventory:
+    files: []

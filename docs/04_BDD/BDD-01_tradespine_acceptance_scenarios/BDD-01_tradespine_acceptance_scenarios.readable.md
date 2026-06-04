@@ -11,9 +11,9 @@
 | Status | Approved |
 | Version | 1.0 |
 | ADR-ready score | 100/100 |
-| Source EARS | @ears: EARS-01 |
-| Source PRD | @prd: PRD-01 |
-| Source BRD | @brd: BRD-01 |
+| Source EARS | @ears: EARS.01.04.93fd |
+| Source PRD | @prd: PRD.01.09.9e71 |
+| Source BRD | @brd: BRD.01.03.d116 |
 | Created | 2026-06-01T20:01:34-03:00 |
 | Updated | 2026-06-01T20:35:00-03:00 |
 
@@ -55,7 +55,7 @@ Background:
 
 | ID | Category | Name | Primary EARS Trace |
 | --- | --- | --- | --- |
-| BDD.01.03.aa68 | Success | Reference strategy authoring and packaging | EARS.01.03.4c3f, EARS.01.03.b784, EARS.01.03.0c0a |
+| BDD.01.03.aa68 | Success | Shipped strategy authoring, porting, and packaging | EARS.01.03.4c3f, EARS.01.03.b784, EARS.01.03.0c0a |
 | BDD.01.03.0073 | Success | Guarded order writes intent and execution evidence | EARS.01.03.222f, EARS.01.03.a0fa, EARS.01.03.6c85, EARS.01.03.a023 |
 | BDD.01.03.5ede | Success | Symbol metadata validates order definitions | EARS.01.03.03b2, EARS.01.03.ec72 |
 | BDD.01.03.a399 | Success | Trading session gates entries | EARS.01.03.1a3e, EARS.01.03.2be9 |
@@ -67,7 +67,7 @@ Background:
 | BDD.01.03.edae | Error | Missing symbol metadata fails initialization | EARS.01.03.03b2, EARS.01.03.e152 |
 | BDD.01.03.4dcb | Error | Unsupported futures symbol blocks validation | EARS.01.03.368c |
 | BDD.01.03.a31d | Error | Duplicate magic collision fails initialization | EARS.01.03.7d34 |
-| BDD.01.03.f415 | Error | Missing manual netting evidence blocks signoff | EARS.01.03.d7e9, EARS.01.03.e1ae |
+| BDD.01.03.f415 | Error | Missing deferred account-mode evidence blocks signoff | EARS.01.03.d7e9, EARS.01.03.e1ae |
 | BDD.01.03.e16a | Recovery | Ambiguous async outcome enters halt | EARS.01.03.588b, EARS.01.03.6bda, EARS.01.04.68e2 |
 | BDD.01.03.9a7d | Recovery | Day trade close failure enters halt | EARS.01.03.45ed, EARS.01.03.3f57, EARS.01.03.6bda |
 | BDD.01.03.4a71 | Recovery | Contract expiration warnings fire on session open | EARS.01.03.db97, EARS.01.03.e06b |

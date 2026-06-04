@@ -20,15 +20,15 @@ metadata:
       - "@diagram: sequence-sync"
 status: Approved
 created_date: "2026-06-01T14:05:00-03:00"
-last_updated: "2026-06-01T19:49:37-03:00"
+last_updated: "2026-06-03T00:00:00-03:00"
 
 ## Document Control
 document_control:
   product_name: TradeSpine
-  version: "1.0"
+  version: "1.0.5"
   status: Approved
   date_created: "2026-06-01T14:05:00-03:00"
-  last_updated: "2026-06-01T19:49:37-03:00"
+  last_updated: "2026-06-03T00:00:00-03:00"
   author: "Codex"
   reviewer: "phbr"
   approver: "phbr"
@@ -40,6 +40,7 @@ document_control:
     - "../../01_BRD/BRD-01_platform_tradespine_framework/BRD-01_platform_tradespine_framework.yaml"
     - "../../../Project/PRD.md"
     - "../../../Project/architecture-diagram.html"
+  source_snapshot: "Project/PRD.md v3.75 with CHANGELOG v3.74/v3.75 scope corrections; TradeSpine/docs is the authoritative aidoc corpus."
   revision_history:
     - version: "1.0"
       date: "2026-06-01T14:05:00-03:00"
@@ -65,6 +66,10 @@ document_control:
       date: "2026-06-01T19:49:37-03:00"
       author: "Codex"
       changes: "Aligned EARS review clarifications for one-day contract-expiration warnings, explicit symbol-information validation, and day-trade no-overnight behavior."
+    - version: "1.0.5"
+      date: "2026-06-03T00:00:00-03:00"
+      author: "Codex"
+      changes: "Updated source provenance to Project/PRD.md v3.75 and marked TradeSpine/docs as the authoritative aidoc corpus."
 
 ## Executive Summary
 executive_summary:
@@ -76,7 +81,7 @@ executive_summary:
     evidence, and release validation.
   mvp_hypothesis:
     statement: "We believe that the owner-operator trader will create safer B3 futures strategies if TradeSpine separates strategy logic from reusable trading infrastructure."
-    validation: "We will know this is true when two reference strategies compile, trade through framework helpers, and satisfy the v1.0 launch gates."
+    validation: "We will know this is true when two simple reference samples and two additional hedging strategy ports compile, trade through framework helpers, and satisfy the v1.0 launch gates."
   timeline:
     - phase: "Foundation"
       dates: "v0.1 to v0.3"
@@ -126,7 +131,7 @@ success_metrics:
     - id: "PRD.01.05.129c"
       metric: "Reference strategy packaging"
       baseline: "Reference Turtle strategy has roughly 70% repeated infrastructure"
-      target: "Two v1 reference strategies use one strategy file plus shared framework services"
+      target: "Two simple v1 reference samples and two additional hedging strategy ports use one strategy file plus shared framework services"
       measurement: "Repository review and compile evidence"
       brd_reference: "@brd: BRD.01.04.22e9"
     - id: "PRD.01.05.680e"
@@ -142,15 +147,15 @@ success_metrics:
       measurement: "Risk-control test evidence and operator-input review"
       brd_reference: "@brd: BRD.01.07.a94e"
     - id: "PRD.01.05.f4c5"
-      metric: "Account-mode ownership validation"
-      baseline: "Netting same-symbol isolation is a known design risk"
-      target: "Same-symbol strategy ownership validated on netting, exchange-netting, and hedging modes, including manual concurrent netting evidence"
-      measurement: "Automated mode-specific report plus manual live/demo evidence pack"
+      metric: "Account-mode v1 ownership and deferral validation"
+      baseline: "Netting same-symbol isolation is a known design risk and is deferred from v1 executable scope"
+      target: "Same-symbol strategy ownership validated on hedging accounts; netting and exchange-netting selections fail initialization with deferred-mode diagnostics"
+      measurement: "Automated hedging ownership report plus deferred-mode init-failure evidence"
       brd_reference: "@brd: BRD.01.04.4fb6"
     - id: "PRD.01.05.ecfb"
-      metric: "Manual netting evidence pack"
-      baseline: "Strategy Tester cannot validate true concurrent same-symbol netting contention"
-      target: "Concurrent multi-EA netting release sign-off includes manual live or demo evidence because Strategy Tester cannot validate true concurrency"
+      metric: "Deferred account-mode evidence"
+      baseline: "Strategy Tester cannot validate true concurrent same-symbol netting contention, and v1 no longer implements executable netting/exchange modes"
+      target: "Release sign-off confirms netting/exchange modes are deferred by init failure; manual concurrent netting evidence is deferred to v2+"
       measurement: "Release evidence pack review"
       brd_reference: "@brd: BRD.01.07.b44d"
     - id: "PRD.01.05.4218"
@@ -199,7 +204,7 @@ goals_and_objectives:
     - id: "PRD.01.06.4cf2"
       goal: "Define the strategy authoring product surface"
       metric: "Reference strategy shape"
-      target: "One `.mq5` strategy file per reference strategy"
+      target: "One `.mq5` strategy file per shipped simple sample or hedging port"
       timeline: "v1.0"
       brd_reference: "@brd: BRD.01.07.88a6"
     - id: "PRD.01.06.248e"
@@ -211,7 +216,7 @@ goals_and_objectives:
     - id: "PRD.01.06.c9c6"
       goal: "Define strategy-scoped account-mode behavior"
       metric: "Same-symbol mode validation"
-      target: "Independent ownership evidence in supported account modes"
+      target: "Independent ownership evidence on hedging accounts plus deferred-mode failure evidence for netting/exchange"
       timeline: "v1.0"
       brd_reference: "@brd: BRD.01.07.b44d"
     - id: "PRD.01.06.da13"
@@ -252,7 +257,7 @@ scope_and_requirements:
       - id: "PRD.01.07.6107"
         name: "Account-mode ownership"
         priority: P1-Must
-        description: "Product behavior that lets same-symbol strategies maintain strategy-scoped ownership across supported account modes."
+        description: "Product behavior that lets same-symbol strategies maintain strategy-scoped ownership on hedging accounts and fail safely for deferred netting/exchange modes."
         brd_reference: "@brd: BRD.01.07.b44d"
       - id: "PRD.01.07.3ab9"
         name: "B3 futures market context"
@@ -267,7 +272,7 @@ scope_and_requirements:
       - id: "PRD.01.07.1bce"
         name: "Testability and release evidence"
         priority: P1-Must
-        description: "Release gates that prove safety, mode ownership, manual netting evidence, reference strategy behavior, benchmark targets, and documentation governance before v1.0."
+        description: "Release gates that prove safety, hedging ownership, deferred account-mode behavior, reference strategy behavior, benchmark targets, and documentation governance before v1.0."
         brd_reference: "@brd: BRD.01.07.717b"
   dependencies:
     technical: "MetaTrader 5, MQL5, selected vendored standard-library files, and local diagram rendering."
@@ -298,7 +303,7 @@ user_stories:
       so_that: "signal logic is not mixed with repeated execution infrastructure"
       priority: P1
       acceptance_criteria:
-        - "The reference strategy compiles without direct broker execution includes in the strategy file."
+        - "Each simple sample and hedging port strategy artifact compiles without direct broker execution includes in the strategy file."
         - "The strategy calls documented framework helpers for entries and exits."
         - "The v1 strategy implementation guide explains the strategy file structure, lifecycle hooks, helper calls, common inputs, logging expectations, compile checklist, and reference-strategy walkthrough."
       brd_reference: "@brd: BRD.01.07.88a6"
@@ -330,7 +335,7 @@ user_stories:
       priority: P1
       acceptance_criteria:
         - "P1 product gates have corresponding validation evidence."
-        - "Concurrent same-symbol netting sign-off includes manual live/demo evidence because Strategy Tester cannot validate true concurrency."
+        - "Netting and exchange-netting selections fail initialization with deferred-mode diagnostics; concurrent same-symbol netting evidence is deferred to v2+."
         - "Release governance checks required docs, same-change documentation updates, and CHANGELOG decision records."
         - "Deferred scope is explicit and does not block v1.0."
       brd_reference: "@brd: BRD.01.07.717b"
@@ -345,10 +350,10 @@ functional_requirements:
       acceptance_criteria:
         - id: "PRD.01.09.5ef1"
           criterion: "Reference strategy packaging"
-          target: "Two reference strategies compile as one strategy file each plus shared framework includes"
+          target: "DonchianBreakout, MovingAverageCross, 1minscalpv3_hedging.mq5, and BullishBearish Engulfing all v7 hedging.mq5 compile as one strategy file each plus shared framework includes"
         - id: "PRD.01.09.eaf3"
           criterion: "New strategy implementation guide"
-          target: "Guide covers file structure, lifecycle hooks, helper calls, common inputs, logging expectations, compile checklist, and reference strategy walkthrough"
+          target: "Guide covers file structure, lifecycle hooks, helper calls, common inputs, logging expectations, compile checklist, simple-sample walkthrough, and hedging-port expectations"
       brd_reference: "@brd: BRD.01.07.88a6"
     - id: "PRD.01.09.88e3"
       name: "Guarded execution"
@@ -370,15 +375,15 @@ functional_requirements:
       brd_reference: "@brd: BRD.01.07.a94e"
     - id: "PRD.01.09.aaf8"
       name: "Account-mode ownership"
-      description: "TradeSpine shall keep strategy ownership separate from broker exposure across netting, exchange-netting, and hedging account modes."
+      description: "TradeSpine shall keep strategy ownership separate on hedging accounts and fail safely before trading on deferred netting/exchange-netting account modes."
       priority: P1
       acceptance_criteria:
         - id: "PRD.01.09.5cce"
-          criterion: "Supported account-mode validation"
-          target: "Same-symbol strategy instances keep independent ownership evidence"
+          criterion: "Supported hedging account-mode validation"
+          target: "Same-symbol strategy instances keep independent ownership evidence on hedging accounts"
         - id: "PRD.01.09.7767"
-          criterion: "Netting ownership invariant"
-          target: "Netting and exchange-netting validation treats broker exposure as symbol-aggregate and requires strategy-scoped ownership evidence outside the aggregate broker position"
+          criterion: "Netting/exchange deferred-mode invariant"
+          target: "Netting and exchange-netting selections fail initialization before virtual ownership, pending-exit, execution-mutex, or trade paths become active"
         - id: "PRD.01.09.a252"
           criterion: "Hedging ownership invariant"
           target: "Hedging validation records strategy ownership per relevant broker ticket/order while preserving the same strategy-scoped evidence model"
@@ -429,10 +434,10 @@ functional_requirements:
       acceptance_criteria:
         - id: "PRD.01.09.4054"
           criterion: "Documentation and test readiness"
-          target: "Authoring docs, reference strategies, and test evidence exist before downstream implementation sign-off"
+          target: "Authoring docs, two simple reference samples, two additional hedging strategy ports, and test evidence exist before downstream implementation sign-off"
         - id: "PRD.01.09.0764"
-          criterion: "Manual concurrent netting evidence"
-          target: "Concurrent same-symbol netting sign-off includes a manual live or demo evidence pack in addition to automated harnesses"
+          criterion: "Deferred-mode release evidence"
+          target: "Release sign-off includes evidence that netting and exchange-netting fail initialization in v1; manual concurrent netting evidence is deferred to v2+"
         - id: "PRD.01.09.4c66"
           criterion: "Documentation and release governance"
           target: "Release sign-off checks required docs, Doxygen coverage if retained, same-change documentation updates, and CHANGELOG decision record"
@@ -484,7 +489,7 @@ customer_facing_content:
     services handle safety, ownership, and audit evidence.
   key_messages:
     - "Write strategy logic once and route framework-mediated trades through shared safety gates."
-    - "Run multiple same-symbol TradeSpine strategies with strategy-scoped ownership evidence."
+    - "Run multiple same-symbol TradeSpine strategies with hedging ticket ownership evidence."
     - "Export paired trade intent and execution evidence for post-trade review."
   feature_descriptions:
     - name: "Strategy template"
@@ -532,9 +537,9 @@ acceptance_criteria:
         threshold: "Pass"
         validation: "Risk-control test evidence and operator-input review"
       - category: Ownership
-        criterion: "Same-symbol strategy ownership works in supported account modes, including manual concurrent netting evidence."
+        criterion: "Same-symbol strategy ownership works on hedging accounts, and deferred account modes fail initialization before trading."
         threshold: "Pass"
-        validation: "Automated mode-specific tests plus manual live/demo evidence pack"
+        validation: "Automated hedging ownership tests plus deferred-mode init-failure evidence"
       - category: Session
         criterion: "Entries require both broker trading-session availability and the configured user trading-hours window in broker/server time."
         threshold: "Pass"
@@ -556,12 +561,12 @@ acceptance_criteria:
         threshold: "<=10% tester overhead; <=2 MB memory per EA; <=50 us idle tick; low-I/O write budgets pass"
         validation: "Minimum benchmark protocol and release checklist"
   business_acceptance:
-    - "Strategy author can create a reference strategy from the v1 implementation guide without duplicating broker execution infrastructure."
+    - "Strategy author can create a simple reference strategy or port an existing hedging strategy from the v1 implementation guide without duplicating broker execution infrastructure."
     - "Operator can identify why a framework-mediated trade was rejected or accepted."
     - "Analyst can evaluate trade records without parsing strategy/framework diagnostic logs."
     - "Release reviewer can trace every P1 product capability to BRD source elements."
   technical_acceptance:
-    - "Strict compile passes for framework and reference strategies."
+    - "Strict compile passes for framework, simple reference samples, and additional hedging strategy ports."
     - "Tier-1 test suite passes before release sign-off."
     - "Repository checks detect prohibited direct broker submission in strategy files."
 
@@ -611,17 +616,17 @@ risk_assessment:
       owner: "Technical Lead"
       brd_reference: "@brd: BRD.01.12.5c81"
     - id: "PRD.01.13.e18a"
-      description: "Strategy ownership drifts from broker aggregate exposure or broker ticket-level state."
+      description: "Deferred netting/exchange design is accidentally treated as v1 executable scope, or hedging ticket ownership drifts from broker state."
       likelihood: Medium
       impact: High
-      mitigation: "Require explicit netting, exchange-netting, and hedging ownership evidence, account-mode tests, manual live/demo concurrent netting evidence, and halt-on-ambiguity behavior."
+      mitigation: "Require explicit hedging ownership evidence, deferred-mode account tests, v2+ labeling for netting/exchange, and halt-on-ambiguity behavior."
       owner: "Technical Lead"
       brd_reference: "@brd: BRD.01.12.5985"
     - id: "PRD.01.13.9c2d"
-      description: "Release sign-off may overstate same-symbol netting safety if manual live/demo concurrency evidence is missing."
+      description: "Release sign-off may overstate v1 account-mode scope if deferred netting/exchange modes are not shown to fail safely."
       likelihood: Medium
       impact: High
-      mitigation: "Require a manual concurrent netting evidence pack in addition to automated tests because Strategy Tester cannot validate true concurrency."
+      mitigation: "Require deferred-mode init-failure evidence in v1 and move manual concurrent netting evidence to v2+ executable netting scope."
       owner: "Technical Lead"
       brd_reference: "@brd: BRD.01.12.5985"
     - id: "PRD.01.13.f493"
@@ -656,7 +661,7 @@ risk_assessment:
 ## Traceability
 traceability:
   tags:
-    - "@prd: PRD-01"
+    - "@prd: PRD.01.09.9e71"
     - "@brd: BRD.01.03.d116"
     - "@brd: BRD.01.07.88a6"
     - "@brd: BRD.01.07.a94e"
@@ -747,7 +752,7 @@ traceability:
     brd_coverage: "100%"
     target_score: ">=90/100"
   ears_cross_reference:
-    note: "EARS will formalize PRD capabilities and acceptance gates; no EARS IDs exist yet."
+    note: "EARS-01 formalizes PRD capabilities and downstream acceptance gates for the current corpus."
 
 ## Glossary
 glossary:
@@ -763,7 +768,7 @@ glossary:
     - term: Trade evaluation record
       definition: "Structured intent and execution evidence used to evaluate strategy trading outcomes."
     - term: Netting ownership invariant
-      definition: "In netting and exchange-netting account modes, broker exposure is symbol-aggregate, so TradeSpine must preserve strategy-scoped ownership evidence outside the aggregate broker position."
+      definition: "Deferred v2+ invariant: in netting and exchange-netting account modes, broker exposure is symbol-aggregate, so TradeSpine must preserve strategy-scoped ownership evidence outside the aggregate broker position."
     - term: Hedging ownership invariant
       definition: "In hedging account mode, TradeSpine records ownership against relevant broker tickets or orders while preserving the same strategy-scoped evidence model."
     - term: Runtime risk controls
@@ -773,7 +778,7 @@ glossary:
     - term: Two-layer session model
       definition: "Entry gating model requiring both market trade-session availability and the configured user trading-hours window in broker/server time."
     - term: Manual netting evidence pack
-      definition: "Live or demo evidence used to validate concurrent same-symbol netting behavior that the MT5 Strategy Tester cannot automate."
+      definition: "Deferred v2+ live or demo evidence used to validate concurrent same-symbol netting behavior that the MT5 Strategy Tester cannot automate."
     - term: Placeholder sizing mode
       definition: "Visible but non-production sizing option reserved for a later release boundary."
     - term: Duplicate magic guard

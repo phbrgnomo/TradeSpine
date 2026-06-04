@@ -1,0 +1,282 @@
+---
+document_type: tdd-document
+artifact_type: TDD
+layer: 7
+deliverable_type: code
+id: TDD-03
+title: "Guarded Execution and Risk Controls Test-Driven Development Guide"
+status: Draft
+created_date: "2026-06-02T00:00:00-03:00"
+last_updated: "2026-06-02T00:00:00-03:00"
+metadata:
+  schema_version: "1.0"
+  document_type: tdd-document
+  artifact_type: TDD
+  layer: 7
+  deliverable_type: code
+  lifecycle: mvp-prod-newmvp
+  c4_level: none
+  diagram_standard:
+    tags:
+      - "@diagram: tdd"
+      - "@diagram: test-pyramid"
+
+document_control:
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-02T00:00:00-03:00"
+  last_updated: "2026-06-02T00:00:00-03:00"
+  author: "Codex"
+  component: "CGuardedTrade and CRiskManager"
+  spec_reference: "@spec: SPEC-03"
+  source_spec: "../../06_SPEC/SPEC-03_guarded_execution_and_risk_controls/SPEC-03_guarded_execution_and_risk_controls.yaml"
+  iplan_ready_score: "95/100"
+  mode: generated
+  source_inputs:
+    - "../../../Project/PRD.md"
+    - "../../../Project/architecture-diagram.html"
+    - "../../00_REF/REF-01_tradespine_source_brief.md"
+
+test_pyramid:
+  distribution:
+    unit: 70
+    integration: 20
+    e2e: 10
+  rationale:
+    - "Unit tests validate SPEC interfaces, data models, and local error paths."
+    - "Integration tests validate component contracts with fakes before broker-facing checks."
+    - "E2E tests cover the BDD acceptance path assigned to this SPEC."
+  diagram: |
+    flowchart TD
+      UT[Unit: interfaces and data models] --> IT[Integration: component contracts]
+      IT --> E2E[E2E: BDD acceptance workflows]
+
+test_mapping:
+  scenarios:
+    - bdd_scenario: "@bdd: BDD.01.03.9a8b"
+      description: "Unsafe order is rejected before broker handoff"
+      tests:
+        - type: unit
+          file: "Scripts/Tests/Test_GuardedTrade.mq5"
+          function: "test_guarded_execution_and_risk_controls_9a8b_unit"
+          status: pending
+        - type: integration
+          file: "Scripts/Tests/Test_RiskManager.mq5"
+          function: "test_guarded_execution_and_risk_controls_9a8b_integration"
+          status: pending
+        - type: e2e
+          file: "Scripts/Tests/Test_BrokerBypassScan.mq5"
+          function: "test_guarded_execution_and_risk_controls_9a8b_e2e"
+          status: pending
+    - bdd_scenario: "@bdd: BDD.01.03.0ad7"
+      description: "Panic stop is strategy scoped"
+      tests:
+        - type: unit
+          file: "Scripts/Tests/Test_GuardedTrade.mq5"
+          function: "test_guarded_execution_and_risk_controls_0ad7_unit"
+          status: pending
+        - type: integration
+          file: "Scripts/Tests/Test_RiskManager.mq5"
+          function: "test_guarded_execution_and_risk_controls_0ad7_integration"
+          status: pending
+        - type: e2e
+          file: "Scripts/Tests/Test_BrokerBypassScan.mq5"
+          function: "test_guarded_execution_and_risk_controls_0ad7_e2e"
+          status: pending
+    - bdd_scenario: "@bdd: BDD.01.03.e16a"
+      description: "Ambiguous async outcome enters halt"
+      tests:
+        - type: unit
+          file: "Scripts/Tests/Test_GuardedTrade.mq5"
+          function: "test_guarded_execution_and_risk_controls_e16a_unit"
+          status: pending
+        - type: integration
+          file: "Scripts/Tests/Test_RiskManager.mq5"
+          function: "test_guarded_execution_and_risk_controls_e16a_integration"
+          status: pending
+        - type: e2e
+          file: "Scripts/Tests/Test_BrokerBypassScan.mq5"
+          function: "test_guarded_execution_and_risk_controls_e16a_e2e"
+          status: pending
+    - bdd_scenario: "@bdd: BDD.01.03.ef54"
+      description: "Release governance validates evidence"
+      tests:
+        - type: unit
+          file: "Scripts/Tests/Test_GuardedTrade.mq5"
+          function: "test_guarded_execution_and_risk_controls_ef54_unit"
+          status: pending
+        - type: integration
+          file: "Scripts/Tests/Test_RiskManager.mq5"
+          function: "test_guarded_execution_and_risk_controls_ef54_integration"
+          status: pending
+        - type: e2e
+          file: "Scripts/Tests/Test_BrokerBypassScan.mq5"
+          function: "test_guarded_execution_and_risk_controls_ef54_e2e"
+          status: pending
+  coverage_table:
+    columns: [BDD Scenario, Unit, Integration, E2E, Total]
+    rows:
+      - ["@bdd: BDD.01.03.9a8b", 1, 1, 1, 3]
+      - ["@bdd: BDD.01.03.0ad7", 1, 1, 1, 3]
+      - ["@bdd: BDD.01.03.e16a", 1, 1, 1, 3]
+      - ["@bdd: BDD.01.03.ef54", 1, 1, 1, 3]
+
+test_cases:
+  unit_tests:
+    cases:
+      - id: "TDD.03.04.1f65"
+        type: unit
+        name: "GuardResult classifies unknown retcodes as ambiguous"
+        spec_ref: "@spec: SPEC-03"
+        target: "CGuardedTrade.ClassifyRetcode"
+        test_file: "Scripts/Tests/Test_GuardedTrade.mq5"
+        test_function: "test_guarded_execution_and_risk_controls_unit_contract"
+        inputs:
+          - name: fixture
+            type: string
+            value: "retcode=999999, ordercheck=0, ticket=0"
+        expected_output:
+          type: contract-result
+          value: "status=halted, ambiguous=true, retryable=false"
+        edge_cases:
+          - condition: "Known success, pending, retryable, and terminal retcodes classify distinctly"
+            expected: "Case remains deterministic and broker-safe."
+  integration_tests:
+    cases:
+      - id: "TDD.03.04.b003"
+        type: integration
+        name: "Catastrophic guard blocks private CTrade submission"
+        spec_ref: "@spec: SPEC-03"
+        contract: "CGuardedTrade plus fake private CTrade"
+        test_file: "Scripts/Tests/Test_RiskManager.mq5"
+        test_function: "test_guarded_execution_and_risk_controls_integration_contract"
+        setup:
+          - "Assemble component with deterministic fakes for broker, clock, store, symbol, and logs where required."
+          - "Load SPEC-defined configuration and BDD trace tags."
+        action:
+          description: "Submit TradeIntent with side-inverted stop"
+        expected_state:
+          - "Rejected GuardResult and zero private CTrade calls"
+        error_paths:
+          - condition: "OrderCheck failure stores preflight reason"
+            expected_error: "SPEC-defined rejection or HALT path."
+  e2e_tests:
+    cases:
+      - id: "TDD.03.04.1861"
+        type: e2e
+        name: "Unsafe order is rejected before broker handoff"
+        bdd_ref: "@bdd: BDD.01.03.9a8b"
+        spec_ref: "@spec: SPEC-03"
+        test_file: "Scripts/Tests/Test_BrokerBypassScan.mq5"
+        test_function: "test_guarded_execution_and_risk_controls_e2e_acceptance"
+        workflow:
+          - step: 1
+            action: "Build invalid TradeIntent"
+            expected: "Broker handoff count remains zero"
+          - step: 2
+            action: "Run guard pipeline"
+            expected: "Diagnostic rejection reason is recorded"
+          - step: 3
+            action: "Inspect fake broker call counter"
+            expected: "Coordinator receives rejected result"
+        timeout_seconds: 300
+        cleanup: "Clear fake broker state, fake stores, generated evidence files, and chart objects under the strategy prefix."
+  security_tests:
+    cases: []
+
+thresholds:
+  unit:
+    coverage_target: ">=90%"
+    pass_criteria:
+      - "All declared unit cases pass."
+      - "No broker API calls occur from unit tests."
+    fail_action: "Block IPLAN Green phase."
+  integration:
+    coverage_target: ">=85%"
+    pass_criteria:
+      - "All declared integration contracts pass."
+      - "Fake-boundary assertions prove the expected side effects."
+    fail_action: "Block IPLAN Green phase."
+  e2e:
+    coverage_target: ">=75% of mapped happy paths"
+    timeout_budget: "<=300s"
+    pass_criteria:
+      - "Critical BDD workflow passes."
+      - "Required evidence artifacts are present."
+    fail_action: "Block release-candidate gate."
+  security:
+    coverage_target: "Not mandated by parent SPEC."
+    pass_criteria:
+      - "No security cases are required for this component."
+    fail_action: "Add cases if a later ADR or SPEC mandates security coverage."
+
+tdd_order:
+  phases:
+    - phase: 1
+      name: "Write Tests"
+      action: "Create the test files declared in test_mapping and test_cases before implementation files."
+      output: "Pending MQL5 test scripts and support includes."
+    - phase: 2
+      name: "Run Tests (Red)"
+      action: "Run Tier-1 scripts or harness checks and confirm failure against missing implementation."
+      output: "Red failure report linked to this TDD."
+    - phase: 3
+      name: "Implement"
+      action: "Implement the smallest component code needed for the failing cases."
+      output: "TradeSpine source files for the parent SPEC."
+    - phase: 4
+      name: "Verify (Green)"
+      action: "Run the declared tests and confirm the expected pass criteria."
+      output: "Green test report and evidence pack."
+    - phase: 5
+      name: "Refactor"
+      action: "Clean implementation without changing the test-observed behavior."
+      output: "Refactored source with tests still green."
+
+traceability:
+  tags:
+    - "@tdd: TDD.03.04.1f65"
+    - "@spec: SPEC-03"
+    - "@brd: BRD.01.07.a94e"
+    - "@brd: BRD.01.08.0ce5"
+    - "@prd: PRD.01.09.d74e"
+    - "@prd: PRD.01.09.4fb4"
+    - "@ears: EARS.01.03.222f"
+    - "@ears: EARS.01.03.7a9c"
+    - "@bdd: BDD.01.03.9a8b"
+    - "@bdd: BDD.01.03.0ad7"
+    - "@adr: ADR.04.03.7277"
+    - "@adr: ADR.06.03.b277"
+  upstream:
+    spec_references:
+      - "@spec: SPEC-03"
+    adr_references:
+      - "@adr: ADR.04.03.7277"
+      - "@adr: ADR.06.03.b277"
+      - "@adr: ADR.09.03.84b9"
+    bdd_references:
+      - "@bdd: BDD.01.03.9a8b"
+      - "@bdd: BDD.01.03.0ad7"
+      - "@bdd: BDD.01.03.e16a"
+      - "@bdd: BDD.01.03.ef54"
+    ears_references:
+      - "@ears: EARS.01.03.222f"
+      - "@ears: EARS.01.03.7a9c"
+      - "@ears: EARS.01.03.375b"
+      - "@ears: EARS.01.03.f562"
+      - "@ears: EARS.01.03.e20a"
+    prd_references:
+      - "@prd: PRD.01.09.d74e"
+      - "@prd: PRD.01.09.4fb4"
+      - "@prd: PRD.01.14.8720"
+    brd_references:
+      - "@brd: BRD.01.07.a94e"
+      - "@brd: BRD.01.08.0ce5"
+  downstream:
+    - type: IPLAN
+      layer: 8
+      target: "IPLAN-03"
+      description: "Implementation plan must generate tests before component code."
+  health_score:
+    iplan_ready: "95%"
+    target_score: ">=90/100"

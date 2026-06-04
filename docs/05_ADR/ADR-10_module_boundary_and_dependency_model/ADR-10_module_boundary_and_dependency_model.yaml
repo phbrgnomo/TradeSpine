@@ -157,7 +157,7 @@ implementation_assessment:
 ## Section 8: Verification
 verification:
   success_criteria:
-    - criterion: "Reference strategy compiles as one strategy file plus shared framework includes."
+    - criterion: "Each shipped simple sample and hedging port strategy compiles as one strategy file plus shared framework includes."
       measurement: "BDD.01.03.aa68 passes."
     - criterion: "Release documentation and API docs preserve module contracts."
       measurement: "BDD.01.03.7b02 and release documentation checks pass."
@@ -166,7 +166,7 @@ verification:
 
 ## Section 9: Traceability
 traceability:
-  tags: ["@adr: ADR-10", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.5ef1", "@ears: EARS.01.03.4c3f", "@bdd: BDD.01.03.aa68"]
+  tags: ["@adr: ADR.10.03.51ea", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.5ef1", "@ears: EARS.01.03.4c3f", "@bdd: BDD.01.03.aa68"]
   originating_topic: "@prd: PRD.01.09.5ef1"
   upstream:
     bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.7b02", "@bdd: BDD.01.03.ef54"]

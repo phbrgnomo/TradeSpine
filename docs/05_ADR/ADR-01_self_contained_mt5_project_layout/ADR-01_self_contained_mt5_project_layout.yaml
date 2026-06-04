@@ -33,7 +33,7 @@ context:
     - "EAs must live under MQL5/Experts to appear in MT5 Navigator."
     - "Framework includes must be quoted relative includes; symlinks and terminal-wide installation are not required."
     - "The project root is MQL5/Experts/Main/TradeSpine."
-  technical_context: "PRD.md and architecture-diagram.html both define MQL5/Experts/Main/TradeSpine as the active root. BDD.01.03.aa68 validates reference strategy packaging, and BDD.01.03.ef54 validates release governance evidence."
+  technical_context: "PRD.md and architecture-diagram.html both define MQL5/Experts/Main/TradeSpine as the active root. BDD.01.03.aa68 validates simple sample and hedging port strategy packaging, and BDD.01.03.ef54 validates release governance evidence."
 
 ## Section 3: Decision
 decision:
@@ -49,7 +49,7 @@ decision:
     - name: "docs/"
       role: "Holds aidoc-flow artifacts and release evidence."
   implementation_approach:
-    mvp_scope: "Use the self-contained root and quoted relative includes for v1 reference strategies."
+    mvp_scope: "Use the self-contained root and quoted relative includes for v1 simple samples and hedging strategy ports."
     next_cycle_scope: "No terminal-wide installer is planned unless future distribution needs justify it."
 
 ## Section 4: Alternatives Considered
@@ -148,7 +148,7 @@ verification:
 
 ## Section 9: Traceability
 traceability:
-  tags: ["@adr: ADR-01", "@brd: BRD.01.08.ab58", "@prd: PRD.01.14.484d", "@ears: EARS.01.03.4c3f", "@bdd: BDD.01.03.aa68"]
+  tags: ["@adr: ADR.01.03.42e3", "@brd: BRD.01.08.ab58", "@prd: PRD.01.14.484d", "@ears: EARS.01.03.4c3f", "@bdd: BDD.01.03.aa68"]
   originating_topic: "@prd: PRD.01.14.484d"
   upstream:
     bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.ef54"]

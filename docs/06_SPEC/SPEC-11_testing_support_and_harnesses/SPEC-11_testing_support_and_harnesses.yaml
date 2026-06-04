@@ -1,0 +1,194 @@
+---
+document_type: spec-document
+artifact_type: SPEC
+layer: 6
+deliverable_type: code
+id: SPEC-11
+title: Testing Support and Harnesses
+status: Draft
+created_date: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-02T00:20:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-02T00:20:00-03:00"
+  author: "Codex"
+  component: "Test doubles, clocks, brokers, stores, and scenario harnesses"
+  tdd_ready_score: "94/100"
+
+## Section 2: Component Overview
+component_overview:
+  description: "Testing support provides deterministic doubles for clock, broker port, state store, symbol/account context, log sinks, and scenario harnesses so Tier-1 and Tier-1.5 tests can validate TradeSpine behavior before Strategy Tester or live/demo release gates."
+  architecture_decision: "@adr: ADR.10.03.51ea"
+  diagram:
+    tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
+    mermaid: |
+      flowchart LR
+        Tests["MQL5 test scripts"] --> Harness["ScenarioHarness"]
+        Harness --> Clock["FakeClock"]
+        Harness --> Broker["FakeTradePort"]
+        Harness --> Store["FakeStateStore"]
+        Harness --> Symbol["FakeSymbolContext"]
+        Harness --> Logs["FakeLogSink"]
+        Harness --> Components["SPEC components"]
+  language: "MQL5"
+  dependencies:
+    - name: "Core runtime shared interfaces"
+      version: "v1"
+      purpose: "IPLAN-09 publishes stable interfaces for clocks, trade ports, stores, runtime context, and diagnostics before fakes implement them."
+    - name: "Release governance"
+      version: "v1"
+      purpose: "Consumes test reports and manual evidence packs."
+
+## Section 3: Interfaces
+interfaces:
+  exports:
+    - name: "FakeClock"
+      type: "class"
+      signature: "class FakeClock : public IClock"
+      description: "Deterministic time source for session, timeout, daily reset, and evidence ordering tests."
+      errors:
+        - "None."
+    - name: "FakeTradePort"
+      type: "class"
+      signature: "class FakeTradePort : public ITradePort"
+      description: "Deterministic broker boundary double returning configured GuardResult sequences."
+      errors:
+        - "Configured failures, pending outcomes, retry retcodes, or ambiguity."
+    - name: "FakeStateStore"
+      type: "class"
+      signature: "class FakeStateStore : public IStateStore"
+      description: "In-memory persistence double for ledger, duplicate marker, HALT, and evidence tests."
+      errors:
+        - "Configured write/read failures for recovery tests."
+    - name: "FakeSymbolContext"
+      type: "class"
+      signature: "class FakeSymbolContext"
+      description: "Deterministic symbol metadata and market data provider for sizing, stops, spread, and fill-mode tests."
+      errors:
+        - "Configured missing metadata, invalid grids, or unavailable ticks."
+    - name: "ScenarioHarness"
+      type: "class"
+      signature: "class ScenarioHarness"
+      description: "Reusable assembly for component-under-test, fakes, stimulus, and evidence assertions."
+      errors:
+        - "Test assertion failure."
+
+## Section 4: Data Models
+data_models:
+  models:
+    - name: "BrokerEventScript"
+      type: "struct"
+      fields:
+        - name: "step"
+          type: "int"
+          required: true
+          description: "Event sequence index."
+        - name: "guard_result"
+          type: "GuardResult"
+          required: true
+          description: "Configured execution outcome for the step."
+        - name: "transaction_event"
+          type: "TradeTransactionEvent"
+          required: false
+          description: "Optional synthetic trade transaction for router/state tests."
+    - name: "EvidenceAssertion"
+      type: "struct"
+      fields:
+        - name: "expected_kind"
+          type: "ENUM_EVIDENCE_KIND"
+          required: true
+          description: "Intent, execution, diagnostic, state, or release evidence kind."
+        - name: "expected_trace"
+          type: "string"
+          required: true
+          description: "Expected requirement/spec trace tag in the emitted evidence."
+        - name: "required"
+          type: "bool"
+          required: true
+          description: "Whether absence is a test failure."
+    - name: "DeferredAccountModeEvidencePack"
+      type: "struct"
+      fields:
+        - name: "account_mode"
+          type: "ENUM_ACCOUNT_MODE"
+          required: true
+          description: "Deferred account mode covered by init-failure evidence."
+        - name: "scenario"
+          type: "string"
+          required: true
+          description: "Deferred-mode validation scenario name."
+        - name: "artifacts"
+          type: "string"
+          required: true
+          description: "Evidence file paths or operator notes proving init failure and no trade-path side effects."
+
+## Section 5: Behavior
+behavior:
+  validation_rules:
+    - rule: "Tier-1 tests SHALL use deterministic fakes for broker, clock, store, symbol, account, logging, and runtime seams."
+      source: "@bdd: BDD.01.03.aa68"
+    - rule: "Tier-1.5 tests SHALL cover hedging account ownership, deferred netting/exchange init failure, no side effects, and manual non-interference scenarios."
+      source: "@bdd: BDD.01.03.f415"
+    - rule: "Release governance SHALL distinguish automated Strategy Tester evidence from deferred account-mode evidence required for v1 netting/exchange exclusion."
+      source: "@ears: EARS.01.03.d7e9"
+    - rule: "Test harnesses SHALL verify paired strategy diagnostics and trade execution logs remain separate evidence streams."
+      source: "@ears: EARS.01.03.a71c"
+  state_transitions:
+    - from: "TestUnassembled"
+      to: "TestReady"
+      trigger: "ScenarioHarness receives required component and fake dependencies."
+      source: "@bdd: BDD.01.03.aa68"
+  error_handling:
+    - condition: "Fake broker script is exhausted before component behavior completes."
+      response: "Fail the test with missing broker outcome evidence."
+      source: "@bdd: BDD.01.03.e16a"
+    - condition: "Manual evidence pack is required but absent."
+      response: "Mark release gate blocked rather than substituting automated tester evidence."
+      source: "@bdd: BDD.01.03.f415"
+
+## Section 6: Implementation Notes
+implementation_notes:
+  constraints:
+    - "Test support modules MUST remain outside production execution paths."
+    - "Fakes MUST implement the same interfaces consumed by production components, and those interfaces MUST be published by IPLAN-09 before test support implementation starts."
+    - "Manual evidence pack contracts MUST remain visible to release governance and must not be represented as Strategy Tester automation."
+  patterns:
+    - "Use scenario scripts to drive fake broker outcomes and trade transaction callbacks."
+    - "Use in-memory stores to assert duplicate marker, ledger, HALT, and evidence writes."
+    - "Keep component construction explicit so TDD can map each BDD scenario to a harness."
+  performance_considerations:
+    - "Performance tests must collect evidence for @threshold: PRD.01.perf.tester_overhead, @threshold: PRD.01.perf.memory_per_ea, and @threshold: PRD.01.perf.idle_tick."
+
+## Section 7: Downstream TDD Contracts
+tdd_contracts:
+  tdd_document: "@tdd: TDD.11.04.6805"
+  test_files:
+    - path: "Scripts/Tests/Support/FakeClock.mqh"
+      covers: "Deterministic time, session, timeout, and daily reset tests."
+    - path: "Scripts/Tests/Support/FakeTradePort.mqh"
+      covers: "Broker outcome, retry, pending, and ambiguity scripts."
+    - path: "Scripts/Tests/Support/ScenarioHarness.mqh"
+      covers: "Reusable component assembly and evidence assertions."
+    - path: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
+      covers: "Manual evidence pack contracts and automated/manual gate separation."
+
+## Section 8: Traceability
+traceability:
+  tags: ["@spec: SPEC-11", "@brd: BRD.01.07.a94e", "@prd: PRD.01.14.8720", "@ears: EARS.01.03.d7e9", "@bdd: BDD.01.03.f415", "@adr: ADR.10.03.51ea"]
+  upstream:
+    adr_references: ["@adr: ADR.06.03.b277", "@adr: ADR.07.03.6df1", "@adr: ADR.08.03.0a8f", "@adr: ADR.10.03.51ea"]
+    bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.f415", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.b37d"]
+    ears_references: ["@ears: EARS.01.03.d7e9", "@ears: EARS.01.03.a71c", "@ears: EARS.01.03.588b", "@ears: EARS.01.03.8044"]
+    prd_references: ["@prd: PRD.01.14.8720", "@prd: PRD.01.09.3f12", "@prd: PRD.01.13.edc4", "@prd: PRD.01.09.841a"]
+    brd_references: ["@brd: BRD.01.07.a94e", "@brd: BRD.01.08.0ce5"]
+  downstream:
+    - type: TDD
+      layer: 7
+      description: "Testing support doubles, scenario harnesses, and release evidence validation tests."
+  health_score:
+    tdd_ready: "94%"
+    target_score: ">=90/100"

@@ -1,0 +1,244 @@
+---
+document_type: spec-document
+artifact_type: SPEC
+layer: 6
+deliverable_type: code
+id: SPEC-02
+title: Trade Coordination Pipeline
+status: Draft
+created_date: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-02T00:40:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Draft
+  version: "1.1"
+  date_created: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-02T00:40:00-03:00"
+  author: "Codex"
+  component: "CTradeCoordinator, Signal, TradeIntent"
+  tdd_ready_score: "94/100"
+
+## Section 2: Component Overview
+component_overview:
+  description: "The trade coordination pipeline is the normalization and synchronization layer between strategy decisions and broker-bound execution. It converts strategy helper requests into canonical TradeIntent records, resolves order-definition details through strategy-selected policies, delegates guarded submission, synchronizes pending-entry and async order outcomes, and emits paired audit evidence; it does not decide whether the strategy should enter or exit."
+  architecture_decision: "@adr: ADR.09.03.84b9"
+  diagram:
+    tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
+    mermaid: |
+      flowchart LR
+        Base["CStrategyBase helpers"] --> Signal["Signal"]
+        Signal --> Coord["CTradeCoordinator"]
+        Coord --> Stop["IStopPolicy"]
+        Coord --> Sizer["IPositionSizer"]
+        Coord --> Port["ITradePort"]
+        Coord --> Sync["Pending/async sync"]
+        Coord --> Logger["TradeLogger"]
+  language: "MQL5"
+  dependencies:
+    - name: "IPositionSizer"
+      version: "v1"
+      purpose: "Calculates lots from entry and stop risk inputs."
+    - name: "IStopPolicy"
+      version: "v1"
+      purpose: "Computes initial SL/TP when the helper did not supply explicit levels."
+    - name: "ITradePort"
+      version: "v1"
+      purpose: "Submits TradeIntent to guarded execution or mocks."
+    - name: "CPositionStateMachine"
+      version: "v1"
+      purpose: "Receives pending-entry, async-fill, timeout, and reconciliation events produced by coordinator synchronization."
+
+## Section 3: Interfaces
+interfaces:
+  exports:
+    - name: "CTradeCoordinator"
+      type: "class"
+      signature: "class CTradeCoordinator"
+      description: "Normalizes strategy helper requests into TradeIntent records, delegates broker-bound execution, synchronizes pending-entry and async outcomes, and reports broker responses without making strategy entry or exit decisions."
+      errors:
+        - "GuardResult rejected: readiness, state, topology, sizing, guard, or broker validation failed."
+    - name: "ProcessSignal"
+      type: "method"
+      signature: "GuardResult ProcessSignal(const Signal &signal)"
+      description: "Processes entry or close signal through the matching coordinator branch."
+      errors:
+        - "GuardResult rejected: invalid signal, blocked entry, or failed close."
+    - name: "Update"
+      type: "method"
+      signature: "void Update()"
+      description: "Runs cheap pending-entry, async-fill, timeout, and reconciliation bookkeeping after strategy hooks."
+      errors:
+        - "None; unresolved state is represented through CPositionStateMachine."
+    - name: "Signal"
+      type: "struct"
+      signature: "struct Signal"
+      description: "Internal entry or close request built by strategy helpers."
+      errors:
+        - "Invalid signal type or unsupported entry mode is rejected by ProcessSignal."
+    - name: "TradeIntent"
+      type: "struct"
+      signature: "struct TradeIntent"
+      description: "Serializable pre-submission intent with entry, stops, risk, lots, identity, comment, and metadata."
+      errors:
+        - "Not emitted when entry resolution fails before intent construction."
+
+## Section 4: Data Models
+data_models:
+  models:
+    - name: "Signal"
+      type: "struct"
+      fields:
+        - name: "type"
+          type: "ENUM_SIGNAL_TYPE"
+          required: true
+          description: "None, long, short, or close request."
+        - name: "entry_mode"
+          type: "ENUM_ENTRY_MODE"
+          required: true
+          description: "Market in v1; stop and limit are visible placeholders."
+        - name: "entry_price"
+          type: "double"
+          required: false
+          description: "Optional requested entry price; ignored for market entries and reserved for visible v2 pending-entry placeholders."
+        - name: "sl_price"
+          type: "double"
+          required: false
+          description: "Explicit stop loss or unset marker for stop-policy calculation."
+        - name: "tp_price"
+          type: "double"
+          required: false
+          description: "Explicit take profit or unset marker for stop-policy calculation."
+        - name: "comment"
+          type: "string"
+          required: false
+          description: "Strategy-visible reason/comment propagated to intent and audit evidence."
+        - name: "metadata"
+          type: "string"
+          required: false
+          description: "Compact serialized strategy metadata for diagnostics and paired evidence."
+    - name: "TradeIntent"
+      type: "struct"
+      fields:
+        - name: "signal"
+          type: "Signal"
+          required: true
+          description: "Original internal signal."
+        - name: "entry"
+          type: "double"
+          required: true
+          description: "Resolved entry price."
+        - name: "stops"
+          type: "StopLevels"
+          required: true
+          description: "Resolved initial SL/TP and risk distance."
+        - name: "lots_requested"
+          type: "double"
+          required: true
+          description: "Sizer output before guarded broker submission."
+        - name: "risk_percent"
+          type: "double"
+          required: false
+          description: "Risk percentage used by futures risk-percent sizing when selected."
+        - name: "ts"
+          type: "datetime"
+          required: true
+          description: "Intent creation timestamp used for evidence ordering and timeout decisions."
+        - name: "symbol"
+          type: "string"
+          required: true
+          description: "Trading symbol bound to the strategy instance."
+        - name: "magic"
+          type: "ulong"
+          required: true
+          description: "Strategy magic number used for ownership and duplicate identity checks."
+        - name: "comment"
+          type: "string"
+          required: false
+          description: "Broker-safe comment derived from the Signal comment."
+        - name: "metadata"
+          type: "string"
+          required: false
+          description: "Serialized strategy metadata copied from Signal for audit evidence."
+
+## Section 5: Behavior
+behavior:
+  validation_rules:
+    - rule: "Entry and exit helper requests SHALL route through documented TradeSpine helper calls and coordinator processing."
+      source: "@ears: EARS.01.03.b784"
+    - rule: "CTradeCoordinator SHALL NOT decide strategy intent, such as whether to enter when flat or non-flat, whether a signal exit should fire, or whether trailing should run; those decisions remain in the strategy layer."
+      source: "@prd: PRD.01.09.eaf3"
+    - rule: "Intent evidence SHALL be written before accepted broker submission."
+      source: "@ears: EARS.01.03.a0fa"
+    - rule: "Execution evidence SHALL be written after broker outcome reconciliation."
+      source: "@ears: EARS.01.03.6c85"
+    - rule: "Market-entry resolution SHALL ignore accidental Signal.entry_price and use current broker-side bid/ask context instead."
+      source: "@prd: PRD.01.09.eaf3"
+    - rule: "Entry stop failures, zero stop distance, or invalid resolved stop topology SHALL reject before sizing and before broker submission."
+      source: "@ears: EARS.01.03.222f"
+    - rule: "Indicator readiness SHALL be evaluated by the strategy layer before helper requests reach coordinator processing; the coordinator may reject a not-ready request defensively but does not own indicator-readiness decisions."
+      source: "@ears: EARS.01.03.4e80"
+    - rule: "Pending-entry and async order creation/execution synchronization SHALL be owned by the coordinator update path and reported to the shared position state machine."
+      source: "@ears: EARS.01.03.588b"
+  state_transitions:
+    - from: "FLAT"
+      to: "PENDING_ENTRY"
+      trigger: "Guarded submission returns pending placement."
+      source: "@bdd: BDD.01.03.0073"
+    - from: "PENDING_ENTRY"
+      to: "ACTIVE or HALT"
+      trigger: "Async fill, timeout, cancel, or reconciliation outcome is observed by the coordinator update path."
+      source: "@bdd: BDD.01.03.e16a"
+  error_handling:
+    - condition: "Registered indicator is not ready."
+      response: "Reject entry before intent submission and log readiness block."
+      source: "@bdd: BDD.01.03.c0f6"
+    - condition: "Unsupported v1 pending entry mode is selected."
+      response: "Reject request with operator-facing error and no broker submission."
+      source: "@bdd: BDD.01.03.9a8b"
+    - condition: "Stop policy returns an unset, zero-distance, or side-inverted stop."
+      response: "Reject the signal before TradeIntent submission and record a strategy diagnostic."
+      source: "@bdd: BDD.01.03.e593"
+
+## Section 6: Implementation Notes
+implementation_notes:
+  constraints:
+    - "Close requests route through the coordinator close branch and MUST NOT invoke entry sizing or stop-policy computation."
+    - "Update() MUST NOT scan orders, call HistorySelect, write GVs, or perform trailing on every tick."
+    - "Coordinator dependencies MUST remain interfaces for Tier-1 mock tests."
+    - "Coordinator code MUST NOT encode strategy policy such as flat-only entries, pyramiding rules, signal-exit rules, or trailing invocation."
+  patterns:
+    - "Use dependency injection for sizer, stop policy, trade port, position view, clock, and logger."
+    - "Represent normalized order definitions and audit identity in TradeIntent before broker handoff; keep entry/exit decisions in the strategy layer."
+    - "Keep Signal small enough for strategy code while TradeIntent carries all broker/audit identity fields."
+    - "Route pending-entry placement, async fill observation, timeout, cancel ambiguity, and final broker response reporting through the coordinator update path."
+  performance_considerations:
+    - "Idle path must respect @threshold: PRD.01.perf.idle_tick and low-I/O release evidence."
+
+## Section 7: Downstream TDD Contracts
+tdd_contracts:
+  tdd_document: "@tdd: TDD.02.04.30a8"
+  test_files:
+    - path: "Scripts/Tests/Test_Coordinator.mq5"
+      covers: "Entry branch, close branch, defensive readiness rejection, mock seams, evidence ordering, and absence of strategy-decision policy."
+    - path: "Scripts/Tests/Test_CoordinatorUpdate.mq5"
+      covers: "Cheap pending-entry, async-fill, timeout, cancel-ambiguity, and reconciliation handoff."
+    - path: "Scripts/Tests/Test_TradeIntentEvidence.mq5"
+      covers: "Intent and execution record pairing."
+
+## Section 8: Traceability
+traceability:
+  tags: ["@spec: SPEC-02", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.eaf3", "@ears: EARS.01.03.b784", "@bdd: BDD.01.03.0073", "@adr: ADR.09.03.84b9"]
+  upstream:
+    adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.08.03.0a8f", "@adr: ADR.09.03.84b9"]
+    bdd_references: ["@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.c0f6", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.9a8b"]
+    ears_references: ["@ears: EARS.01.03.b784", "@ears: EARS.01.03.a0fa", "@ears: EARS.01.03.6c85", "@ears: EARS.01.03.222f", "@ears: EARS.01.03.4e80"]
+    prd_references: ["@prd: PRD.01.09.eaf3", "@prd: PRD.01.09.d74e", "@prd: PRD.01.09.9d68"]
+    brd_references: ["@brd: BRD.01.07.88a6", "@brd: BRD.01.07.a94e", "@brd: BRD.01.07.8e15"]
+  downstream:
+    - type: TDD
+      layer: 7
+      description: "Coordinator pipeline and evidence-ordering test cases."
+  health_score:
+    tdd_ready: "94%"
+    target_score: ">=90/100"

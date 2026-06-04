@@ -1,0 +1,104 @@
+metadata:
+  schema_version: "1.0"
+  document_type: "iplan-document"
+  artifact_type: "IPLAN"
+  layer: 8
+  iplan_id: "IPLAN-13"
+  source_spec: "@spec: SPEC-01"
+  source_tdd: "@tdd: TDD.01.04.fe35"
+  total_sections: 6
+  last_updated: "2026-06-03T00:00:00-03:00"
+  tags: ["iplan-document", "layer-8-artifact", "strategy-port"]
+
+document_control:
+  iplan_id: "IPLAN-13"
+  source_spec: "@spec: SPEC-01"
+  source_tdd: "@tdd: TDD.01.04.fe35"
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-03T00:00:00-03:00"
+  author: "Codex"
+  component: "BullishBearish Engulfing v7 hedging TradeSpine port"
+  complexity: 4
+  estimated_files: 2
+  session_count: 0
+  readiness_gate: "TDD-01 shipped strategy artifact compile case"
+  source_inputs:
+    - "../07_TDD/TDD-01_strategy_authoring_surface/TDD-01_strategy_authoring_surface.yaml"
+    - "../06_SPEC/SPEC-01_strategy_authoring_surface/SPEC-01_strategy_authoring_surface.yaml"
+    - "../../Project/PRD.md"
+
+file_manifest:
+  files:
+    - path: "Scripts/Tests/Test_BullishBearishPortChecklist.mq5"
+      order: 1
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Compile, no-bypass, input, and hedging ownership checklist for the Bullish/Bearish port."
+    - path: "Experts/BullishBearish Engulfing all v7 hedging.mq5"
+      order: 2
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "TradeSpine one-file strategy artifact ported from the existing Bullish/Bearish Engulfing hedging EA."
+
+execution_commands:
+  cwd: "MQL5/Experts/Main/TradeSpine"
+  setup:
+    - "mkdir -p Experts Scripts/Tests"
+  implementation:
+    - "# Port the existing Bullish/Bearish Engulfing hedging strategy into the TradeSpine strategy surface."
+    - "# Preserve hedging-only behavior, same-direction stacking, and opposite-signal reduce/close semantics while routing all broker actions through framework helpers."
+  validation:
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_BullishBearishPortChecklist.mq5"
+    - "bash ../../../Scripts/compile_mql.sh 'Experts/BullishBearish Engulfing all v7 hedging.mq5'"
+    - "! rg -n \"#include <(Trade|Expert)[/\\\\]|OrderSend|OrderSendAsync|CTrade\" 'Experts/BullishBearish Engulfing all v7 hedging.mq5'"
+
+implementation_contracts:
+  provided:
+    contracts:
+      - name: "BullishBearish Engulfing hedging strategy artifact"
+        type: "Strategy Port"
+        files: ["Experts/BullishBearish Engulfing all v7 hedging.mq5", "Scripts/Tests/Test_BullishBearishPortChecklist.mq5"]
+        summary: "Ports the existing hedging strategy into one TradeSpine strategy file using shared framework services."
+  consumed:
+    dependencies:
+      - "@iplan: IPLAN-01"
+      - "@iplan: IPLAN-02"
+      - "@iplan: IPLAN-03"
+      - "@iplan: IPLAN-04"
+      - "@iplan: IPLAN-05"
+      - "@iplan: IPLAN-06"
+      - "@iplan: IPLAN-07"
+      - "@iplan: IPLAN-09"
+      - "@iplan: IPLAN-11"
+
+session_handoff:
+  sessions:
+    - date: "2026-06-03"
+      agent: "Codex doc-flow remediation"
+      files_touched: []
+      partial_work: "No implementation started; this plan owns the Bullish/Bearish Engulfing hedging port artifact."
+      blockers: "Begin only after shared strategy surface, coordination, execution, position, persistence, market, indicator/sizing, runtime, and test support contracts are stable."
+      next_session_directive: "Start with Scripts/Tests/Test_BullishBearishPortChecklist.mq5, then port Experts/BullishBearish Engulfing all v7 hedging.mq5 through CStrategyBase helpers."
+      validation_results:
+        tests_passing: null
+        coverage: null
+        lint_clean: null
+
+traceability:
+  upstream:
+    spec_references: ["@spec: SPEC-01"]
+    tdd_references: ["@tdd: TDD.01.04.fe35"]
+    brd_references: ["@brd: BRD.01.07.88a6"]
+    prd_references: ["@prd: PRD.01.09.5ef1", "@prd: PRD.01.09.eaf3"]
+    ears_references: ["@ears: EARS.01.03.4c3f"]
+    bdd_references: ["@bdd: BDD.01.03.aa68"]
+    adr_references: ["@adr: ADR.01.03.42e3", "@adr: ADR.09.03.84b9", "@adr: ADR.10.03.51ea"]
+  downstream:
+    code_paths: ["@code: Experts/BullishBearish Engulfing all v7 hedging.mq5"]
+    test_paths: ["@tests: Scripts/Tests/Test_BullishBearishPortChecklist.mq5"]
+  code_inventory:
+    files: []

@@ -1,0 +1,132 @@
+metadata:
+  schema_version: "1.0"
+  document_type: "iplan-document"
+  artifact_type: "IPLAN"
+  layer: 8
+  iplan_id: "IPLAN-11"
+  source_spec: "@spec: SPEC-11"
+  source_tdd: "@tdd: TDD.11.04.6805"
+  total_sections: 6
+  last_updated: "2026-06-03T00:00:00-03:00"
+  tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
+
+document_control:
+  iplan_id: "IPLAN-11"
+  source_spec: "@spec: SPEC-11"
+  source_tdd: "@tdd: TDD.11.04.6805"
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-03T00:00:00-03:00"
+  author: "Codex"
+  component: "Test doubles, clocks, brokers, stores, and scenario harnesses"
+  complexity: 4
+  estimated_files: 7
+  session_count: 0
+  readiness_gate: "TDD-11 audit PASS 95/100"
+  source_inputs:
+    - "../07_TDD/TDD-11_testing_support_and_harnesses/TDD-11_testing_support_and_harnesses.yaml"
+    - "../06_SPEC/SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.yaml"
+    - "IPLAN-09_core_runtime_and_configuration.yaml"
+    - "../../Project/PRD.md"
+    - "../../Project/architecture-diagram.html"
+
+file_manifest:
+  files:
+    - path: "Scripts/Tests/Support/FakeClock.mqh"
+      order: 1
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Deterministic time, session, timeout, and daily reset support."
+    - path: "Scripts/Tests/Support/FakeTradePort.mqh"
+      order: 2
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Broker outcome, retry, pending, and ambiguity scripts."
+    - path: "Scripts/Tests/Support/ScenarioHarness.mqh"
+      order: 3
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Reusable component assembly and evidence assertions."
+    - path: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
+      order: 4
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Manual evidence pack and automated/manual gate separation tests."
+    - path: "Include/Testing/Assert.mqh"
+      order: 5
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Test assertions, pass/fail counters, and summary output."
+    - path: "Include/Testing/Mocks.mqh"
+      order: 6
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Shared mock aliases and helpers for component tests."
+    - path: "Scripts/Tests/RunAllTests.mq5"
+      order: 7
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Tier-1 script aggregation entry point."
+
+execution_commands:
+  cwd: "MQL5/Experts/Main/TradeSpine"
+  setup:
+    - "mkdir -p Include/Testing Scripts/Tests/Support"
+  implementation:
+    - "# Begin only after IPLAN-09 publishes stable shared interface definitions consumed by fakes."
+    - "# Write support includes and release harness tests first, then implement assertion and mock helpers."
+    - "# Keep test support outside production execution paths and use the same interfaces consumed by production components."
+  validation:
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/RunAllTests.mq5"
+
+implementation_contracts:
+  provided:
+    contracts:
+      - name: "Scenario harness contract"
+        type: "DI Interface"
+        files: ["Scripts/Tests/Support/FakeClock.mqh", "Scripts/Tests/Support/FakeTradePort.mqh", "Scripts/Tests/Support/ScenarioHarness.mqh"]
+        summary: "Tests assemble components with deterministic broker, clock, store, symbol, log, and evidence seams."
+      - name: "Release evidence contract"
+        type: "Data Model"
+        files: ["Scripts/Tests/Test_ReleaseEvidenceHarness.mq5", "Include/Testing/Assert.mqh"]
+        summary: "Manual deferred account-mode evidence remains separate from automated Strategy Tester evidence."
+  consumed:
+    dependencies:
+      - "@iplan: IPLAN-09"
+
+session_handoff:
+  sessions:
+    - date: "2026-06-03"
+      agent: "Codex IPLAN autopilot"
+      files_touched: []
+      partial_work: "No implementation started; this seed session only created the execution plan."
+      blockers: "Begin only after IPLAN-09 provides stable shared interfaces for clocks, trade ports, stores, runtime, and diagnostics."
+      next_session_directive: "After IPLAN-09, start with Scripts/Tests/Support/FakeClock.mqh and Include/Testing/Assert.mqh so later component tests can compile."
+      validation_results:
+        tests_passing: null
+        coverage: null
+        lint_clean: null
+
+traceability:
+  upstream:
+    spec_references: ["@spec: SPEC-11"]
+    tdd_references: ["@tdd: TDD.11.04.6805"]
+    brd_references: ["@brd: BRD.01.07.a94e", "@brd: BRD.01.08.0ce5"]
+    prd_references: ["@prd: PRD.01.14.8720", "@prd: PRD.01.09.3f12", "@prd: PRD.01.13.edc4", "@prd: PRD.01.09.841a"]
+    ears_references: ["@ears: EARS.01.03.d7e9", "@ears: EARS.01.03.a71c", "@ears: EARS.01.03.588b", "@ears: EARS.01.03.8044"]
+    bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.f415", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.b37d"]
+    adr_references: ["@adr: ADR.06.03.b277", "@adr: ADR.07.03.6df1", "@adr: ADR.08.03.0a8f", "@adr: ADR.10.03.51ea"]
+  downstream:
+    code_paths: ["@code: Include/Testing/Assert.mqh", "@code: Include/Testing/Mocks.mqh", "@code: Scripts/Tests/Support/FakeClock.mqh", "@code: Scripts/Tests/Support/FakeTradePort.mqh", "@code: Scripts/Tests/Support/ScenarioHarness.mqh", "@code: Scripts/Tests/RunAllTests.mq5"]
+    test_paths: ["@tests: Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"]
+  code_inventory:
+    files: []

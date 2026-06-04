@@ -98,7 +98,7 @@ A shared MT5 strategy framework can reduce duplicated EA infrastructure while en
 
 - Can a reference strategy be authored as one strategy file with shared infrastructure outside the strategy file?
 - Can framework-mediated orders pass through safety checks that prevent catastrophic order submission?
-- Can netting and hedging accounts support multiple same-symbol strategy instances without strategy-code changes?
+- Can hedging accounts support multiple same-symbol strategy instances while netting and exchange-netting modes fail safely as deferred v2+ modes?
 
 ### Problem Statement
 
@@ -114,9 +114,9 @@ A shared MT5 strategy framework can reduce duplicated EA infrastructure while en
 | --- | --- | --- | --- |
 | BRD.01.04.22e9 | Reduce per-strategy infrastructure duplication for new B3 futures strategies. | Reference strategy contains roughly 70% reusable infrastructure. | New reference strategy uses a single strategy file with shared framework services by v1.0. |
 | BRD.01.04.7b04 | Prevent catastrophic framework-mediated order submission. | Safety checks are repeated per EA. | All framework helper order flow passes through a guarded path before broker submission. |
-| BRD.01.04.4fb6 | Preserve same-symbol multi-strategy operation across supported account modes. | Netting isolation is a known design risk. | Both netting and hedging modes demonstrate independent strategy ownership for same-symbol strategies. |
+| BRD.01.04.4fb6 | Preserve same-symbol multi-strategy operation for v1 hedging accounts while deferring netting and exchange-netting execution. | Netting isolation is a known design risk and is no longer v1 executable scope. | Hedging mode demonstrates independent same-symbol strategy ownership, and netting/exchange-netting modes fail initialization with a deferred-mode diagnostic. |
 | BRD.01.04.3030 | Make framework builds reproducible across terminal updates. | MetaTrader standard-library behavior may change with terminal updates. | Dependencies used by the framework are vendored and version-recorded for v1.0. |
-| BRD.01.04.79f3 | Enable strategy authoring without reading framework internals. | Current strategy authoring requires infrastructure knowledge. | v1.0 ships a template, two reference strategies, and authoring documentation. |
+| BRD.01.04.79f3 | Enable strategy authoring without reading framework internals. | Current strategy authoring requires infrastructure knowledge. | v1.0 ships a template, two simple reference samples, two additional hedging strategy ports, and authoring documentation. |
 
 ### Success Metrics
 
@@ -124,14 +124,14 @@ A shared MT5 strategy framework can reduce duplicated EA infrastructure while en
 | --- | --- | --- | --- | --- |
 | BRD.01.04.d58c | Strategy authoring compression | Reference strategy shape | One `.mq5` strategy file plus shared framework includes | v1.0 sign-off |
 | BRD.01.04.9f63 | Safety gate coverage | Framework-mediated order paths | 100% routed through guarded execution | v1.0 sign-off |
-| BRD.01.04.7937 | Account-mode parity | Supported account modes | Netting, exchange-netting, and hedging behavior validated | v1.0 sign-off |
+| BRD.01.04.7937 | Account-mode v1 safety | Supported account modes | RETAIL_HEDGING behavior validated; RETAIL_NETTING and EXCHANGE deferred-mode init failure validated | v1.0 sign-off |
 
 ### Expected Benefits
 
 **Quantifiable**
 
 - Reduce repeated infrastructure from the reference baseline toward a single shared layer.
-- Ship two reference strategies for validation and examples.
+- Ship two simple reference samples plus two additional hedging strategy ports for validation and examples.
 - Complete phased build gates from v0.1 through v1.0.
 
 **Qualitative**
@@ -158,11 +158,11 @@ The MVP establishes TradeSpine as the platform BRD for single-symbol MT5 strateg
 
 - Single-file strategy authoring model.
 - Guarded framework-mediated trade execution.
-- Strategy-scoped netting and hedging ownership.
+- Strategy-scoped hedging ownership, with netting/exchange-netting executable support deferred to v2+.
 - B3 futures sizing and session support.
 - Trade intent and execution audit evidence.
 - Vendored standard-library dependency foundation.
-- Reference strategy template and two working reference strategies.
+- Reference strategy template, two simple reference samples, and two additional hedging strategy ports.
 
 ### P2 Should Have
 
@@ -240,7 +240,7 @@ System must enable a trader to create a new MT5 strategy as one strategy file th
 
 | ID | Criterion | Target |
 | --- | --- | --- |
-| BRD.01.07.71d6 | Reference strategy packaging | Each v1 reference strategy is one `.mq5` strategy file plus shared framework includes. |
+| BRD.01.07.71d6 | Reference strategy packaging | Each shipped v1 strategy artifact is one `.mq5` strategy file plus shared framework includes, including the two simple samples and the two hedging ports. |
 
 ### BRD.01.07.a94e: Guarded trade flow
 
@@ -267,9 +267,9 @@ System must ensure every framework-mediated entry passes through one guarded tra
 | --- | --- | --- |
 | BRD.01.07.de65 | Guard coverage | 100% of framework helper entry paths route through the guarded execution path. |
 
-### BRD.01.07.b44d: Account-mode independent strategy ownership
+### BRD.01.07.b44d: Hedging-first account-mode strategy ownership
 
-System must support strategy-scoped ownership on netting, exchange-netting, and hedging accounts.
+System must support strategy-scoped ownership on hedging accounts and fail safely for deferred netting/exchange-netting modes.
 
 | Field | Value |
 | --- | --- |
@@ -283,14 +283,15 @@ System must support strategy-scoped ownership on netting, exchange-netting, and 
 
 **Business rules**
 
-- Exclusive same-symbol locking on netting accounts is not acceptable.
+- Netting and exchange-netting executable ownership is deferred to v2+.
+- v1 must fail initialization before trading when a deferred account mode is selected or detected.
 - Manual activity outside the strategy is outside strategy ownership.
 
 **Acceptance criteria**
 
 | ID | Criterion | Target |
 | --- | --- | --- |
-| BRD.01.07.49b8 | Same-symbol strategy independence | Two same-symbol strategy instances can maintain independent ownership evidence in supported account modes. |
+| BRD.01.07.49b8 | Same-symbol strategy independence | Two same-symbol strategy instances can maintain independent ownership evidence on hedging accounts; netting/exchange-netting modes produce deferred-mode init failure. |
 
 ### BRD.01.07.69ef: B3 futures MVP scope
 
@@ -304,7 +305,7 @@ System must support B3 futures strategy development for WIN, WDO, IND, and DOL i
 **Business needs**
 
 - Use broker-provided symbol and session information for trading decisions.
-- Support futures risk sizing for v1 reference strategies.
+- Support futures risk sizing for v1 simple samples and hedging strategy ports.
 
 **Business rules**
 
@@ -440,11 +441,11 @@ System must avoid unnecessary runtime work during optimization and idle ticks.
 
 - All P1 functional requirements have downstream PRD, EARS, SPEC, TDD, and IPLAN traceability.
 - Guarded execution blocks catastrophic framework-mediated order cases in the v1.0 test set.
-- Netting and hedging ownership behavior is validated for same-symbol strategy instances.
+- Hedging ownership behavior is validated for same-symbol strategy instances, and netting/exchange-netting modes fail safely as deferred v2+ modes.
 - B3 futures sizing and broker-session behavior are validated for the v1 symbol set.
 - Trade intent and execution evidence is produced for accepted entry attempts.
 - Vendored standard-library version evidence is recorded.
-- Two reference strategies and strategy-authoring documentation are available.
+- Two simple reference samples, two additional hedging strategy ports, and strategy-authoring documentation are available.
 
 ### Launch Gates - Should Have
 
@@ -454,7 +455,7 @@ System must avoid unnecessary runtime work during optimization and idle ticks.
 
 ### 30-Day Metrics
 
-- At least two reference strategies compile and run through framework helpers.
+- At least four shipped v1 strategy artifacts compile and run through framework helpers: two simple samples and two hedging ports.
 - No known framework-mediated catastrophic order path remains open.
 - No unresolved P1 safety finding remains in the v1.0 audit trail.
 
@@ -472,7 +473,7 @@ System must avoid unnecessary runtime work during optimization and idle ticks.
 | ID | Description | Likelihood | Impact | Mitigation | Owner |
 | --- | --- | --- | --- | --- | --- |
 | BRD.01.12.5c81 | A sizing or side logic defect could send unsafe order volume. | Medium | High | Require a single guarded trade path, catastrophic caps, and test evidence before live use. | Technical Lead |
-| BRD.01.12.5985 | Strategy-scoped virtual ownership may drift from broker aggregate exposure on netting accounts. | Medium | High | Require ownership evidence, recovery rules, and halt-on-ambiguity behavior. | Technical Lead |
+| BRD.01.12.5985 | Deferred netting/exchange design could be mistakenly treated as v1 executable scope. | Medium | High | Require explicit v1 hedging scope, deferred-mode init failure evidence, and v2+ labeling for virtual-ledger ownership. | Technical Lead |
 | BRD.01.12.74e8 | Silent terminal standard-library updates could change framework behavior between builds. | Medium | Medium | Vendor selected standard-library dependencies and record source terminal version. | Technical Lead |
 | BRD.01.12.0224 | Planning documents and implementation decisions may diverge during phased build. | Medium | Medium | Use aidoc traceability, audits, and changelog governance before moving to implementation. | Product Owner |
 
@@ -502,7 +503,7 @@ System must avoid unnecessary runtime work during optimization and idle ticks.
 | --- | --- | --- | --- |
 | BRD.01.04.d58c | Strategy authoring compression | BRD.01.07.88a6 | Complete |
 | BRD.01.04.9f63 | Safety gate coverage | BRD.01.07.a94e, BRD.01.07.717b | Complete |
-| BRD.01.04.7937 | Account-mode parity | BRD.01.07.b44d | Complete |
+| BRD.01.04.7937 | Account-mode v1 safety | BRD.01.07.b44d | Complete |
 | BRD.01.04.3030 | Reproducibility | BRD.01.07.69ef | Partial |
 | BRD.01.04.79f3 | Authoring readiness | BRD.01.07.88a6, BRD.01.07.8e15 | Complete |
 
@@ -538,7 +539,7 @@ System must avoid unnecessary runtime work during optimization and idle ticks.
 | Framework-mediated order | Order request submitted through TradeSpine helper and guard paths. |
 | Netting | Account mode where the broker maintains one aggregate position per symbol. |
 | Hedging | Account mode where separate broker position tickets can coexist. |
-| Virtual ownership | TradeSpine strategy-scoped accounting used to separate same-symbol strategy exposure. |
+| Virtual ownership | Deferred v2+ TradeSpine strategy-scoped accounting used to separate same-symbol strategy exposure on netting/exchange-netting accounts. |
 | Trade audit evidence | Paired intent and execution records used for post-trade review. |
 | Vendored standard library | Frozen in-repository copy of selected MetaQuotes standard-library files. |
 

@@ -1,0 +1,166 @@
+---
+document_type: spec-document
+artifact_type: SPEC
+layer: 6
+deliverable_type: code
+id: SPEC-10
+title: Visualization Optional Services
+status: Draft
+created_date: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-02T00:20:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-02T00:20:00-03:00"
+  author: "Codex"
+  component: "IChartRenderer, CNoopRenderer, CChartObjectRenderer"
+  tdd_ready_score: "91/100"
+
+## Section 2: Component Overview
+component_overview:
+  description: "Visualization optional services provide strategy-owned chart annotations for development and manual review while remaining disabled or no-op in optimization/hot paths and isolated from execution, persistence, and state-machine correctness."
+  architecture_decision: "@adr: ADR.10.03.51ea"
+  diagram:
+    tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
+    mermaid: |
+      flowchart LR
+        Strategy["Strategy code"] --> VizPort["IChartRenderer"]
+        VizPort --> Noop["CNoopRenderer"]
+        VizPort --> Chart["CChartObjectRenderer"]
+        Runtime["OptContext"] --> VizPort
+        Chart --> Terminal["Chart objects"]
+        VizPort -. no dependency .-> Execution["Execution boundary"]
+  language: "MQL5"
+  dependencies:
+    - name: "OptContext"
+      version: "v1"
+      purpose: "Disables visualization in optimization or configured no-render modes."
+    - name: "Terminal chart API"
+      version: "v1"
+      purpose: "Renders optional chart objects during manual development or review."
+
+## Section 3: Interfaces
+interfaces:
+  exports:
+    - name: "IChartRenderer"
+      type: "interface"
+      signature: "interface IChartRenderer"
+      description: "Optional renderer seam for strategy annotations, signal markers, stop/TP lines, and debug overlays."
+      errors:
+        - "RenderSkipped when runtime policy or chart state disallows rendering."
+    - name: "CNoopRenderer"
+      type: "class"
+      signature: "class CNoopRenderer : public IChartRenderer"
+      description: "No-op renderer used in optimization, tests, and disabled visualization mode."
+      errors:
+        - "None."
+    - name: "CChartObjectRenderer"
+      type: "class"
+      signature: "class CChartObjectRenderer : public IChartRenderer"
+      description: "Chart-object-backed renderer for manual/live visual diagnostics."
+      errors:
+        - "RenderSkipped when object creation or update fails."
+
+## Section 4: Data Models
+data_models:
+  models:
+    - name: "RenderEvent"
+      type: "struct"
+      fields:
+        - name: "kind"
+          type: "ENUM_RENDER_EVENT_KIND"
+          required: true
+          description: "Signal, entry, exit, stop, target, session, or diagnostic marker."
+        - name: "time"
+          type: "datetime"
+          required: true
+          description: "Chart time coordinate."
+        - name: "price"
+          type: "double"
+          required: false
+          description: "Chart price coordinate when applicable."
+        - name: "label"
+          type: "string"
+          required: false
+          description: "Short chart label."
+    - name: "RenderPolicy"
+      type: "struct"
+      fields:
+        - name: "enabled"
+          type: "bool"
+          required: true
+          description: "Whether chart rendering is enabled."
+        - name: "allow_in_optimization"
+          type: "bool"
+          required: true
+          description: "Whether rendering may run during optimization, normally false."
+        - name: "prefix"
+          type: "string"
+          required: true
+          description: "Object-name prefix scoped to strategy symbol and magic."
+
+## Section 5: Behavior
+behavior:
+  validation_rules:
+    - rule: "Visualization SHALL be optional and SHALL NOT be required for strategy execution, state reconciliation, or audit evidence correctness."
+      source: "@prd: PRD.01.09.3092"
+    - rule: "Visualization SHALL be no-op in optimization by default and must not add hot-path I/O."
+      source: "@ears: EARS.01.03.c5b7"
+    - rule: "Chart objects SHALL be strategy-scoped by symbol and magic so manual review overlays do not collide across EA instances."
+      source: "@prd: PRD.01.09.841a"
+    - rule: "Renderer tests SHALL treat terminal chart object creation and update as queued chart operations; immediate object readback is not a required correctness signal."
+      source: "@prd: PRD.01.09.3092"
+  state_transitions:
+    - from: "RendererDisabled"
+      to: "RendererActive"
+      trigger: "Runtime policy enables chart rendering outside optimization."
+      source: "@bdd: BDD.01.03.b37d"
+  error_handling:
+    - condition: "Chart object creation or update fails."
+      response: "Skip rendering and emit an optional strategy diagnostic without changing trade state."
+      source: "@ears: EARS.01.03.a71c"
+    - condition: "Renderer is called during disabled runtime mode."
+      response: "Return immediately through CNoopRenderer semantics."
+      source: "@ears: EARS.01.03.c5b7"
+
+## Section 6: Implementation Notes
+implementation_notes:
+  constraints:
+    - "Visualization modules MUST NOT call broker execution APIs, mutate position state, or gate entries."
+    - "Rendering MUST be injected as an optional service and default to CNoopRenderer for tester/optimization-safe operation."
+    - "Chart object naming MUST include a stable strategy prefix derived from account/symbol/magic context."
+    - "Chart-renderer correctness is defined by accepted RenderEvent handling, scoped names, no-op behavior, and failure isolation; terminal object readback belongs only in controlled chart tests."
+  patterns:
+    - "Use short render events emitted by strategy or coordinator surfaces instead of chart logic inside execution guards."
+    - "Keep object cleanup scoped to the strategy prefix."
+  performance_considerations:
+    - "Disabled renderer calls must remain compatible with @threshold: PRD.01.perf.idle_tick."
+
+## Section 7: Downstream TDD Contracts
+tdd_contracts:
+  tdd_document: "@tdd: TDD.10.04.7972"
+  test_files:
+    - path: "Scripts/Tests/Test_ChartRenderer.mq5"
+      covers: "No-op behavior, scoped object names, failure isolation, and optional render policy."
+    - path: "Scripts/Tests/Test_VisualizationPerformance.mq5"
+      covers: "Optimization-disabled rendering and idle-path no-I/O guarantees."
+
+## Section 8: Traceability
+traceability:
+  tags: ["@spec: SPEC-10", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.3092", "@ears: EARS.01.03.c5b7", "@bdd: BDD.01.03.b37d", "@adr: ADR.10.03.51ea"]
+  upstream:
+    adr_references: ["@adr: ADR.03.03.4124", "@adr: ADR.10.03.51ea"]
+    bdd_references: ["@bdd: BDD.01.03.b37d", "@bdd: BDD.01.03.d6ae"]
+    ears_references: ["@ears: EARS.01.03.c5b7", "@ears: EARS.01.03.a71c"]
+    prd_references: ["@prd: PRD.01.09.3092", "@prd: PRD.01.09.841a", "@prd: PRD.01.14.8720"]
+    brd_references: ["@brd: BRD.01.07.88a6"]
+  downstream:
+    - type: TDD
+      layer: 7
+      description: "Optional visualization, no-op renderer, scoped chart object, and performance isolation tests."
+  health_score:
+    tdd_ready: "91%"
+    target_score: ">=90/100"

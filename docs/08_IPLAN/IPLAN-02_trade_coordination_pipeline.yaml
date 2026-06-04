@@ -1,0 +1,136 @@
+metadata:
+  schema_version: "1.0"
+  document_type: "iplan-document"
+  artifact_type: "IPLAN"
+  layer: 8
+  iplan_id: "IPLAN-02"
+  source_spec: "@spec: SPEC-02"
+  source_tdd: "@tdd: TDD.02.04.30a8"
+  total_sections: 6
+  last_updated: "2026-06-03T00:00:00-03:00"
+  tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
+
+document_control:
+  iplan_id: "IPLAN-02"
+  source_spec: "@spec: SPEC-02"
+  source_tdd: "@tdd: TDD.02.04.30a8"
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-03T00:00:00-03:00"
+  author: "Codex"
+  component: "CTradeCoordinator, Signal, TradeIntent"
+  complexity: 5
+  estimated_files: 7
+  session_count: 0
+  readiness_gate: "TDD-02 audit PASS 95/100"
+  source_inputs:
+    - "../07_TDD/TDD-02_trade_coordination_pipeline/TDD-02_trade_coordination_pipeline.yaml"
+    - "../06_SPEC/SPEC-02_trade_coordination_pipeline/SPEC-02_trade_coordination_pipeline.yaml"
+    - "../../Project/PRD.md"
+    - "../../Project/architecture-diagram.html"
+
+file_manifest:
+  files:
+    - path: "Scripts/Tests/Test_Coordinator.mq5"
+      order: 1
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Entry branch, close branch, readiness rejection, mock seams, and policy-free coordinator tests."
+    - path: "Scripts/Tests/Test_CoordinatorUpdate.mq5"
+      order: 2
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Pending-entry, async-fill, timeout, cancel ambiguity, and reconciliation handoff tests."
+    - path: "Scripts/Tests/Test_TradeIntentEvidence.mq5"
+      order: 3
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Intent and execution record pairing tests."
+    - path: "Include/Strategy/Signal.mqh"
+      order: 4
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Internal Signal, entry mode, signal type, StopLevels, and TradeIntent data contract."
+    - path: "Include/Coordination/TradeCoordinator.mqh"
+      order: 5
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Entry, close, update, evidence ordering, and state-machine handoff coordinator."
+    - path: "Include/Coordination/TradeCoordinatorUpdate.mqh"
+      order: 6
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Cheap synchronization routines separated from entry processing."
+    - path: "Include/Coordination/TradeIntentEvidence.mqh"
+      order: 7
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Intent and execution evidence helpers consumed by TradeLogger."
+
+execution_commands:
+  cwd: "MQL5/Experts/Main/TradeSpine"
+  setup:
+    - "mkdir -p Include/Strategy Include/Coordination Scripts/Tests"
+  implementation:
+    - "# Write TDD-02 tests first, then implement Signal and CTradeCoordinator in manifest order."
+    - "# Keep strategy decisions outside CTradeCoordinator; it normalizes and routes only."
+  validation:
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_Coordinator.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_CoordinatorUpdate.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_TradeIntentEvidence.mq5"
+
+implementation_contracts:
+  provided:
+    contracts:
+      - name: "TradeIntent evidence contract"
+        type: "Data Model"
+        files: ["Include/Strategy/Signal.mqh", "Include/Coordination/TradeIntentEvidence.mqh"]
+        summary: "Every accepted broker-bound request carries identity, stops, lots, comment, metadata, and pairable evidence identifiers."
+      - name: "Coordinator dependency contract"
+        type: "DI Interface"
+        files: ["Include/Coordination/TradeCoordinator.mqh", "Scripts/Tests/Test_Coordinator.mq5"]
+        summary: "Coordinator consumes injected sizer, stop policy, trade port, position view, clock, logger, and state-machine dependencies."
+  consumed:
+    dependencies:
+      - "@iplan: IPLAN-04"
+      - "@iplan: IPLAN-05"
+      - "@iplan: IPLAN-06"
+      - "@iplan: IPLAN-07"
+      - "@iplan: IPLAN-09"
+      - "@iplan: IPLAN-11"
+
+session_handoff:
+  sessions:
+    - date: "2026-06-03"
+      agent: "Codex IPLAN autopilot"
+      files_touched: []
+      partial_work: "No implementation started; this seed session only created the execution plan."
+      blockers: "Coordinator implementation depends on stable position, persistence, market, behavior, runtime, and test harness contracts."
+      next_session_directive: "Start with Scripts/Tests/Test_Coordinator.mq5 and define the smallest Signal/TradeIntent contract needed for red tests."
+      validation_results:
+        tests_passing: null
+        coverage: null
+        lint_clean: null
+
+traceability:
+  upstream:
+    spec_references: ["@spec: SPEC-02"]
+    tdd_references: ["@tdd: TDD.02.04.30a8"]
+    brd_references: ["@brd: BRD.01.07.88a6", "@brd: BRD.01.07.a94e", "@brd: BRD.01.07.8e15"]
+    prd_references: ["@prd: PRD.01.09.eaf3", "@prd: PRD.01.09.d74e", "@prd: PRD.01.09.9d68"]
+    ears_references: ["@ears: EARS.01.03.b784", "@ears: EARS.01.03.a0fa", "@ears: EARS.01.03.6c85", "@ears: EARS.01.03.222f", "@ears: EARS.01.03.4e80"]
+    bdd_references: ["@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.c0f6", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.9a8b"]
+    adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.08.03.0a8f", "@adr: ADR.09.03.84b9"]
+  downstream:
+    code_paths: ["@code: Include/Strategy/Signal.mqh", "@code: Include/Coordination/TradeCoordinator.mqh", "@code: Include/Coordination/TradeCoordinatorUpdate.mqh", "@code: Include/Coordination/TradeIntentEvidence.mqh"]
+    test_paths: ["@tests: Scripts/Tests/Test_Coordinator.mq5", "@tests: Scripts/Tests/Test_CoordinatorUpdate.mq5", "@tests: Scripts/Tests/Test_TradeIntentEvidence.mq5"]
+  code_inventory:
+    files: []

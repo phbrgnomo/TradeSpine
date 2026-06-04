@@ -77,8 +77,8 @@ alternatives:
       selected: false
       description: "Use PositionSelect(symbol) and order history directly without a strategy lifecycle state machine."
       pros: ["Less framework state"]
-      cons: ["Unsafe for netting virtual ownership", "Cannot preserve HALT evidence"]
-      rejection_reason: "Fails netting, async, and recovery requirements."
+      cons: ["Unsafe for future netting virtual ownership", "Cannot preserve HALT evidence"]
+      rejection_reason: "Fails async, recovery, and v2+ netting extensibility requirements."
       estimated_cost: "Low"
       fit: Poor
 
@@ -170,7 +170,7 @@ verification:
 
 ## Section 9: Traceability
 traceability:
-  tags: ["@adr: ADR-08", "@brd: BRD.01.07.a94e", "@prd: PRD.01.09.7608", "@ears: EARS.01.03.588b", "@bdd: BDD.01.03.e16a"]
+  tags: ["@adr: ADR.08.03.0a8f", "@brd: BRD.01.07.a94e", "@prd: PRD.01.09.7608", "@ears: EARS.01.03.588b", "@bdd: BDD.01.03.e16a"]
   originating_topic: "@prd: PRD.01.09.7608"
   upstream:
     bdd_references: ["@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.9a7d", "@bdd: BDD.01.03.8180"]

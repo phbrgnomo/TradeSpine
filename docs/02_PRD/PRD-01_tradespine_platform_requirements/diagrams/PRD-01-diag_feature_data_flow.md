@@ -37,4 +37,4 @@ flowchart LR
 ## References
 
 - Parent PRD: `../PRD-01_tradespine_platform_requirements.yaml`
-- Upstream BRD: `../../01_BRD/BRD-01_platform_tradespine_framework/BRD-01_platform_tradespine_framework.yaml`
+- Upstream BRD: `../../../01_BRD/BRD-01_platform_tradespine_framework/BRD-01_platform_tradespine_framework.yaml`

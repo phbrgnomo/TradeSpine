@@ -7,7 +7,7 @@ id: ADR-04
 title: Guarded Trade Safety and Bypass Policy
 status: Accepted
 created_date: "2026-06-01T20:35:00-03:00"
-last_updated: "2026-06-01T20:35:00-03:00"
+last_updated: "2026-06-02T00:40:00-03:00"
 
 ## Section 1: Document Control
 document_control:
@@ -15,7 +15,7 @@ document_control:
   date: "2026-06-01"
   decision_makers: ["phbr"]
   author: "Codex"
-  version: "1.0"
+  version: "1.1"
   originating_topic: "@prd: PRD.01.14.8720"
   brd_reference: "@brd: BRD.01.08.0ce5"
   spec_ready_score: "95/100"
@@ -24,6 +24,10 @@ document_control:
       date: "2026-06-01T20:35:00-03:00"
       author: "Codex"
       changes: "Initial accepted ADR generated from approved BDD-01 and PRD v3.73 source."
+    - version: "1.1"
+      date: "2026-06-02T00:40:00-03:00"
+      author: "Codex"
+      changes: "Clarified that CRiskManager owns runtime risk limits while CGuardedTrade owns per-order consistency, catastrophic guards, broker preflight, and private CTrade submission."
 
 ## Section 2: Context
 context:
@@ -40,16 +44,18 @@ decision:
   chosen_solution:
     id: "ADR.04.03.7277"
     title: "Use a single guarded trade path plus repository bypass checks"
-    description: "TradeSpine will enforce safety inside the supported helper path through CGuardedTrade, OrderCheck, margin checks, runtime risk controls, and HALT behavior, while release governance rejects strategy files that include raw broker execution bypasses."
+    description: "TradeSpine will enforce safety inside the supported helper path through a separate CRiskManager for runtime risk controls, CGuardedTrade for per-order consistency/catastrophic checks, OrderCheck, margin checks, and HALT behavior, while release governance rejects strategy files that include raw broker execution bypasses."
   key_components:
     - name: "CTradeCoordinator"
       role: "Builds the framework-mediated intent and routes order requests."
     - name: "CGuardedTrade"
-      role: "Composes the private vendored CTrade and applies safety gates before broker submission."
+      role: "Composes the private vendored CTrade and applies per-order TradeIntent consistency checks, catastrophic caps, broker preflight, and fill/retcode handling before broker submission."
+    - name: "CRiskManager"
+      role: "Owns strategy-scoped daily-loss, max-open-lots, max-trades-per-day, and panic-stop evaluation separately from per-order guarded execution."
     - name: "Repository bypass check"
       role: "Detects raw OrderSend and prohibited terminal trade includes in strategy files."
   implementation_approach:
-    mvp_scope: "Guarded helper path, runtime risk controls, direct-broker bypass grep checks, and rejection evidence."
+    mvp_scope: "Guarded helper path, separate CRiskManager runtime controls, direct-broker bypass grep checks, and rejection evidence."
     next_cycle_scope: "System-wide panic can be evaluated after v1 strategy-scoped controls are proven."
 
 ## Section 4: Alternatives Considered
@@ -116,7 +122,7 @@ architecture_flow:
           participant Broker
           Strategy->>Coordinator: OpenLong/OpenShort/Close helper
           Coordinator->>Guard: Submit TradeIntent
-          Guard->>Guard: Apply catastrophic, session, risk, OrderCheck, margin gates
+          Guard->>Guard: Apply TradeIntent consistency, catastrophic, session, OrderCheck, and margin gates
           alt gates pass
             Guard->>Broker: Submit via private CTrade
           else gates fail
@@ -131,7 +137,7 @@ architecture_flow:
 implementation_assessment:
   mvp_phases:
     - phase: "Guarded execution"
-      scope: "CGuardedTrade stages, runtime risk controls, and rejection evidence."
+      scope: "CGuardedTrade per-order stages, CRiskManager runtime controls, and rejection evidence."
       risk: "A direct broker call enters strategy code outside helpers."
     - phase: "Release enforcement"
       scope: "Grep checks and documentation policy for prohibited bypasses."
@@ -157,7 +163,7 @@ verification:
 
 ## Section 9: Traceability
 traceability:
-  tags: ["@adr: ADR-04", "@brd: BRD.01.08.0ce5", "@prd: PRD.01.14.8720", "@ears: EARS.01.03.222f", "@bdd: BDD.01.03.9a8b"]
+  tags: ["@adr: ADR.04.03.7277", "@brd: BRD.01.08.0ce5", "@prd: PRD.01.14.8720", "@ears: EARS.01.03.222f", "@bdd: BDD.01.03.9a8b"]
   originating_topic: "@prd: PRD.01.14.8720"
   upstream:
     bdd_references: ["@bdd: BDD.01.03.9a8b", "@bdd: BDD.01.03.0ad7", "@bdd: BDD.01.03.ef54", "@bdd: BDD.01.03.c0f6"]

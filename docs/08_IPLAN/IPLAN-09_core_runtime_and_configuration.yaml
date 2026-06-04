@@ -1,0 +1,146 @@
+metadata:
+  schema_version: "1.0"
+  document_type: "iplan-document"
+  artifact_type: "IPLAN"
+  layer: 8
+  iplan_id: "IPLAN-09"
+  source_spec: "@spec: SPEC-09"
+  source_tdd: "@tdd: TDD.09.04.f745"
+  total_sections: 6
+  last_updated: "2026-06-03T00:00:00-03:00"
+  tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
+
+document_control:
+  iplan_id: "IPLAN-09"
+  source_spec: "@spec: SPEC-09"
+  source_tdd: "@tdd: TDD.09.04.f745"
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-03T00:00:00-03:00"
+  author: "Codex"
+  component: "OptContext, SafeMath, Profiler, CommonInputs, CNewBarDetector"
+  complexity: 4
+  estimated_files: 9
+  session_count: 0
+  readiness_gate: "TDD-09 audit PASS 94/100"
+  source_inputs:
+    - "../07_TDD/TDD-09_core_runtime_and_configuration/TDD-09_core_runtime_and_configuration.yaml"
+    - "../06_SPEC/SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.yaml"
+    - "../../Project/PRD.md"
+    - "../../Project/architecture-diagram.html"
+
+file_manifest:
+  files:
+    - path: "Scripts/Tests/Test_CommonInputs.mq5"
+      order: 1
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Input validation, v1/v2 boundary rejection, and strategy guide alignment tests."
+    - path: "Scripts/Tests/Test_OptContextProfiler.mq5"
+      order: 2
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Tester/optimization policy, diagnostic gating, and profile sample enablement tests."
+    - path: "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
+      order: 3
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Numeric normalization, grid snapping, finite checks, and new-bar detection tests."
+    - path: "Include/Core/CommonInputs.mqh"
+      order: 4
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Canonical framework input binding and v1/v2 placeholder validation."
+    - path: "Include/Core/Interfaces.mqh"
+      order: 5
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Stable shared interfaces for clocks, trade ports, state stores, diagnostics, runtime context, and test fakes."
+    - path: "Include/Core/OptContext.mqh"
+      order: 6
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Tester, optimization, diagnostics, logging, and profiling runtime predicates."
+    - path: "Include/Core/SafeMath.mqh"
+      order: 7
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Finite, price-grid, lot-grid, tolerance, and normalization helpers."
+    - path: "Include/Core/Profiler.mqh"
+      order: 8
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Low-overhead profiling macros and evidence helpers."
+    - path: "Include/Core/NewBarDetector.mqh"
+      order: 9
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Bar-transition detector for strategy hook code."
+
+execution_commands:
+  cwd: "MQL5/Experts/Main/TradeSpine"
+  setup:
+    - "mkdir -p Include/Core Scripts/Tests"
+  implementation:
+    - "# Write TDD-09 tests first, then implement shared interfaces, common inputs, runtime mode, SafeMath, Profiler, and NewBarDetector."
+    - "# Keep pure utilities free of broker execution APIs and keep profiler disabled on hot paths unless evidence is enabled."
+  validation:
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_CommonInputs.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_OptContextProfiler.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_SafeMathAndNewBar.mq5"
+
+implementation_contracts:
+  provided:
+    contracts:
+      - name: "Runtime configuration contract"
+        type: "Data Model"
+        files: ["Include/Core/CommonInputs.mqh", "Include/Core/OptContext.mqh"]
+        summary: "CommonInputs and runtime mode decisions are canonical for framework-wide behavior."
+      - name: "Shared interface foundation"
+        type: "Protocol Interface"
+        files: ["Include/Core/Interfaces.mqh"]
+        summary: "Stable DI contracts for clock, trade port, state store, runtime diagnostics, and test fakes."
+      - name: "Safe numeric helper contract"
+        type: "Protocol Interface"
+        files: ["Include/Core/SafeMath.mqh", "Scripts/Tests/Test_SafeMathAndNewBar.mq5"]
+        summary: "SafeMath centralizes grid snapping, finite checks, and tolerance behavior used by sizing, stops, and guards."
+  consumed:
+    dependencies: []
+
+session_handoff:
+  sessions:
+    - date: "2026-06-03"
+      agent: "Codex IPLAN autopilot"
+      files_touched: []
+      partial_work: "No implementation started; this seed session only created the execution plan."
+      blockers: "None beyond normal source implementation."
+      next_session_directive: "Start with Scripts/Tests/Test_CommonInputs.mq5 and implement Include/Core/Interfaces.mqh plus Include/Core/CommonInputs.mqh before downstream fakes."
+      validation_results:
+        tests_passing: null
+        coverage: null
+        lint_clean: null
+
+traceability:
+  upstream:
+    spec_references: ["@spec: SPEC-09"]
+    tdd_references: ["@tdd: TDD.09.04.f745"]
+    brd_references: ["@brd: BRD.01.07.88a6", "@brd: BRD.01.08.0ce5"]
+    prd_references: ["@prd: PRD.01.09.841a", "@prd: PRD.01.09.3092", "@prd: PRD.01.14.8720", "@prd: PRD.01.13.edc4"]
+    ears_references: ["@ears: EARS.01.03.0c0a", "@ears: EARS.01.03.c5b7", "@ears: EARS.01.03.ec72", "@ears: EARS.01.03.8044"]
+    bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.b37d", "@bdd: BDD.01.03.cb03"]
+    adr_references: ["@adr: ADR.03.03.4124", "@adr: ADR.09.03.84b9", "@adr: ADR.10.03.51ea"]
+  downstream:
+    code_paths: ["@code: Include/Core/Interfaces.mqh", "@code: Include/Core/CommonInputs.mqh", "@code: Include/Core/OptContext.mqh", "@code: Include/Core/SafeMath.mqh", "@code: Include/Core/Profiler.mqh", "@code: Include/Core/NewBarDetector.mqh"]
+    test_paths: ["@tests: Scripts/Tests/Test_CommonInputs.mq5", "@tests: Scripts/Tests/Test_OptContextProfiler.mq5", "@tests: Scripts/Tests/Test_SafeMathAndNewBar.mq5"]
+  code_inventory:
+    files: []

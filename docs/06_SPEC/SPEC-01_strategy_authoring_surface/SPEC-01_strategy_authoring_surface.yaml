@@ -1,0 +1,205 @@
+---
+document_type: spec-document
+artifact_type: SPEC
+layer: 6
+deliverable_type: code
+id: SPEC-01
+title: Strategy Authoring Surface
+status: Draft
+created_date: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-02T00:40:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Draft
+  version: "1.1"
+  date_created: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-02T00:40:00-03:00"
+  author: "Codex"
+  component: "CStrategyBase and strategy template surface"
+  tdd_ready_score: "93/100"
+
+## Section 2: Component Overview
+component_overview:
+  description: "The strategy authoring surface defines the base class, strategy-specific input contract, inherited indicator input contract, helper methods, exit-management hooks, event hook contract, common input include, and template requirements that keep strategy files focused on signal logic and behavior selection."
+  architecture_decision: "@adr: ADR.09.03.84b9"
+  diagram:
+    tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
+    mermaid: |
+      flowchart LR
+        StrategyFile["Strategy .mq5"] --> Base["CStrategyBase"]
+        CommonInputs["CommonInputs.mqh"] --> StrategyFile
+        StrategyInputs["Strategy-specific inputs"] --> StrategyFile
+        IndicatorInputs["Indicator inputs"] --> StrategyFile
+        Base --> Coordinator["CTradeCoordinator"]
+        Base --> Indicators["Registered IIndicator list"]
+        Base --> StateMachine["CPositionStateMachine"]
+  language: "MQL5"
+  dependencies:
+    - name: "CTradeCoordinator"
+      version: "v1"
+      purpose: "Receives entry and close helper requests."
+    - name: "CPositionStateMachine"
+      version: "v1"
+      purpose: "Owned once by CStrategyBase for lifecycle state."
+    - name: "CommonInputs.mqh"
+      version: "v1"
+      purpose: "Provides universal operator inputs with grouped MT5 input labels."
+    - name: "Indicator wrappers"
+      version: "v1"
+      purpose: "Expose indicator-specific inputs and readiness contracts used by the strategy."
+
+## Section 3: Interfaces
+interfaces:
+  exports:
+    - name: "CStrategyBase"
+      type: "class"
+      signature: "class CStrategyBase"
+      description: "Base class that owns lifecycle staging, helper methods, and strategy hooks."
+      errors:
+        - "INIT_FAILED: required strategy initialization or signal timeframe contract is missing."
+    - name: "OnStrategyInit"
+      type: "virtual method"
+      signature: "bool OnStrategyInit()"
+      description: "Strategy hook used to install indicators and configure behavior policies before live trading."
+      errors:
+        - "false: strategy initialization is rejected before phase Live."
+    - name: "OpenLong"
+      type: "method"
+      signature: "ulong OpenLong(string comment, double sl_price = 0, double tp_price = 0, string metadata = \"\")"
+      description: "Requests a long entry through the coordinator pipeline."
+      errors:
+        - "0: lifecycle, readiness, validation, sizing, or guard rejection."
+    - name: "OpenShort"
+      type: "method"
+      signature: "ulong OpenShort(string comment, double sl_price = 0, double tp_price = 0, string metadata = \"\")"
+      description: "Requests a short entry through the coordinator pipeline."
+      errors:
+        - "0: lifecycle, readiness, validation, sizing, or guard rejection."
+    - name: "CloseAll"
+      type: "method"
+      signature: "bool CloseAll(string reason)"
+      description: "Requests closure of this strategy instance's owned exposure through the coordinator close branch."
+      errors:
+        - "false: ownership is unknown, close is rejected, or strategy is halted."
+    - name: "OnManagePosition"
+      type: "virtual method"
+      signature: "void OnManagePosition()"
+      description: "Strategy hook for signal exits, trailing-stop decisions, partial-management logic, and other post-entry exit management distinct from entry-time SL/TP and CloseAll."
+      errors:
+        - "None; invalid management actions are rejected by helper, guard, or position-context calls."
+    - name: "RegisterIndicator"
+      type: "method"
+      signature: "bool RegisterIndicator(IIndicator *indicator)"
+      description: "Registers an indicator for readiness-gate enforcement."
+      errors:
+        - "false: indicator reference is invalid or strategy init phase has passed."
+
+## Section 4: Data Models
+data_models:
+  models:
+    - name: "StrategyLifecyclePhase"
+      type: "enum"
+      fields:
+        - name: "phase"
+          type: "ENUM_STRATEGY_PHASE"
+          required: true
+          description: "Construct, framework-init, strategy-init, or live."
+    - name: "StrategyIdentity"
+      type: "struct"
+      fields:
+        - name: "account"
+          type: "long"
+          required: true
+          description: "MT5 account login used in ownership keys."
+        - name: "symbol"
+          type: "string"
+          required: true
+          description: "Chart symbol bound to the strategy instance."
+        - name: "magic"
+          type: "ulong"
+          required: true
+          description: "Strategy magic number used for ownership and evidence."
+    - name: "CommonInputSet"
+      type: "include contract"
+      fields:
+        - name: "input_groups"
+          type: "ordered group labels"
+          required: true
+          description: "Identity, lot caps, kill-switch, execution, session, sizing, symbol lifecycle, visualization, and logging groups."
+    - name: "StrategyInputSet"
+      type: "include contract"
+      fields:
+        - name: "strategy_inputs"
+          type: "MT5 input declarations"
+          required: true
+          description: "Strategy-specific parameters owned by the strategy file, including signal thresholds, mode selectors, and any values exposed for optimization."
+        - name: "indicator_inputs"
+          type: "MT5 input declarations"
+          required: false
+          description: "Inputs required by indicators used by the strategy, such as moving-average period or ATR period, exposed in the strategy file so Strategy Tester optimization can select them."
+
+## Section 5: Behavior
+behavior:
+  validation_rules:
+    - rule: "Strategy files SHALL delegate entries and exits through documented TradeSpine helpers."
+      source: "@ears: EARS.01.03.b784"
+    - rule: "Each shipped v1 strategy artifact, including simple samples and hedging ports, SHALL compile as one strategy mq5 file plus shared TradeSpine includes."
+      source: "@ears: EARS.01.03.4c3f"
+    - rule: "Registered indicators that are not ready SHALL block entries."
+      source: "@ears: EARS.01.03.4e80"
+    - rule: "Strategy files SHALL declare their own strategy-specific inputs and the inputs of the indicators they use so both signal behavior and indicator parameters are optimizer-visible."
+      source: "@prd: PRD.01.09.eaf3"
+    - rule: "Exit management SHALL be strategy-owned: entry-time SL/TP, signal exits, trailing stops, partial closes, and CloseAll are distinct mechanisms that may coexist but MUST route through TradeSpine helpers or position-context operations."
+      source: "@prd: PRD.01.09.5963"
+  state_transitions:
+    - from: "Strategy-init"
+      to: "Live"
+      trigger: "Framework modules, strategy init, symbol context, and required overrides are valid."
+      source: "@bdd: BDD.01.03.aa68"
+  error_handling:
+    - condition: "A helper is called before Live."
+      response: "Reject helper request and return failure without broker submission."
+      source: "@bdd: BDD.01.03.9a8b"
+
+## Section 6: Implementation Notes
+implementation_notes:
+  constraints:
+    - "Strategy authors MUST NOT override or process OnTradeTransaction beyond the framework shim delegation."
+    - "Sub-maintenance-cadence periodic trade logic belongs in OnTickEvent, not OnTimerEvent."
+    - "Signal is framework-internal and MUST NOT become a strategy-authored API."
+    - "CStrategyBase exposes lifecycle hooks and helper methods; the concrete strategy class owns signal decisions, strategy-specific inputs, indicator inputs, and post-entry exit-management decisions."
+  patterns:
+    - "Compose policy objects as strategy members and select them through GetSizer, GetStopPolicy, and trailing hooks."
+    - "Keep CloseAll as an explicit strategy-exposure close request; keep signal exits and trailing stops in OnManagePosition or strategy hooks so they remain distinct from entry-time SL/TP."
+    - "Use classes for lifecycle/stateful concerns and pure namespaces for stateless calculations per ADR-10."
+  performance_considerations:
+    - "Optimization-aware branches SHALL skip logging, drawing, and persistence work not required for accepted audit output."
+
+## Section 7: Downstream TDD Contracts
+tdd_contracts:
+  tdd_document: "@tdd: TDD.01.04.c4a3"
+  test_files:
+    - path: "Scripts/Tests/Test_StrategyBase.mq5"
+      covers: "Lifecycle phase gating, helper routing, required override failures, exit-management hook routing, and indicator registration."
+    - path: "Scripts/Tests/Test_StrategyTemplateCompile.mq5"
+      covers: "Simple sample and hedging port packaging plus include-path contract."
+    - path: "Scripts/Tests/Test_AuthoringDocsChecklist.mq5"
+      covers: "Authoring guide, CommonInputs, strategy-specific inputs, and indicator-input coverage evidence."
+
+## Section 8: Traceability
+traceability:
+  tags: ["@spec: SPEC-01", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.eaf3", "@ears: EARS.01.03.b784", "@bdd: BDD.01.03.aa68", "@adr: ADR.09.03.84b9"]
+  upstream:
+    adr_references: ["@adr: ADR.01.03.42e3", "@adr: ADR.09.03.84b9", "@adr: ADR.10.03.51ea"]
+    bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.c0f6", "@bdd: BDD.01.03.7b02"]
+    ears_references: ["@ears: EARS.01.03.4c3f", "@ears: EARS.01.03.b784", "@ears: EARS.01.03.0c0a", "@ears: EARS.01.03.4e80"]
+    prd_references: ["@prd: PRD.01.09.5ef1", "@prd: PRD.01.09.eaf3", "@prd: PRD.01.09.5963"]
+    brd_references: ["@brd: BRD.01.07.88a6", "@brd: BRD.01.07.a94e"]
+  downstream:
+    - type: TDD
+      layer: 7
+      description: "Strategy authoring, lifecycle, and template compile test cases."
+  health_score:
+    tdd_ready: "93%"
+    target_score: ">=90/100"

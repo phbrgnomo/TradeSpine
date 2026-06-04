@@ -31,9 +31,10 @@ context:
   business_driver: "Real-money trading behavior must be reproducible across terminal updates and release builds."
   key_constraints:
     - "CTrade is composed privately inside CGuardedTrade, not exposed to strategies."
+    - "Broker-bypass scans must detect `#include <(Trade|Expert)[/\\]`, `OrderSend`, `OrderSendAsync`, and unauthorized `CTrade` declarations outside the approved guarded boundary."
     - "Selected standard-library files are copied under Include/StdLib and version-recorded."
     - "Framework-authored code must not include terminal-global Trade/ or Expert/ headers."
-  technical_context: "BDD.01.03.ef54 validates vendored dependency release evidence, and BDD.01.03.aa68 validates reference strategy compile behavior."
+  technical_context: "BDD.01.03.ef54 validates vendored dependency release evidence, and BDD.01.03.aa68 validates simple sample and hedging port strategy compile behavior."
 
 ## Section 3: Decision
 decision:
@@ -153,7 +154,7 @@ verification:
 
 ## Section 9: Traceability
 traceability:
-  tags: ["@adr: ADR-06", "@brd: BRD.01.08.92f4", "@prd: PRD.01.14.518a", "@ears: EARS.01.03.b11a", "@bdd: BDD.01.03.ef54"]
+  tags: ["@adr: ADR.06.03.b277", "@brd: BRD.01.08.92f4", "@prd: PRD.01.14.518a", "@ears: EARS.01.03.b11a", "@bdd: BDD.01.03.ef54"]
   originating_topic: "@prd: PRD.01.14.518a"
   upstream:
     bdd_references: ["@bdd: BDD.01.03.ef54", "@bdd: BDD.01.03.aa68"]

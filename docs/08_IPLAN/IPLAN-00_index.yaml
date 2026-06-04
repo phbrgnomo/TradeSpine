@@ -1,170 +1,499 @@
-# IPLAN-00_index.TEMPLATE.yaml — Implementation Plan Registry (template)
-# SDD Layer 8 — Execution tracking for all permanent IPLANs
-#
-# Index template. Copy this file to IPLAN-00_index.yaml in a project.
-# Dynamic registry — updated every time an IPLAN is created, versioned,
-# moved between statuses, deferred, or completed.
-#
-# For rules governing this directory (naming, status semantics, update triggers),
-# see 08_IPLAN/README.md — the authoritative rule source.
-
 metadata:
   schema_version: "1.0"
   document_type: "iplan-registry"
   layer: 8
-  total_plans: 0  # Updated as plans are added/removed from registry
-  last_updated: "YYYY-MM-DD"
+  total_plans: 12
+  last_updated: "2026-06-03"
 
-# =============================================================================
-# Plan Registry
-# =============================================================================
-# Every permanent IPLAN appears exactly once. Rows with status: "BACKLOG"
-# and no file_path are future work (not yet drafted).
 registry:
-  plans: []
+  plans:
+    - id: "IPLAN-01"
+      title: "Strategy Authoring Surface Implementation"
+      source_spec: "@spec: SPEC-01"
+      scope: "Implement CStrategyBase, strategy template, sample strategy packaging, and authoring documentation handoff."
+      status: "Draft"
+      status_date: "2026-06-03"
+      complexity: 5
+      session_count: 0
+      sessions_completed: 0
+      files_declared: 8
+      files_done: 0
+      skipped: []
+      skip_reasons: {}
+      depends_on: ["IPLAN-02", "IPLAN-04", "IPLAN-07", "IPLAN-09", "IPLAN-10"]
+      blocks: ["IPLAN-12", "IPLAN-13"]
+      parallel_with: []
+      file_path: "IPLAN-01_strategy_authoring_surface.yaml"
+    - id: "IPLAN-02"
+      title: "Trade Coordination Pipeline Implementation"
+      source_spec: "@spec: SPEC-02"
+      scope: "Implement Signal, TradeIntent, coordinator processing, update synchronization, and evidence pairing."
+      status: "Draft"
+      status_date: "2026-06-03"
+      complexity: 5
+      session_count: 0
+      sessions_completed: 0
+      files_declared: 7
+      files_done: 0
+      skipped: []
+      skip_reasons: {}
+      depends_on: ["IPLAN-04", "IPLAN-05", "IPLAN-06", "IPLAN-07", "IPLAN-09", "IPLAN-11"]
+      blocks: ["IPLAN-01", "IPLAN-03"]
+      parallel_with: []
+      file_path: "IPLAN-02_trade_coordination_pipeline.yaml"
+    - id: "IPLAN-03"
+      title: "Guarded Execution and Risk Controls Implementation"
+      source_spec: "@spec: SPEC-03"
+      scope: "Implement guarded broker boundary, retcode classification, fill/spread guards, and runtime risk manager."
+      status: "Draft"
+      status_date: "2026-06-03"
+      complexity: 5
+      session_count: 0
+      sessions_completed: 0
+      files_declared: 8
+      files_done: 0
+      skipped: []
+      skip_reasons: {}
+      depends_on: ["IPLAN-02", "IPLAN-04", "IPLAN-05", "IPLAN-06", "IPLAN-09", "IPLAN-11"]
+      blocks: []
+      parallel_with: []
+      file_path: "IPLAN-03_guarded_execution_and_risk_controls.yaml"
+    - id: "IPLAN-04"
+      title: "Position Account Mode and State Implementation"
+      source_spec: "@spec: SPEC-04"
+      scope: "Implement hedging ownership, deferred account-mode diagnostics, duplicate identity, router, and state machine."
+      status: "Draft"
+      status_date: "2026-06-03"
+      complexity: 5
+      session_count: 0
+      sessions_completed: 0
+      files_declared: 9
+      files_done: 0
+      skipped: []
+      skip_reasons: {}
+      depends_on: ["IPLAN-05", "IPLAN-11"]
+      blocks: ["IPLAN-01", "IPLAN-02", "IPLAN-03"]
+      parallel_with: ["IPLAN-06", "IPLAN-07", "IPLAN-10"]
+      file_path: "IPLAN-04_position_account_mode_and_state.yaml"
+    - id: "IPLAN-05"
+      title: "Persistence and Audit Evidence Implementation"
+      source_spec: "@spec: SPEC-05"
+      scope: "Implement GV-backed state, deterministic keys, trade evidence, diagnostics, and alert sinks."
+      status: "Draft"
+      status_date: "2026-06-03"
+      complexity: 4
+      session_count: 0
+      sessions_completed: 0
+      files_declared: 8
+      files_done: 0
+      skipped: []
+      skip_reasons: {}
+      depends_on: ["IPLAN-09", "IPLAN-11"]
+      blocks: ["IPLAN-02", "IPLAN-03", "IPLAN-04"]
+      parallel_with: ["IPLAN-06"]
+      file_path: "IPLAN-05_persistence_and_audit_evidence.yaml"
+    - id: "IPLAN-06"
+      title: "Market Session and Symbol Context Implementation"
+      source_spec: "@spec: SPEC-06"
+      scope: "Implement symbol metadata, session gates, market context, order-definition validation, and expiration warnings."
+      status: "Draft"
+      status_date: "2026-06-03"
+      complexity: 4
+      session_count: 0
+      sessions_completed: 0
+      files_declared: 6
+      files_done: 0
+      skipped: []
+      skip_reasons: {}
+      depends_on: ["IPLAN-09", "IPLAN-11"]
+      blocks: ["IPLAN-02", "IPLAN-03", "IPLAN-07"]
+      parallel_with: ["IPLAN-05"]
+      file_path: "IPLAN-06_market_session_and_symbol_context.yaml"
+    - id: "IPLAN-07"
+      title: "Indicators Stops Sizing and Trailing Implementation"
+      source_spec: "@spec: SPEC-07"
+      scope: "Implement indicator wrappers, stop policies, futures sizing, v2 sizing placeholders, and trailing policies."
+      status: "Draft"
+      status_date: "2026-06-03"
+      complexity: 5
+      session_count: 0
+      sessions_completed: 0
+      files_declared: 8
+      files_done: 0
+      skipped: []
+      skip_reasons: {}
+      depends_on: ["IPLAN-06", "IPLAN-09", "IPLAN-11"]
+      blocks: ["IPLAN-01", "IPLAN-02"]
+      parallel_with: ["IPLAN-04", "IPLAN-10"]
+      file_path: "IPLAN-07_indicators_stops_sizing_trailing.yaml"
+    - id: "IPLAN-09"
+      title: "Core Runtime and Configuration Implementation"
+      source_spec: "@spec: SPEC-09"
+      scope: "Implement common inputs, runtime mode detection, SafeMath, profiling, and new-bar helpers."
+      status: "Draft"
+      status_date: "2026-06-03"
+      complexity: 4
+      session_count: 0
+      sessions_completed: 0
+      files_declared: 9
+      files_done: 0
+      skipped: []
+      skip_reasons: {}
+      depends_on: []
+      blocks: ["IPLAN-01", "IPLAN-02", "IPLAN-03", "IPLAN-05", "IPLAN-06", "IPLAN-07", "IPLAN-10", "IPLAN-11"]
+      parallel_with: []
+      file_path: "IPLAN-09_core_runtime_and_configuration.yaml"
+    - id: "IPLAN-10"
+      title: "Visualization Optional Services Implementation"
+      source_spec: "@spec: SPEC-10"
+      scope: "Implement optional chart-rendering seam, no-op renderer, chart-object renderer, and performance isolation tests."
+      status: "Draft"
+      status_date: "2026-06-03"
+      complexity: 3
+      session_count: 0
+      sessions_completed: 0
+      files_declared: 5
+      files_done: 0
+      skipped: []
+      skip_reasons: {}
+      depends_on: ["IPLAN-09", "IPLAN-11"]
+      blocks: ["IPLAN-01"]
+      parallel_with: ["IPLAN-04", "IPLAN-07"]
+      file_path: "IPLAN-10_visualization_optional_services.yaml"
+    - id: "IPLAN-11"
+      title: "Testing Support and Harnesses Implementation"
+      source_spec: "@spec: SPEC-11"
+      scope: "Implement deterministic test doubles, scenario harnesses, assertion support, and release evidence harness contracts."
+      status: "Draft"
+      status_date: "2026-06-03"
+      complexity: 4
+      session_count: 0
+      sessions_completed: 0
+      files_declared: 7
+      files_done: 0
+      skipped: []
+      skip_reasons: {}
+      depends_on: ["IPLAN-09"]
+      blocks: ["IPLAN-02", "IPLAN-03", "IPLAN-04", "IPLAN-05", "IPLAN-06", "IPLAN-07", "IPLAN-10"]
+      parallel_with: []
+      file_path: "IPLAN-11_testing_support_and_harnesses.yaml"
+    - id: "IPLAN-12"
+      title: "1minscalpv3 Hedging Port Implementation"
+      source_spec: "@spec: SPEC-01"
+      scope: "Port the existing 1minscalpv3 hedging EA into one TradeSpine strategy artifact with compile and no-bypass validation."
+      status: "Draft"
+      status_date: "2026-06-03"
+      complexity: 4
+      session_count: 0
+      sessions_completed: 0
+      files_declared: 2
+      files_done: 0
+      skipped: []
+      skip_reasons: {}
+      depends_on: ["IPLAN-01", "IPLAN-02", "IPLAN-03", "IPLAN-04", "IPLAN-05", "IPLAN-06", "IPLAN-07", "IPLAN-09", "IPLAN-11"]
+      blocks: []
+      parallel_with: ["IPLAN-13"]
+      file_path: "IPLAN-12_1minscalpv3_hedging_port.yaml"
+    - id: "IPLAN-13"
+      title: "BullishBearish Engulfing v7 Hedging Port Implementation"
+      source_spec: "@spec: SPEC-01"
+      scope: "Port the existing Bullish/Bearish Engulfing v7 hedging EA into one TradeSpine strategy artifact with compile and no-bypass validation."
+      status: "Draft"
+      status_date: "2026-06-03"
+      complexity: 4
+      session_count: 0
+      sessions_completed: 0
+      files_declared: 2
+      files_done: 0
+      skipped: []
+      skip_reasons: {}
+      depends_on: ["IPLAN-01", "IPLAN-02", "IPLAN-03", "IPLAN-04", "IPLAN-05", "IPLAN-06", "IPLAN-07", "IPLAN-09", "IPLAN-11"]
+      blocks: []
+      parallel_with: ["IPLAN-12"]
+      file_path: "IPLAN-13_bullishbearish_hedging_port.yaml"
 
-  # Template entry:
-  # - id: "IPLAN-NN"
-  #   title: "[Component Implementation]"
-  #   source_spec: "@spec: SPEC-NN"
-  #   scope: "[One-line scope boundary]"
-  #   status: "Draft"       # BACKLOG | Draft | In Progress | Completed | ABANDONED
-  #   status_date: "YYYY-MM-DD"
-  #   complexity: 3         # 1=1-file, 5=architectural
-  #   session_count: 0
-  #   sessions_completed: 0
-  #   files_declared: 0
-  #   files_done: 0
-  #   skipped: []           # Items intentionally deferred
-  #   skip_reasons: {}
-  #   depends_on: []        # Other IPLAN-NN IDs that must complete first
-  #   blocks: []            # Other IPLAN-NN IDs blocked by this one
-  #   parallel_with: []     # Other IPLAN-NN IDs safe to run in parallel
-  #   file_path: "IPLAN-NN_[slug].yaml"
-
-# =============================================================================
-# Backlog
-# =============================================================================
-# Future IPLANs that have been identified but not yet drafted.
-# Promote to registry.plans when the TDD reaches IPLAN-Ready >=90/100.
 backlog: []
 
-  # Template entry:
-  # - id: "IPLAN-NN"       # Reserve next sequential number
-  #   title: "[Future component]"
-  #   source_spec: "SPEC-NN (not yet created)"
-  #   notes: "[Why this is in backlog]"
-
-# =============================================================================
-# Execution Path
-# =============================================================================
-# Topological ordering of IPLANs based on SPEC dependencies.
-# Each tier must complete before the next tier starts.
-# Within a tier, plans may run in parallel.
 execution_path:
   _guidance: |
-    Derived from SPEC dependency graph:
-      1. Inventory all TDD files with IPLAN-Ready >=90/100
-      2. Extract internal dependencies from each SPEC's interfaces section
-      3. Build dependency graph (topological sort)
-      4. Group independent SPECs into parallel tiers
-      5. Assign IPLAN-NN to each SPEC in tier order
+    Derived from passing TDD coverage and SPEC component dependencies. Tiers
+    define a conservative implementation sequence; plans within a tier may run
+    in parallel only when their own depends_on lists are satisfied.
+  tiers:
+    - tier: 1
+      label: "Core Runtime"
+      status: "NOT_STARTED"
+      plans: ["IPLAN-09"]
+    - tier: 2
+      label: "Testing Foundation"
+      status: "NOT_STARTED"
+      plans: ["IPLAN-11"]
+    - tier: 3
+      label: "Persistence and Market Foundations"
+      status: "NOT_STARTED"
+      plans: ["IPLAN-05", "IPLAN-06"]
+    - tier: 4
+      label: "State, Behavior, and Optional Services"
+      status: "NOT_STARTED"
+      plans: ["IPLAN-04", "IPLAN-07", "IPLAN-10"]
+    - tier: 5
+      label: "Coordinator"
+      status: "NOT_STARTED"
+      plans: ["IPLAN-02"]
+    - tier: 6
+      label: "Execution Safety"
+      status: "NOT_STARTED"
+      plans: ["IPLAN-03"]
+    - tier: 7
+      label: "Strategy Surface"
+      status: "NOT_STARTED"
+      plans: ["IPLAN-01"]
+    - tier: 8
+      label: "Strategy Ports"
+      status: "NOT_STARTED"
+      plans: ["IPLAN-12", "IPLAN-13"]
+    - tier: 9
+      label: "Documentation Closeout"
+      status: "NOT_STARTED"
+      plans: []
+      finalization_ref: "documentation_closeout"
 
-    This determines the creation order of IPLAN documents themselves.
+documentation_closeout:
+  _guidance: |
+    Final plan step after component implementation. This is intentionally not a
+    permanent IPLAN because SPEC-08 is process/governance scope and has no
+    Layer 7 code TDD. It closes the release documentation obligations after the
+    implemented source tree is available.
+  status: "NOT_STARTED"
+  sequence_after_tier: 8
+  source_refs:
+    - "@spec: SPEC-08"
+    - "@prd: PRD.01.09.5ef1"
+    - "@prd: PRD.01.09.eaf3"
+    - "@prd: PRD.01.14.8720"
+  deliverables:
+    - path: "Docs/README.md"
+      purpose: "Project orientation, supported v1 scope, and repository layout."
+    - path: "Docs/ARCHITECTURE.md"
+      purpose: "Codebase reference documentation for component boundaries, dependency direction, and execution flow."
+    - path: "Docs/MODULES/*.md"
+      purpose: "Per-module reference pages for Core, Market, Position, Persistence, Coordination, Execution, Risk, Indicators, Strategy, Optional, and Testing."
+    - path: "Docs/AUTHORING.md"
+      purpose: "New strategy creation guide with lifecycle hooks, helper calls, common inputs, logging expectations, and compile checklist."
+    - path: "Docs/RECIPES.md"
+      purpose: "Strategy author recipes, layered exits, trailing behavior, and B3-specific examples."
+    - path: "Docs/INPUTS_REFERENCE.md"
+      purpose: "Canonical common input groups, names, defaults, and operator notes."
+    - path: "Docs/TESTING.md"
+      purpose: "Tier-1, Tier-1.5, Tier-2, deferred account-mode evidence, and release evidence procedures."
+    - path: "Experts/_Template/README.md"
+      purpose: "Template-specific quick start for creating one-file strategies."
+  file_manifest:
+    files:
+      - path: "Docs/README.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/ARCHITECTURE.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/MODULES/Core.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/MODULES/Market.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/MODULES/Position.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/MODULES/Persistence.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/MODULES/Coordination.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/MODULES/Execution.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/MODULES/Risk.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/MODULES/Indicators.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/MODULES/Strategy.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/MODULES/Optional.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/MODULES/Testing.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/AUTHORING.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/RECIPES.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/INPUTS_REFERENCE.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Docs/TESTING.md"
+        status: NOT_STARTED
+        verified: false
+      - path: "Experts/_Template/README.md"
+        status: NOT_STARTED
+        verified: false
+  execution_commands:
+    cwd: "MQL5/Experts/Main/TradeSpine"
+    setup:
+      - "mkdir -p Docs/MODULES Experts/_Template"
+    implementation:
+      - "# Write documentation only after IPLAN-12 and IPLAN-13 complete so docs reflect the implemented framework and shipped strategy ports."
+      - "# Use implemented public interfaces and file paths, not planned placeholders."
+    validation:
+      - "test -f Docs/README.md"
+      - "test -f Docs/ARCHITECTURE.md"
+      - "test -f Docs/AUTHORING.md"
+      - "test -f Docs/TESTING.md"
+      - "test -f Experts/_Template/README.md"
+      - "rg -n \"1minscalpv3_hedging|BullishBearish Engulfing all v7 hedging|DonchianBreakout|MovingAverageCross\" Docs Experts/_Template/README.md"
+      - "! rg -n \"planned placeholder|TODO implementation|no EARS IDs exist yet|approved for ADR generation\" Docs Experts/_Template/README.md"
+  acceptance_checks:
+    - "Documentation references implemented file paths and public interfaces, not planned placeholders."
+    - "AUTHORING walks through creating a new strategy from the template through compile and first test."
+    - "ARCHITECTURE and MODULES document the codebase after implementation, including dependencies and no-bypass boundaries."
+    - "TESTING documents how to run each declared script and how to collect release evidence."
+    - "Docs use the TradeSpine root MQL5/Experts/Main/TradeSpine/ and quoted relative include examples."
+  status_history:
+    - from: "UNTRACKED"
+      to: "NOT_STARTED"
+      date: "2026-06-03"
+      reason: "Final documentation closeout added after component implementation."
 
-  tiers: []
-
-  # Template entry:
-  # - tier: 1
-  #   label: "Foundation"
-  #   status: "COMPLETE"     # NOT_STARTED | IN_PROGRESS | COMPLETE
-  #   plans: ["IPLAN-01"]
-  # - tier: 2
-  #   label: "Core Services"
-  #   status: "IN_PROGRESS"
-  #   plans: ["IPLAN-02", "IPLAN-03"]  # Parallel-safe within tier
-  # - tier: 3
-  #   label: "Integration"
-  #   status: "NOT_STARTED"
-  #   plans: ["IPLAN-04"]
-
-# =============================================================================
-# Cross-Plan Obligations
-# =============================================================================
-# Shared conventions that apply to every IPLAN.
-# Updated when cross-plan patterns emerge during implementation.
 cross_plan_obligations:
-  _guidance: |
-    Active project-wide conventions for all IPLANs.
-    Each obligation: { description, owner (IPLAN that introduced it), adopted_date }
+  _guidance: "Shared implementation conventions introduced before source work starts."
+  obligations:
+    - id: "CPO-001"
+      description: "All framework code stays under MQL5/Experts/Main/TradeSpine with quoted relative includes; strategy files must not include terminal-global Trade or Expert headers."
+      introduced_by: "IPLAN-09"
+      adopted_date: "2026-06-03"
+    - id: "CPO-002"
+      description: "Every plan writes tests before implementation and leaves file_manifest status untouched until a coding session starts."
+      introduced_by: "IPLAN-11"
+      adopted_date: "2026-06-03"
+    - id: "CPO-003"
+      description: "Code inventory entries are added only by implementation sessions after files are actually created or modified."
+      introduced_by: "IPLAN-00"
+      adopted_date: "2026-06-03"
+    - id: "CPO-004"
+      description: "After source implementation, run documentation closeout for codebase reference documentation and the new strategy creation guide."
+      introduced_by: "IPLAN-00"
+      adopted_date: "2026-06-03"
+    - id: "CPO-005"
+      description: "Run aidoc-flow commands from MQL5/Experts/Main/TradeSpine so the authoritative TradeSpine .aidoc/profile.yaml governs docs generation and review."
+      introduced_by: "IPLAN-00"
+      adopted_date: "2026-06-03"
 
-  obligations: []
-
-  # Template entry:
-  # - id: "CPO-001"
-  #   description: "[Convention — e.g., All data stores use a shared executor Protocol pattern]"
-  #   introduced_by: "IPLAN-02"
-  #   adopted_date: "YYYY-MM-DD"
-
-# =============================================================================
-# Skipped / Deferred Items
-# =============================================================================
-# Cross-plan tracking of items intentionally deferred across all IPLANs.
-# Each entry cites the IPLAN, the item, the reason, and when to revisit.
 deferred_items:
-  _guidance: |
-    Items deferred during implementation. Not bugs — intentional scope decisions.
-    Key: deferral_id (unique), owning IPLAN, description, reason, revisit_trigger.
+  _guidance: "Cross-plan scope deferrals."
+  items:
+    - id: "DEFER-001"
+      owner: "IPLAN-00"
+      item: "IPLAN-08"
+      reason: "SPEC-08 is process/governance scope and TDD-00 excludes it from Layer 7 code TDD generation."
+      revisit_trigger: "Create a code-deliverable SPEC if release governance automation becomes source implementation scope."
 
-  items: []
+status_history:
+  - plan_id: "IPLAN-01"
+    transitions:
+      - from: "BACKLOG"
+        to: "Draft"
+        date: "2026-06-03"
+        reason: "TDD-01 audit passed 94/100 and reached IPLAN-Ready."
+  - plan_id: "IPLAN-02"
+    transitions:
+      - from: "BACKLOG"
+        to: "Draft"
+        date: "2026-06-03"
+        reason: "TDD-02 audit passed 95/100 and reached IPLAN-Ready."
+  - plan_id: "IPLAN-03"
+    transitions:
+      - from: "BACKLOG"
+        to: "Draft"
+        date: "2026-06-03"
+        reason: "TDD-03 audit passed 95/100 and reached IPLAN-Ready."
+  - plan_id: "IPLAN-04"
+    transitions:
+      - from: "BACKLOG"
+        to: "Draft"
+        date: "2026-06-03"
+        reason: "TDD-04 audit passed 96/100 and reached IPLAN-Ready."
+  - plan_id: "IPLAN-05"
+    transitions:
+      - from: "BACKLOG"
+        to: "Draft"
+        date: "2026-06-03"
+        reason: "TDD-05 audit passed 95/100 and reached IPLAN-Ready."
+  - plan_id: "IPLAN-06"
+    transitions:
+      - from: "BACKLOG"
+        to: "Draft"
+        date: "2026-06-03"
+        reason: "TDD-06 audit passed 93/100 and reached IPLAN-Ready."
+  - plan_id: "IPLAN-07"
+    transitions:
+      - from: "BACKLOG"
+        to: "Draft"
+        date: "2026-06-03"
+        reason: "TDD-07 audit passed 94/100 and reached IPLAN-Ready."
+  - plan_id: "IPLAN-09"
+    transitions:
+      - from: "BACKLOG"
+        to: "Draft"
+        date: "2026-06-03"
+        reason: "TDD-09 audit passed 94/100 and reached IPLAN-Ready."
+  - plan_id: "IPLAN-10"
+    transitions:
+      - from: "BACKLOG"
+        to: "Draft"
+        date: "2026-06-03"
+        reason: "TDD-10 audit passed 92/100 and reached IPLAN-Ready."
+  - plan_id: "IPLAN-11"
+    transitions:
+      - from: "BACKLOG"
+        to: "Draft"
+        date: "2026-06-03"
+        reason: "TDD-11 audit passed 95/100 and reached IPLAN-Ready."
+  - plan_id: "IPLAN-12"
+    transitions:
+      - from: "BACKLOG"
+        to: "Draft"
+        date: "2026-06-03"
+        reason: "Review-team remediation split 1minscalpv3 hedging port ownership out of IPLAN-01."
+  - plan_id: "IPLAN-13"
+    transitions:
+      - from: "BACKLOG"
+        to: "Draft"
+        date: "2026-06-03"
+        reason: "Review-team remediation split Bullish/Bearish hedging port ownership out of IPLAN-01."
 
-  # Template entry:
-  # - id: "DEFER-001"
-  #   owner: "IPLAN-03"
-  #   item: "[What was deferred]"
-  #   reason: "[Why deferred — e.g., blocks on external dependency]"
-  #   revisit_trigger: "[When to revisit — e.g., After PLAN-025 Phase 1]"
-
-# =============================================================================
-# Status History
-# =============================================================================
-# Per-plan status transitions for audit trail.
-# Updated on every status change.
-status_history: []
-
-  # Template entry:
-  # - plan_id: "IPLAN-NN"
-  #   transitions:
-  #     - from: "BACKLOG"
-  #       to: "Draft"
-  #       date: "YYYY-MM-DD"
-  #       reason: "TDD-NN reached IPLAN-Ready >=90/100"
-  #     - from: "Draft"
-  #       to: "In Progress"
-  #       date: "YYYY-MM-DD"
-  #       reason: "Session 1 started"
-
-# =============================================================================
-# Registry Update Triggers
-# =============================================================================
 update_triggers:
-  _guidance: "When to update this registry. Mirrors the project's plan-tracker update triggers."
-
+  _guidance: "When to update this registry."
   on_plan_created:
-    - "Add entry to registry.plans"
-    - "Increment metadata.total_plans"
-    - "Update execution_path.tiers if ordering changes"
+    - "Add entry to registry.plans."
+    - "Increment metadata.total_plans."
+    - "Update execution_path.tiers if ordering changes."
   on_status_change:
-    - "Update plan status + status_date in registry.plans"
-    - "Append to status_history"
+    - "Update plan status and status_date in registry.plans."
+    - "Append to status_history."
   on_plan_completed:
-    - "Set status: Completed with date"
-    - "Update metadata.total_plans (count completed vs active)"
+    - "Set status: Completed with date."
+    - "Update files_done and sessions_completed."
   on_plan_abandoned:
-    - "Set status: ABANDONED with date"
-    - "File preserved — never deleted"
-    - "Plan number never reused"
+    - "Set status: ABANDONED with date."
+    - "File preserved; plan number never reused."
   on_item_deferred:
-    - "Add to deferred_items + plan's own skipped[] list"
+    - "Add to deferred_items and the plan skipped list."
   on_cross_plan_obligation_added:
-    - "Append to cross_plan_obligations.obligations"
+    - "Append to cross_plan_obligations.obligations."

@@ -9,7 +9,7 @@ custom_fields:
   artifact_type: BDD
   layer: 4
   priority: shared
-  last_updated: "2026-06-01"
+  last_updated: "2026-06-02"
 ---
 
 # BDD-00: Behavior-Driven Development Index
@@ -71,7 +71,7 @@ BDD uses canonical YAML files plus optional readable Markdown renderings.
 | Consumer Type | Document ID | Relationship |
 | --- | --- | --- |
 | ADR | ADR-01..ADR-10 | Architecture decisions satisfy BDD scenarios and provide SPEC-ready decision boundaries |
-| SPEC | SPEC-XX | Technical specifications implement BDD acceptance criteria |
+| SPEC | SPEC-01..SPEC-11 | Technical specifications implement BDD acceptance criteria |
 | TDD | TDD-XX | Test cases map to BDD scenarios |
 | IPLAN | IPLAN-XX | Execution plans reference BDD scenario coverage |
 

@@ -17,6 +17,7 @@ This folder contains Layer 5 ADRs for TradeSpine. ADRs record architecture decis
 
 Corpus audit/fix cycle:
 
+- [ADR-00.A_audit_report_v002.md](ADR-00.A_audit_report_v002.md)
 - [ADR-00.A_audit_report_v001.md](ADR-00.A_audit_report_v001.md)
 - [ADR-00.F_fix_report_v001.md](ADR-00.F_fix_report_v001.md)
 

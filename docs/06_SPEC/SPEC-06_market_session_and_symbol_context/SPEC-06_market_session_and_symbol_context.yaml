@@ -1,0 +1,184 @@
+---
+document_type: spec-document
+artifact_type: SPEC
+layer: 6
+deliverable_type: code
+id: SPEC-06
+title: Market Session and Symbol Context
+status: Draft
+created_date: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-02T00:20:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-02T00:20:00-03:00"
+  author: "Codex"
+  component: "CSymbolContext, CSessionContext, CMarketContext"
+  tdd_ready_score: "92/100"
+
+## Section 2: Component Overview
+component_overview:
+  description: "The market context component loads broker symbol metadata at init, exposes account and symbol diagnostics, validates order definitions against symbol constraints, gates entries by market and user-defined sessions, and emits fixed contract-expiration warnings."
+  architecture_decision: "@adr: ADR.10.03.51ea"
+  diagram:
+    tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
+    mermaid: |
+      flowchart LR
+        Strategy["CStrategyBase"] --> Market["CMarketContext"]
+        Market --> Symbol["CSymbolContext"]
+        Market --> Session["CSessionContext"]
+        Symbol --> StdLib["Vendored CSymbolInfo"]
+        Session --> BrokerClock["TimeCurrent broker time"]
+        Market --> Guard["CGuardedTrade gates"]
+  language: "MQL5"
+  dependencies:
+    - name: "Vendored CSymbolInfo"
+      version: "frozen StdLib VERSION.md"
+      purpose: "Loads tick, lot, digits, trade mode, and session metadata."
+    - name: "TimeCurrent"
+      version: "MT5 runtime"
+      purpose: "Authoritative broker/server time for sessions."
+    - name: "Logger"
+      version: "v1"
+      purpose: "Emits init, session, and expiration diagnostics."
+
+## Section 3: Interfaces
+interfaces:
+  exports:
+    - name: "CSymbolContext"
+      type: "class"
+      signature: "class CSymbolContext"
+      description: "Loads and exposes required symbol metadata for sizing and order validation."
+      errors:
+        - "INIT_FAILED: required symbol metadata is missing or invalid."
+    - name: "CSessionContext"
+      type: "class"
+      signature: "class CSessionContext"
+      description: "Evaluates broker market session, user trading-hours session, and day-trade close buffer."
+      errors:
+        - "SessionBlocked: new entries are refused while entry sessions are closed."
+    - name: "CMarketContext"
+      type: "class"
+      signature: "class CMarketContext"
+      description: "Coordinates symbol, account, session, and contract lifecycle checks."
+      errors:
+        - "MarketBlocked: market/symbol constraints block init, entry, or release validation."
+    - name: "ValidateOrderDefinition"
+      type: "method"
+      signature: "bool ValidateOrderDefinition(const TradeIntent &intent, string &reason)"
+      description: "Validates lots, stop prices, and price grid against initialized symbol metadata."
+      errors:
+        - "false: symbol, lots, stop, price grid, or trade mode is invalid."
+
+## Section 4: Data Models
+data_models:
+  models:
+    - name: "SymbolMetadata"
+      type: "struct"
+      fields:
+        - name: "tick_size"
+          type: "double"
+          required: true
+          description: "Broker tick-size metadata."
+        - name: "tick_value"
+          type: "double"
+          required: true
+          description: "Broker tick-value metadata."
+        - name: "lot_step"
+          type: "double"
+          required: true
+          description: "Broker volume step."
+        - name: "digits"
+          type: "int"
+          required: true
+          description: "Symbol price precision."
+        - name: "trade_mode"
+          type: "ENUM_SYMBOL_TRADE_MODE"
+          required: true
+          description: "Broker trade mode."
+    - name: "SessionWindow"
+      type: "struct"
+      fields:
+        - name: "market_open"
+          type: "bool"
+          required: true
+          description: "Broker market session allows trading."
+        - name: "user_trading_hours_open"
+          type: "bool"
+          required: true
+          description: "Operator-defined entry window allows new entries."
+        - name: "day_trade_close_required"
+          type: "bool"
+          required: true
+          description: "Day-trade close sequence must run before market close."
+
+## Section 5: Behavior
+behavior:
+  validation_rules:
+    - rule: "Required symbol information SHALL load during strategy initialization."
+      source: "@ears: EARS.01.03.03b2"
+    - rule: "Order definitions SHALL validate sizing, lots, stop prices, and price grid against initialized symbol information."
+      source: "@ears: EARS.01.03.ec72"
+    - rule: "Entries SHALL require both market trade session and user-defined strategy trading-hours window."
+      source: "@ears: EARS.01.03.1a3e"
+    - rule: "Expiration warning SHALL fire at session open when a supported futures contract expires in one broker day."
+      source: "@ears: EARS.01.03.db97"
+  state_transitions:
+    - from: "EntriesAllowed"
+      to: "EntriesBlocked"
+      trigger: "Market session or user-defined trading-hours session is closed."
+      source: "@bdd: BDD.01.03.a399"
+    - from: "DayTradeActive"
+      to: "ForceCloseRequired"
+      trigger: "Day-trade mode reaches close buffer before market session close."
+      source: "@bdd: BDD.01.03.d4a5"
+  error_handling:
+    - condition: "Symbol metadata is missing or invalid."
+      response: "Fail initialization and disable trading."
+      source: "@bdd: BDD.01.03.edae"
+    - condition: "Day-trade forced close fails."
+      response: "Enter HALT and preserve unresolved exposure evidence."
+      source: "@bdd: BDD.01.03.9a7d"
+
+## Section 6: Implementation Notes
+implementation_notes:
+  constraints:
+    - "Broker/server time is authoritative; no v1 timezone offset input exists."
+    - "Futures v1 is validated for B3 futures scope; unsupported symbols block release validation."
+    - "Contract-expiration warning threshold is fixed via @fixed-threshold: PRD.01.market.expiration_warning_one_broker_day."
+  patterns:
+    - "Load symbol metadata once during init and expose immutable reads to sizing and guard components."
+    - "Keep session entry gates separate from forced exit and emergency close paths."
+  performance_considerations:
+    - "Session and symbol checks must avoid heavy history or file I/O on idle ticks."
+
+## Section 7: Downstream TDD Contracts
+tdd_contracts:
+  tdd_document: "@tdd: TDD.06.04.8f4d"
+  test_files:
+    - path: "Scripts/Tests/Test_SymbolContext.mq5"
+      covers: "Required metadata loading, invalid metadata init failure, lot/price-grid validation."
+    - path: "Scripts/Tests/Test_SessionContext.mq5"
+      covers: "Market session, user trading-hours gate, and day-trade close trigger."
+    - path: "Scripts/Tests/Test_ContractLifecycle.mq5"
+      covers: "One-broker-day expiration warning at session open."
+
+## Section 8: Traceability
+traceability:
+  tags: ["@spec: SPEC-06", "@brd: BRD.01.07.69ef", "@prd: PRD.01.09.fada", "@ears: EARS.01.03.03b2", "@bdd: BDD.01.03.edae", "@adr: ADR.10.03.51ea"]
+  upstream:
+    adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.10.03.51ea"]
+    bdd_references: ["@bdd: BDD.01.03.edae", "@bdd: BDD.01.03.a399", "@bdd: BDD.01.03.d4a5", "@bdd: BDD.01.03.4dcb", "@bdd: BDD.01.03.4a71", "@bdd: BDD.01.03.e593"]
+    ears_references: ["@ears: EARS.01.03.03b2", "@ears: EARS.01.03.ec72", "@ears: EARS.01.03.1a3e", "@ears: EARS.01.03.7669", "@ears: EARS.01.03.db97", "@ears: EARS.01.03.e152", "@ears: EARS.01.03.368c"]
+    prd_references: ["@prd: PRD.01.09.fada", "@prd: PRD.01.09.60ad", "@prd: PRD.01.09.efcd", "@prd: PRD.01.09.d722", "@prd: PRD.01.09.42eb"]
+    brd_references: ["@brd: BRD.01.07.69ef"]
+  downstream:
+    - type: TDD
+      layer: 7
+      description: "Market, symbol, session, and expiration warning test cases."
+  health_score:
+    tdd_ready: "92%"
+    target_score: ">=90/100"

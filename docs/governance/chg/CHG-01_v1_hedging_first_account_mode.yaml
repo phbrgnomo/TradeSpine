@@ -1,0 +1,142 @@
+---
+id: CHG-01
+title: "v1 Hedging-First Account Mode Scope"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-02"
+  change_level:
+    value: C3
+  change_source:
+    value: upstream
+
+change_control:
+  chg_id: "CHG-01"
+  status: Approved
+  change_level: C3
+  change_source: upstream
+  entry_gate: GATE-01
+  semver_impact: null
+  author: "Codex"
+  date_proposed: "2026-06-02T00:00:00-03:00"
+  date_approved: "2026-06-02T00:00:00-03:00"
+  date_implemented: "2026-06-02T00:00:00-03:00"
+  supersedes: []
+
+change_description:
+  what: |
+    Change TradeSpine v1 account-mode scope to hedging-first execution:
+    RETAIL_HEDGING is the default and only executable v1 mode, while
+    RETAIL_NETTING and EXCHANGE remain selectable/detectable but fail
+    initialization with an operator-facing deferred-mode diagnostic.
+  why: |
+    Netting/exchange ownership requires virtual gross-position ledgers,
+    pending-exit/OCO rules, execution mutex behavior, and manual concurrent
+    evidence that are too risky for the v1 implementation path. Deferring them
+    prevents incomplete netting logic from reaching live trading while preserving
+    the adapter boundary for v2+.
+  trigger: |
+    Product owner architecture change request before moving from SPEC into the
+    v1 implementation roadmap.
+
+impact_assessment:
+  affected_layers:
+    - layer: Source
+      artifacts: ["Project PRD", "architecture-diagram.html", "CHANGELOG.md"]
+      impact: "Canonical source scope, roadmap, acceptance criteria, and diagram updated to hedging-first v1 with deferred netting/exchange."
+    - layer: BRD
+      artifacts: ["BRD-01"]
+      impact: "Business objectives, launch gate, risk, and glossary updated for hedging ownership plus deferred-mode evidence."
+    - layer: PRD
+      artifacts: ["PRD-01"]
+      impact: "Metrics, functional requirements, release readiness, risks, and glossary updated."
+    - layer: EARS
+      artifacts: ["EARS-01"]
+      impact: "Formal requirements changed from netting ownership/manual evidence to deferred-mode init-failure evidence."
+    - layer: BDD
+      artifacts: ["BDD-01"]
+      impact: "Acceptance scenarios changed to hedging ownership and deferred-mode failure."
+    - layer: ADR
+      artifacts: ["ADR-02", "ADR-07", "ADR-08"]
+      impact: "Account-mode decision and related persistence/state rationale updated for v1 hedging-first scope."
+    - layer: SPEC
+      artifacts: ["SPEC-04", "SPEC-05", "SPEC-08", "SPEC-09", "SPEC-11", "SPEC-00"]
+      impact: "Technical contracts and release/test harnesses updated for hedging execution and deferred netting/exchange behavior."
+  cascade_direction: upstream-to-downstream
+  risk_level: High
+
+implementation:
+  steps:
+    - step: "Updated canonical source PRD, changelog, and architecture diagram."
+      artifact: "Project PRD"
+      status: Completed
+    - step: "Cascaded account-mode scope through BRD, PRD, EARS, BDD, ADR, and SPEC artifacts."
+      artifact: "SDD corpus"
+      status: Completed
+    - step: "Validated YAML parse and stale mandatory-netting phrase checks."
+      artifact: "SDD corpus"
+      status: Completed
+  artifacts_modified:
+    - id: "Project PRD"
+      file: "Experts/Main/TradeSpine/Project/PRD.md"
+      change_type: modified
+    - id: "Architecture Diagram"
+      file: "Experts/Main/TradeSpine/Project/architecture-diagram.html"
+      change_type: modified
+    - id: "BRD-01"
+      file: "Experts/Main/TradeSpine/docs/01_BRD/BRD-01_platform_tradespine_framework/"
+      change_type: modified
+    - id: "PRD-01"
+      file: "Experts/Main/TradeSpine/docs/02_PRD/PRD-01_tradespine_platform_requirements/"
+      change_type: modified
+    - id: "EARS-01"
+      file: "Experts/Main/TradeSpine/docs/03_EARS/EARS-01_tradespine_formal_requirements/"
+      change_type: modified
+    - id: "BDD-01"
+      file: "Experts/Main/TradeSpine/docs/04_BDD/BDD-01_tradespine_acceptance_scenarios/"
+      change_type: modified
+    - id: "ADR-07"
+      file: "Experts/Main/TradeSpine/docs/05_ADR/ADR-07_account_mode_ownership_model/ADR-07_account_mode_ownership_model.yaml"
+      change_type: modified
+    - id: "SPEC-04"
+      file: "Experts/Main/TradeSpine/docs/06_SPEC/SPEC-04_position_account_mode_and_state/"
+      change_type: modified
+    - id: "CHG-01"
+      file: "Experts/Main/TradeSpine/docs/governance/chg/CHG-01_v1_hedging_first_account_mode.yaml"
+      change_type: created
+
+verification:
+  checks:
+    - check: "YAML syntax validation"
+      result: Pass
+      method: "Parsed active Aidoc YAML files with PyYAML."
+    - check: "Stale mandatory-netting phrase scan"
+      result: Pass
+      method: "Targeted rg scan for old v1 netting/manual-evidence phrases; remaining hits are historical revision notes or explicit deferred v2+ context."
+    - check: "Source alignment"
+      result: Pass
+      method: "Cross-checked against updated Project/PRD.md and architecture-diagram.html."
+
+gate_approval:
+  gate: GATE-01
+  approver: "Product owner"
+  approval_date: "2026-06-02T00:00:00-03:00"
+  conditions:
+    - "Approved by product owner in documentation workflow."
+
+rollback_plan:
+  strategy: manual-fix
+  steps:
+    - "Restore v1 executable netting/exchange wording from the prior artifact versions if product direction reverses."
+    - "Re-run PRD/EARS/BDD/ADR/SPEC audits and regenerate readable artifacts as needed."
+  estimated_effort: Medium
+
+emergency_change: null
+
+glossary:
+  terms:
+    - term: Deferred account mode
+      definition: "An account mode that remains selectable/detectable but fails initialization before trading in v1."
+    - term: Hedging-first v1
+      definition: "TradeSpine v1 executable account-mode policy where RETAIL_HEDGING is the only supported runtime mode."

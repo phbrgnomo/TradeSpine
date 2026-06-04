@@ -63,7 +63,7 @@ below with the project's own module taxonomy.
 ## Quick Links
 
 - **PRD Layer**: [02_PRD](../02_PRD/)
-- **Template**: [BRD-TEMPLATE.yaml](BRD-TEMPLATE.yaml)
+- **Active BRD**: [BRD-01_platform_tradespine_framework.yaml](BRD-01_platform_tradespine_framework/BRD-01_platform_tradespine_framework.yaml)
 - **README**: [README.md](README.md)
 
 ---

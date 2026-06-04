@@ -78,7 +78,7 @@ flowchart LR
 
 All current ADRs are Accepted with SPEC-ready score >=90/100 and v001 audit PASS.
 
-Corpus-level coverage audit: [ADR-00.A v001](ADR-00.A_audit_report_v001.md) recorded the missing architecture decisions before the fix cycle; [ADR-00.F v001](ADR-00.F_fix_report_v001.md) records the creation of ADR-07 through ADR-10.
+Latest corpus audit: [ADR-00.A v002 PASS](ADR-00.A_audit_report_v002.md). Previous coverage audit [ADR-00.A v001](ADR-00.A_audit_report_v001.md) recorded the missing architecture decisions before the fix cycle; [ADR-00.F v001](ADR-00.F_fix_report_v001.md) records the creation of ADR-07 through ADR-10.
 
 ## Related Documents
 

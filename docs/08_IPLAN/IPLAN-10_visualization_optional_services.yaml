@@ -1,0 +1,119 @@
+metadata:
+  schema_version: "1.0"
+  document_type: "iplan-document"
+  artifact_type: "IPLAN"
+  layer: 8
+  iplan_id: "IPLAN-10"
+  source_spec: "@spec: SPEC-10"
+  source_tdd: "@tdd: TDD.10.04.7972"
+  total_sections: 6
+  last_updated: "2026-06-03T00:00:00-03:00"
+  tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
+
+document_control:
+  iplan_id: "IPLAN-10"
+  source_spec: "@spec: SPEC-10"
+  source_tdd: "@tdd: TDD.10.04.7972"
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-03T00:00:00-03:00"
+  author: "Codex"
+  component: "IChartRenderer, CNoopRenderer, CChartObjectRenderer"
+  complexity: 3
+  estimated_files: 5
+  session_count: 0
+  readiness_gate: "TDD-10 audit PASS 92/100"
+  source_inputs:
+    - "../07_TDD/TDD-10_visualization_optional_services/TDD-10_visualization_optional_services.yaml"
+    - "../06_SPEC/SPEC-10_visualization_optional_services/SPEC-10_visualization_optional_services.yaml"
+    - "../../Project/PRD.md"
+    - "../../Project/architecture-diagram.html"
+
+file_manifest:
+  files:
+    - path: "Scripts/Tests/Test_ChartRenderer.mq5"
+      order: 1
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "No-op behavior, scoped object names, failure isolation, and optional render policy tests."
+    - path: "Scripts/Tests/Test_VisualizationPerformance.mq5"
+      order: 2
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Optimization-disabled rendering and idle-path no-I/O tests."
+    - path: "Include/Optional/ChartRenderer.mqh"
+      order: 3
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "IChartRenderer, CNoopRenderer, CChartObjectRenderer, RenderEvent, and RenderPolicy."
+    - path: "Include/Optional/ChartObjectNames.mqh"
+      order: 4
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Stable strategy-scoped chart object name helpers."
+    - path: "Include/Optional/VisualizationPolicy.mqh"
+      order: 5
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Runtime effective visualization enablement and optimization no-op policy."
+
+execution_commands:
+  cwd: "MQL5/Experts/Main/TradeSpine"
+  setup:
+    - "mkdir -p Include/Optional Scripts/Tests"
+  implementation:
+    - "# Write TDD-10 tests first, then implement renderer interface, no-op renderer, chart renderer, and visualization policy."
+    - "# Keep rendering optional and isolated from execution, persistence, and position state."
+  validation:
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_ChartRenderer.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_VisualizationPerformance.mq5"
+
+implementation_contracts:
+  provided:
+    contracts:
+      - name: "Optional renderer contract"
+        type: "Protocol Interface"
+        files: ["Include/Optional/ChartRenderer.mqh", "Include/Optional/VisualizationPolicy.mqh"]
+        summary: "Rendering accepts scoped events but never gates execution or mutates trade state."
+      - name: "Chart object naming contract"
+        type: "Data Model"
+        files: ["Include/Optional/ChartObjectNames.mqh", "Scripts/Tests/Test_ChartRenderer.mq5"]
+        summary: "Object names include stable strategy identity so overlays do not collide across EA instances."
+  consumed:
+    dependencies:
+      - "@iplan: IPLAN-09"
+      - "@iplan: IPLAN-11"
+
+session_handoff:
+  sessions:
+    - date: "2026-06-03"
+      agent: "Codex IPLAN autopilot"
+      files_touched: []
+      partial_work: "No implementation started; this seed session only created the execution plan."
+      blockers: "Requires runtime mode helpers and testing support."
+      next_session_directive: "Start with Scripts/Tests/Test_ChartRenderer.mq5 and implement CNoopRenderer behavior."
+      validation_results:
+        tests_passing: null
+        coverage: null
+        lint_clean: null
+
+traceability:
+  upstream:
+    spec_references: ["@spec: SPEC-10"]
+    tdd_references: ["@tdd: TDD.10.04.7972"]
+    brd_references: ["@brd: BRD.01.07.88a6"]
+    prd_references: ["@prd: PRD.01.09.3092", "@prd: PRD.01.09.841a", "@prd: PRD.01.14.8720"]
+    ears_references: ["@ears: EARS.01.03.c5b7", "@ears: EARS.01.03.a71c"]
+    bdd_references: ["@bdd: BDD.01.03.b37d", "@bdd: BDD.01.03.d6ae"]
+    adr_references: ["@adr: ADR.03.03.4124", "@adr: ADR.10.03.51ea"]
+  downstream:
+    code_paths: ["@code: Include/Optional/ChartRenderer.mqh", "@code: Include/Optional/ChartObjectNames.mqh", "@code: Include/Optional/VisualizationPolicy.mqh"]
+    test_paths: ["@tests: Scripts/Tests/Test_ChartRenderer.mq5", "@tests: Scripts/Tests/Test_VisualizationPerformance.mq5"]
+  code_inventory:
+    files: []

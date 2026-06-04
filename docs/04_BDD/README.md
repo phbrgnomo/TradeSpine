@@ -8,4 +8,4 @@ This folder contains Behavior-Driven Development artifacts for TradeSpine. BDD t
 
 ## Current Gate
 
-BDD-01 is structurally complete, audit-passing, and approved for ADR generation.
+BDD-01 is structurally complete, audit-passing, and already consumed by the ADR, SPEC, TDD, and IPLAN corpus.

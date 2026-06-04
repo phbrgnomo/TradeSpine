@@ -1,0 +1,259 @@
+---
+document_type: spec-document
+artifact_type: SPEC
+layer: 6
+deliverable_type: code
+id: SPEC-04
+title: Position Account Mode and State
+status: Draft
+created_date: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-02T00:20:00-03:00"
+
+## Section 1: Document Control
+document_control:
+  status: Draft
+  version: "1.0"
+  date_created: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-02T00:20:00-03:00"
+  author: "Codex"
+  component: "CPositionContext, adapters, router, and state machine"
+  tdd_ready_score: "95/100"
+
+## Section 2: Component Overview
+component_overview:
+  description: "The position component owns account-mode selection, strategy-scoped ownership queries and operations, transaction routing, and the per-strategy position state machine used by coordinator and recovery paths."
+  architecture_decision: "@adr: ADR.07.03.6df1"
+  diagram:
+    tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
+    mermaid: |
+      flowchart LR
+        Base["CStrategyBase"] --> SM["CPositionStateMachine"]
+        Coord["CTradeCoordinator"] --> Pos["CPositionContext"]
+        Tx["OnTradeTransaction"] --> Router["CTradeTxRouter"]
+        Router --> SM
+        Pos --> Adapter["IAccountModeAdapter"]
+        Adapter -.->|v2 deferred| Netting["CNettingAdapter"]
+        Adapter --> Hedging["CHedgingAdapter"]
+  language: "MQL5"
+  dependencies:
+    - name: "CStateStore"
+      version: "v1"
+      purpose: "Persists hedging ticket state, duplicate markers, deferred-mode diagnostics, and HALT state."
+    - name: "CGuardedTrade"
+      version: "v1"
+      purpose: "Submits v1 hedging adapter close/modify operations through guarded execution; pending-exit operations are v2+ netting scope."
+    - name: "Vendored CPositionInfo and history classes"
+      version: "frozen StdLib VERSION.md"
+      purpose: "Read broker tickets, deals, orders, and position diagnostics."
+
+## Section 3: Interfaces
+interfaces:
+  exports:
+    - name: "IAccountModeAdapter"
+      type: "interface"
+      signature: "interface IAccountModeAdapter"
+      description: "Mode-specific ownership and position operation contract."
+      errors:
+        - "OperationRejected: ownership unknown, invalid lots, or unsupported mode operation."
+    - name: "CPositionContext"
+      type: "class"
+      signature: "class CPositionContext : public IPositionView"
+      description: "Selects the active adapter and exposes strategy-owned position queries."
+      errors:
+        - "INIT_FAILED: account mode or duplicate identity cannot be initialized safely."
+    - name: "CNettingAdapter"
+      type: "class"
+      signature: "class CNettingAdapter : public IAccountModeAdapter"
+      description: "Deferred v2+ placeholder for netting/exchange strategy exposure through virtual ledger and pending exits. In v1, selecting netting or exchange-netting fails initialization before this adapter can trade."
+      errors:
+        - "INIT_FAILED: netting/exchange mode is deferred in v1."
+    - name: "CHedgingAdapter"
+      type: "class"
+      signature: "class CHedgingAdapter : public IAccountModeAdapter"
+      description: "Tracks strategy exposure through magic-filtered broker tickets and orders."
+      errors:
+        - "OperationRejected: no strategy-owned ticket matches requested operation."
+    - name: "CPositionStateMachine"
+      type: "class"
+      signature: "class CPositionStateMachine"
+      description: "Owns strategy position lifecycle transitions and HALT behavior."
+      errors:
+        - "HALT: async, cancel, or reconciliation outcome is ambiguous."
+
+## Section 4: Data Models
+data_models:
+  models:
+    - name: "VirtualPosition"
+      type: "struct"
+      fields:
+        - name: "virtual_position_id"
+          type: "ulong"
+          required: true
+          description: "Deferred v2+ strategy-scoped virtual position identity."
+        - name: "signed_volume"
+          type: "double"
+          required: true
+          description: "Deferred v2+ long positive or short negative strategy exposure."
+        - name: "avg_entry_price"
+          type: "double"
+          required: true
+          description: "Deferred v2+ virtual average entry price for this strategy."
+        - name: "lifecycle_state"
+          type: "ENUM_POSITION_STATE"
+          required: true
+          description: "Strategy lifecycle state used by the state machine."
+    - name: "PendingExitLink"
+      type: "struct"
+      fields:
+        - name: "ticket"
+          type: "ulong"
+          required: true
+          description: "Deferred v2+ broker pending exit order ticket."
+        - name: "role"
+          type: "ENUM_EXIT_ROLE"
+          required: true
+          description: "Deferred v2+ SL or TP pending-exit role."
+        - name: "sibling_ticket"
+          type: "ulong"
+          required: false
+          description: "Deferred v2+ linked OCO sibling order ticket."
+    - name: "StateTransition"
+      type: "struct"
+      fields:
+        - name: "from_state"
+          type: "ENUM_POSITION_STATE"
+          required: true
+          description: "Prior lifecycle state."
+        - name: "to_state"
+          type: "ENUM_POSITION_STATE"
+          required: true
+          description: "Result lifecycle state."
+        - name: "trigger"
+          type: "ENUM_STATE_TRIGGER"
+          required: true
+          description: "Broker event, timeout, reconciliation, panic, or day-trade trigger."
+    - name: "DuplicateMarker"
+      type: "struct"
+      fields:
+        - name: "identity"
+          type: "string"
+          required: true
+          description: "Account, terminal, symbol, and magic identity key."
+        - name: "heartbeat_ts"
+          type: "datetime"
+          required: true
+          description: "Last liveness marker written by the owning instance."
+        - name: "status"
+          type: "ENUM_DUPLICATE_MARKER_STATUS"
+          required: true
+          description: "Active, stale-recoverable, or conflict."
+    - name: "ExecutionMutex"
+      type: "struct"
+      fields:
+        - name: "lock_key"
+          type: "string"
+          required: true
+          description: "Deferred v2+ strategy/account/symbol lock key for serialized netting operations."
+        - name: "owner_id"
+          type: "string"
+          required: true
+          description: "Current owner of the critical execution section."
+        - name: "lease_expires_at"
+          type: "datetime"
+          required: true
+          description: "Deferred v2+ time after which a stale lock can be recovered."
+    - name: "RecoveryDecision"
+      type: "struct"
+      fields:
+        - name: "decision"
+          type: "ENUM_RECOVERY_DECISION"
+          required: true
+          description: "Resume, safe-clear, repair-ledger, or HALT."
+        - name: "evidence"
+          type: "string"
+          required: true
+          description: "Reason and broker/store facts used for the recovery decision."
+
+## Section 5: Behavior
+behavior:
+  validation_rules:
+    - rule: "Netting and exchange-netting modes SHALL fail initialization in v1 before any trade path, virtual ledger, pending-exit tracker, or execution mutex becomes active."
+      source: "@ears: EARS.01.03.5d1b"
+    - rule: "Hedging adapter SHALL record strategy ownership against broker tickets or orders."
+      source: "@ears: EARS.01.03.fb67"
+    - rule: "Duplicate same-terminal account-symbol-magic identity SHALL fail or safely recover initialization."
+      source: "@ears: EARS.01.03.7d34"
+    - rule: "HALT SHALL block non-emergency helpers and preserve last-known state."
+      source: "@ears: EARS.01.03.6bda"
+    - rule: "Strategy-scoped v1 position state SHALL be sourced from hedging ticket evidence, GV-backed state, and broker reconciliation, not from broker aggregate position alone."
+      source: "@ears: EARS.01.03.5d1b"
+    - rule: "Netting and exchange-netting execution paths are deferred v2+ and SHALL NOT be reachable in v1."
+      source: "@prd: PRD.01.09.5cce"
+    - rule: "External intervention detection SHALL reconcile strategy-owned state and preserve manual/non-TradeSpine exposure boundaries."
+      source: "@ears: EARS.01.03.4f9d"
+  state_transitions:
+    - from: "FLAT"
+      to: "PENDING_ENTRY"
+      trigger: "Accepted pending entry submission."
+      source: "@bdd: BDD.01.03.0073"
+    - from: "PENDING_ENTRY"
+      to: "HALT"
+      trigger: "Async fill, cancel, or reconciliation outcome cannot be disambiguated."
+      source: "@bdd: BDD.01.03.e16a"
+    - from: "ACTIVE"
+      to: "HALT"
+      trigger: "Day-trade close sequence cannot close or cancel all strategy-owned exposure."
+      source: "@bdd: BDD.01.03.9a7d"
+  error_handling:
+    - condition: "Netting or exchange-netting deferred-mode init-failure evidence is missing."
+      response: "Block v1 release sign-off."
+      source: "@bdd: BDD.01.03.f415"
+    - condition: "Duplicate marker is active for the same account-symbol-magic identity."
+      response: "Fail initialization unless the marker is proven stale and safely recoverable."
+      source: "@ears: EARS.01.03.7d34"
+    - condition: "Hedging ticket state, partial fill, or cancel origin cannot be reconstructed."
+      response: "Persist last-known state and enter HALT rather than guessing ownership."
+      source: "@ears: EARS.01.03.588b"
+
+## Section 6: Implementation Notes
+implementation_notes:
+  constraints:
+    - "CStrategyBase owns one CPositionStateMachine; adapters, router, and coordinator receive references only."
+    - "Netting/exchange modes MUST NOT reach live trading in v1."
+    - "Manual or non-TradeSpine exposure without this strategy magic MUST NOT perturb strategy state."
+  patterns:
+    - "Use adapter selection from ACCOUNT_MARGIN_MODE during framework init."
+    - "Use deferred-mode diagnostics for netting/exchange in v1; virtual ledger identity account, symbol, magic, and virtual position id are v2+ only."
+    - "Use magic and symbol ticket filtering for hedging ownership."
+    - "Treat OCO links as deferred v2+ strategy-owned ledger records; v1 hedging uses broker-native ticket SL/TP."
+    - "Write duplicate marker heartbeat through the persistence boundary, not ad hoc terminal globals in strategy code."
+  performance_considerations:
+    - "Reconciliation requiring broker scans runs on init, trade transaction, explicit timer maintenance, or intervention detection, not on idle ticks."
+
+## Section 7: Downstream TDD Contracts
+tdd_contracts:
+  tdd_document: "@tdd: TDD.04.04.8b79"
+  test_files:
+    - path: "Scripts/Tests/Test_PositionStateMachine.mq5"
+      covers: "State transitions, cancel-origin disambiguation, HALT persistence, and safe auto-clear."
+    - path: "Scripts/Tests/Test_AccountModeAdapters.mq5"
+      covers: "Hedging ticket ownership and netting/exchange deferred-mode init failure."
+    - path: "Scripts/Tests/Test_AccountModeDeferred.mq5"
+      covers: "RETAIL_NETTING and EXCHANGE init failure, no side effects, no trade path activation, and release evidence."
+
+## Section 8: Traceability
+traceability:
+  tags: ["@spec: SPEC-04", "@brd: BRD.01.07.b44d", "@prd: PRD.01.09.5cce", "@ears: EARS.01.03.5d1b", "@bdd: BDD.01.03.8180", "@adr: ADR.07.03.6df1"]
+  upstream:
+    adr_references: ["@adr: ADR.02.03.c7dd", "@adr: ADR.07.03.6df1", "@adr: ADR.08.03.0a8f"]
+    bdd_references: ["@bdd: BDD.01.03.8180", "@bdd: BDD.01.03.f11f", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.9a7d", "@bdd: BDD.01.03.a31d", "@bdd: BDD.01.03.f415"]
+    ears_references: ["@ears: EARS.01.03.5d1b", "@ears: EARS.01.03.fb67", "@ears: EARS.01.03.4f9d", "@ears: EARS.01.03.95ea", "@ears: EARS.01.03.7d34", "@ears: EARS.01.03.588b", "@ears: EARS.01.03.6bda"]
+    prd_references: ["@prd: PRD.01.09.5cce", "@prd: PRD.01.09.7767", "@prd: PRD.01.09.a252", "@prd: PRD.01.09.7608", "@prd: PRD.01.09.3f12"]
+    brd_references: ["@brd: BRD.01.07.b44d", "@brd: BRD.01.07.a94e"]
+  downstream:
+    - type: TDD
+      layer: 7
+      description: "Account-mode hedging ownership, deferred-mode init failure, state-machine, and recovery test cases."
+  health_score:
+    tdd_ready: "95%"
+    target_score: ">=90/100"
