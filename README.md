@@ -96,7 +96,6 @@ This README intentionally stays at project-overview level.
 
 Reference locations:
 
-- [Project](Project): starting design artifacts (initial PRD, diagram, and changelog context).
 - [docs](docs): detailed implementation-reference documentation.
 - [docs/00_REF](docs/00_REF): source references and origin briefs.
 - [docs/01_BRD](docs/01_BRD): business requirements layer.
