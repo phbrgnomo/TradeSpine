@@ -1,8 +1,0 @@
-schema_version: "1.0.0"
-project_root: "MQL5/Experts/Main/TradeSpine"
-authoritative_corpus_root: "MQL5/Experts/Main/TradeSpine/docs"
-active_layers: [BRD, PRD, EARS, BDD, ADR, SPEC, TDD, IPLAN]
-section_toggles: {}
-audit_threshold: {}
-glossary: {}
-review_mode: team
