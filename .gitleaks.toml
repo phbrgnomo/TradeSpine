@@ -1,0 +1,11 @@
+title = "TradeSpine gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known non-secret noisy files"
+paths = [
+  '''^LICENSE$''',
+  '''^docs/.+\.svg$'''
+]
