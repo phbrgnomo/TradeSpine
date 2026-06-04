@@ -13,34 +13,10 @@ Instead of rebuilding the same operational plumbing in every Expert Advisor, Tra
 > [!IMPORTANT]
 > The repository is currently in a planning and architecture phase. Core implementation is scheduled in phased deliveries.
 
-## Publishing Readiness
+## License
 
-This folder is prepared to be published as an independent remote repository.
-
-- Includes OSS governance files: license, contributing, security, and code of conduct.
-- Includes GitHub collaboration templates for issues and pull requests.
-- Includes a lightweight CI workflow that validates Markdown links and structure.
-- Ignores local/editor/build artifacts to keep commits clean.
-
-## Quick Start (As Standalone Repo)
-
-If you are extracting this folder into its own repository:
-
-```bash
-git init
-git add .
-git commit -m "chore: bootstrap TradeSpine publish-ready repository"
-git branch -M main
-git remote add origin <your-remote-url>
-git push -u origin main
-```
-
-If this folder stays inside a monorepo, publish by subtree split from the monorepo root:
-
-```bash
-git subtree split --prefix Experts/Main/TradeSpine -b tradespine-main
-git push <your-remote-url> tradespine-main:main
-```
+This project is licensed under the GNU General Public License v3.0.
+See [LICENSE](LICENSE) for details.
 
 ## What TradeSpine Is
 
