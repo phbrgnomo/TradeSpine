@@ -3,6 +3,7 @@
 Thumbs.db
 .vscode/
 .idea/
+.history/
 
 # Ambientes e caches locais
 .venv/
@@ -16,9 +17,15 @@ node_modules/
 # Artefatos temporarios
 *.tmp
 *.temp
+*.swp
+*.swo
 
 # Artefatos de compilacao MetaTrader
 *.ex5
+
+# Artefatos de release local
+dist/
+build/
 
 # Logs locais
 *.log
@@ -26,3 +33,7 @@ logs/
 
 # Agents configs
 .aidoc/
+
+# Noisy generated docs and backups
+tmp/
+archive/
