@@ -22,6 +22,7 @@ node_modules/
 
 # Artefatos de compilacao MetaTrader
 *.ex5
+*.log
 
 # Artefatos de release local
 dist/
@@ -33,7 +34,7 @@ logs/
 
 # Agents configs
 .aidoc/
-
+plan/
 # Noisy generated docs and backups
 tmp/
 archive/

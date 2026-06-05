@@ -1,0 +1,2 @@
+Invoking MetaEditor for: /data_nvme/mt5/drive_c/Program Files/MetaTrader 5/MQL5/Experts/Main/TradeSpine/Scripts/Tests/Test_OptContextProfiler.mq5
+../../../Scripts/compile_mql.sh: line 45:    27 Bad system call         (core dumped) $WINE_PREFIX wine "$ME_WIN" /compile:"$SRC_WIN" /log:"$LOG_WIN"
