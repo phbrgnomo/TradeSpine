@@ -27,8 +27,8 @@ document_control:
   source_inputs:
     - "../07_TDD/TDD-03_guarded_execution_and_risk_controls/TDD-03_guarded_execution_and_risk_controls.yaml"
     - "../06_SPEC/SPEC-03_guarded_execution_and_risk_controls/SPEC-03_guarded_execution_and_risk_controls.yaml"
-    - "../../Project/PRD.md"
-    - "../../Project/architecture-diagram.html"
+    - "../archive/PRD.md"
+    - "../archive/architecture-diagram.html"
 
 file_manifest:
   files:

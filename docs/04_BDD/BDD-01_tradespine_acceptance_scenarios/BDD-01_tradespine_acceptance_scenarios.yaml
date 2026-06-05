@@ -37,8 +37,8 @@ document_control:
   source_refs:
     - "../../03_EARS/EARS-01_tradespine_formal_requirements/EARS-01_tradespine_formal_requirements.yaml"
     - "../../02_PRD/PRD-01_tradespine_platform_requirements/PRD-01_tradespine_platform_requirements.yaml"
-    - "../../../Project/PRD.md"
-    - "../../../Project/architecture-diagram.html"
+    - "../../archive/PRD.md"
+    - "../../archive/architecture-diagram.html"
   revision_history:
     - version: "1.0"
       date: "2026-06-01T20:01:34-03:00"

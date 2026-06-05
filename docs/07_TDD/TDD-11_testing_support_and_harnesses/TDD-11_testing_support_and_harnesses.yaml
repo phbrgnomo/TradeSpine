@@ -33,8 +33,8 @@ document_control:
   iplan_ready_score: "95/100"
   mode: generated
   source_inputs:
-    - "../../../Project/PRD.md"
-    - "../../../Project/architecture-diagram.html"
+    - "../../archive/PRD.md"
+    - "../../archive/architecture-diagram.html"
     - "../../00_REF/REF-01_tradespine_source_brief.md"
 
 test_pyramid:
@@ -57,11 +57,11 @@ test_mapping:
       description: "Shipped strategy authoring, porting, and packaging"
       tests:
         - type: unit
-          file: "Scripts/Tests/Support/FakeClock.mqh"
+          file: "Scripts/Tests/Test_TestSupportTradePort.mq5"
           function: "test_testing_support_and_harnesses_aa68_unit"
           status: pending
         - type: integration
-          file: "Scripts/Tests/Support/FakeTradePort.mqh"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_aa68_integration"
           status: pending
         - type: e2e
@@ -72,11 +72,11 @@ test_mapping:
       description: "Missing deferred account-mode evidence blocks signoff"
       tests:
         - type: unit
-          file: "Scripts/Tests/Support/FakeClock.mqh"
+          file: "Scripts/Tests/Test_TestSupportTradePort.mq5"
           function: "test_testing_support_and_harnesses_f415_unit"
           status: pending
         - type: integration
-          file: "Scripts/Tests/Support/FakeTradePort.mqh"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_f415_integration"
           status: pending
         - type: e2e
@@ -87,11 +87,11 @@ test_mapping:
       description: "Ambiguous async outcome enters halt"
       tests:
         - type: unit
-          file: "Scripts/Tests/Support/FakeClock.mqh"
+          file: "Scripts/Tests/Test_TestSupportTradePort.mq5"
           function: "test_testing_support_and_harnesses_e16a_unit"
           status: pending
         - type: integration
-          file: "Scripts/Tests/Support/FakeTradePort.mqh"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_e16a_integration"
           status: pending
         - type: e2e
@@ -102,11 +102,11 @@ test_mapping:
       description: "Evidence records remain paired and separated"
       tests:
         - type: unit
-          file: "Scripts/Tests/Support/FakeClock.mqh"
+          file: "Scripts/Tests/Test_TestSupportTradePort.mq5"
           function: "test_testing_support_and_harnesses_d6ae_unit"
           status: pending
         - type: integration
-          file: "Scripts/Tests/Support/FakeTradePort.mqh"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_d6ae_integration"
           status: pending
         - type: e2e
@@ -117,11 +117,11 @@ test_mapping:
       description: "Performance budgets are evidenced"
       tests:
         - type: unit
-          file: "Scripts/Tests/Support/FakeClock.mqh"
+          file: "Scripts/Tests/Test_TestSupportTradePort.mq5"
           function: "test_testing_support_and_harnesses_b37d_unit"
           status: pending
         - type: integration
-          file: "Scripts/Tests/Support/FakeTradePort.mqh"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_b37d_integration"
           status: pending
         - type: e2e
@@ -145,7 +145,7 @@ test_cases:
         name: "FakeTradePort returns scripted broker outcomes in order"
         spec_ref: "@spec: SPEC-11"
         target: "FakeTradePort.Submit"
-        test_file: "Scripts/Tests/Support/FakeClock.mqh"
+        test_file: "Scripts/Tests/Test_TestSupportTradePort.mq5"
         test_function: "test_testing_support_and_harnesses_unit_contract"
         inputs:
           - name: fixture
@@ -164,7 +164,7 @@ test_cases:
         name: "ScenarioHarness assembles fakes and evidence assertions"
         spec_ref: "@spec: SPEC-11"
         contract: "ScenarioHarness"
-        test_file: "Scripts/Tests/Support/FakeTradePort.mqh"
+        test_file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
         test_function: "test_testing_support_and_harnesses_integration_contract"
         setup:
           - "Assemble component with deterministic fakes for broker, clock, store, symbol, and logs where required."

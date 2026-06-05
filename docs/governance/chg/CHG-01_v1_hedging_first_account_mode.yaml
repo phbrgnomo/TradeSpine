@@ -79,10 +79,10 @@ implementation:
       status: Completed
   artifacts_modified:
     - id: "Project PRD"
-      file: "Experts/Main/TradeSpine/Project/PRD.md"
+      file: "Experts/Main/TradeSpine/docs/archive/PRD.md"
       change_type: modified
     - id: "Architecture Diagram"
-      file: "Experts/Main/TradeSpine/Project/architecture-diagram.html"
+      file: "Experts/Main/TradeSpine/docs/archive/architecture-diagram.html"
       change_type: modified
     - id: "BRD-01"
       file: "Experts/Main/TradeSpine/docs/01_BRD/BRD-01_platform_tradespine_framework/"
@@ -116,7 +116,7 @@ verification:
       method: "Targeted rg scan for old v1 netting/manual-evidence phrases; remaining hits are historical revision notes or explicit deferred v2+ context."
     - check: "Source alignment"
       result: Pass
-      method: "Cross-checked against updated Project/PRD.md and architecture-diagram.html."
+      method: "Cross-checked against updated docs/archive/PRD.md and architecture-diagram.html."
 
 gate_approval:
   gate: GATE-01

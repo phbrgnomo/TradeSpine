@@ -40,7 +40,7 @@ flowchart LR
 
 | Model | Purpose |
 | --- | --- |
-| CommonInputs | Magic, account-mode policy, session mode, sizing mode, and optimization-audit settings. |
+| CommonInputs | Unsigned magic number, day-trade mode, session window fields, sizing mode, and v1/v2 placeholder validation. |
 | RuntimeMode | Tester, optimization, and diagnostics policy flags. |
 | ProfileSample | Profiling sample scope, elapsed microseconds, and enablement flag. |
 | BenchmarkBaseline | Scenario, baseline memory reading, component memory delta, and timing source for release benchmark evidence. |
@@ -48,7 +48,7 @@ flowchart LR
 ## Behavior
 
 - Common inputs expose documented v1 strategy authoring settings and reject unsupported v2 placeholder selections visibly.
-- Optimization-mode logging and profiling avoid high-I/O work unless explicitly enabled for audit evidence.
+- Optimization-mode logging and profiling avoid high-I/O work unconditionally; no audit override is provided during optimization.
 - `SafeMath` centralizes finite-number, price-grid, lot-grid, and tolerance checks used by sizing, stops, and execution guards.
 - Performance evidence includes tester overhead, per-EA memory, and idle-tick overhead budgets.
 - Memory-budget evidence uses a documented baseline-and-delta harness rather than claiming exact per-object memory attribution.

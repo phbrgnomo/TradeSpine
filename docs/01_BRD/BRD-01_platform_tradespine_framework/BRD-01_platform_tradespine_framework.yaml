@@ -37,9 +37,9 @@ document_control:
   upstream_mode: ref
   upstream_ref_path:
     - "../../00_REF/REF-01_tradespine_source_brief.md"
-    - "../../../Project/PRD.md"
-    - "../../../Project/architecture-diagram.html"
-  source_snapshot: "Project/PRD.md v3.75 with CHANGELOG v3.74/v3.75 scope corrections; TradeSpine/docs is the authoritative aidoc corpus."
+    - "../../archive/PRD.md"
+    - "../../archive/architecture-diagram.html"
+  source_snapshot: "docs/archive/PRD.md v3.75 with CHANGELOG v3.74/v3.75 scope corrections; TradeSpine/docs is the authoritative aidoc corpus."
   revision_history:
     entries:
       - version: "1.0"
@@ -55,7 +55,7 @@ document_control:
       - version: "1.0.1"
         date: "2026-06-03T00:00:00-03:00"
         author: "Codex"
-        changes: "Updated source provenance to Project/PRD.md v3.75 and marked TradeSpine/docs as the authoritative aidoc corpus."
+        changes: "Updated source provenance to docs/archive/PRD.md v3.75 and marked TradeSpine/docs as the authoritative aidoc corpus."
         approver: "phbr"
 
 ## Executive Summary
@@ -85,19 +85,19 @@ diagrams:
       title: "TradeSpine system context"
       file: "diagrams/BRD-01-diag_system_context.md"
       rendered_svg: "diagrams/BRD-01-diag_system_context-1.svg"
-      source: "../../../Project/architecture-diagram.html#fig-01"
+      source: "../../archive/architecture-diagram.html#fig-01"
       scope: "Context-level view of trader, MT5 terminal, broker, strategy files, framework, and Python analytics boundary."
     - id: "BRD.01.01.4667"
       title: "Business audit flow"
       file: "diagrams/BRD-01-diag_audit_flow.md"
       rendered_svg: "diagrams/BRD-01-diag_audit_flow-1.svg"
-      source: "../../../Project/architecture-diagram.html#fig-03"
+      source: "../../archive/architecture-diagram.html#fig-03"
       scope: "Business-level view of intent and execution evidence required for post-trade review."
     - id: "BRD.01.01.0dae"
       title: "State ownership context"
       file: "diagrams/BRD-01-diag_state_ownership.md"
       rendered_svg: "diagrams/BRD-01-diag_state_ownership-1.svg"
-      source: "../../../Project/architecture-diagram.html#fig-05"
+      source: "../../archive/architecture-diagram.html#fig-05"
       scope: "Context-level ownership boundary for same-symbol strategy operation across account modes."
 
 ## Introduction
@@ -648,10 +648,10 @@ traceability:
   upstream:
     artifacts:
       - type: "Reference PRD"
-        reference: "../../../Project/PRD.md"
+        reference: "../../archive/PRD.md"
         relevance: "Primary source brief for business goals, scope, risks, and roadmap."
       - type: "Architecture diagram"
-        reference: "../../../Project/architecture-diagram.html"
+        reference: "../../archive/architecture-diagram.html"
         relevance: "Source for diagram inventory and downstream diagram migration."
       - type: "Reference registry"
         reference: "../../00_REF/REF-01_tradespine_source_brief.md"

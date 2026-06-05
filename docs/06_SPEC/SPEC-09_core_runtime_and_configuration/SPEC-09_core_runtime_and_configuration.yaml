@@ -92,9 +92,9 @@ data_models:
       type: "struct"
       fields:
         - name: "magic"
-          type: "int"
+          type: "ulong"
           required: true
-          description: "Strategy magic number; must be > 0."
+          description: "Strategy magic number; must be non-zero and remain unsigned end-to-end."
         - name: "day_trade_mode"
           type: "bool"
           required: true
@@ -170,7 +170,7 @@ behavior:
   validation_rules:
     - rule: "CommonInputs SHALL expose the documented v1 strategy authoring settings and reject unsupported v2 placeholder selections visibly."
       source: "@ears: EARS.01.03.0c0a"
-    - rule: "Optimization-mode logging and profiling SHALL avoid high-I/O work unless explicitly enabled for audit evidence."
+    - rule: "Optimization-mode logging and profiling SHALL avoid high-I/O work unconditionally; no audit override is provided during optimization."
       source: "@ears: EARS.01.03.c5b7"
     - rule: "SafeMath SHALL centralize finite-number, price-grid, lot-grid, and tolerance checks used by sizing, stops, and execution guards."
       source: "@ears: EARS.01.03.ec72"

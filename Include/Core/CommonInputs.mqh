@@ -48,7 +48,7 @@ struct InputValidation
 struct CommonInputs
   {
    // --- Identity ---
-   int              magic;               // strategy magic number; must be > 0
+   ulong            magic;               // strategy magic number; must be > 0
 
    // --- Day-trade mode ---
    // When true the strategy closes all open positions before session end
@@ -71,9 +71,9 @@ struct CommonInputs
       r.ok      = false;
       r.message = "";
 
-      if(magic <= 0)
+      if(magic == 0)
         {
-         r.message = "Invalid magic: must be a positive non-zero integer for ownership and duplicate detection.";
+         r.message = "Invalid magic: magic number must be non-zero for ownership and duplicate detection.";
          return(r);
         }
 
@@ -84,9 +84,15 @@ struct CommonInputs
             r.message = "Invalid close_mins_before: must be >= 0 when day_trade_mode is enabled.";
             return(r);
            }
-         if(entry_window_end <= entry_window_start)
+         // Compare time-of-day only (seconds since midnight).
+         // The date component is ignored per the design contract.
+         int start_tod = (int)(entry_window_start % 86400);
+         int end_tod   = (int)(entry_window_end   % 86400);
+         if(end_tod <= start_tod)
            {
-            r.message = "Invalid entry window: entry_window_end must be after entry_window_start.";
+            r.message = "Invalid entry window: entry_window_end time must be after "
+                        "entry_window_start time. Only HH:MM is compared; the date "
+                        "component is ignored.";
             return(r);
            }
         }

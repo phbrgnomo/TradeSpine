@@ -35,8 +35,8 @@ document_control:
   bdd_ready_score: "100/100"
   source_refs:
     - "../../02_PRD/PRD-01_tradespine_platform_requirements/PRD-01_tradespine_platform_requirements.yaml"
-    - "../../../Project/PRD.md"
-    - "../../../Project/architecture-diagram.html"
+    - "../../archive/PRD.md"
+    - "../../archive/architecture-diagram.html"
   revision_history:
     - version: "1.0"
       date: "2026-06-01T19:30:00-03:00"

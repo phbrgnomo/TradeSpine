@@ -45,19 +45,19 @@
 
 | ID | Name | Target | File | Function | Expected Output | Edge Cases |
 | --- | --- | --- | --- | --- | --- | --- |
-| TDD.09.04.f745 | SafeMath rejects non-finite and off-grid values | SafeMath.NormalizePrice | `Scripts/Tests/Test_CommonInputs.mq5` | `test_core_runtime_and_configuration_unit_contract` | false or normalized grid value per symbol metadata | Lot-grid clamp respects min, max, and step -> Case remains deterministic and broker-safe. |
+| TDD.09.04.f745 | SafeMath rejects non-finite and off-grid values | SafeMath.NormalizePrice | `Scripts/Tests/Test_SafeMathAndNewBar.mq5` | `test_core_runtime_and_configuration_unit_contract` | false or normalized grid value per symbol metadata | Lot-grid clamp respects min, max, and step -> Case remains deterministic and broker-safe. |
 
 ### Integration Tests
 
 | ID | Name | Contract | File | Expected State | Error Paths |
 | --- | --- | --- | --- | --- | --- |
-| TDD.09.04.8050 | OptContext disables high-I/O diagnostics in optimization | OptContext plus Profiler and fake log sink | `Scripts/Tests/Test_OptContextProfiler.mq5` | Profiler and logging return without persistent writes | Audit-enabled optimization records bounded evidence only -> SPEC-defined rejection or HALT path. |
+| TDD.09.04.8050 | OptContext disables high-I/O diagnostics in optimization | OptContext plus Profiler and fake log sink | `Scripts/Tests/Test_OptContextProfiler.mq5` | Profiler and logging return without persistent writes | None |
 
 ### E2E Tests
 
 | ID | Name | BDD Ref | File | Workflow | Timeout Seconds |
 | --- | --- | --- | --- | --- | --- |
-| TDD.09.04.bb66 | Common inputs reject unsupported v2 placeholders | @bdd: BDD.01.03.cb03 | `Scripts/Tests/Test_SafeMathAndNewBar.mq5` | 1. Bind CommonInputs with equity sizing placeholder -> Initialization fails or feature is visibly rejected<br>2. Run framework init validation -> No silent mapping to futures sizing occurs<br>3. Inspect diagnostic output -> Operator diagnostic names the unsupported v1 option | 300 |
+| TDD.09.04.bb66 | Common inputs reject unsupported v2 placeholders | @bdd: BDD.01.03.cb03 | `Scripts/Tests/Test_CommonInputs.mq5` | 1. Bind CommonInputs with equity sizing placeholder -> Initialization fails or feature is visibly rejected<br>2. Run framework init validation -> No silent mapping to futures sizing occurs<br>3. Inspect diagnostic output -> Operator diagnostic names the unsupported v1 option | 300 |
 
 ## Thresholds
 
@@ -72,7 +72,7 @@
 
 | Phase | Name | Action | Output |
 | --- | --- | --- | --- |
-| 1 | Write Tests | Create the test files declared in test_mapping and test_cases before implementation files. | Pending MQL5 test scripts and support includes. |
+| 1 | Write Tests | Create the test files declared in test_mapping and test_cases before implementation files. | Implemented MQL5 test scripts and support includes. |
 | 2 | Run Tests (Red) | Run Tier-1 scripts or harness checks and confirm failure against missing implementation. | Red failure report linked to this TDD. |
 | 3 | Implement | Implement the smallest component code needed for the failing cases. | TradeSpine source files for the parent SPEC. |
 | 4 | Verify (Green) | Run the declared tests and confirm the expected pass criteria. | Green test report and evidence pack. |

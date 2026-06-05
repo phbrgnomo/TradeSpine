@@ -38,7 +38,16 @@ component_overview:
   dependencies:
     - name: "Core runtime shared interfaces"
       version: "v1"
-      purpose: "IPLAN-09 publishes stable interfaces for clocks, trade ports, stores, runtime context, and diagnostics before fakes implement them."
+      purpose: "IPLAN-09 publishes IClock, ILogSink, runtime context, and profiling data models for test support."
+    - name: "Guarded execution interfaces"
+      version: "v1"
+      purpose: "SPEC-03/IPLAN-03 owns ITradePort, GuardResult, and TradeIntent; FakeTradePort must implement those owner contracts."
+    - name: "Position/account interfaces"
+      version: "v1"
+      purpose: "SPEC-04/IPLAN-04 owns IPositionView and account/position context contracts consumed by scenario tests."
+    - name: "Persistence interfaces"
+      version: "v1"
+      purpose: "SPEC-05/IPLAN-05 owns IStateStore and persistence/evidence contracts consumed by FakeStateStore."
     - name: "Release governance"
       version: "v1"
       purpose: "Consumes test reports and manual evidence packs."
@@ -154,7 +163,7 @@ behavior:
 implementation_notes:
   constraints:
     - "Test support modules MUST remain outside production execution paths."
-    - "Fakes MUST implement the same interfaces consumed by production components, and those interfaces MUST be published by IPLAN-09 before test support implementation starts."
+    - "Fakes MUST implement the same interfaces consumed by production components: IClock/ILogSink from IPLAN-09, ITradePort from IPLAN-03, IPositionView from IPLAN-04, and IStateStore from IPLAN-05."
     - "Manual evidence pack contracts MUST remain visible to release governance and must not be represented as Strategy Tester automation."
   patterns:
     - "Use scenario scripts to drive fake broker outcomes and trade transaction callbacks."
@@ -167,6 +176,12 @@ implementation_notes:
 tdd_contracts:
   tdd_document: "@tdd: TDD.11.04.6805"
   test_files:
+    - path: "Scripts/Tests/Test_TestSupportTradePort.mq5"
+      covers: "Executable unit entry point for FakeTradePort scripted outcomes and GuardResult order."
+    - path: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
+      covers: "Executable integration entry point for ScenarioHarness assembly and evidence assertions."
+    - path: "Scripts/Tests/Test_TestSupportClock.mq5"
+      covers: "Executable unit entry point for deterministic clock and assertion helper behavior."
     - path: "Scripts/Tests/Support/FakeClock.mqh"
       covers: "Deterministic time, session, timeout, and daily reset tests."
     - path: "Scripts/Tests/Support/FakeTradePort.mqh"

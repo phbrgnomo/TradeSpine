@@ -55,7 +55,7 @@ flowchart LR
 ## Implementation Notes
 
 - Test support modules stay outside production execution paths.
-- Fakes implement the same interfaces consumed by production components.
+- Fakes implement the same interfaces consumed by production components: IClock/ILogSink from IPLAN-09, ITradePort from IPLAN-03, IPositionView from IPLAN-04, and IStateStore from IPLAN-05.
 - Manual evidence pack contracts remain visible to release governance and are not represented as Strategy Tester automation.
 - Scenario scripts drive fake broker outcomes and trade transaction callbacks.
 
@@ -63,6 +63,9 @@ flowchart LR
 
 | Test File | Coverage |
 | --- | --- |
+| `Scripts/Tests/Test_TestSupportTradePort.mq5` | Executable unit entry point for FakeTradePort scripted outcomes and GuardResult order. |
+| `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` | Executable integration entry point for ScenarioHarness assembly and evidence assertions. |
+| `Scripts/Tests/Test_TestSupportClock.mq5` | Executable unit entry point for deterministic clock and assertion helper behavior. |
 | `Scripts/Tests/Support/FakeClock.mqh` | Deterministic time, session, timeout, and daily reset tests. |
 | `Scripts/Tests/Support/FakeTradePort.mqh` | Broker outcome, retry, pending, and ambiguity scripts. |
 | `Scripts/Tests/Support/ScenarioHarness.mqh` | Reusable component assembly and evidence assertions. |

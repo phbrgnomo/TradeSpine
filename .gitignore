@@ -35,6 +35,6 @@ logs/
 # Agents configs
 .aidoc/
 plan/
+
 # Noisy generated docs and backups
 tmp/
-archive/

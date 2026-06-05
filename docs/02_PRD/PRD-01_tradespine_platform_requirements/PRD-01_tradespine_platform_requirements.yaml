@@ -38,9 +38,9 @@ document_control:
   ears_ready_score: "92/100"
   source_refs:
     - "../../01_BRD/BRD-01_platform_tradespine_framework/BRD-01_platform_tradespine_framework.yaml"
-    - "../../../Project/PRD.md"
-    - "../../../Project/architecture-diagram.html"
-  source_snapshot: "Project/PRD.md v3.75 with CHANGELOG v3.74/v3.75 scope corrections; TradeSpine/docs is the authoritative aidoc corpus."
+    - "../../archive/PRD.md"
+    - "../../archive/architecture-diagram.html"
+  source_snapshot: "docs/archive/PRD.md v3.75 with CHANGELOG v3.74/v3.75 scope corrections; TradeSpine/docs is the authoritative aidoc corpus."
   revision_history:
     - version: "1.0"
       date: "2026-06-01T14:05:00-03:00"
@@ -69,7 +69,7 @@ document_control:
     - version: "1.0.5"
       date: "2026-06-03T00:00:00-03:00"
       author: "Codex"
-      changes: "Updated source provenance to Project/PRD.md v3.75 and marked TradeSpine/docs as the authoritative aidoc corpus."
+      changes: "Updated source provenance to docs/archive/PRD.md v3.75 and marked TradeSpine/docs as the authoritative aidoc corpus."
 
 ## Executive Summary
 executive_summary:

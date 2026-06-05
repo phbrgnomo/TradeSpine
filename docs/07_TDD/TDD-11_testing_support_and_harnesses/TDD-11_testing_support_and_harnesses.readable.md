@@ -35,11 +35,11 @@
 
 | BDD Scenario | Description | Unit Test | Integration Test | E2E Test |
 | --- | --- | --- | --- | --- |
-| @bdd: BDD.01.03.aa68 | Shipped strategy authoring, porting, and packaging | `Scripts/Tests/Support/FakeClock.mqh` / `test_testing_support_and_harnesses_aa68_unit` | `Scripts/Tests/Support/FakeTradePort.mqh` / `test_testing_support_and_harnesses_aa68_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_aa68_e2e` |
-| @bdd: BDD.01.03.f415 | Missing deferred account-mode evidence blocks signoff | `Scripts/Tests/Support/FakeClock.mqh` / `test_testing_support_and_harnesses_f415_unit` | `Scripts/Tests/Support/FakeTradePort.mqh` / `test_testing_support_and_harnesses_f415_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_f415_e2e` |
-| @bdd: BDD.01.03.e16a | Ambiguous async outcome enters halt | `Scripts/Tests/Support/FakeClock.mqh` / `test_testing_support_and_harnesses_e16a_unit` | `Scripts/Tests/Support/FakeTradePort.mqh` / `test_testing_support_and_harnesses_e16a_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_e16a_e2e` |
-| @bdd: BDD.01.03.d6ae | Evidence records remain paired and separated | `Scripts/Tests/Support/FakeClock.mqh` / `test_testing_support_and_harnesses_d6ae_unit` | `Scripts/Tests/Support/FakeTradePort.mqh` / `test_testing_support_and_harnesses_d6ae_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_d6ae_e2e` |
-| @bdd: BDD.01.03.b37d | Performance budgets are evidenced | `Scripts/Tests/Support/FakeClock.mqh` / `test_testing_support_and_harnesses_b37d_unit` | `Scripts/Tests/Support/FakeTradePort.mqh` / `test_testing_support_and_harnesses_b37d_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_b37d_e2e` |
+| @bdd: BDD.01.03.aa68 | Shipped strategy authoring, porting, and packaging | `Scripts/Tests/Test_TestSupportTradePort.mq5` / `test_testing_support_and_harnesses_aa68_unit` | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_aa68_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_aa68_e2e` |
+| @bdd: BDD.01.03.f415 | Missing deferred account-mode evidence blocks signoff | `Scripts/Tests/Test_TestSupportTradePort.mq5` / `test_testing_support_and_harnesses_f415_unit` | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_f415_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_f415_e2e` |
+| @bdd: BDD.01.03.e16a | Ambiguous async outcome enters halt | `Scripts/Tests/Test_TestSupportTradePort.mq5` / `test_testing_support_and_harnesses_e16a_unit` | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_e16a_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_e16a_e2e` |
+| @bdd: BDD.01.03.d6ae | Evidence records remain paired and separated | `Scripts/Tests/Test_TestSupportTradePort.mq5` / `test_testing_support_and_harnesses_d6ae_unit` | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_d6ae_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_d6ae_e2e` |
+| @bdd: BDD.01.03.b37d | Performance budgets are evidenced | `Scripts/Tests/Test_TestSupportTradePort.mq5` / `test_testing_support_and_harnesses_b37d_unit` | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_b37d_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_b37d_e2e` |
 
 ## Test Cases
 
@@ -47,13 +47,13 @@
 
 | ID | Name | Target | File | Function | Expected Output | Edge Cases |
 | --- | --- | --- | --- | --- | --- | --- |
-| TDD.11.04.6805 | FakeTradePort returns scripted broker outcomes in order | FakeTradePort.Submit | `Scripts/Tests/Support/FakeClock.mqh` | `test_testing_support_and_harnesses_unit_contract` | Each Submit returns the next GuardResult and exhaustion fails the test | Configured retry retcodes preserve order -> Case remains deterministic and broker-safe. |
+| TDD.11.04.6805 | FakeTradePort returns scripted broker outcomes in order | FakeTradePort.Submit | `Scripts/Tests/Test_TestSupportTradePort.mq5` | `test_testing_support_and_harnesses_unit_contract` | Each Submit returns the next GuardResult and exhaustion fails the test | Configured retry retcodes preserve order -> Case remains deterministic and broker-safe. |
 
 ### Integration Tests
 
 | ID | Name | Contract | File | Expected State | Error Paths |
 | --- | --- | --- | --- | --- | --- |
-| TDD.11.04.aadd | ScenarioHarness assembles fakes and evidence assertions | ScenarioHarness | `Scripts/Tests/Support/FakeTradePort.mqh` | Stimulus runs with deterministic time and evidence assertions fail on missing required traces | Store read/write failure is injectable -> SPEC-defined rejection or HALT path. |
+| TDD.11.04.aadd | ScenarioHarness assembles fakes and evidence assertions | ScenarioHarness | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` | Stimulus runs with deterministic time and evidence assertions fail on missing required traces | Store read/write failure is injectable -> SPEC-defined rejection or HALT path. |
 
 ### E2E Tests
 

@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-09"
   source_tdd: "@tdd: TDD.09.04.f745"
   total_sections: 6
-  last_updated: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-04T00:00:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
@@ -15,20 +15,20 @@ document_control:
   source_spec: "@spec: SPEC-09"
   source_tdd: "@tdd: TDD.09.04.f745"
   status: Completed
-  version: "1.1"
+  version: "1.2"
   date_created: "2026-06-03T00:00:00-03:00"
   last_updated: "2026-06-04T00:00:00-03:00"
   author: "Codex"
   component: "OptContext, SafeMath, Profiler, CommonInputs, CNewBarDetector"
   complexity: 4
   estimated_files: 10
-  session_count: 1
+  session_count: 3
   readiness_gate: "TDD-09 audit PASS 94/100"
   source_inputs:
     - "../07_TDD/TDD-09_core_runtime_and_configuration/TDD-09_core_runtime_and_configuration.yaml"
     - "../06_SPEC/SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.yaml"
-    - "../../Project/PRD.md"
-    - "../../Project/architecture-diagram.html"
+    - "../archive/PRD.md"
+    - "../archive/architecture-diagram.html"
 
 file_manifest:
   files:
@@ -152,9 +152,39 @@ session_handoff:
       blockers: "Headless wine CLI compile is non-functional in the dev container (MetaEditor forks to GUI); compilation and test runs are performed in MetaEditor/MT5 directly, per repo convention."
       next_session_directive: "IPLAN-09 complete. Proceed to a downstream consumer IPLAN (e.g. IPLAN-06 market/session/symbol context or IPLAN-04 position/account-mode/state)."
       validation_results:
-        tests_passing: "All declared tests pass in MT5 (F7 compile 0 errors; OnStart suites report N of N passed)."
+        tests_passing: "All declared tests pass in MT5 at time of initial delivery (F7 compile 0 errors; OnStart suites report N of N passed). See session 3 for post-CHG validation."
         coverage: "Unit, integration, and e2e cases from TDD-09 (f745, 8050, bb66) plus the scenario-trace alias functions exercised."
         lint_clean: "MetaEditor compile clean; sdd-doc-lint STRUCT01/ID01 findings are pre-existing parser false-positives on quoted trace-tags, not introduced by this session."
+    - date: "2026-06-04"
+      agent: "Claude (mql-developer-main) — post-delivery revision"
+      files_touched:
+        - "Include/Core/CommonInputs.mqh"
+        - "Include/Core/OptContext.mqh"
+        - "Scripts/Tests/Test_CommonInputs.mq5"
+        - "Scripts/Tests/Test_OptContextProfiler.mq5"
+        - "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
+        - "Scripts/Tests/TestAssert.mqh"
+        - "Include/Core/SafeMath.mqh"
+      partial_work: |
+        CHG-03 (enum renames): SIZING_RISK_PERCENT → SIZING_RISK_PCT_EQUITY,
+        SIZING_PCT_EQUITY → SIZING_VALUE_PCT_EQUITY; propagated to EARS-01,
+        SPEC-09, PRD-01, BDD-01 canonical docs.
+        CHG-04 (struct redesign): removed ENUM_ACCOUNT_MODE_POLICY (account mode
+        is a runtime check via AccountInfoInteger, not user input), removed
+        ENUM_SESSION_MODE and audit_in_optimization; added day_trade_mode (bool),
+        close_mins_before (int), entry_window_start/entry_window_end (datetime);
+        magic remains ulong with zero rejected. OptContext simplified: single-param constructor, policy
+        methods unconditionally silent in optimization.
+        Additional harness fixes: M1 (ok-aggregation in all test functions),
+        M2 (missing TDD trace aliases added), M3 (int OnStart), L1 (Skip counter
+        + 0/1/2 exit codes). SafeMath M1 fix (NormalizeLotRaw with correct digit
+        precision for fractional steps like 0.25).
+      blockers: "None."
+      next_session_directive: "IPLAN-09 fully complete including post-delivery design revisions and CHG-04 documentation cleanup. Proceed to IPLAN-06 or IPLAN-04."
+      validation_results:
+        tests_passing: "All three test scripts re-compiled with 0 errors in MetaEditor (F7) and all assertions passed in MT5 after CHG-03/04 revisions (confirmed by user 2026-06-04)."
+        coverage: "Test_CommonInputs: ValidCombos, MagicGuard, DayTradeMode, SizingPlaceholderRejected, UnknownEnumRejected (15 assertions). Test_OptContextProfiler: OptimizationGated, TesterVsLive, ProfilerNoWriteWhenGated, ProfilerActiveRecords (13 assertions). Test_SafeMathAndNewBar: Finite, PriceGrid, LotGrid, LotGridFixtures (8 fixture cases), NewBarDetector (all pass; symbol-dependent blocks skip when metadata unavailable)."
+        lint_clean: "MetaEditor compile clean. sdd-doc-lint STRUCT01/ID01 hook findings remain pre-existing parser false-positives on quoted trace-tags (28 findings, unchanged count)."
 
 traceability:
   upstream:
@@ -169,4 +199,50 @@ traceability:
     code_paths: ["@code: Include/Core/Interfaces.mqh", "@code: Include/Core/CommonInputs.mqh", "@code: Include/Core/OptContext.mqh", "@code: Include/Core/SafeMath.mqh", "@code: Include/Core/Profiler.mqh", "@code: Include/Core/NewBarDetector.mqh"]
     test_paths: ["@tests: Scripts/Tests/Test_CommonInputs.mq5", "@tests: Scripts/Tests/Test_OptContextProfiler.mq5", "@tests: Scripts/Tests/Test_SafeMathAndNewBar.mq5"]
   code_inventory:
-    files: []
+    files:
+      - path: "Scripts/Tests/Test_CommonInputs.mq5"
+        session: 1
+        action: created
+      - path: "Scripts/Tests/Test_OptContextProfiler.mq5"
+        session: 1
+        action: created
+      - path: "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
+        session: 1
+        action: created
+      - path: "Include/Core/CommonInputs.mqh"
+        session: 1
+        action: created
+      - path: "Include/Core/Interfaces.mqh"
+        session: 1
+        action: created
+      - path: "Include/Core/OptContext.mqh"
+        session: 1
+        action: created
+      - path: "Include/Core/SafeMath.mqh"
+        session: 1
+        action: created
+      - path: "Include/Core/Profiler.mqh"
+        session: 1
+        action: created
+      - path: "Include/Core/NewBarDetector.mqh"
+        session: 1
+        action: created
+      - path: "Scripts/Tests/TestAssert.mqh"
+        session: 1
+        action: created
+      - path: "Include/Core/CommonInputs.mqh"
+        session: 3
+        action: modified
+        change: "CHG-03: enum renames; CHG-04: struct redesign (remove account_mode_policy/session_mode/audit_in_optimization; add day_trade_mode/close_mins_before/entry_window_start/entry_window_end; keep magic as ulong)"
+      - path: "Include/Core/OptContext.mqh"
+        session: 3
+        action: modified
+        change: "CHG-04: removed audit_in_optimization; simplified constructor to single RuntimeMode param; policy methods now unconditionally silent in optimization"
+      - path: "Scripts/Tests/Test_CommonInputs.mq5"
+        session: 3
+        action: modified
+        change: "CHG-03/04: updated enum refs; replaced account mode tests with DayTradeMode tests; ok-aggregation (M1); int OnStart (M3)"
+      - path: "Scripts/Tests/Test_OptContextProfiler.mq5"
+        session: 3
+        action: modified
+        change: "CHG-04: removed Test_OptimizationAudited; updated OptContext constructor calls; ok-aggregation (M1)"

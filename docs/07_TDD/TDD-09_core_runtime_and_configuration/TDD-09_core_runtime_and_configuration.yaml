@@ -33,8 +33,8 @@ document_control:
   iplan_ready_score: "94/100"
   mode: generated
   source_inputs:
-    - "../../../Project/PRD.md"
-    - "../../../Project/architecture-diagram.html"
+    - "../../archive/PRD.md"
+    - "../../archive/architecture-diagram.html"
     - "../../00_REF/REF-01_tradespine_source_brief.md"
 
 test_pyramid:
@@ -59,45 +59,45 @@ test_mapping:
         - type: unit
           file: "Scripts/Tests/Test_CommonInputs.mq5"
           function: "test_core_runtime_and_configuration_aa68_unit"
-          status: pending
+          status: completed
         - type: integration
           file: "Scripts/Tests/Test_OptContextProfiler.mq5"
           function: "test_core_runtime_and_configuration_aa68_integration"
-          status: pending
+          status: completed
         - type: e2e
           file: "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
           function: "test_core_runtime_and_configuration_aa68_e2e"
-          status: pending
+          status: completed
     - bdd_scenario: "@bdd: BDD.01.03.b37d"
       description: "Performance budgets are evidenced"
       tests:
         - type: unit
           file: "Scripts/Tests/Test_CommonInputs.mq5"
           function: "test_core_runtime_and_configuration_b37d_unit"
-          status: pending
+          status: completed
         - type: integration
           file: "Scripts/Tests/Test_OptContextProfiler.mq5"
           function: "test_core_runtime_and_configuration_b37d_integration"
-          status: pending
+          status: completed
         - type: e2e
           file: "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
           function: "test_core_runtime_and_configuration_b37d_e2e"
-          status: pending
+          status: completed
     - bdd_scenario: "@bdd: BDD.01.03.cb03"
       description: "Equity sizing remains placeholder"
       tests:
         - type: unit
           file: "Scripts/Tests/Test_CommonInputs.mq5"
           function: "test_core_runtime_and_configuration_cb03_unit"
-          status: pending
+          status: completed
         - type: integration
           file: "Scripts/Tests/Test_OptContextProfiler.mq5"
           function: "test_core_runtime_and_configuration_cb03_integration"
-          status: pending
+          status: completed
         - type: e2e
           file: "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
           function: "test_core_runtime_and_configuration_cb03_e2e"
-          status: pending
+          status: completed
   coverage_table:
     columns: [BDD Scenario, Unit, Integration, E2E, Total]
     rows:
@@ -113,7 +113,7 @@ test_cases:
         name: "SafeMath rejects non-finite and off-grid values"
         spec_ref: "@spec: SPEC-09"
         target: "SafeMath.NormalizePrice"
-        test_file: "Scripts/Tests/Test_CommonInputs.mq5"
+        test_file: "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
         test_function: "test_core_runtime_and_configuration_unit_contract"
         inputs:
           - name: fixture
@@ -138,12 +138,9 @@ test_cases:
           - "Assemble component with deterministic fakes for broker, clock, store, symbol, and logs where required."
           - "Load SPEC-defined configuration and BDD trace tags."
         action:
-          description: "tester=true, optimization=true, audit_in_optimization=false"
+          description: "tester=true, optimization=true (optimization unconditionally silences all non-core work; no audit override)"
         expected_state:
           - "Profiler and logging return without persistent writes"
-        error_paths:
-          - condition: "Audit-enabled optimization records bounded evidence only"
-            expected_error: "SPEC-defined rejection or HALT path."
   e2e_tests:
     cases:
       - id: "TDD.09.04.bb66"
@@ -151,7 +148,7 @@ test_cases:
         name: "Common inputs reject unsupported v2 placeholders"
         bdd_ref: "@bdd: BDD.01.03.cb03"
         spec_ref: "@spec: SPEC-09"
-        test_file: "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
+        test_file: "Scripts/Tests/Test_CommonInputs.mq5"
         test_function: "test_core_runtime_and_configuration_e2e_acceptance"
         workflow:
           - step: 1
@@ -199,7 +196,7 @@ tdd_order:
     - phase: 1
       name: "Write Tests"
       action: "Create the test files declared in test_mapping and test_cases before implementation files."
-      output: "Pending MQL5 test scripts and support includes."
+      output: "Implemented MQL5 test scripts and support includes."
     - phase: 2
       name: "Run Tests (Red)"
       action: "Run Tier-1 scripts or harness checks and confirm failure against missing implementation."

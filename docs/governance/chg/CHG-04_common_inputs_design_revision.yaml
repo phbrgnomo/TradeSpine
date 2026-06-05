@@ -26,7 +26,8 @@ change_control:
 
 change_description:
   what: |
-    Four corrections to the CommonInputs struct (IPLAN-09 delivery review):
+    Three structural corrections to the CommonInputs struct, plus one explicit
+    magic-number type clarification (IPLAN-09 delivery review):
 
     1. ACCOUNT_MODE_POLICY removed from user inputs.
        Account mode is not a user configuration — it is a broker account property.
@@ -42,10 +43,10 @@ change_description:
          - entry_window_start: datetime (start of entry-allowed window; HH:MM component used)
          - entry_window_end: datetime (end of entry-allowed window; HH:MM component used)
 
-    3. magic type changed from ulong to int.
-       Magic numbers in practice are small positive integers. Using int avoids
-       unsigned/signed conversion issues when comparing with MT5 position/deal
-       queries that return long. Validation tightened from magic != 0 to magic > 0.
+    3. magic remains ulong.
+       The CommonInputs magic field remains unsigned end-to-end to match the
+       MQL5 trade API and the implemented code. Validation rejects zero; signed
+       broker-query comparisons are handled at the comparison boundary when needed.
 
     4. audit_in_optimization removed entirely.
        During optimizer runs, ALL non-core work (logging, diagnostics, profiling)
@@ -77,8 +78,8 @@ impact_assessment:
     - layer: TDD
       artifacts: ["TDD-09"]
       impact: |
-        TDD.09.04.8050 setup description references 'audit_in_optimization=false' — update.
-        TDD.09.04.bb66 workflow steps reference 'account_mode_policy' — update.
+        TDD.09.04.8050 setup description updated to remove audit override wording.
+        TDD.09.04.bb66 workflow steps verified against CommonInputs placeholder tests.
         Test function test_core_runtime_and_configuration_aa68_unit mapped from
         Test_AccountModeDeferral to Test_ValidCombos.
       cascade_direction: bubble-up
@@ -86,18 +87,18 @@ impact_assessment:
       artifacts: ["SPEC-09"]
       impact: |
         CommonInputs data model: remove account_mode_policy and audit_in_optimization fields;
-        change magic type from ulong to int; replace session_mode with day_trade_mode and
-        four session sub-fields. DONE: SPEC-09 data_models section updated.
+        keep magic as ulong; replace session_mode with day_trade_mode and four session
+        sub-fields. DONE: SPEC-09 data_models section updated.
         Behavior section: remove account-mode deferral validation rule; update session rule.
         Remove ENUM_ACCOUNT_MODE_POLICY and ENUM_SESSION_MODE from exports in Section 3.
       cascade_direction: bubble-up
     - layer: EARS
       artifacts: ["EARS-01"]
       impact: |
-        EARS.01.03.5d1b 'Netting/Exchange Deferred-Mode Invariant' — requirement still valid
-        but the validation is now in the framework init code (reading ACCOUNT_MARGIN_MODE),
-        not in CommonInputs.Validate(). Requirement text may reference 'account_mode_policy'
-        input — verify and update if needed.
+        EARS.01.03.5d1b 'Netting/Exchange Deferred-Mode Invariant' — requirement remains
+        valid because account-mode validation is now in framework init code (reading
+        ACCOUNT_MARGIN_MODE), not in CommonInputs.Validate(). Verified: active EARS-01
+        canonical YAML does not reference account_mode_policy as an input.
       cascade_direction: bubble-up
   risk_level: Medium
   risk_justification: |
@@ -136,11 +137,11 @@ implementation:
     - step: 6
       action: "Update TDD-09 test case descriptions to remove audit_in_optimization references"
       artifact: "docs/07_TDD/TDD-09_core_runtime_and_configuration/TDD-09_core_runtime_and_configuration.yaml"
-      status: Pending
+      status: Completed
     - step: 7
       action: "Verify EARS-01 account-mode requirement text is still consistent with runtime-check approach"
       artifact: "docs/03_EARS/EARS-01_tradespine_formal_requirements/EARS-01_tradespine_formal_requirements.yaml"
-      status: Pending
+      status: Completed
 
 verification:
   checks:
@@ -148,7 +149,7 @@ verification:
     - "SPEC-09 CommonInputs data model matches the implemented struct exactly"
     - "grep for ENUM_ACCOUNT_MODE_POLICY and ENUM_SESSION_MODE and audit_in_optimization in Include/ returns empty"
     - "OptContext constructor calls in tests use single-parameter form OptContext(mode)"
-    - "TDD-09 and EARS-01 pending doc updates addressed before IPLAN-07 implementation begins"
+    - "TDD-09 and EARS-01 post-CHG documentation updates completed"
 
 traceability:
   tags:

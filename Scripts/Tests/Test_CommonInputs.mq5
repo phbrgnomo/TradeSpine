@@ -66,9 +66,7 @@ bool Test_MagicGuard()
    ok &= CheckFalse(ci.Validate().ok, "Zero magic is rejected");
    ok &= Check(StringFind(ci.Validate().message, "magic") >= 0,
                "Diagnostic names the magic problem");
-
-   ci.magic = -1;
-   ok &= CheckFalse(ci.Validate().ok, "Negative magic is rejected");
+   // Note: magic is ulong; negative values are impossible (wrap to max ulong > 0).
    return(ok);
   }
 
@@ -95,6 +93,18 @@ bool Test_DayTradeMode()
 
    ci.close_mins_before = 0;
    ok &= Check(ci.Validate().ok, "close_mins_before=0 is accepted");
+
+   // Date-ignored contract: comparison must use time-of-day only.
+   ci.close_mins_before  = 5;
+   ci.entry_window_start = D'2026.01.02 09:00'; // later date, earlier time
+   ci.entry_window_end   = D'2026.01.01 17:00'; // earlier date, later time
+   ok &= Check(ci.Validate().ok,
+               "Different dates, valid time order (17:00 > 09:00): date component ignored");
+
+   ci.entry_window_start = D'2026.01.01 09:00'; // earlier date
+   ci.entry_window_end   = D'2026.01.02 08:00'; // later date but earlier time-of-day
+   ok &= CheckFalse(ci.Validate().ok,
+                    "Different dates, reversed time order (08:00 < 09:00): rejected despite later date");
    return(ok);
   }
 

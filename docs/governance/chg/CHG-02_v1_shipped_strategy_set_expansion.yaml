@@ -78,10 +78,10 @@ implementation:
       status: Completed
   artifacts_modified:
     - id: "Project PRD"
-      file: "Experts/Main/TradeSpine/Project/PRD.md"
+      file: "Experts/Main/TradeSpine/docs/archive/PRD.md"
       change_type: modified
     - id: "Architecture Diagram"
-      file: "Experts/Main/TradeSpine/Project/architecture-diagram.html"
+      file: "Experts/Main/TradeSpine/docs/archive/architecture-diagram.html"
       change_type: modified
     - id: "BRD-01"
       file: "Experts/Main/TradeSpine/docs/01_BRD/BRD-01_platform_tradespine_framework/"
