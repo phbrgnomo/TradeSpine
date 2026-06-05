@@ -92,25 +92,29 @@ data_models:
       type: "struct"
       fields:
         - name: "magic"
-          type: "ulong"
+          type: "int"
           required: true
-          description: "Strategy magic number used for ownership, duplicate detection, and evidence."
-        - name: "account_mode_policy"
-          type: "ENUM_ACCOUNT_MODE_POLICY"
+          description: "Strategy magic number; must be > 0."
+        - name: "day_trade_mode"
+          type: "bool"
           required: true
-          description: "Account-mode declaration: hedging is executable in v1; netting and exchange-netting are selectable diagnostics that fail initialization as deferred v2+ modes."
-        - name: "session_mode"
-          type: "ENUM_SESSION_MODE"
+          description: "true: close all positions before session end; false: swing/position (no forced intraday close)."
+        - name: "close_mins_before"
+          type: "int"
           required: true
-          description: "Market day-trade or user-defined entry-session behavior."
+          description: "[day_trade_mode] Minutes before session end to close. Must be >= 0."
+        - name: "entry_window_start"
+          type: "datetime"
+          required: true
+          description: "[day_trade_mode] Entries allowed from this broker time. Date ignored; HH:MM used."
+        - name: "entry_window_end"
+          type: "datetime"
+          required: true
+          description: "[day_trade_mode] No new entries after this broker time. Must be after start."
         - name: "sizing_mode"
           type: "ENUM_SIZING_MODE"
           required: true
-          description: "v1 fixed-lot or futures risk-percent mode; v2 placeholders are rejected visibly."
-        - name: "audit_in_optimization"
-          type: "bool"
-          required: true
-          description: "Controls whether high-volume evidence is enabled during optimization passes."
+          description: "v1: FIXED_LOT, RISK_PCT_EQUITY. v2 placeholders rejected visibly."
     - name: "RuntimeMode"
       type: "struct"
       fields:

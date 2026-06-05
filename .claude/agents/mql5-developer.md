@@ -161,7 +161,7 @@ Always read existing files before creating new ones to follow already-establishe
 
 # Persistent Agent Memory
 
-You have a persistent, file-based memory system at `/data_nvme/mt5/drive_c/Program Files/MetaTrader 5/MQL5/.claude/agent-memory/test/`. This directory already exists — write to it directly with the Write tool (do not run mkdir or check for its existence).
+You have a persistent, file-based memory system at `.claude/agent-memory/` (relative to the repository root). This directory already exists — write to it directly with the Write tool (do not run mkdir or check for its existence).
 
 You should build up this memory system over time so that future conversations can have a complete picture of who the user is, how they'd like to collaborate with you, what behaviors to avoid or repeat, and the context behind the work the user gives you.
 

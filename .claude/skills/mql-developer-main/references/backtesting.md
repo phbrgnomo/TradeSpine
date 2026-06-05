@@ -178,7 +178,7 @@ double OnTester() {
         // Copy trade list and shuffle it (Fisher–Yates)
         ArrayCopy(work, trades);
         for(int i = ArraySize(work) - 1; i > 0; i--) {
-            int j = (int)MathFloor(MathRand() * (i + 1));
+            int j = MathRand() % (i + 1);
             double tmp = work[i];
             work[i] = work[j];
             work[j] = tmp;

@@ -1,12 +1,14 @@
 //+------------------------------------------------------------------+
-//|                                            Test_CommonInputs.mq5  |
-//|              Copyright 2026, Paulo Henrique Barreto Reboucas      |
+//|                                            Test_CommonInputs.mq5 |
+//|              Copyright 2026, phbr                                |
 //|                                                                  |
 //| @tests: Scripts/Tests/Test_CommonInputs.mq5                      |
 //| @tdd: TDD.09.04.bb66  @spec: SPEC-09  @iplan: IPLAN-09           |
 //|                                                                  |
 //| Tier-1 unit/e2e tests for CommonInputs: input validation and     |
 //| visible v1/v2 boundary rejection. No broker execution APIs.      |
+//| Note: account mode is NOT validated here; the framework reads    |
+//| AccountInfoInteger(ACCOUNT_MARGIN_MODE) at init.                 |
 //+------------------------------------------------------------------+
 #property copyright "phbr"
 #property version   "1.0"
@@ -22,11 +24,12 @@
 CommonInputs MakeValid()
   {
    CommonInputs ci;
-   ci.magic                 = 990901;
-   ci.account_mode_policy   = ACCOUNT_MODE_HEDGING;
-   ci.session_mode          = SESSION_MARKET_DAYTRADE;
-   ci.sizing_mode           = SIZING_RISK_PERCENT;
-   ci.audit_in_optimization = false;
+   ci.magic                = 990901;
+   ci.day_trade_mode       = false;
+   ci.close_mins_before    = 5;
+   ci.entry_window_start   = D'2026.01.01 09:00';
+   ci.entry_window_end     = D'2026.01.01 17:00';
+   ci.sizing_mode          = SIZING_RISK_PCT_EQUITY;
    return(ci);
   }
 
@@ -35,86 +38,136 @@ CommonInputs MakeValid()
 //+------------------------------------------------------------------+
 bool Test_ValidCombos()
   {
+   bool ok = true;
    CommonInputs ci = MakeValid();
    InputValidation r = ci.Validate();
-   Check(r.ok, "Hedging + risk-percent is accepted");
+   ok &= Check(r.ok, "Baseline (no day-trade, risk-pct-equity) is accepted");
 
    ci.sizing_mode = SIZING_FIXED_LOT;
    r = ci.Validate();
-   Check(r.ok, "Hedging + fixed-lot is accepted");
-   return(true);
+   ok &= Check(r.ok, "Fixed-lot is accepted");
+
+   ci = MakeValid();
+   ci.day_trade_mode = true;
+   r = ci.Validate();
+   ok &= Check(r.ok, "Day-trade mode with valid session window is accepted");
+   return(ok);
   }
 
 //+------------------------------------------------------------------+
-//| magic == 0 is rejected.                                          |
+//| magic must be a positive integer.                                |
 //+------------------------------------------------------------------+
 bool Test_MagicGuard()
   {
+   bool ok = true;
    CommonInputs ci = MakeValid();
+
    ci.magic = 0;
-   InputValidation r = ci.Validate();
-   CheckFalse(r.ok, "Zero magic is rejected");
-   Check(StringFind(r.message, "magic") >= 0, "Diagnostic names the magic problem");
-   return(true);
+   ok &= CheckFalse(ci.Validate().ok, "Zero magic is rejected");
+   ok &= Check(StringFind(ci.Validate().message, "magic") >= 0,
+               "Diagnostic names the magic problem");
+
+   ci.magic = -1;
+   ok &= CheckFalse(ci.Validate().ok, "Negative magic is rejected");
+   return(ok);
   }
 
 //+------------------------------------------------------------------+
-//| v2 sizing placeholders are rejected, naming the option, with no  |
-//| silent mapping to a v1 sizing mode. (TDD.09.04.bb66)             |
+//| Day-trade mode: session window validation.                       |
+//+------------------------------------------------------------------+
+bool Test_DayTradeMode()
+  {
+   bool ok = true;
+   CommonInputs ci = MakeValid();
+
+   ci.day_trade_mode = false;
+   ok &= Check(ci.Validate().ok, "day_trade_mode=false: window fields not validated");
+
+   ci.day_trade_mode = true;
+   ci.entry_window_end = D'2026.01.01 08:00'; // end before start
+   ok &= CheckFalse(ci.Validate().ok, "entry_window_end before start is rejected");
+   ok &= Check(StringFind(ci.Validate().message, "entry window") >= 0,
+               "Diagnostic names the window problem");
+
+   ci.entry_window_end   = D'2026.01.01 17:00'; // valid
+   ci.close_mins_before  = -1;
+   ok &= CheckFalse(ci.Validate().ok, "Negative close_mins_before is rejected");
+
+   ci.close_mins_before = 0;
+   ok &= Check(ci.Validate().ok, "close_mins_before=0 is accepted");
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| v2 sizing placeholders are rejected visibly. (TDD.09.04.bb66)   |
 //+------------------------------------------------------------------+
 bool Test_SizingPlaceholderRejected()
   {
+   bool ok = true;
    CommonInputs ci = MakeValid();
 
    ci.sizing_mode = SIZING_FIXED_CASH;
    InputValidation r = ci.Validate();
-   CheckFalse(r.ok, "SIZING_FIXED_CASH is rejected in v1");
-   Check(StringFind(r.message, "SIZING_FIXED_CASH") >= 0, "Diagnostic names SIZING_FIXED_CASH");
-   Check(StringFind(r.message, "v2") >= 0, "Diagnostic flags the option as a later release");
+   ok &= CheckFalse(r.ok, "SIZING_FIXED_CASH is rejected in v1");
+   ok &= Check(StringFind(r.message, "SIZING_FIXED_CASH") >= 0,
+               "Diagnostic names SIZING_FIXED_CASH");
+   ok &= Check(StringFind(r.message, "v2") >= 0,
+               "Diagnostic flags SIZING_FIXED_CASH as later release");
 
-   ci.sizing_mode = SIZING_PCT_EQUITY;
+   ci.sizing_mode = SIZING_VALUE_PCT_EQUITY;
    r = ci.Validate();
-   CheckFalse(r.ok, "SIZING_PCT_EQUITY is rejected in v1");
-   Check(StringFind(r.message, "SIZING_PCT_EQUITY") >= 0, "Diagnostic names SIZING_PCT_EQUITY");
-   return(true);
+   ok &= CheckFalse(r.ok, "SIZING_VALUE_PCT_EQUITY is rejected in v1");
+   ok &= Check(StringFind(r.message, "SIZING_VALUE_PCT_EQUITY") >= 0,
+               "Diagnostic names SIZING_VALUE_PCT_EQUITY");
+   ok &= Check(StringFind(r.message, "v2") >= 0,
+               "Diagnostic flags SIZING_VALUE_PCT_EQUITY as later release");
+   return(ok);
   }
 
 //+------------------------------------------------------------------+
-//| Deferred account modes (netting/exchange) fail validation.       |
+//| H1: unknown/cast enum values are rejected by the whitelist gate. |
 //+------------------------------------------------------------------+
-bool Test_AccountModeDeferral()
+bool Test_UnknownEnumRejected()
   {
+   bool ok = true;
    CommonInputs ci = MakeValid();
 
-   ci.account_mode_policy = ACCOUNT_MODE_NETTING;
+   ci.sizing_mode = (ENUM_SIZING_MODE)99;
    InputValidation r = ci.Validate();
-   CheckFalse(r.ok, "Netting account mode is deferred and rejected");
-   Check(StringFind(r.message, "ACCOUNT_MODE_NETTING") >= 0, "Diagnostic names the netting mode");
-
-   ci.account_mode_policy = ACCOUNT_MODE_EXCHANGE;
-   r = ci.Validate();
-   CheckFalse(r.ok, "Exchange-netting account mode is deferred and rejected");
-   return(true);
+   ok &= CheckFalse(r.ok, "Cast sizing mode value 99 is rejected");
+   ok &= Check(StringFind(r.message, "99") >= 0 || StringFind(r.message, "Unknown") >= 0,
+               "Diagnostic identifies the invalid sizing value");
+   return(ok);
   }
 
 //+------------------------------------------------------------------+
 //| TDD trace aliases.                                               |
 //+------------------------------------------------------------------+
-bool test_core_runtime_and_configuration_unit_contract() { return(Test_ValidCombos() && Test_MagicGuard()); }
+bool test_core_runtime_and_configuration_unit_contract()
+  {
+   return(Test_ValidCombos() && Test_MagicGuard() && Test_UnknownEnumRejected());
+  }
 bool test_core_runtime_and_configuration_cb03_unit()      { return(Test_SizingPlaceholderRejected()); }
-bool test_core_runtime_and_configuration_aa68_unit()      { return(Test_AccountModeDeferral()); }
+bool test_core_runtime_and_configuration_aa68_unit()      { return(Test_ValidCombos()); }
+bool test_core_runtime_and_configuration_b37d_unit()      { return(Test_DayTradeMode()); }
+bool test_core_runtime_and_configuration_e2e_acceptance() { return(Test_SizingPlaceholderRejected()); }
 
 //+------------------------------------------------------------------+
 //| Script entry point.                                              |
+//| Returns 0=all pass, 1=any failure, 2=pass but skips present.    |
 //+------------------------------------------------------------------+
-void OnStart()
+int OnStart()
   {
    ResetAsserts();
    Print("== Test_CommonInputs ==");
    Test_ValidCombos();
    Test_MagicGuard();
+   Test_DayTradeMode();
    Test_SizingPlaceholderRejected();
-   Test_AccountModeDeferral();
-   ReportSummary("Test_CommonInputs");
+   Test_UnknownEnumRejected();
+   bool pass = ReportSummary("Test_CommonInputs");
+   if(!pass)                return(1);
+   if(g_tests_skipped > 0) return(2);
+   return(0);
   }
 //+------------------------------------------------------------------+

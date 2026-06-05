@@ -1,0 +1,164 @@
+---
+id: CHG-04
+title: "CommonInputs Struct Design Revision — Remove Non-Inputs, Rename Session Fields"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-04"
+  change_level:
+    value: C2
+  change_source:
+    value: feedback
+
+change_control:
+  chg_id: "CHG-04"
+  status: Approved
+  change_level: C2
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null
+  author: "phbr"
+  date_proposed: "2026-06-04T00:00:00-03:00"
+  date_approved: "2026-06-04T00:00:00-03:00"
+  date_implemented: "2026-06-04T00:00:00-03:00"
+  supersedes: []
+
+change_description:
+  what: |
+    Four corrections to the CommonInputs struct (IPLAN-09 delivery review):
+
+    1. ACCOUNT_MODE_POLICY removed from user inputs.
+       Account mode is not a user configuration — it is a broker account property.
+       The framework reads AccountInfoInteger(ACCOUNT_MARGIN_MODE) at OnInit and
+       fails initialization when the account is not ACCOUNT_MARGIN_MODE_RETAIL_HEDGING.
+       ENUM_ACCOUNT_MODE_POLICY and the account_mode_policy field are removed.
+
+    2. SESSION_MODE replaced by day_trade_mode (bool) + session fields.
+       The original ENUM_SESSION_MODE (SESSION_MARKET_DAYTRADE / SESSION_USER_DEFINED)
+       was replaced with three explicit fields:
+         - day_trade_mode: bool (true = close all positions before session end)
+         - close_mins_before: int (minutes before close to exit; only when day_trade_mode)
+         - entry_window_start: datetime (start of entry-allowed window; HH:MM component used)
+         - entry_window_end: datetime (end of entry-allowed window; HH:MM component used)
+
+    3. magic type changed from ulong to int.
+       Magic numbers in practice are small positive integers. Using int avoids
+       unsigned/signed conversion issues when comparing with MT5 position/deal
+       queries that return long. Validation tightened from magic != 0 to magic > 0.
+
+    4. audit_in_optimization removed entirely.
+       During optimizer runs, ALL non-core work (logging, diagnostics, profiling)
+       is silenced unconditionally. There is no operator override because allowing
+       evidence writes during optimization degrades optimizer throughput. OptContext
+       policy methods now return false for optimization with no conditional.
+  why: |
+    These are design corrections identified during IPLAN-09 delivery review before
+    downstream strategy authors or other IPLANs (e.g. IPLAN-07 sizing module) consume
+    the CommonInputs struct. Correcting now prevents a C3 cascade across all future code.
+  trigger: |
+    Developer design review on 2026-06-04 during IPLAN-09 implementation sign-off.
+
+impact_assessment:
+  affected_layers:
+    - layer: Code
+      artifacts: ["Include/Core/CommonInputs.mqh", "Include/Core/OptContext.mqh",
+                  "Scripts/Tests/Test_CommonInputs.mq5", "Scripts/Tests/Test_OptContextProfiler.mq5"]
+      impact: |
+        CommonInputs.mqh: struct fields removed/added/renamed; Validate() updated.
+        OptContext.mqh: m_audit_in_optimization removed; injecting constructor signature
+        changed from OptContext(mode, audit_bool) to OptContext(mode); policy methods simplified.
+        Tests: Account mode tests removed; DayTradeMode tests added; OptContext audit tests removed.
+      cascade_direction: bubble-up source
+    - layer: IPLAN
+      artifacts: ["IPLAN-09"]
+      impact: "Session handoff records updated to reflect new struct. IPLAN manifest unchanged."
+      cascade_direction: bubble-up
+    - layer: TDD
+      artifacts: ["TDD-09"]
+      impact: |
+        TDD.09.04.8050 setup description references 'audit_in_optimization=false' — update.
+        TDD.09.04.bb66 workflow steps reference 'account_mode_policy' — update.
+        Test function test_core_runtime_and_configuration_aa68_unit mapped from
+        Test_AccountModeDeferral to Test_ValidCombos.
+      cascade_direction: bubble-up
+    - layer: SPEC
+      artifacts: ["SPEC-09"]
+      impact: |
+        CommonInputs data model: remove account_mode_policy and audit_in_optimization fields;
+        change magic type from ulong to int; replace session_mode with day_trade_mode and
+        four session sub-fields. DONE: SPEC-09 data_models section updated.
+        Behavior section: remove account-mode deferral validation rule; update session rule.
+        Remove ENUM_ACCOUNT_MODE_POLICY and ENUM_SESSION_MODE from exports in Section 3.
+      cascade_direction: bubble-up
+    - layer: EARS
+      artifacts: ["EARS-01"]
+      impact: |
+        EARS.01.03.5d1b 'Netting/Exchange Deferred-Mode Invariant' — requirement still valid
+        but the validation is now in the framework init code (reading ACCOUNT_MARGIN_MODE),
+        not in CommonInputs.Validate(). Requirement text may reference 'account_mode_policy'
+        input — verify and update if needed.
+      cascade_direction: bubble-up
+  risk_level: Medium
+  risk_justification: |
+    Structural change to the primary input contract. However, IPLAN-09 is the only delivered
+    code; no other IPLAN has been implemented yet. Risk is limited to re-verifying the three
+    test scripts in MT5. The account mode validation is NOT removed from the framework — it
+    moves from CommonInputs.Validate() (user input check) to a runtime init check against
+    AccountInfoInteger(ACCOUNT_MARGIN_MODE). Functional behavior is preserved.
+  rollback_plan: |
+    Revert CommonInputs.mqh and OptContext.mqh to the CHG-03 state (tag or prior commit).
+    Revert SPEC-09 data_models section. All changes are isolated to IPLAN-09 delivery
+    artifacts; no downstream code has been written yet.
+
+implementation:
+  steps:
+    - step: 1
+      action: "Rewrite CommonInputs.mqh with new struct design"
+      artifact: "Include/Core/CommonInputs.mqh"
+      status: Completed
+    - step: 2
+      action: "Simplify OptContext.mqh: remove audit flag, update constructor and policy methods"
+      artifact: "Include/Core/OptContext.mqh"
+      status: Completed
+    - step: 3
+      action: "Rewrite Test_CommonInputs.mq5: remove account mode tests, add DayTradeMode tests"
+      artifact: "Scripts/Tests/Test_CommonInputs.mq5"
+      status: Completed
+    - step: 4
+      action: "Rewrite Test_OptContextProfiler.mq5: remove audit_in_optimization test, update constructor calls"
+      artifact: "Scripts/Tests/Test_OptContextProfiler.mq5"
+      status: Completed
+    - step: 5
+      action: "Update SPEC-09 data_models CommonInputs section to reflect new struct"
+      artifact: "docs/06_SPEC/SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.yaml"
+      status: Completed
+    - step: 6
+      action: "Update TDD-09 test case descriptions to remove audit_in_optimization references"
+      artifact: "docs/07_TDD/TDD-09_core_runtime_and_configuration/TDD-09_core_runtime_and_configuration.yaml"
+      status: Pending
+    - step: 7
+      action: "Verify EARS-01 account-mode requirement text is still consistent with runtime-check approach"
+      artifact: "docs/03_EARS/EARS-01_tradespine_formal_requirements/EARS-01_tradespine_formal_requirements.yaml"
+      status: Pending
+
+verification:
+  checks:
+    - "All three IPLAN-09 test scripts compile and pass in MT5 with new struct"
+    - "SPEC-09 CommonInputs data model matches the implemented struct exactly"
+    - "grep for ENUM_ACCOUNT_MODE_POLICY and ENUM_SESSION_MODE and audit_in_optimization in Include/ returns empty"
+    - "OptContext constructor calls in tests use single-parameter form OptContext(mode)"
+    - "TDD-09 and EARS-01 pending doc updates addressed before IPLAN-07 implementation begins"
+
+traceability:
+  tags:
+    - "@code: Include/Core/CommonInputs.mqh"
+    - "@code: Include/Core/OptContext.mqh"
+    - "@spec: SPEC-09"
+    - "@tdd: TDD-09"
+    - "@iplan: IPLAN-09"
+  upstream:
+    iplan_references: ["@iplan: IPLAN-09"]
+    spec_references: ["@spec: SPEC-09"]
+    tdd_references: ["@tdd: TDD-09"]
+    ears_references: ["@ears: EARS-01"]

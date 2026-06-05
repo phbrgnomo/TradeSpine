@@ -103,7 +103,7 @@ For detailed information, see:
 - [Buffer Patterns](./references/buffer-patterns.md) - Visible and hidden buffer architecture
 - [Recalculation](./references/recalculation.md) - Bar detection and rolling window state management
 - [Complete Template](./references/complete-template.md) - Full working example with all patterns
-- [Debugging](./references/debugging.md) - Checklist for troubleshooting display issues
+- [Debugging](./references/debbuging.md) - Checklist for troubleshooting display issues
 
 
 ## Post-Execution Reflection

@@ -88,6 +88,41 @@ double NormalizePrice(const string symbol, const double price)
   }
 
 //+------------------------------------------------------------------+
+//| Snap lots to an explicit step grid. Exposed for deterministic    |
+//| fixture testing with injected vmin/vmax/vstep values.            |
+//| Returns 0.0 on non-finite/invalid inputs or below-minimum lots. |
+//+------------------------------------------------------------------+
+double NormalizeLotRaw(const double lots, const double vmin, const double vmax, const double vstep)
+  {
+   if(!IsFinite(lots) || lots <= 0.0)
+      return(0.0);
+   if(!IsFinite(vmin) || !IsFinite(vmax) || !IsFinite(vstep))
+      return(0.0);
+   if(vstep <= 0.0 || vmin <= 0.0 || vmax < vmin)
+      return(0.0);
+
+   long   steps   = (long)MathFloor((lots - vmin) / vstep + 1e-9);
+   double snapped = vmin + (double)steps * vstep;
+
+   if(snapped < vmin)
+      return(0.0);
+   if(snapped > vmax)
+      snapped = vmax;
+
+   //--- Count decimal digits needed to represent vstep exactly.
+   //--- Uses round-trip check (multiply by 10 until integer) so steps
+   //--- like 0.25 yield 2 digits, not 1 as the old s<1.0 loop did.
+   int digits = 0;
+   double s = vstep;
+   while(MathAbs(MathRound(s) - s) > 1e-9 && digits < 8)
+     {
+      s *= 10.0;
+      digits++;
+     }
+   return(NormalizeDouble(snapped, digits));
+  }
+
+//+------------------------------------------------------------------+
 //| Snap lots to the broker volume step, clamped to [min, max].      |
 //| Returns 0.0 when lots are non-finite, below the minimum, or the  |
 //| symbol metadata is missing (no fallback). Above max clamps down. |
@@ -102,25 +137,7 @@ double NormalizeLot(const string symbol, const double lots)
    double vmin  = SymbolInfoDouble(symbol, SYMBOL_VOLUME_MIN);
    double vmax  = SymbolInfoDouble(symbol, SYMBOL_VOLUME_MAX);
    double vstep = SymbolInfoDouble(symbol, SYMBOL_VOLUME_STEP);
-
-   //--- snap down to the nearest step from the minimum
-   double steps   = MathFloor((lots - vmin) / vstep + 1e-9);
-   double snapped = vmin + steps * vstep;
-
-   if(snapped < vmin)          // below the broker minimum -> reject
-      return(0.0);
-   if(snapped > vmax)          // above the broker maximum -> clamp down
-      snapped = vmax;
-
-   //--- normalize to the step's decimal precision
-   int digits = 0;
-   double s = vstep;
-   while(s < 1.0 && digits < 8)
-     {
-      s *= 10.0;
-      digits++;
-     }
-   return(NormalizeDouble(snapped, digits));
+   return(NormalizeLotRaw(lots, vmin, vmax, vstep));
   }
 
 //+------------------------------------------------------------------+

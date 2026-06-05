@@ -22,7 +22,7 @@ node_modules/
 
 # Artefatos de compilacao MetaTrader
 *.ex5
-*.log
+
 
 # Artefatos de release local
 dist/

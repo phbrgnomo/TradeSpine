@@ -404,7 +404,7 @@ functional_requirements:
           target: "Entries require both market trade-session availability and the user trading-hours window in broker server time"
         - id: "PRD.01.09.60ad"
           criterion: "V1 sizing and v2 placeholder boundary"
-          target: "V1 supports futures SIZING_RISK_PERCENT and SIZING_FIXED_LOT using initialized symbol information, while equity sizing modes remain visible v2 placeholders"
+          target: "V1 supports futures SIZING_RISK_PCT_EQUITY (SL-based) and SIZING_FIXED_LOT using initialized symbol information, while SIZING_VALUE_PCT_EQUITY (price-based, stocks) and SIZING_FIXED_CASH remain visible v2 placeholders"
         - id: "PRD.01.09.d722"
           criterion: "Day-trade auto-close"
           target: "Day-trade mode performs a complete strategy stop before market session close, prevents overnight rollover, and blocks new entries for the remainder of the session"

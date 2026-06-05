@@ -880,29 +880,6 @@ FileClose(handle2);
 
 **File locking pattern** (prevent concurrent read/write corruption):
 
-```mql5
-bool AcquireFileLock(string lockName, int timeoutMs = 5000)
-{
-    string lockFile = lockName + ".lock";
-bool SendPipeMessage(int pipe, string message)
-{
-    uchar data[];
-    int len = StringToCharArray(message, data, 0, StringLen(message));
-    int written[];
-    ArrayResize(written, 1);
-    return WriteFile(pipe, data, len, written, 0) != 0;
-}
-    int h = FileOpen(lockFile, FILE_WRITE | FILE_TXT);
-    if(h == INVALID_HANDLE) return false;
-    FileClose(h);
-    return true;
-}
-
-void ReleaseFileLock(string lockName)
-{
-    FileDelete(lockName + ".lock");
-}
-```
 
 ### Named Pipes (MQL4, Windows Only)
 

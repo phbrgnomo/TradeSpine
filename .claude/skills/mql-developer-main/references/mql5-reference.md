@@ -239,8 +239,8 @@ public:
    bool operator>(const CPrice &rhs)  const { return value > rhs.value; }
 
    // Assignment operators
-   CPrice *operator=(const CPrice &rhs)  { value = rhs.value; return &this; }
-   CPrice *operator+=(const CPrice &rhs) { value += rhs.value; return &this; }
+   CPrice *operator=(const CPrice &rhs)  { value = rhs.value; return *this; }
+   CPrice *operator+=(const CPrice &rhs) { value += rhs.value; return *this; }
 
    // Unary operators
    CPrice operator-() const { return CPrice(-value); }
