@@ -119,11 +119,44 @@ bool Test_ProfilerActiveRecords()
   }
 
 //+------------------------------------------------------------------+
+//| Memory-evidence baseline-and-delta harness (SPEC-09/EARS.01.03.8044).|
+//| Verifies scenario propagation, non-negative MQL-program memory,  |
+//| and terminal build context in timing_source.                     |
+//| CTerminalInfo used directly so the expected build string can be  |
+//| constructed at test time and compared exactly.                   |
+//+------------------------------------------------------------------+
+bool Test_ProfilerMemoryEvidence()
+  {
+   bool ok = true;
+   RuntimeMode mode = MakeMode(true, false); // plain tester -> profiler on
+   OptContext ctx(mode);
+   Profiler prof(GetPointer(ctx));
+
+   CTerminalInfo terminal;
+   int build = terminal.Build();
+
+   long baseline = prof.CaptureBaselineMemory("bench_test");
+   BenchmarkBaseline b = prof.GetBenchmarkData("bench_test", baseline);
+
+   ok &= CheckEqualStr(b.scenario, "bench_test",
+                       "Scenario name propagates to benchmark record");
+   ok &= Check(b.baseline_memory >= 0,
+               "MQL program memory baseline is non-negative (MB)");
+   ok &= Check(StringFind(b.timing_source, "GetMicrosecondCount") == 0,
+               "Timing source starts with GetMicrosecondCount");
+   ok &= Check(StringFind(b.timing_source,
+               StringFormat("build=%d", build)) >= 0,
+               "Timing source encodes the actual terminal build number");
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
 //| TDD trace aliases.                                               |
 //+------------------------------------------------------------------+
 bool test_core_runtime_and_configuration_integration_contract()
   {
-   return(Test_OptimizationGated() && Test_ProfilerNoWriteWhenGated());
+   return(Test_OptimizationGated() && Test_ProfilerNoWriteWhenGated() &&
+          Test_ProfilerMemoryEvidence());
   }
 bool test_core_runtime_and_configuration_aa68_integration() { return(Test_TesterVsLive()); }
 bool test_core_runtime_and_configuration_b37d_integration() { return(Test_ProfilerActiveRecords()); }
@@ -141,6 +174,7 @@ int OnStart()
    Test_TesterVsLive();
    Test_ProfilerNoWriteWhenGated();
    Test_ProfilerActiveRecords();
+   Test_ProfilerMemoryEvidence();
    bool pass = ReportSummary("Test_OptContextProfiler");
    if(!pass)                return(1);
    if(g_tests_skipped > 0) return(2);

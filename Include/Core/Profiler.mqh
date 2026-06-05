@@ -16,6 +16,7 @@
 
 #include "Interfaces.mqh"
 #include "OptContext.mqh"
+#include "../StdLib/Trade/TerminalInfo.mqh"
 
 #define PROFILER_MAX_SCOPES 64
 
@@ -143,24 +144,28 @@ public:
      }
 
    //--- Memory evidence (baseline-and-delta harness, in MB).
+   //--- Uses MQLInfoInteger(MQL_MEMORY_USED) for per-program attribution;
+   //--- TerminalInfoInteger(TERMINAL_MEMORY_USED) tracks the whole agent and
+   //--- is too noisy for per-EA budget evidence (SPEC-09 / EARS.01.03.8044).
    long              CaptureBaselineMemory(const string scenario)
      {
-      return((long)TerminalInfoInteger(TERMINAL_MEMORY_USED));
+      return((long)MQLInfoInteger(MQL_MEMORY_USED));
      }
 
    long              RecordMemoryDelta(const long baseline, const string scenario)
      {
-      long now = (long)TerminalInfoInteger(TERMINAL_MEMORY_USED);
+      long now = (long)MQLInfoInteger(MQL_MEMORY_USED);
       return(now - baseline);
      }
 
    BenchmarkBaseline GetBenchmarkData(const string scenario, const long baseline)
      {
+      CTerminalInfo terminal;
       BenchmarkBaseline b;
       b.scenario               = scenario;
       b.baseline_memory        = baseline;
       b.component_memory_delta = RecordMemoryDelta(baseline, scenario);
-      b.timing_source          = "GetMicrosecondCount";
+      b.timing_source          = StringFormat("GetMicrosecondCount|build=%d", terminal.Build());
       return(b);
      }
   };
