@@ -203,46 +203,75 @@ traceability:
       - path: "Scripts/Tests/Test_CommonInputs.mq5"
         session: 1
         action: created
+        verified: true
       - path: "Scripts/Tests/Test_OptContextProfiler.mq5"
         session: 1
         action: created
+        verified: true
       - path: "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
         session: 1
         action: created
+        verified: true
       - path: "Include/Core/CommonInputs.mqh"
         session: 1
         action: created
+        verified: true
       - path: "Include/Core/Interfaces.mqh"
         session: 1
         action: created
+        verified: true
       - path: "Include/Core/OptContext.mqh"
         session: 1
         action: created
+        verified: true
       - path: "Include/Core/SafeMath.mqh"
         session: 1
         action: created
+        verified: true
       - path: "Include/Core/Profiler.mqh"
         session: 1
         action: created
+        verified: true
       - path: "Include/Core/NewBarDetector.mqh"
         session: 1
         action: created
+        verified: true
       - path: "Scripts/Tests/TestAssert.mqh"
         session: 1
         action: created
+        verified: true
       - path: "Include/Core/CommonInputs.mqh"
         session: 3
         action: modified
+        verified: true
         change: "CHG-03: enum renames; CHG-04: struct redesign (remove account_mode_policy/session_mode/audit_in_optimization; add day_trade_mode/close_mins_before/entry_window_start/entry_window_end; keep magic as ulong)"
       - path: "Include/Core/OptContext.mqh"
         session: 3
         action: modified
+        verified: true
         change: "CHG-04: removed audit_in_optimization; simplified constructor to single RuntimeMode param; policy methods now unconditionally silent in optimization"
       - path: "Scripts/Tests/Test_CommonInputs.mq5"
         session: 3
         action: modified
+        verified: true
         change: "CHG-03/04: updated enum refs; replaced account mode tests with DayTradeMode tests; ok-aggregation (M1); int OnStart (M3)"
       - path: "Scripts/Tests/Test_OptContextProfiler.mq5"
         session: 3
         action: modified
+        verified: true
         change: "CHG-04: removed Test_OptimizationAudited; updated OptContext constructor calls; ok-aggregation (M1)"
+      - path: "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
+        session: 3
+        action: modified
+        verified: true
+        change: "CHG-03/04 follow-up: ok-aggregation, int OnStart compatibility, skip counter behavior, NormalizeLotRaw fixture coverage, and deterministic NewBarDetector coverage"
+      - path: "Scripts/Tests/TestAssert.mqh"
+        session: 3
+        action: modified
+        verified: true
+        change: "Shared assertion harness updated with skip counter and 0/1/2 script exit semantics"
+      - path: "Include/Core/SafeMath.mqh"
+        session: 3
+        action: modified
+        verified: true
+        change: "NormalizeLotRaw precision fix for fractional steps such as 0.25 and off-grid vmax clamp behavior"

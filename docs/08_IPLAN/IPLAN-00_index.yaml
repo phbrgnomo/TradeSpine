@@ -130,13 +130,13 @@ registry:
       title: "Core Runtime and Configuration Implementation"
       source_spec: "@spec: SPEC-09"
       scope: "Implement common inputs, runtime mode detection, SafeMath, profiling, and new-bar helpers."
-      status: "Draft"
-      status_date: "2026-06-03"
+      status: "Completed"
+      status_date: "2026-06-04"
       complexity: 4
-      session_count: 0
-      sessions_completed: 0
-      files_declared: 9
-      files_done: 0
+      session_count: 3
+      sessions_completed: 3
+      files_declared: 10
+      files_done: 10
       skipped: []
       skip_reasons: {}
       depends_on: []
@@ -453,6 +453,10 @@ status_history:
         to: "Draft"
         date: "2026-06-03"
         reason: "TDD-09 audit passed 94/100 and reached IPLAN-Ready."
+      - from: "Draft"
+        to: "Completed"
+        date: "2026-06-04"
+        reason: "IPLAN-09 implementation completed across 10 declared files with 3 recorded sessions and MT5 validation recorded in the plan handoff."
   - plan_id: "IPLAN-10"
     transitions:
       - from: "BACKLOG"
