@@ -30,6 +30,8 @@ flowchart LR
 | Export | Type | Purpose |
 | --- | --- | --- |
 | IClock | interface | Time source seam for broker time, local test time, timeout checks, and deterministic test advancement. |
+| ILogSink | interface | Diagnostics seam consumed by `Profiler` and future evidence sinks, with `ENUM_LOG_LEVEL` severity typing. |
+| ENUM_LOG_LEVEL | enum | Log severity levels used by `ILogSink`: `LOG_DEBUG`, `LOG_INFO`, `LOG_WARN`, `LOG_ERROR`. |
 | CommonInputs | struct | Canonical framework input binding for magic, mode, session, sizing, risk, logging, and documentation-visible settings. |
 | OptContext | class | Detects tester/optimization/live mode and exposes policy decisions for logging, diagnostics, profiling, and release evidence. |
 | SafeMath | namespace | Central numeric normalization, finite-value, price-grid, lot-grid, and comparison helpers. |
@@ -68,7 +70,7 @@ flowchart LR
 | Test File | Coverage |
 | --- | --- |
 | `Scripts/Tests/Test_CommonInputs.mq5` | Input validation, v1/v2 boundary rejection, and strategy guide alignment. |
-| `Scripts/Tests/Test_OptContextProfiler.mq5` | Tester/optimization policy, diagnostic gating, and profile sample enablement. |
+| `Scripts/Tests/Test_OptContextProfiler.mq5` | Tester/optimization policy, diagnostic gating, `ILogSink` severity contract, `ENUM_LOG_LEVEL` usage, and profile sample enablement. |
 | `Scripts/Tests/Test_SafeMathAndNewBar.mq5` | Numeric normalization, grid snapping, finite checks, and new-bar detection. |
 
 ## Traceability

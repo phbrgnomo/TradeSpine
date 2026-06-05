@@ -28,7 +28,7 @@ RuntimeMode MakeMode(const bool tester, const bool optimization)
    RuntimeMode m;
    m.is_tester           = tester;
    m.is_optimization     = optimization;
-   m.diagnostics_enabled = false;
+   m.diagnostics_enabled = !optimization; // optimization silences; otherwise allow diagnostics
    return(m);
   }
 
@@ -122,8 +122,8 @@ bool Test_ProfilerActiveRecords()
 //| Memory-evidence baseline-and-delta harness (SPEC-09/EARS.01.03.8044).|
 //| Verifies scenario propagation, non-negative MQL-program memory,  |
 //| and terminal build context in timing_source.                     |
-//| CTerminalInfo used directly so the expected build string can be  |
-//| constructed at test time and compared exactly.                   |
+//| Native TerminalInfoInteger used directly for the expected build  |
+//| string so the profiler path stays dependency-light.              |
 //+------------------------------------------------------------------+
 bool Test_ProfilerMemoryEvidence()
   {
@@ -132,8 +132,7 @@ bool Test_ProfilerMemoryEvidence()
    OptContext ctx(mode);
    Profiler prof(GetPointer(ctx));
 
-   CTerminalInfo terminal;
-   int build = terminal.Build();
+   int build = (int)TerminalInfoInteger(TERMINAL_BUILD);
 
    long baseline = prof.CaptureBaselineMemory("bench_test");
    BenchmarkBaseline b = prof.GetBenchmarkData("bench_test", baseline);
@@ -151,15 +150,126 @@ bool Test_ProfilerMemoryEvidence()
   }
 
 //+------------------------------------------------------------------+
+//| Duplicate Stop() must not overwrite the recorded elapsed time.   |
+//+------------------------------------------------------------------+
+bool Test_ProfilerNoDuplicateStop()
+  {
+   bool ok = true;
+   RuntimeMode mode = MakeMode(true, false);
+   OptContext ctx(mode);
+   Profiler prof(GetPointer(ctx));
+
+   prof.Start("x");
+   long acc = 0;
+   for(int i = 0; i < 500; i++)
+      acc += i;            // small workload to ensure non-zero elapsed
+   prof.Stop("x");
+   ProfileSample s1 = prof.GetSample("x");
+
+   prof.Stop("x");         // duplicate stop — must be a no-op
+   ProfileSample s2 = prof.GetSample("x");
+
+   ok &= Check(s1.enabled,             "First Stop records an enabled sample");
+   ok &= CheckEqualL(s2.elapsed_us, s1.elapsed_us,
+                     "Duplicate Stop() does not overwrite the recorded elapsed time");
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| Scope-cap overflow emits exactly one gated diagnostic.           |
+//+------------------------------------------------------------------+
+bool Test_ProfilerScopeOverflow()
+  {
+   bool ok = true;
+   RuntimeMode mode = MakeMode(true, false);
+   OptContext ctx(mode);
+   CapturingLogSink sink;
+   Profiler prof(GetPointer(ctx), GetPointer(sink));
+
+   // Fill every slot
+   for(int i = 0; i < PROFILER_MAX_SCOPES; i++)
+      prof.Start(StringFormat("scope_%d", i));
+
+   int before = sink.Count();
+   prof.Start("overflow_trigger"); // one beyond cap
+   ok &= Check(sink.Count() > before,
+               "Overflow diagnostic emitted when scope cap exceeded");
+
+   prof.Start("overflow_trigger2"); // second overflow — no second diagnostic
+   ok &= CheckEqualL((long)(sink.Count() - before), 1,
+                     "Overflow diagnostic fires exactly once");
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| M1: injected diagnostics_enabled=false is honored outside        |
+//| optimization. Profiler policy (tester/non-opt) is independent   |
+//| of the diagnostics flag.                                         |
+//+------------------------------------------------------------------+
+bool Test_DiagnosticsInjectedDisabled()
+  {
+   bool ok = true;
+   RuntimeMode mode;
+   mode.is_tester           = true;
+   mode.is_optimization     = false;
+   mode.diagnostics_enabled = false; // explicitly disabled outside optimization
+   OptContext ctx(mode);
+
+   ok &= CheckFalse(ctx.AllowsDiagnostics(),
+                    "Injected diagnostics_enabled=false honored outside optimization");
+   ok &= Check(ctx.AllowsProfiler(),
+               "Profiler policy (tester, non-opt) unaffected by diagnostics flag");
+   ok &= CheckFalse(ctx.IsOptimizing(), "Mode is not optimization");
+   ok &= Check(ctx.IsTesting(),         "Mode is tester");
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| L1: PROFILER macros must not evaluate the scope argument when    |
+//| the profiler is NULL or inactive. A side-effecting expression    |
+//| (++counter) proves the argument is never computed.               |
+//+------------------------------------------------------------------+
+bool Test_MacroNoEvalWhenInactive()
+  {
+   bool ok = true;
+   int counter = 0;
+
+   // Case 1: g_profiler == NULL — body never executes.
+   g_profiler = NULL;
+   PROFILER_START("s" + IntegerToString(++counter));
+   PROFILER_STOP( "s" + IntegerToString(++counter));
+   ok &= CheckEqualL((long)counter, 0,
+                     "PROFILER macros do not evaluate scope when g_profiler is NULL");
+
+   // Case 2: profiler exists but IsActive()==false — scope still not evaluated.
+   RuntimeMode mode = MakeMode(true, true); // optimization -> inactive
+   OptContext ctx(mode);
+   Profiler inactive_prof(GetPointer(ctx));
+   g_profiler = GetPointer(inactive_prof);
+   ok &= CheckFalse(g_profiler.IsActive(), "Fixture profiler is inactive under optimization");
+
+   counter = 0;
+   PROFILER_START("s" + IntegerToString(++counter));
+   PROFILER_STOP( "s" + IntegerToString(++counter));
+   ok &= CheckEqualL((long)counter, 0,
+                     "PROFILER macros do not evaluate scope when profiler is inactive");
+
+   g_profiler = NULL; // release before inactive_prof goes out of scope
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
 //| TDD trace aliases.                                               |
 //+------------------------------------------------------------------+
 bool test_core_runtime_and_configuration_integration_contract()
   {
    return(Test_OptimizationGated() && Test_ProfilerNoWriteWhenGated() &&
-          Test_ProfilerMemoryEvidence());
+          Test_ProfilerMemoryEvidence() && Test_ProfilerNoDuplicateStop() &&
+          Test_ProfilerScopeOverflow() && Test_DiagnosticsInjectedDisabled() &&
+          Test_MacroNoEvalWhenInactive());
   }
 bool test_core_runtime_and_configuration_aa68_integration() { return(Test_TesterVsLive()); }
-bool test_core_runtime_and_configuration_b37d_integration() { return(Test_ProfilerActiveRecords()); }
+bool test_core_runtime_and_configuration_b37d_integration() { return(Test_ProfilerActiveRecords() && Test_ProfilerMemoryEvidence()); }
 bool test_core_runtime_and_configuration_cb03_integration() { return(Test_OptimizationGated()); }
 
 //+------------------------------------------------------------------+
@@ -175,6 +285,10 @@ int OnStart()
    Test_ProfilerNoWriteWhenGated();
    Test_ProfilerActiveRecords();
    Test_ProfilerMemoryEvidence();
+   Test_ProfilerNoDuplicateStop();
+   Test_ProfilerScopeOverflow();
+   Test_DiagnosticsInjectedDisabled();
+   Test_MacroNoEvalWhenInactive();
    bool pass = ReportSummary("Test_OptContextProfiler");
    if(!pass)                return(1);
    if(g_tests_skipped > 0) return(2);

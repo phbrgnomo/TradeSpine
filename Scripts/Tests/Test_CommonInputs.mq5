@@ -78,8 +78,15 @@ bool Test_DayTradeMode()
    bool ok = true;
    CommonInputs ci = MakeValid();
 
-   ci.day_trade_mode = false;
-   ok &= Check(ci.Validate().ok, "day_trade_mode=false: window fields not validated");
+   // Deliberately set invalid window fields while disabled — they must be ignored.
+   ci.day_trade_mode    = false;
+   ci.entry_window_end  = D'2026.01.01 08:00'; // reversed: would fail if validated
+   ci.close_mins_before = -1;                  // negative: would fail if validated
+   ok &= Check(ci.Validate().ok,
+               "day_trade_mode=false: deliberately invalid window fields are ignored");
+   // Restore before switching to enabled tests.
+   ci.entry_window_end  = D'2026.01.01 17:00';
+   ci.close_mins_before = 5;
 
    ci.day_trade_mode = true;
    ci.entry_window_end = D'2026.01.01 08:00'; // end before start
@@ -151,15 +158,33 @@ bool Test_UnknownEnumRejected()
   }
 
 //+------------------------------------------------------------------+
-//| TDD trace aliases.                                               |
+//| Default constructor sets sentinels so incomplete bindings fail.  |
 //+------------------------------------------------------------------+
-bool test_core_runtime_and_configuration_unit_contract()
+bool Test_DefaultConstructorIsInvalid()
   {
-   return(Test_ValidCombos() && Test_MagicGuard() && Test_UnknownEnumRejected());
+   bool ok = true;
+   CommonInputs ci;
+   InputValidation r = ci.Validate();
+   ok &= CheckFalse(r.ok,
+                    "Default-constructed CommonInputs fails Validate() (magic sentinel=0)");
+   ok &= Check(ci.magic == 0,
+               "Default constructor sets magic=0");
+   ok &= Check(ci.sizing_mode == (ENUM_SIZING_MODE) - 1,
+               "Default constructor sets sizing_mode to invalid sentinel");
+   return(ok);
   }
+
+//+------------------------------------------------------------------+
+//| TDD trace aliases.                                               |
+//| unit_contract: absent — TDD-09 maps it to Test_SafeMathAndNewBar |
+//| .mq5; duplicate definition risks aggregate-compilation clash.   |
+//| b37d_unit: absent — "Performance budgets are evidenced" has no   |
+//| CommonInputs coupling; the TDD mapping to this file is wrong.   |
+//| Definitive b37d coverage: test_core_runtime_and_               |
+//| configuration_b37d_integration() in Test_OptContextProfiler.mq5.|
+//+------------------------------------------------------------------+
 bool test_core_runtime_and_configuration_cb03_unit()      { return(Test_SizingPlaceholderRejected()); }
-bool test_core_runtime_and_configuration_aa68_unit()      { return(Test_ValidCombos()); }
-bool test_core_runtime_and_configuration_b37d_unit()      { return(Test_DayTradeMode()); }
+bool test_core_runtime_and_configuration_aa68_unit()      { return(Test_ValidCombos() && Test_DayTradeMode()); }
 bool test_core_runtime_and_configuration_e2e_acceptance() { return(Test_SizingPlaceholderRejected()); }
 
 //+------------------------------------------------------------------+
@@ -175,6 +200,7 @@ int OnStart()
    Test_DayTradeMode();
    Test_SizingPlaceholderRejected();
    Test_UnknownEnumRejected();
+   Test_DefaultConstructorIsInvalid();
    bool pass = ReportSummary("Test_CommonInputs");
    if(!pass)                return(1);
    if(g_tests_skipped > 0) return(2);

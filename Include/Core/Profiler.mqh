@@ -1,14 +1,14 @@
 //+------------------------------------------------------------------+
-//|                                                      Profiler.mqh |
-//|              Copyright 2026, Paulo Henrique Barreto Reboucas      |
+//|                                                     Profiler.mqh |
+//|              Copyright 2026, phbr                                |
 //|                                                                  |
 //| @code: Include/Core/Profiler.mqh                                 |
 //| @spec: SPEC-09  @tdd: TDD.09.04.8050  @iplan: IPLAN-09           |
 //|                                                                  |
 //| Low-overhead timing and memory-budget evidence helper gated by   |
-//| an injected OptContext. When the runtime policy disables          |
-//| profiling (BDD.01.03.b37d), Start/Stop return without any I/O or  |
-//| persistent writes. Memory evidence uses a baseline-and-delta      |
+//| an injected OptContext. When the runtime policy disables         |
+//| profiling (BDD.01.03.b37d), Start/Stop return without any I/O or |
+//| persistent writes. Memory evidence uses a baseline-and-delta     |
 //| harness (EARS.01.03.8044). No broker execution APIs.             |
 //+------------------------------------------------------------------+
 #ifndef TRADESPINE_PROFILER_MQH
@@ -16,7 +16,6 @@
 
 #include "Interfaces.mqh"
 #include "OptContext.mqh"
-#include "../StdLib/Trade/TerminalInfo.mqh"
 
 #define PROFILER_MAX_SCOPES 64
 
@@ -35,9 +34,10 @@ private:
    long              m_elapsed_us[PROFILER_MAX_SCOPES];
    bool              m_sample_on[PROFILER_MAX_SCOPES];
    int               m_count;
+   bool              m_overflow; // true once scope cap was exceeded; guards one-time diagnostic
 
    //--- Active when both the master switch and the runtime policy agree.
-   bool              Active(void) const
+   bool Active(void) const
      {
       if(!m_enabled)
          return(false);
@@ -46,7 +46,7 @@ private:
       return(m_ctx.AllowsProfiler());
      }
 
-   int               FindScope(const string scope) const
+   int FindScope(const string scope) const
      {
       for(int i = 0; i < m_count; i++)
          if(m_scope[i] == scope)
@@ -54,13 +54,25 @@ private:
       return(-1);
      }
 
-   int               EnsureScope(const string scope)
+   int EnsureScope(const string scope)
      {
       int idx = FindScope(scope);
       if(idx >= 0)
          return(idx);
       if(m_count >= PROFILER_MAX_SCOPES)
+        {
+         if(!m_overflow)
+           {
+            m_overflow    = true;
+            string msg    = StringFormat("Scope cap (%d) reached; '%s' and further scopes dropped",
+                                         PROFILER_MAX_SCOPES, scope);
+            if(m_sink != NULL)
+               m_sink.Write(LOG_WARN, "profiler", msg);
+            else
+               Print("profiler WARNING: ", msg);
+           }
          return(-1);
+        }
       idx               = m_count++;
       m_scope[idx]      = scope;
       m_start_us[idx]   = 0;
@@ -70,16 +82,17 @@ private:
      }
 
 public:
-                     Profiler(OptContext *ctx, ILogSink *sink = NULL)
+   Profiler(OptContext *ctx, ILogSink *sink = NULL)
      {
-      m_ctx     = ctx;
-      m_sink    = sink;
-      m_enabled = true;
-      m_count   = 0;
+      m_ctx      = ctx;
+      m_sink     = sink;
+      m_enabled  = true;
+      m_count    = 0;
+      m_overflow = false;
      }
 
-   void              SetEnabled(const bool v) { m_enabled = v; }
-   bool              IsActive(void) const     { return(Active()); }
+   void SetEnabled(const bool v) { m_enabled = v; }
+   bool IsActive(void) const     { return(Active()); }
 
    //--- Begin a measurement block. No-op when inactive.
    void              Start(const string scope)
@@ -93,7 +106,9 @@ public:
      }
 
    //--- End a measurement block; record the sample. No-op when inactive.
-   void              Stop(const string scope)
+   //--- Clears m_start_us after recording so a duplicate Stop() sees the
+   //--- zero-guard on line 101 and exits without inflating the sample.
+   void Stop(const string scope)
      {
       if(!Active())
          return;
@@ -102,11 +117,12 @@ public:
          return;
       m_elapsed_us[idx] = (long)(GetMicrosecondCount() - m_start_us[idx]);
       m_sample_on[idx]  = true;
+      m_start_us[idx]   = 0; // prevent duplicate Stop() from overwriting the sample
      }
 
    //--- Retrieve a recorded sample. When inactive or unknown, the
    //--- returned sample carries enabled=false and elapsed_us=0.
-   ProfileSample     GetSample(const string scope) const
+   ProfileSample GetSample(const string scope) const
      {
       ProfileSample s;
       s.scope      = scope;
@@ -122,7 +138,7 @@ public:
      }
 
    //--- Human-readable dump of recorded samples.
-   string            GetResults(void) const
+   string GetResults(void) const
      {
       string out = "";
       for(int i = 0; i < m_count; i++)
@@ -132,7 +148,7 @@ public:
      }
 
    //--- Print results. No persistent write when inactive.
-   void              PrintResults(void)
+   void PrintResults(void)
      {
       if(!Active())
          return;
@@ -147,12 +163,17 @@ public:
    //--- Uses MQLInfoInteger(MQL_MEMORY_USED) for per-program attribution;
    //--- TerminalInfoInteger(TERMINAL_MEMORY_USED) tracks the whole agent and
    //--- is too noisy for per-EA budget evidence (SPEC-09 / EARS.01.03.8044).
-   long              CaptureBaselineMemory(const string scenario)
+   //--- MQL_MEMORY_USED is MB-granular; component_memory_delta CAN be negative
+   //--- when the runtime GC or an unrelated module releases memory between the
+   //--- two reads. A negative value is measurement noise, not a meaningful
+   //--- "component saved memory" event. Callers should treat delta <= 0 as
+   //--- a no-growth confirmation rather than a signed budget figure.
+   long CaptureBaselineMemory(const string scenario)
      {
       return((long)MQLInfoInteger(MQL_MEMORY_USED));
      }
 
-   long              RecordMemoryDelta(const long baseline, const string scenario)
+   long RecordMemoryDelta(const long baseline, const string scenario)
      {
       long now = (long)MQLInfoInteger(MQL_MEMORY_USED);
       return(now - baseline);
@@ -160,25 +181,26 @@ public:
 
    BenchmarkBaseline GetBenchmarkData(const string scenario, const long baseline)
      {
-      CTerminalInfo terminal;
       BenchmarkBaseline b;
       b.scenario               = scenario;
       b.baseline_memory        = baseline;
       b.component_memory_delta = RecordMemoryDelta(baseline, scenario);
-      b.timing_source          = StringFormat("GetMicrosecondCount|build=%d", terminal.Build());
+      b.timing_source          = StringFormat("GetMicrosecondCount|build=%d",
+                                              (int)TerminalInfoInteger(TERMINAL_BUILD));
       return(b);
      }
   };
 
 //+------------------------------------------------------------------+
-//| Optional macro front-end over a shared instance. All calls are   |
-//| guarded so a disabled hot path does zero work.                   |
+//| Optional macro front-end over a shared instance. Guarded with   |
+//| IsActive() so an inactive profiler does zero work: the scope     |
+//| argument is not evaluated and no method call occurs.             |
 //+------------------------------------------------------------------+
 Profiler *g_profiler = NULL;
 
-#define PROFILER_START(scope) do { if(g_profiler != NULL) g_profiler.Start(scope); } while(false)
-#define PROFILER_STOP(scope)  do { if(g_profiler != NULL) g_profiler.Stop(scope);  } while(false)
-#define PROFILER_PRINT()      do { if(g_profiler != NULL) g_profiler.PrintResults(); } while(false)
+#define PROFILER_START(scope) do { if(g_profiler != NULL && g_profiler.IsActive()) g_profiler.Start(scope); } while(false)
+#define PROFILER_STOP(scope)  do { if(g_profiler != NULL && g_profiler.IsActive()) g_profiler.Stop(scope);  } while(false)
+#define PROFILER_PRINT()      do { if(g_profiler != NULL && g_profiler.IsActive()) g_profiler.PrintResults(); } while(false)
 
 #endif // TRADESPINE_PROFILER_MQH
 //+------------------------------------------------------------------+

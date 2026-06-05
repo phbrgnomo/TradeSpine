@@ -1,6 +1,6 @@
 //+------------------------------------------------------------------+
-//|                                                    Interfaces.mqh |
-//|              Copyright 2026, Paulo Henrique Barreto Reboucas      |
+//|                                                   Interfaces.mqh |
+//|              Copyright 2026, phbr                                |
 //|                                                                  |
 //| @code: Include/Core/Interfaces.mqh                               |
 //| @spec: SPEC-09  @iplan: IPLAN-09                                 |
@@ -11,7 +11,7 @@
 //|                                                                  |
 //| SPEC-09 faithful, minimal scope. Trade/position/state seams      |
 //| (ITradePort, IPositionView, IStateStore) are intentionally       |
-//| DEFERRED to their owning SPECs because their payload types        |
+//| DEFERRED to their owning SPECs because their payload types       |
 //| (TradeIntent, GuardResult, ledger snapshots) are not built yet:  |
 //|   - ITradePort / GuardResult / TradeIntent -> @spec: SPEC-03     |
 //|   - IPositionView                          -> @spec: SPEC-04     |
@@ -47,7 +47,7 @@ interface IClock
 //+------------------------------------------------------------------+
 interface ILogSink
   {
-   void Write(const int level, const string category, const string message);
+   void Write(const ENUM_LOG_LEVEL level, const string category, const string message);
   };
 
 //+------------------------------------------------------------------+
@@ -77,7 +77,7 @@ struct BenchmarkBaseline
   {
    string scenario;               // benchmark scenario name
    long   baseline_memory;        // memory before component under test
-   long   component_memory_delta; // measured delta for per-EA budget
+   long   component_memory_delta; // measured delta (MB); negative = noise/GC, not savings
    string timing_source;          // runtime timing source used
   };
 
@@ -106,10 +106,10 @@ private:
    string m_last;
 public:
                      CapturingLogSink(void) { m_count = 0; m_last = ""; }
-   void              Write(const int level, const string category, const string message) override
+   void              Write(const ENUM_LOG_LEVEL level, const string category, const string message) override
      {
       m_count++;
-      m_last = StringFormat("[%d] %s: %s", level, category, message);
+      m_last = StringFormat("[%d] %s: %s", (int)level, category, message);
      }
    int               Count(void) const { return(m_count); }
    string            Last(void) const  { return(m_last); }

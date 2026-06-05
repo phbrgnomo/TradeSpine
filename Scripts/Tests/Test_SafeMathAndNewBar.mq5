@@ -22,24 +22,32 @@
 //+------------------------------------------------------------------+
 bool Test_SafeMath_Finite()
   {
-   bool ok = true;
-   double big = DBL_MAX;
-   double inf = big * 2.0;        // +inf
-   double nan = MathLog(-1.0);    // nan
+    bool ok = true;
+    double big = DBL_MAX;
+    double inf = big * 2.0;        // +inf
+    double nan = MathLog(-1.0);    // nan
 
-   ok &= Check(SafeMath::IsFinite(1.5),        "IsFinite accepts a normal double");
-   ok &= Check(SafeMath::IsFinite(0.0),        "IsFinite accepts zero");
-   ok &= CheckFalse(SafeMath::IsFinite(inf),   "IsFinite rejects +inf");
-   ok &= CheckFalse(SafeMath::IsFinite(-inf),  "IsFinite rejects -inf");
-   ok &= CheckFalse(SafeMath::IsFinite(nan),   "IsFinite rejects NaN");
+    ok &= Check(SafeMath::IsFinite(1.5),        "IsFinite accepts a normal double");
+    ok &= Check(SafeMath::IsFinite(0.0),        "IsFinite accepts zero");
+    ok &= CheckFalse(SafeMath::IsFinite(inf),   "IsFinite rejects +inf");
+    ok &= CheckFalse(SafeMath::IsFinite(-inf),  "IsFinite rejects -inf");
+    ok &= CheckFalse(SafeMath::IsFinite(nan),   "IsFinite rejects NaN");
 
-   ok &= Check(SafeMath::EqualDoubles(0.1 + 0.2, 0.3, 1e-9),
-               "EqualDoubles handles 0.1+0.2==0.3 within tol");
-   ok &= CheckFalse(SafeMath::EqualDoubles(1.0, 1.1, 1e-9),
-                    "EqualDoubles separates 1.0 and 1.1");
-   ok &= CheckFalse(SafeMath::EqualDoubles(nan, nan, 1e-9),
-                    "EqualDoubles rejects NaN operands");
-   return(ok);
+    ok &= Check(SafeMath::EqualDoubles(0.1 + 0.2, 0.3, 1e-9),
+                "EqualDoubles handles 0.1+0.2==0.3 within tol");
+    ok &= CheckFalse(SafeMath::EqualDoubles(1.0, 1.1, 1e-9),
+                      "EqualDoubles separates 1.0 and 1.1");
+    ok &= CheckFalse(SafeMath::EqualDoubles(nan, nan, 1e-9),
+                      "EqualDoubles rejects NaN operands");
+
+    // Tolerance must itself be finite and non-negative.
+    ok &= CheckFalse(SafeMath::EqualDoubles(1.0, 1.0, inf),
+                      "EqualDoubles rejects +inf tolerance (would make all finite values equal)");
+    ok &= CheckFalse(SafeMath::EqualDoubles(1.0, 1.0, nan),
+                      "EqualDoubles rejects NaN tolerance");
+    ok &= CheckFalse(SafeMath::EqualDoubles(1.0, 1.0, -1e-9),
+                      "EqualDoubles rejects negative tolerance");
+    return(ok);
   }
 
 //+------------------------------------------------------------------+
@@ -157,6 +165,57 @@ bool Test_SafeMath_LotGridFixtures()
                      "NormalizeLotRaw rejects 0.5 below minimum 1.0");
    ok &= CheckEqualD(SafeMath::NormalizeLotRaw(200.0, 1.0, 100.0, 1.0), 100.0, 1e-9,
                      "NormalizeLotRaw clamps 200.0 down to max 100.0");
+   // M2 fixture: vmax=10.1 is off the vmin=1.0 / vstep=0.25 grid.
+   // Largest grid point <= 10.1: 1.0 + 36*0.25 = 10.0
+   ok &= CheckEqualD(SafeMath::NormalizeLotRaw(200.0, 1.0, 10.1, 0.25), 10.0, 1e-9,
+                     "NormalizeLotRaw clamps to largest grid point when vmax is off-grid");
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| CNewBarDetector: deterministic coverage via IsNewBar(datetime).  |
+//| No system calls, no skip guard — runs regardless of terminal     |
+//| history. Covers: unavailable context, first-call, same-bar,      |
+//| bar-transition, backwards-time (sync anomaly), and Reset.        |
+//+------------------------------------------------------------------+
+bool Test_NewBarDetector_Deterministic()
+  {
+   bool ok = true;
+   CNewBarDetector det;
+
+   // t=0: unavailable context -> false, state unchanged
+   ok &= CheckFalse(det.IsNewBar((datetime)0),
+                    "IsNewBar(0) returns false: unavailable context");
+   ok &= Check(det.GetLastBarTime() == 0,
+               "State unchanged after unavailable-context call");
+
+   // First valid time: first call after arming
+   datetime t1 = D'2026.01.02 09:00';
+   ok &= Check(det.IsNewBar(t1), "IsNewBar(t1) true: first call after arming");
+   ok &= Check(det.GetLastBarTime() == t1,
+               "GetLastBarTime tracks first bar open time");
+
+   // Same time: no transition
+   ok &= CheckFalse(det.IsNewBar(t1),
+                    "IsNewBar(t1) false: same bar time, no transition");
+
+   // Advanced time: bar transition
+   datetime t2 = D'2026.01.02 09:01';
+   ok &= Check(det.IsNewBar(t2), "IsNewBar(t2) true: bar advanced");
+   ok &= Check(det.GetLastBarTime() == t2,
+               "GetLastBarTime tracks second bar open time");
+
+   // Backwards time: sync anomaly, state unchanged
+   datetime tback = D'2026.01.02 08:59';
+   ok &= CheckFalse(det.IsNewBar(tback),
+                    "IsNewBar(tback) false: backwards time is sync anomaly");
+   ok &= Check(det.GetLastBarTime() == t2,
+               "State unchanged after backwards-time call");
+
+   // Reset then re-arm
+   det.Reset();
+   ok &= Check(det.GetLastBarTime() == 0, "Reset clears stored bar time");
+   ok &= Check(det.IsNewBar(t1), "IsNewBar(t1) true again after Reset");
    return(ok);
   }
 
@@ -166,7 +225,8 @@ bool Test_SafeMath_LotGridFixtures()
 bool test_core_runtime_and_configuration_unit_contract()
   {
    return(Test_SafeMath_Finite() && Test_SafeMath_PriceGrid() &&
-          Test_SafeMath_LotGrid() && Test_SafeMath_LotGridFixtures());
+          Test_SafeMath_LotGrid() && Test_SafeMath_LotGridFixtures() &&
+          Test_NewBarDetector_Deterministic());
   }
 bool test_core_runtime_and_configuration_aa68_e2e() { return(Test_NewBarDetector()); }
 bool test_core_runtime_and_configuration_b37d_e2e() { return(Test_SafeMath_PriceGrid()); }
@@ -184,6 +244,7 @@ int OnStart()
    Test_SafeMath_PriceGrid();
    Test_SafeMath_LotGrid();
    Test_SafeMath_LotGridFixtures();
+   Test_NewBarDetector_Deterministic();
    Test_NewBarDetector();
    bool pass = ReportSummary("Test_SafeMathAndNewBar");
    if(!pass)                return(1);

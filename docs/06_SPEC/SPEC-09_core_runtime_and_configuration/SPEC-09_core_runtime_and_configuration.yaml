@@ -54,6 +54,18 @@ interfaces:
       description: "Time source seam for broker time, local test time, timeout checks, and deterministic test advancement."
       errors:
         - "None; unavailable runtime time sources are surfaced by concrete implementations."
+    - name: "ILogSink"
+      type: "interface"
+      signature: "interface ILogSink"
+      description: "Diagnostics seam consumed by Profiler and future evidence sinks. Accepts ENUM_LOG_LEVEL for compile-time severity enforcement. Concrete CSV/journal sinks arrive with IPLAN-10+."
+      errors:
+        - "None; concrete implementations are responsible for surfacing write failures."
+    - name: "ENUM_LOG_LEVEL"
+      type: "enum"
+      signature: "enum ENUM_LOG_LEVEL"
+      description: "Log severity levels used by ILogSink: LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR."
+      errors:
+        - "None."
     - name: "CommonInputs"
       type: "struct"
       signature: "struct CommonInputs"
@@ -213,7 +225,7 @@ tdd_contracts:
     - path: "Scripts/Tests/Test_CommonInputs.mq5"
       covers: "Input validation, v1/v2 boundary rejection, and strategy guide alignment."
     - path: "Scripts/Tests/Test_OptContextProfiler.mq5"
-      covers: "Tester/optimization policy, diagnostic gating, and profile sample enablement."
+      covers: "Tester/optimization policy, diagnostic gating, ILogSink severity contract, ENUM_LOG_LEVEL usage, and profile sample enablement."
     - path: "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
       covers: "Numeric normalization, grid snapping, finite checks, and new-bar detection."
 

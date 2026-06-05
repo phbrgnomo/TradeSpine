@@ -1,11 +1,11 @@
 //+------------------------------------------------------------------+
-//|                                                  CommonInputs.mqh |
-//|              Copyright 2026, Paulo Henrique Barreto Reboucas      |
+//|                                                 CommonInputs.mqh |
+//|              Copyright 2026, phbr                                |
 //|                                                                  |
 //| @code: Include/Core/CommonInputs.mqh                             |
 //| @spec: SPEC-09  @tdd: TDD.09.04.f745  @iplan: IPLAN-09           |
 //|                                                                  |
-//| Canonical framework input binding and v1/v2 placeholder gate.   |
+//| Canonical framework input binding and v1/v2 placeholder gate.    |
 //|                                                                  |
 //| Design notes:                                                    |
 //|  - Account mode is NOT an input. The framework reads             |
@@ -60,6 +60,24 @@ struct CommonInputs
 
    // --- Sizing ---
    ENUM_SIZING_MODE sizing_mode;
+
+   //-------------------------------------------------------------------
+   //| Default constructor: explicit invalid sentinels so any          |
+   //| incompletely-filled binding fails Validate() rather than        |
+   //| silently passing with MQL5's arbitrary uninitialized values.    |
+   //|  magic=0           -> rejected by the magic guard               |
+   //|  sizing_mode=-1    -> rejected by the whitelist gate            |
+   //| All other fields are set to safe/neutral defaults.              |
+   //-------------------------------------------------------------------
+   CommonInputs(void)
+     {
+      magic              = 0;
+      day_trade_mode     = false;
+      close_mins_before  = 0;
+      entry_window_start = 0;
+      entry_window_end   = 0;
+      sizing_mode        = (ENUM_SIZING_MODE) - 1;
+     }
 
    //-------------------------------------------------------------------
    //| Validate this binding against v1 scope.                         |

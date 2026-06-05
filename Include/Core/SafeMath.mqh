@@ -33,6 +33,8 @@ bool EqualDoubles(const double a, const double b, const double tolerance = 1e-9)
   {
    if(!IsFinite(a) || !IsFinite(b))
       return(false);
+   if(!IsFinite(tolerance) || tolerance < 0.0)
+      return(false);
    return(MathAbs(a - b) <= tolerance);
   }
 
@@ -107,7 +109,14 @@ double NormalizeLotRaw(const double lots, const double vmin, const double vmax, 
    if(snapped < vmin)
       return(0.0);
    if(snapped > vmax)
-      snapped = vmax;
+     {
+      // Clamp to the largest grid point on the vmin/vstep grid that is <= vmax.
+      // Direct assignment of vmax is wrong when vmax is not on the grid.
+      long max_steps = (long)MathFloor((vmax - vmin) / vstep + 1e-9);
+      snapped = vmin + (double)max_steps * vstep;
+      if(snapped < vmin)
+         return(0.0);
+     }
 
    //--- Count decimal digits needed to represent vstep exactly.
    //--- Uses round-trip check (multiply by 10 until integer) so steps
