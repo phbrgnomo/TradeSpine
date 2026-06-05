@@ -189,7 +189,7 @@ session_handoff:
 traceability:
   upstream:
     spec_references: ["@spec: SPEC-09"]
-    tdd_references: ["@tdd: TDD.09.04.f745"]
+    tdd_references: ["@tdd: TDD.09.04.f745", "@tdd: TDD.09.04.8050", "@tdd: TDD.09.04.bb66"]
     brd_references: ["@brd: BRD.01.07.88a6", "@brd: BRD.01.08.0ce5"]
     prd_references: ["@prd: PRD.01.09.841a", "@prd: PRD.01.09.3092", "@prd: PRD.01.14.8720", "@prd: PRD.01.13.edc4"]
     ears_references: ["@ears: EARS.01.03.0c0a", "@ears: EARS.01.03.c5b7", "@ears: EARS.01.03.ec72", "@ears: EARS.01.03.8044"]

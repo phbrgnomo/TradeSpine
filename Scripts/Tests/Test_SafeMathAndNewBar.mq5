@@ -169,6 +169,11 @@ bool Test_SafeMath_LotGridFixtures()
    // Largest grid point <= 10.1: 1.0 + 36*0.25 = 10.0
    ok &= CheckEqualD(SafeMath::NormalizeLotRaw(200.0, 1.0, 10.1, 0.25), 10.0, 1e-9,
                      "NormalizeLotRaw clamps to largest grid point when vmax is off-grid");
+   // step=0.001 (B3-style lot step): pins the scale-aware nudge behavior
+   ok &= CheckEqualD(SafeMath::NormalizeLotRaw(1.001, 0.001, 100.0, 0.001), 1.001, 1e-9,
+                     "NormalizeLotRaw on-grid value 1.001 with step=0.001");
+   ok &= CheckEqualD(SafeMath::NormalizeLotRaw(1.0014, 0.001, 100.0, 0.001), 1.001, 1e-9,
+                     "NormalizeLotRaw snaps 1.0014 down to 1.001 with step=0.001");
    return(ok);
   }
 

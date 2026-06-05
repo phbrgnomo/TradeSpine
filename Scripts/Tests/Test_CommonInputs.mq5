@@ -112,6 +112,11 @@ bool Test_DayTradeMode()
    ci.entry_window_end   = D'2026.01.02 08:00'; // later date but earlier time-of-day
    ok &= CheckFalse(ci.Validate().ok,
                     "Different dates, reversed time order (08:00 < 09:00): rejected despite later date");
+
+   ci.entry_window_start = D'2026.01.01 09:00';
+   ci.entry_window_end   = D'2026.01.01 09:00'; // same time — equal, not "after"
+   ok &= CheckFalse(ci.Validate().ok,
+                    "Equal start and end times are rejected (end must be strictly after start)");
    return(ok);
   }
 

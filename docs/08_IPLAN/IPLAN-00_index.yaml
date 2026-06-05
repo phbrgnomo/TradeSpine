@@ -173,7 +173,7 @@ registry:
       files_done: 0
       skipped: []
       skip_reasons: {}
-      depends_on: ["IPLAN-09"]
+      depends_on: ["IPLAN-09", "IPLAN-03", "IPLAN-04", "IPLAN-05"]
       blocks: ["IPLAN-02", "IPLAN-03", "IPLAN-04", "IPLAN-05", "IPLAN-06", "IPLAN-07", "IPLAN-10"]
       parallel_with: []
       file_path: "IPLAN-11_testing_support_and_harnesses.yaml"
@@ -222,11 +222,11 @@ execution_path:
   tiers:
     - tier: 1
       label: "Core Runtime"
-      status: "NOT_STARTED"
+      status: "COMPLETED"
       plans: ["IPLAN-09"]
     - tier: 2
       label: "Testing Foundation"
-      status: "NOT_STARTED"
+      status: "BLOCKED"
       plans: ["IPLAN-11"]
     - tier: 3
       label: "Persistence and Market Foundations"
@@ -469,6 +469,10 @@ status_history:
         to: "Draft"
         date: "2026-06-03"
         reason: "TDD-11 audit passed 95/100 and reached IPLAN-Ready."
+      - from: "Draft"
+        to: "Draft"
+        date: "2026-06-05"
+        reason: "CHG-05: depends_on corrected to include IPLAN-03/04/05; Tier 2 status set to BLOCKED until IPLAN-03/04/05 complete."
   - plan_id: "IPLAN-12"
     transitions:
       - from: "BACKLOG"

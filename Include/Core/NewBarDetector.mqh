@@ -27,6 +27,8 @@ private:
 public:
   CNewBarDetector(void)
     {
+      // Binds to _Symbol/_Period (chart context). For multi-symbol use,
+      // call SetSymbolAndTimeframe() before the first IsNewBar() call.
       m_symbol        = _Symbol;
       m_timeframe     = (ENUM_TIMEFRAMES)_Period;
       m_last_bar_time = 0;
@@ -66,6 +68,14 @@ public:
    //--- hot-path use: it reads a single metadata field rather than
    //--- accessing the timeseries buffer (pattern from CisNewBar/IsNewBar
    //--- community reference implementations).
+   //---
+   //--- NOTE: When SeriesInfoInteger returns false (terminal not yet synced,
+   //--- history not loaded), state is unchanged and false is returned.
+   //--- On the first successful read after a sync gap, m_last_bar_time is 0,
+   //--- so the call will return true for whatever bar is current — this is
+   //--- intentional: the "first confirmed bar" event. Callers that have already
+   //--- acted on a bar and then lost/regained sync should call Reset() on
+   //--- reconnect to suppress a spurious re-fire.
   bool IsNewBar(void)
     {
       datetime t = 0;

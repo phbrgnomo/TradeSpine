@@ -103,7 +103,9 @@ double NormalizeLotRaw(const double lots, const double vmin, const double vmax, 
    if(vstep <= 0.0 || vmin <= 0.0 || vmax < vmin)
       return(0.0);
 
-   long   steps   = (long)MathFloor((lots - vmin) / vstep + 1e-9);
+   double nudge   = vstep * 1e-6;
+   double ratio   = (lots - vmin) / vstep;
+   long   steps   = ratio > 9.0e18 ? (long)9.0e18 : (long)MathFloor(ratio + nudge);
    double snapped = vmin + (double)steps * vstep;
 
    if(snapped < vmin)
@@ -112,7 +114,7 @@ double NormalizeLotRaw(const double lots, const double vmin, const double vmax, 
      {
       // Clamp to the largest grid point on the vmin/vstep grid that is <= vmax.
       // Direct assignment of vmax is wrong when vmax is not on the grid.
-      long max_steps = (long)MathFloor((vmax - vmin) / vstep + 1e-9);
+      long max_steps = (long)MathFloor((vmax - vmin) / vstep + nudge);
       snapped = vmin + (double)max_steps * vstep;
       if(snapped < vmin)
          return(0.0);
@@ -123,7 +125,7 @@ double NormalizeLotRaw(const double lots, const double vmin, const double vmax, 
    //--- like 0.25 yield 2 digits, not 1 as the old s<1.0 loop did.
    int digits = 0;
    double s = vstep;
-   while(MathAbs(MathRound(s) - s) > 1e-9 && digits < 8)
+   while(MathAbs(MathRound(s) - s) > vstep * 1e-9 && digits < 8)
      {
       s *= 10.0;
       digits++;
@@ -161,10 +163,11 @@ bool IsValidLot(const string symbol, const double lots)
    double vmin  = SymbolInfoDouble(symbol, SYMBOL_VOLUME_MIN);
    double vmax  = SymbolInfoDouble(symbol, SYMBOL_VOLUME_MAX);
    double vstep = SymbolInfoDouble(symbol, SYMBOL_VOLUME_STEP);
-   if(lots < vmin - 1e-9 || lots > vmax + 1e-9)
+   double tol = vstep * 1e-6;
+   if(lots < vmin - tol || lots > vmax + tol)
       return(false);
    double rem = MathMod(lots - vmin, vstep);
-   return(rem <= 1e-9 || (vstep - rem) <= 1e-9);
+   return(rem <= tol || (vstep - rem) <= tol);
   }
   } // namespace SafeMath
 

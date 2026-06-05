@@ -63,14 +63,14 @@ Audience: system architects, MQL5 developers, QA reviewers, and release reviewer
 | EARS.01.03.a71c | Diagnostic log separation | WHILE diagnostic logging is enabled, THE logging components SHALL keep strategy and framework diagnostic logs separate from trade evaluation records WITHIN all evidence outputs. | @brd: BRD.01.07.8e15 \| @prd: PRD.01.09.c622 |
 | EARS.01.03.6bda | Halt safety state | WHILE a strategy instance is in HALT, THE framework SHALL block non-emergency trading helpers and preserve last-known state WITHIN the persisted strategy lifecycle. | @brd: BRD.01.07.a94e \| @prd: PRD.01.09.7608 |
 | EARS.01.03.c5b7 | Idle path low I/O | WHILE the framework processes idle ticks without trade work, THE runtime SHALL perform no GV writes, history scans, chart redraws, or order scans WITHIN the idle tick path. | @brd: BRD.01.07.bf02 \| @prd: PRD.01.09.3092 |
-| EARS.01.03.5e92 | Futures risk percent sizing | WHILE calculating SIZING_RISK_PERCENT for a v1 futures strategy, THE position sizer SHALL use initialized symbol information to calculate broker-valid lots from risk percent and stop-loss distance WITHIN the order calculation pipeline. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.60ad |
+| EARS.01.03.5e92 | Futures risk-pct-equity sizing | WHILE calculating SIZING_RISK_PCT_EQUITY for a v1 futures strategy, THE position sizer SHALL use initialized symbol information to calculate broker-valid lots from risk percent and stop-loss distance WITHIN the order calculation pipeline. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.60ad |
 | EARS.01.03.bc8b | Fixed lot sizing | WHILE calculating SIZING_FIXED_LOT for a v1 futures strategy, THE position sizer SHALL normalize fixed lots against initialized symbol information WITHIN the order calculation pipeline. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.60ad |
 
 ### Optional
 
 | ID | Name | Statement | Traceability |
 | --- | --- | --- | --- |
-| EARS.01.03.932d | Equity sizing placeholder | WHERE SIZING_FIXED_CASH or SIZING_PCT_EQUITY is selected in v1, THE position sizer SHALL reject the sizing request as a visible v2 placeholder. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.60ad |
+| EARS.01.03.932d | Equity sizing placeholder | WHERE SIZING_FIXED_CASH or SIZING_VALUE_PCT_EQUITY is selected in v1, THE position sizer SHALL reject the sizing request as a visible v2 placeholder. | @brd: BRD.01.07.69ef \| @prd: PRD.01.09.60ad |
 | EARS.01.03.f562 | Strategy-scoped panic | WHERE InpPanicStop is true for a v1 hedging strategy instance, THE kill-switch SHALL close only that strategy instance's owned tickets. | @brd: BRD.01.07.a94e \| @prd: PRD.01.09.4fb4 |
 | EARS.01.03.9abb | Doxygen coverage gate | WHERE Doxygen remains part of the implementation standard, THE release reviewer SHALL verify API documentation coverage before v1 release sign-off. | @brd: BRD.01.07.717b \| @prd: PRD.01.09.4c66 |
 

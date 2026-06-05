@@ -22,7 +22,7 @@ document_control:
   component: "Test doubles, clocks, brokers, stores, and scenario harnesses"
   complexity: 4
   estimated_files: 10
-  session_count: 0
+  session_count: 1
   readiness_gate: "TDD-11 audit PASS 95/100"
   source_inputs:
     - "../07_TDD/TDD-11_testing_support_and_harnesses/TDD-11_testing_support_and_harnesses.yaml"
@@ -140,7 +140,7 @@ session_handoff:
       agent: "Codex IPLAN autopilot"
       files_touched: []
       partial_work: "No implementation started; this seed session only created the execution plan."
-      blockers: "Core clock/log/runtime fakes may start after IPLAN-09. Broker, position, and store fakes must use owner interfaces from IPLAN-03, IPLAN-04, and IPLAN-05 respectively."
+      blockers: "Clock/log/runtime fakes (FakeClock, FakeCapturingLogSink) may start after IPLAN-09 (complete). FakeTradePort requires ITradePort from IPLAN-03. FakeStateStore requires IStateStore from IPLAN-05. IPositionView requires IPLAN-04. Do not start implementation until IPLAN-03, IPLAN-04, and IPLAN-05 are complete. See CHG-05."
       next_session_directive: "Start with Scripts/Tests/Test_TestSupportClock.mq5 and Include/Testing/Assert.mqh, then wire RunAllTests.mq5 to include each executable TDD-11 test entry point."
       validation_results:
         tests_passing: null

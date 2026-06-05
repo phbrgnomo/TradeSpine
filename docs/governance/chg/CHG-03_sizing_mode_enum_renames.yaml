@@ -122,12 +122,17 @@ implementation:
     - step: 6
       action: "Review and update SPEC-07 and TDD-07 identifier references"
       artifact: "docs/06_SPEC/SPEC-07_*, docs/07_TDD/TDD-07_*"
-      status: Pending
+      status: Completed
+      rationale: |
+        Verified by grep on 2026-06-05: SPEC-07 and TDD-07 canonical YAMLs contain
+        no SIZING_RISK_PERCENT or SIZING_PCT_EQUITY enum identifiers. Those files use
+        prose descriptions ('risk-percent sizing', 'risk_percent' field names) that
+        are not enum literals and do not require a rename. No changes were needed.
 
 verification:
   checks:
     - "All three IPLAN-09 test scripts compile and pass in MT5 with new names"
-    - "grep for SIZING_RISK_PERCENT and SIZING_PCT_EQUITY in docs/ returns only archive/ and *.readable.md generated files"
+    - "grep for SIZING_RISK_PERCENT and SIZING_PCT_EQUITY in docs/ returns only archive/, *.readable.md generated files, and IPLAN-09 session handoff body (lines 169-170, acceptable change-note quotations of the rename)"
     - "EARS-01 body text uses SIZING_VALUE_PCT_EQUITY and SIZING_RISK_PCT_EQUITY"
     - "SPEC-09 description updated from 'risk-percent' to 'risk-pct-equity'"
     - "PRD-01 acceptance target uses SIZING_RISK_PCT_EQUITY"

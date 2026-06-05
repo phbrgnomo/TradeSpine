@@ -71,6 +71,11 @@ bool CheckFalse(const bool cond, const string msg)
 //+------------------------------------------------------------------+
 bool CheckEqualD(const double a, const double b, const double tol, const string msg)
   {
+   if(!MathIsValidNumber(a) || !MathIsValidNumber(b))
+     {
+      PrintFormat("    non-finite operand: a=%.10g b=%.10g", a, b);
+      return(Check(false, msg));
+     }
    bool ok = (MathAbs(a - b) <= tol);
    if(!ok)
       PrintFormat("    expected %.10g, got %.10g (tol %.10g)", b, a, tol);

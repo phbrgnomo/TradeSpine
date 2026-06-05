@@ -15,7 +15,7 @@ Maintained per ADR-06 and PRD §7c.
 | Field | Value |
 |---|---|
 | Copy date | 2026-06-05 |
-| Terminal build | _(fill in from MT5 Help → About)_ |
+| Terminal build | 5883 |
 | Platform | MetaTrader 5 |
 
 ## Files NOT vendored yet (planned, see PRD §7c)

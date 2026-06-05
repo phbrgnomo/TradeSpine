@@ -108,9 +108,10 @@ struct CommonInputs
          int end_tod   = (int)(entry_window_end   % 86400);
          if(end_tod <= start_tod)
            {
-            r.message = "Invalid entry window: entry_window_end time must be after "
-                        "entry_window_start time. Only HH:MM is compared; the date "
-                        "component is ignored.";
+            r.message = "Invalid entry window: entry_window_end time must be strictly "
+                        "after entry_window_start time (HH:MM comparison; date ignored). "
+                        "Note: windows crossing midnight (e.g., 22:00-02:00) are not "
+                        "supported in day_trade_mode v1.";
             return(r);
            }
         }

@@ -93,7 +93,7 @@ sequenceDiagram
 
 | Tier | Label | Plans | Status |
 | --- | --- | --- | --- |
-| 1 | Core Runtime | IPLAN-09 | NOT_STARTED |
+| 1 | Core Runtime | IPLAN-09 | COMPLETED |
 | 2 | Testing Foundation | IPLAN-11 | NOT_STARTED |
 | 3 | Persistence and Market Foundations | IPLAN-05, IPLAN-06 | NOT_STARTED |
 | 4 | State, Behavior, and Optional Services | IPLAN-04, IPLAN-07, IPLAN-10 | NOT_STARTED |

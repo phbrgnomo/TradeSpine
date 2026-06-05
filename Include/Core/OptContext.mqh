@@ -49,6 +49,8 @@ class OptContext
       {
         m_is_tester           = mode.is_tester;
         m_is_optimization     = mode.is_optimization;
+        // Optimization can only occur inside the tester; normalize contradictory input.
+        if(m_is_optimization) m_is_tester = true;
         m_is_visual           = false;
         m_diagnostics_enabled = mode.is_optimization ? false : mode.diagnostics_enabled;
       }

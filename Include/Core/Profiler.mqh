@@ -115,7 +115,10 @@ public:
       int idx = FindScope(scope);
       if(idx < 0 || m_start_us[idx] == 0)
          return;
-      m_elapsed_us[idx] = (long)(GetMicrosecondCount() - m_start_us[idx]);
+      ulong now_us = GetMicrosecondCount();
+      if(now_us < m_start_us[idx])   // clock anomaly / wrap (extremely rare on modern OS)
+        { m_start_us[idx] = 0; return; }
+      m_elapsed_us[idx] = (long)(now_us - m_start_us[idx]);
       m_sample_on[idx]  = true;
       m_start_us[idx]   = 0; // prevent duplicate Stop() from overwriting the sample
      }
@@ -192,9 +195,17 @@ public:
   };
 
 //+------------------------------------------------------------------+
-//| Optional macro front-end over a shared instance. Guarded with   |
-//| IsActive() so an inactive profiler does zero work: the scope     |
-//| argument is not evaluated and no method call occurs.             |
+//| Optional macro front-end over a shared instance.                |
+//|                                                                 |
+//| OWNERSHIP CONTRACT for g_profiler:                              |
+//|  - Assign in OnInit() to a heap-allocated or OnInit-scoped      |
+//|    Profiler instance (never a transient local variable).        |
+//|  - Set g_profiler = NULL before the pointed-to instance is      |
+//|    destroyed (latest in OnDeinit). The macros null-guard so an  |
+//|    unassigned pointer is a safe no-op, but a dangling pointer   |
+//|    is undefined behavior.                                       |
+//|  - All macros short-circuit on IsActive()==false; the scope     |
+//|    argument is not evaluated when the profiler is inactive.     |
 //+------------------------------------------------------------------+
 Profiler *g_profiler = NULL;
 

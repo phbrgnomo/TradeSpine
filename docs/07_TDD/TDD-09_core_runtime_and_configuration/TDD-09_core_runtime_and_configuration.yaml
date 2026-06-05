@@ -7,7 +7,7 @@ id: TDD-09
 title: "Core Runtime and Configuration Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-06-02T00:00:00-03:00"
+last_updated: "2026-06-04T00:00:00-03:00"
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -23,9 +23,9 @@ metadata:
 
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-06-02T00:00:00-03:00"
+  last_updated: "2026-06-04T00:00:00-03:00"
   author: "Codex"
   component: "OptContext, SafeMath, Profiler, CommonInputs, CNewBarDetector"
   spec_reference: "@spec: SPEC-09"
@@ -72,7 +72,7 @@ test_mapping:
       description: "Performance budgets are evidenced"
       tests:
         - type: unit
-          file: "Scripts/Tests/Test_CommonInputs.mq5"
+          file: "Scripts/Tests/Test_OptContextProfiler.mq5"
           function: "test_core_runtime_and_configuration_b37d_unit"
           status: completed
         - type: integration

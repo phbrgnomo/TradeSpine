@@ -1,0 +1,113 @@
+---
+id: CHG-05
+title: "IPLAN-11 Testing Support — Correct Dependency Sequence"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-05"
+  change_level:
+    value: C2
+  change_source:
+    value: feedback
+
+change_control:
+  chg_id: "CHG-05"
+  status: Approved
+  change_level: C2
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null
+  author: "phbr"
+  date_proposed: "2026-06-05T00:00:00-03:00"
+  date_approved: "2026-06-05T00:00:00-03:00"
+  date_implemented: "2026-06-05T00:00:00-03:00"
+  supersedes: []
+
+change_description:
+  what: |
+    IPLAN-11 (Testing Support and Harnesses) consumes three interfaces that are
+    not published by IPLAN-09:
+      - ITradePort and GuardResult  →  published by IPLAN-03
+      - IPositionView and account/position context  →  published by IPLAN-04
+      - IStateStore and persistence contracts  →  published by IPLAN-05
+    The original IPLAN-00 registry entry listed only IPLAN-09 in depends_on.
+    This change corrects the dependency list to:
+      depends_on: ["IPLAN-09", "IPLAN-03", "IPLAN-04", "IPLAN-05"]
+    It also updates Tier 2 status in the execution_path from NOT_STARTED to BLOCKED,
+    and increments IPLAN-11 session_count to 1 to reflect the seed session that
+    created the execution plan on 2026-06-03.
+  why: |
+    Audit finding B1 in IPLAN-11.A_audit_report_v002.md: IPLAN-11 file_manifest
+    and implementation_contracts.consumed list IPLAN-03/04/05 interfaces as
+    direct dependencies, but IPLAN-00 depends_on omitted them. Starting IPLAN-11
+    implementation before IPLAN-03/04/05 complete would produce compile-failing
+    stubs (FakeTradePort implements ITradePort, FakeStateStore implements IStateStore,
+    ScenarioHarness wires IPositionView). The dependency omission also mis-ranked
+    IPLAN-11 in Tier 2 when it logically belongs after Tier 6 (IPLAN-03 completes).
+    Correcting the sequencing prevents a blocked implementation session.
+  trigger: |
+    Pre-push review-team audit on IPLAN-09 branch, 2026-06-05. The synthesizer
+    reported B1 (dependency sequencing gap) and W2 (session_count=0 with one
+    seed session recorded) as blocking findings against IPLAN-11.
+
+impact_assessment:
+  affected_layers:
+    - layer: IPLAN
+      artifacts: ["IPLAN-00", "IPLAN-11"]
+      impact: |
+        IPLAN-00: depends_on for IPLAN-11 updated to include IPLAN-03, IPLAN-04,
+        IPLAN-05. Tier 2 status changed to BLOCKED. status_history for IPLAN-11
+        updated with this change event.
+        IPLAN-11: session_count corrected to 1. Blockers text updated to name the
+        specific interface owners and reference CHG-05.
+      cascade_direction: self-contained
+  risk_level: Low
+  risk_justification: |
+    Documentation-only change. No source code, interfaces, or SPEC/TDD/EARS/BDD
+    content is altered. Adding IPLAN-03/04/05 to depends_on tightens the
+    sequencing constraint; it cannot unlock work that should be locked.
+  rollback_plan: |
+    Revert depends_on to ["IPLAN-09"] and tier 2 status back to NOT_STARTED.
+    No behavioral change to source code; rollback carries no functional risk.
+
+implementation:
+  steps:
+    - step: 1
+      action: "Update IPLAN-11 depends_on in IPLAN-00 registry to include IPLAN-03, IPLAN-04, IPLAN-05"
+      artifact: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      status: Completed
+    - step: 2
+      action: "Update Tier 2 status in IPLAN-00 execution_path from NOT_STARTED to BLOCKED"
+      artifact: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      status: Completed
+    - step: 3
+      action: "Add status_history transition for IPLAN-11 documenting CHG-05 in IPLAN-00"
+      artifact: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      status: Completed
+    - step: 4
+      action: "Correct IPLAN-11 session_count from 0 to 1"
+      artifact: "docs/08_IPLAN/IPLAN-11_testing_support_and_harnesses.yaml"
+      status: Completed
+    - step: 5
+      action: "Update IPLAN-11 blockers text to name interface owners and reference CHG-05"
+      artifact: "docs/08_IPLAN/IPLAN-11_testing_support_and_harnesses.yaml"
+      status: Completed
+
+verification:
+  checks:
+    - "IPLAN-00 depends_on for IPLAN-11 lists IPLAN-09, IPLAN-03, IPLAN-04, IPLAN-05"
+    - "IPLAN-00 Tier 2 status is BLOCKED"
+    - "IPLAN-11 session_count is 1"
+    - "IPLAN-11 blockers text names IPLAN-03/04/05 as owners of required interfaces"
+
+traceability:
+  tags:
+    - "@iplan: IPLAN-00"
+    - "@iplan: IPLAN-11"
+    - "@iplan: IPLAN-03"
+    - "@iplan: IPLAN-04"
+    - "@iplan: IPLAN-05"
+  upstream:
+    iplan_references: ["@iplan: IPLAN-11", "@iplan: IPLAN-00"]
+    spec_references: ["@spec: SPEC-11"]

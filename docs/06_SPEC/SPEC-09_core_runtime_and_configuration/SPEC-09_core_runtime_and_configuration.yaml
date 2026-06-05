@@ -7,14 +7,14 @@ id: SPEC-09
 title: Core Runtime and Configuration
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-04T00:00:00-03:00"
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-04T00:00:00-03:00"
   author: "Codex"
   component: "OptContext, SafeMath, Profiler, CommonInputs, CNewBarDetector"
   tdd_ready_score: "93/100"
@@ -190,6 +190,12 @@ behavior:
       source: "@ears: EARS.01.03.8044"
     - rule: "Memory-budget evidence SHALL use a documented baseline-and-delta harness rather than claiming exact per-object memory attribution."
       source: "@ears: EARS.01.03.8044"
+    - id: "VR-ACCT-01"
+      rule: |
+        THE framework SHALL fail initialization when AccountInfoInteger(ACCOUNT_MARGIN_MODE)
+        is not ACCOUNT_MARGIN_MODE_RETAIL_HEDGING. Account mode is a broker account property,
+        not a user input; it is read at OnInit() and checked before any CommonInputs validation.
+      source: "@ears: EARS.01.03.5d1b"
   state_transitions:
     - from: "RuntimeUnbound"
       to: "RuntimeReady"

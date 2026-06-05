@@ -115,6 +115,8 @@ bool Test_ProfilerActiveRecords()
    ok &= Check(s.elapsed_us >= 0, "Active sample elapsed is non-negative");
    prof.PrintResults();
    ok &= Check(sink.Count() >= 1, "Active profiler emitted evidence to the sink");
+   ok &= Check(StringFind(sink.Last(), "[1]") >= 0,
+               "PrintResults writes at LOG_INFO (level 1)");
    return(ok);
   }
 
@@ -194,6 +196,8 @@ bool Test_ProfilerScopeOverflow()
    prof.Start("overflow_trigger"); // one beyond cap
    ok &= Check(sink.Count() > before,
                "Overflow diagnostic emitted when scope cap exceeded");
+   ok &= Check(StringFind(sink.Last(), "[2]") >= 0,
+               "Overflow diagnostic written at LOG_WARN (level 2)");
 
    prof.Start("overflow_trigger2"); // second overflow — no second diagnostic
    ok &= CheckEqualL((long)(sink.Count() - before), 1,
@@ -269,6 +273,7 @@ bool test_core_runtime_and_configuration_integration_contract()
           Test_MacroNoEvalWhenInactive());
   }
 bool test_core_runtime_and_configuration_aa68_integration() { return(Test_TesterVsLive()); }
+bool test_core_runtime_and_configuration_b37d_unit()        { return(Test_ProfilerNoWriteWhenGated()); }
 bool test_core_runtime_and_configuration_b37d_integration() { return(Test_ProfilerActiveRecords() && Test_ProfilerMemoryEvidence()); }
 bool test_core_runtime_and_configuration_cb03_integration() { return(Test_OptimizationGated()); }
 
