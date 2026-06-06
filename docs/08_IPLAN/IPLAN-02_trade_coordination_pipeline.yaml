@@ -27,8 +27,8 @@ document_control:
   source_inputs:
     - "../07_TDD/TDD-02_trade_coordination_pipeline/TDD-02_trade_coordination_pipeline.yaml"
     - "../06_SPEC/SPEC-02_trade_coordination_pipeline/SPEC-02_trade_coordination_pipeline.yaml"
-    - "../../Project/PRD.md"
-    - "../../Project/architecture-diagram.html"
+    - "../archive/PRD.md"
+    - "../archive/architecture-diagram.html"
 
 file_manifest:
   files:

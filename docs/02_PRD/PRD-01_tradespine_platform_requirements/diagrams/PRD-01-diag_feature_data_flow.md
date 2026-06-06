@@ -4,7 +4,7 @@
 
 - Parent: `../PRD-01_tradespine_platform_requirements.yaml`
 - Diagram type: DFD-L2
-- Source: `../../../../Project/architecture-diagram.html`
+- Source: `../../../archive/architecture-diagram.html`
 - Created: 2026-06-01
 
 ## Overview

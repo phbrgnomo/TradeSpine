@@ -27,8 +27,8 @@ document_control:
   source_inputs:
     - "../07_TDD/TDD-05_persistence_and_audit_evidence/TDD-05_persistence_and_audit_evidence.yaml"
     - "../06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
-    - "../../Project/PRD.md"
-    - "../../Project/architecture-diagram.html"
+    - "../archive/PRD.md"
+    - "../archive/architecture-diagram.html"
 
 file_manifest:
   files:

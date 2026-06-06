@@ -17,4 +17,6 @@ jobs:
         with:
           use-quiet-mode: "yes"
           check-modified-files-only: "no"
+          folder-path: "docs"
+          file-path: "README.md"
           config-file: ".github/markdown-link-check.json"

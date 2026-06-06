@@ -7,7 +7,7 @@ id: TDD-11
 title: "Testing Support and Harnesses Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-06-02T00:00:00-03:00"
+last_updated: "2026-06-05T00:00:00-03:00"
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -25,16 +25,16 @@ document_control:
   status: Draft
   version: "1.0"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-06-02T00:00:00-03:00"
+  last_updated: "2026-06-05T00:00:00-03:00"
   author: "Codex"
-  component: "Test doubles, clocks, brokers, stores, and scenario harnesses"
+  component: "Shared test doubles, clocks, log sinks, assertions, and harness primitives"
   spec_reference: "@spec: SPEC-11"
   source_spec: "../../06_SPEC/SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.yaml"
   iplan_ready_score: "95/100"
   mode: generated
   source_inputs:
-    - "../../../Project/PRD.md"
-    - "../../../Project/architecture-diagram.html"
+    - "../../archive/PRD.md"
+    - "../../archive/architecture-diagram.html"
     - "../../00_REF/REF-01_tradespine_source_brief.md"
 
 test_pyramid:
@@ -57,11 +57,11 @@ test_mapping:
       description: "Shipped strategy authoring, porting, and packaging"
       tests:
         - type: unit
-          file: "Scripts/Tests/Support/FakeClock.mqh"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_aa68_unit"
           status: pending
         - type: integration
-          file: "Scripts/Tests/Support/FakeTradePort.mqh"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_aa68_integration"
           status: pending
         - type: e2e
@@ -72,11 +72,11 @@ test_mapping:
       description: "Missing deferred account-mode evidence blocks signoff"
       tests:
         - type: unit
-          file: "Scripts/Tests/Support/FakeClock.mqh"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_f415_unit"
           status: pending
         - type: integration
-          file: "Scripts/Tests/Support/FakeTradePort.mqh"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_f415_integration"
           status: pending
         - type: e2e
@@ -87,11 +87,11 @@ test_mapping:
       description: "Ambiguous async outcome enters halt"
       tests:
         - type: unit
-          file: "Scripts/Tests/Support/FakeClock.mqh"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_e16a_unit"
           status: pending
         - type: integration
-          file: "Scripts/Tests/Support/FakeTradePort.mqh"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_e16a_integration"
           status: pending
         - type: e2e
@@ -102,11 +102,11 @@ test_mapping:
       description: "Evidence records remain paired and separated"
       tests:
         - type: unit
-          file: "Scripts/Tests/Support/FakeClock.mqh"
+          file: "Scripts/Tests/Test_TestSupportClock.mq5"
           function: "test_testing_support_and_harnesses_d6ae_unit"
           status: pending
         - type: integration
-          file: "Scripts/Tests/Support/FakeTradePort.mqh"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_d6ae_integration"
           status: pending
         - type: e2e
@@ -117,11 +117,11 @@ test_mapping:
       description: "Performance budgets are evidenced"
       tests:
         - type: unit
-          file: "Scripts/Tests/Support/FakeClock.mqh"
+          file: "Scripts/Tests/Test_TestSupportClock.mq5"
           function: "test_testing_support_and_harnesses_b37d_unit"
           status: pending
         - type: integration
-          file: "Scripts/Tests/Support/FakeTradePort.mqh"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_b37d_integration"
           status: pending
         - type: e2e
@@ -142,21 +142,21 @@ test_cases:
     cases:
       - id: "TDD.11.04.6805"
         type: unit
-        name: "FakeTradePort returns scripted broker outcomes in order"
+        name: "Shared clock, log sink, and assertion helpers behave deterministically"
         spec_ref: "@spec: SPEC-11"
-        target: "FakeTradePort.Submit"
-        test_file: "Scripts/Tests/Support/FakeClock.mqh"
+        target: "FakeClock/FakeLogSink/TestAssert"
+        test_file: "Scripts/Tests/Test_TestSupportClock.mq5"
         test_function: "test_testing_support_and_harnesses_unit_contract"
         inputs:
           - name: fixture
             type: string
-            value: "script=[pending, fill, ambiguous]"
+            value: "time_sequence=[t0,t1,t2], log_messages=[diagnostic,evidence]"
         expected_output:
           type: contract-result
-          value: "Each Submit returns the next GuardResult and exhaustion fails the test"
+          value: "Clock advances in configured order, log sink captures required messages, and assertions report deterministic pass/fail counts"
         edge_cases:
-          - condition: "Configured retry retcodes preserve order"
-            expected: "Case remains deterministic and broker-safe."
+          - condition: "Required log message is absent"
+            expected: "Case fails through TestAssert without broker, position, or store dependencies."
   integration_tests:
     cases:
       - id: "TDD.11.04.aadd"
@@ -164,18 +164,18 @@ test_cases:
         name: "ScenarioHarness assembles fakes and evidence assertions"
         spec_ref: "@spec: SPEC-11"
         contract: "ScenarioHarness"
-        test_file: "Scripts/Tests/Support/FakeTradePort.mqh"
+        test_file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
         test_function: "test_testing_support_and_harnesses_integration_contract"
         setup:
-          - "Assemble component with deterministic fakes for broker, clock, store, symbol, and logs where required."
+          - "Assemble component with deterministic shared fakes for clock, logs, runtime, and owner-extension hooks where required."
           - "Load SPEC-defined configuration and BDD trace tags."
         action:
-          description: "Component plus FakeClock, FakeTradePort, FakeStateStore, FakeSymbolContext, FakeLogSink"
+          description: "Component plus FakeClock, FakeLogSink, TestAssert, minimal ScenarioHarness, and deferred owner-extension slots"
         expected_state:
           - "Stimulus runs with deterministic time and evidence assertions fail on missing required traces"
         error_paths:
-          - condition: "Store read/write failure is injectable"
-            expected_error: "SPEC-defined rejection or HALT path."
+          - condition: "Owner extension slot is missing for a scenario that requires broker, position, symbol, or store behavior"
+            expected_error: "Harness reports the missing owner extension and leaves the owner-specific assertion to the downstream IPLAN."
   e2e_tests:
     cases:
       - id: "TDD.11.04.4f72"
@@ -196,7 +196,18 @@ test_cases:
             action: "Run release evidence validation"
             expected: "No trade-path side effects are recorded"
         timeout_seconds: 300
-        cleanup: "Clear fake broker state, fake stores, generated evidence files, and chart objects under the strategy prefix."
+        cleanup: "Clear shared fake state, generated evidence files, and chart objects under the strategy prefix."
+
+owner_extension_scope:
+  deferred_to_owner_plans:
+    - owner: "IPLAN-03"
+      scope: "FakeTradePort, GuardResult, TradeIntent, broker outcome scripts, pending/ambiguous execution assertions."
+    - owner: "IPLAN-04"
+      scope: "Position/account context fakes, IPositionView-backed harness adapters, hedging ownership assertions."
+    - owner: "IPLAN-05"
+      scope: "State-store and persistence/evidence fakes, write/read failure injection, audit ledger assertions."
+    - owner: "IPLAN-06"
+      scope: "Symbol context and market-session fakes for sizing, stops, spread, fill mode, and session gates."
   security_tests:
     cases: []
 

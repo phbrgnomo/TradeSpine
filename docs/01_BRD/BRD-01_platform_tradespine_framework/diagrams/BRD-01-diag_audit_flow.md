@@ -4,7 +4,7 @@
 
 - Parent: `../BRD-01_platform_tradespine_framework.yaml`
 - Diagram type: DFD-L1
-- Source: `../../../../Project/architecture-diagram.html`
+- Source: `../../../archive/architecture-diagram.html`
 - Created: 2026-06-01
 
 ## Overview
@@ -34,4 +34,4 @@ flowchart LR
 ## References
 
 - Parent BRD: `../BRD-01_platform_tradespine_framework.yaml`
-- Source brief: `../../../../Project/PRD.md`
+- Source brief: `../../../archive/PRD.md`

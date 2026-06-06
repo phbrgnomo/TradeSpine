@@ -27,8 +27,8 @@ document_control:
   source_inputs:
     - "../07_TDD/TDD-07_indicators_stops_sizing_trailing/TDD-07_indicators_stops_sizing_trailing.yaml"
     - "../06_SPEC/SPEC-07_indicators_stops_sizing_trailing/SPEC-07_indicators_stops_sizing_trailing.yaml"
-    - "../../Project/PRD.md"
-    - "../../Project/architecture-diagram.html"
+    - "../archive/PRD.md"
+    - "../archive/architecture-diagram.html"
 
 file_manifest:
   files:

@@ -27,7 +27,7 @@ document_control:
   source_inputs:
     - "../07_TDD/TDD-01_strategy_authoring_surface/TDD-01_strategy_authoring_surface.yaml"
     - "../06_SPEC/SPEC-01_strategy_authoring_surface/SPEC-01_strategy_authoring_surface.yaml"
-    - "../../Project/PRD.md"
+    - "../archive/PRD.md"
 
 file_manifest:
   files:

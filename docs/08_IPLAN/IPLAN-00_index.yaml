@@ -3,7 +3,7 @@ metadata:
   document_type: "iplan-registry"
   layer: 8
   total_plans: 12
-  last_updated: "2026-06-03"
+  last_updated: "2026-06-05"
 
 registry:
   plans:
@@ -130,13 +130,13 @@ registry:
       title: "Core Runtime and Configuration Implementation"
       source_spec: "@spec: SPEC-09"
       scope: "Implement common inputs, runtime mode detection, SafeMath, profiling, and new-bar helpers."
-      status: "Draft"
-      status_date: "2026-06-03"
+      status: "Completed"
+      status_date: "2026-06-04"
       complexity: 4
-      session_count: 0
-      sessions_completed: 0
-      files_declared: 9
-      files_done: 0
+      session_count: 3
+      sessions_completed: 3
+      files_declared: 10
+      files_done: 10
       skipped: []
       skip_reasons: {}
       depends_on: []
@@ -163,13 +163,13 @@ registry:
     - id: "IPLAN-11"
       title: "Testing Support and Harnesses Implementation"
       source_spec: "@spec: SPEC-11"
-      scope: "Implement deterministic test doubles, scenario harnesses, assertion support, and release evidence harness contracts."
+      scope: "Implement shared deterministic clock/log fakes, assertion support, minimal scenario harness primitives, and release evidence separation contracts."
       status: "Draft"
       status_date: "2026-06-03"
       complexity: 4
       session_count: 0
       sessions_completed: 0
-      files_declared: 7
+      files_declared: 9
       files_done: 0
       skipped: []
       skip_reasons: {}
@@ -222,7 +222,7 @@ execution_path:
   tiers:
     - tier: 1
       label: "Core Runtime"
-      status: "NOT_STARTED"
+      status: "COMPLETED"
       plans: ["IPLAN-09"]
     - tier: 2
       label: "Testing Foundation"
@@ -453,6 +453,10 @@ status_history:
         to: "Draft"
         date: "2026-06-03"
         reason: "TDD-09 audit passed 94/100 and reached IPLAN-Ready."
+      - from: "Draft"
+        to: "Completed"
+        date: "2026-06-04"
+        reason: "IPLAN-09 implementation completed across 10 declared files with 3 recorded sessions and MT5 validation recorded in the plan handoff."
   - plan_id: "IPLAN-10"
     transitions:
       - from: "BACKLOG"
@@ -465,6 +469,14 @@ status_history:
         to: "Draft"
         date: "2026-06-03"
         reason: "TDD-11 audit passed 95/100 and reached IPLAN-Ready."
+      - from: "Draft"
+        to: "Draft"
+        date: "2026-06-05"
+        reason: "CHG-05: depends_on corrected to include IPLAN-03/04/05; Tier 2 status set to BLOCKED until IPLAN-03/04/05 complete."
+      - from: "Draft"
+        to: "Draft"
+        date: "2026-06-05"
+        reason: "CHG-06 supersedes CHG-05 sequencing: IPLAN-11 scope narrowed to shared IPLAN-09-compatible test support, depends_on restored to IPLAN-09 only, and Tier 2 status set to NOT_STARTED."
   - plan_id: "IPLAN-12"
     transitions:
       - from: "BACKLOG"

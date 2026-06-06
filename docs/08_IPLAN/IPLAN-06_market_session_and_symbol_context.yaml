@@ -27,8 +27,8 @@ document_control:
   source_inputs:
     - "../07_TDD/TDD-06_market_session_and_symbol_context/TDD-06_market_session_and_symbol_context.yaml"
     - "../06_SPEC/SPEC-06_market_session_and_symbol_context/SPEC-06_market_session_and_symbol_context.yaml"
-    - "../../Project/PRD.md"
-    - "../../Project/architecture-diagram.html"
+    - "../archive/PRD.md"
+    - "../archive/architecture-diagram.html"
 
 file_manifest:
   files:

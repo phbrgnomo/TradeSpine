@@ -30,6 +30,8 @@ flowchart LR
 | Export | Type | Purpose |
 | --- | --- | --- |
 | IClock | interface | Time source seam for broker time, local test time, timeout checks, and deterministic test advancement. |
+| ILogSink | interface | Diagnostics seam consumed by `Profiler` and future evidence sinks, with `ENUM_LOG_LEVEL` severity typing. |
+| ENUM_LOG_LEVEL | enum | Log severity levels used by `ILogSink`: `LOG_DEBUG`, `LOG_INFO`, `LOG_WARN`, `LOG_ERROR`. |
 | CommonInputs | struct | Canonical framework input binding for magic, mode, session, sizing, risk, logging, and documentation-visible settings. |
 | OptContext | class | Detects tester/optimization/live mode and exposes policy decisions for logging, diagnostics, profiling, and release evidence. |
 | SafeMath | namespace | Central numeric normalization, finite-value, price-grid, lot-grid, and comparison helpers. |
@@ -40,7 +42,7 @@ flowchart LR
 
 | Model | Purpose |
 | --- | --- |
-| CommonInputs | Magic, account-mode policy, session mode, sizing mode, and optimization-audit settings. |
+| CommonInputs | Unsigned magic number, day-trade mode, session window fields, sizing mode, and v1/v2 placeholder validation. |
 | RuntimeMode | Tester, optimization, and diagnostics policy flags. |
 | ProfileSample | Profiling sample scope, elapsed microseconds, and enablement flag. |
 | BenchmarkBaseline | Scenario, baseline memory reading, component memory delta, and timing source for release benchmark evidence. |
@@ -48,7 +50,7 @@ flowchart LR
 ## Behavior
 
 - Common inputs expose documented v1 strategy authoring settings and reject unsupported v2 placeholder selections visibly.
-- Optimization-mode logging and profiling avoid high-I/O work unless explicitly enabled for audit evidence.
+- Optimization-mode logging and profiling avoid high-I/O work unconditionally; no audit override is provided during optimization.
 - `SafeMath` centralizes finite-number, price-grid, lot-grid, and tolerance checks used by sizing, stops, and execution guards.
 - Performance evidence includes tester overhead, per-EA memory, and idle-tick overhead budgets.
 - Memory-budget evidence uses a documented baseline-and-delta harness rather than claiming exact per-object memory attribution.
@@ -68,7 +70,7 @@ flowchart LR
 | Test File | Coverage |
 | --- | --- |
 | `Scripts/Tests/Test_CommonInputs.mq5` | Input validation, v1/v2 boundary rejection, and strategy guide alignment. |
-| `Scripts/Tests/Test_OptContextProfiler.mq5` | Tester/optimization policy, diagnostic gating, and profile sample enablement. |
+| `Scripts/Tests/Test_OptContextProfiler.mq5` | Tester/optimization policy, diagnostic gating, `ILogSink` severity contract, `ENUM_LOG_LEVEL` usage, and profile sample enablement. |
 | `Scripts/Tests/Test_SafeMathAndNewBar.mq5` | Numeric normalization, grid snapping, finite checks, and new-bar detection. |
 
 ## Traceability

@@ -511,8 +511,8 @@ System must avoid unnecessary runtime work during optimization and idle ticks.
 
 | Type | Reference | Relevance |
 | --- | --- | --- |
-| Reference PRD | ../../../Project/PRD.md | Primary source brief for business goals, scope, risks, and roadmap. |
-| Architecture diagram | ../../../Project/architecture-diagram.html | Source for diagram inventory and downstream diagram migration. |
+| Reference PRD | ../../archive/PRD.md | Primary source brief for business goals, scope, risks, and roadmap. |
+| Architecture diagram | ../../archive/architecture-diagram.html | Source for diagram inventory and downstream diagram migration. |
 | Reference registry | ../../00_REF/REF-01_tradespine_source_brief.md | Aidoc source-reference entry created during project initialization. |
 
 ### Expected Downstream Artifacts

@@ -1,0 +1,151 @@
+---
+id: CHG-03
+title: "ENUM_SIZING_MODE Enumerator Renames for Semantic Precision"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-04"
+  change_level:
+    value: C2
+  change_source:
+    value: feedback
+
+change_control:
+  chg_id: "CHG-03"
+  status: Approved
+  change_level: C2
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null
+  author: "phbr"
+  date_proposed: "2026-06-04T00:00:00-03:00"
+  date_approved: "2026-06-04T00:00:00-03:00"
+  date_implemented: "2026-06-04T00:00:00-03:00"
+  supersedes: []
+
+change_description:
+  what: |
+    Rename two ENUM_SIZING_MODE enumerators in CommonInputs.mqh:
+    - SIZING_RISK_PERCENT → SIZING_RISK_PCT_EQUITY
+      Clarifies this is futures risk-based sizing: (SL × lots = % ACCOUNT_EQUITY).
+    - SIZING_PCT_EQUITY → SIZING_VALUE_PCT_EQUITY
+      Clarifies this v2 placeholder is for stocks/non-leveraged positions:
+      (price × lots = % ACCOUNT_EQUITY), distinct from the SL-driven futures mode.
+    Propagate the new names through all SDD docs that reference them by identifier.
+  why: |
+    The original names were ambiguous:
+    - SIZING_RISK_PERCENT omitted that the denominator is ACCOUNT_EQUITY.
+    - SIZING_PCT_EQUITY was misleading because SIZING_RISK_PCT_EQUITY (the v1 live
+      mode) is also equity-based. The distinction is the numerator: SL-risk (futures)
+      vs notional position value (stocks). The new names encode both the basis (RISK vs
+      VALUE) and the denominator (PCT_EQUITY), making the formula unambiguous for future
+      strategy authors without reading inline comments.
+  trigger: |
+    Discovered during IPLAN-09 (core runtime and configuration) delivery on 2026-06-04.
+    The user identified that the names would confuse downstream strategy authors about
+    which equity-percent mode applied to leveraged futures vs unleveraged stocks.
+    Correcting before IPLAN-07 (sizing module) is implemented avoids a subsequent
+    C3-level rename across all downstream strategy consumers.
+
+impact_assessment:
+  affected_layers:
+    - layer: Code
+      artifacts: ["Include/Core/CommonInputs.mqh", "Scripts/Tests/Test_CommonInputs.mq5",
+                  "Scripts/Tests/Test_SafeMathAndNewBar.mq5"]
+      impact: "Enum values renamed; SizingModeName(), Validate() whitelist, and all test references updated."
+      cascade_direction: bubble-up source
+    - layer: IPLAN
+      artifacts: ["IPLAN-09"]
+      impact: "Session handoff record already reflects new names. No YAML structural change needed."
+      cascade_direction: bubble-up
+    - layer: TDD
+      artifacts: ["TDD-09", "TDD-07"]
+      impact: |
+        TDD-09: test action 'equity sizing placeholder' text remains semantically accurate — no change needed.
+        TDD-07: references SIZING_RISK_PERCENT in sizing acceptance criteria — update identifier to SIZING_RISK_PCT_EQUITY.
+      cascade_direction: bubble-up
+    - layer: SPEC
+      artifacts: ["SPEC-09", "SPEC-07"]
+      impact: |
+        SPEC-09: sizing_mode field description says 'futures risk-percent mode' — update to 'risk-pct-equity'.
+        SPEC-07: references SIZING_RISK_PERCENT in sizing interface contracts — update identifier.
+      cascade_direction: bubble-up
+    - layer: EARS
+      artifacts: ["EARS-01"]
+      impact: |
+        EARS.01.03.932d body: 'WHERE SIZING_FIXED_CASH or SIZING_PCT_EQUITY is selected'
+        → update SIZING_PCT_EQUITY to SIZING_VALUE_PCT_EQUITY.
+        Requirement name 'Futures risk percent sizing' references SIZING_RISK_PERCENT in body
+        → update to SIZING_RISK_PCT_EQUITY.
+      cascade_direction: bubble-up
+    - layer: PRD
+      artifacts: ["PRD-01"]
+      impact: |
+        PRD-01 acceptance target (line ~407): references SIZING_RISK_PERCENT — update to SIZING_RISK_PCT_EQUITY.
+        Sizing scope description (line ~593): 'equity sizing modes' text — review; update if needed.
+      cascade_direction: bubble-up
+  risk_level: Low
+  risk_justification: |
+    Pure identifier rename with no behavioral change. The v1/v2 scope classification,
+    validation logic, and all operator-visible diagnostic messages remain identical
+    (diagnostics now use the clearer new names). All three IPLAN-09 test scripts
+    have been updated and re-verified in MT5. No runtime semantics change.
+  rollback_plan: |
+    Revert enum names in CommonInputs.mqh and re-apply the old names to any updated
+    doc text. Because this is a pure naming change with no behavioral effect, rollback
+    has zero functional risk — only a terminology regression. A global replace_all in
+    each updated file restores the prior state in under five minutes.
+
+implementation:
+  steps:
+    - step: 1
+      action: "Rename SIZING_RISK_PERCENT → SIZING_RISK_PCT_EQUITY and SIZING_PCT_EQUITY → SIZING_VALUE_PCT_EQUITY in Include/Core/CommonInputs.mqh"
+      artifact: "Include/Core/CommonInputs.mqh"
+      status: Completed
+    - step: 2
+      action: "Update all three IPLAN-09 test scripts to use new enum names"
+      artifact: "Scripts/Tests/Test_CommonInputs.mq5"
+      status: Completed
+    - step: 3
+      action: "Update EARS-01 identifier references (EARS.01.03.932d and sizing requirement body)"
+      artifact: "docs/03_EARS/EARS-01_tradespine_formal_requirements/EARS-01_tradespine_formal_requirements.yaml"
+      status: Completed
+    - step: 4
+      action: "Update SPEC-09 sizing_mode description from 'risk-percent' to 'risk-pct-equity'"
+      artifact: "docs/06_SPEC/SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.yaml"
+      status: Completed
+    - step: 5
+      action: "Update PRD-01 acceptance target referencing SIZING_RISK_PERCENT"
+      artifact: "docs/02_PRD/PRD-01_tradespine_platform_requirements/PRD-01_tradespine_platform_requirements.yaml"
+      status: Completed
+    - step: 6
+      action: "Review and update SPEC-07 and TDD-07 identifier references"
+      artifact: "docs/06_SPEC/SPEC-07_*, docs/07_TDD/TDD-07_*"
+      status: Completed
+      rationale: |
+        Verified by grep on 2026-06-05: SPEC-07 and TDD-07 canonical YAMLs contain
+        no SIZING_RISK_PERCENT or SIZING_PCT_EQUITY enum identifiers. Those files use
+        prose descriptions ('risk-percent sizing', 'risk_percent' field names) that
+        are not enum literals and do not require a rename. No changes were needed.
+
+verification:
+  checks:
+    - "All three IPLAN-09 test scripts compile and pass in MT5 with new names"
+    - "grep for SIZING_RISK_PERCENT and SIZING_PCT_EQUITY in docs/ returns only archive/, *.readable.md generated files, and IPLAN-09 session handoff body (lines 169-170, acceptable change-note quotations of the rename)"
+    - "EARS-01 body text uses SIZING_VALUE_PCT_EQUITY and SIZING_RISK_PCT_EQUITY"
+    - "SPEC-09 description updated from 'risk-percent' to 'risk-pct-equity'"
+    - "PRD-01 acceptance target uses SIZING_RISK_PCT_EQUITY"
+    - "doc-validator cross-reference pass shows no broken enum name references"
+
+traceability:
+  tags:
+    - "@code: Include/Core/CommonInputs.mqh"
+    - "@spec: SPEC-09"
+    - "@ears: EARS-01"
+    - "@iplan: IPLAN-09"
+  upstream:
+    iplan_references: ["@iplan: IPLAN-09"]
+    spec_references: ["@spec: SPEC-09", "@spec: SPEC-07"]
+    ears_references: ["@ears: EARS-01"]
+    prd_references: ["@prd: PRD-01"]

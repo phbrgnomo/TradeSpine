@@ -38,9 +38,9 @@ document_control:
   ears_ready_score: "92/100"
   source_refs:
     - "../../01_BRD/BRD-01_platform_tradespine_framework/BRD-01_platform_tradespine_framework.yaml"
-    - "../../../Project/PRD.md"
-    - "../../../Project/architecture-diagram.html"
-  source_snapshot: "Project/PRD.md v3.75 with CHANGELOG v3.74/v3.75 scope corrections; TradeSpine/docs is the authoritative aidoc corpus."
+    - "../../archive/PRD.md"
+    - "../../archive/architecture-diagram.html"
+  source_snapshot: "docs/archive/PRD.md v3.75 with CHANGELOG v3.74/v3.75 scope corrections; TradeSpine/docs is the authoritative aidoc corpus."
   revision_history:
     - version: "1.0"
       date: "2026-06-01T14:05:00-03:00"
@@ -69,7 +69,7 @@ document_control:
     - version: "1.0.5"
       date: "2026-06-03T00:00:00-03:00"
       author: "Codex"
-      changes: "Updated source provenance to Project/PRD.md v3.75 and marked TradeSpine/docs as the authoritative aidoc corpus."
+      changes: "Updated source provenance to docs/archive/PRD.md v3.75 and marked TradeSpine/docs as the authoritative aidoc corpus."
 
 ## Executive Summary
 executive_summary:
@@ -404,7 +404,7 @@ functional_requirements:
           target: "Entries require both market trade-session availability and the user trading-hours window in broker server time"
         - id: "PRD.01.09.60ad"
           criterion: "V1 sizing and v2 placeholder boundary"
-          target: "V1 supports futures SIZING_RISK_PERCENT and SIZING_FIXED_LOT using initialized symbol information, while equity sizing modes remain visible v2 placeholders"
+          target: "V1 supports futures SIZING_RISK_PCT_EQUITY (SL-based) and SIZING_FIXED_LOT using initialized symbol information, while SIZING_VALUE_PCT_EQUITY (price-based, stocks) and SIZING_FIXED_CASH remain visible v2 placeholders"
         - id: "PRD.01.09.d722"
           criterion: "Day-trade auto-close"
           target: "Day-trade mode performs a complete strategy stop before market session close, prevents overnight rollover, and blocks new entries for the remainder of the session"

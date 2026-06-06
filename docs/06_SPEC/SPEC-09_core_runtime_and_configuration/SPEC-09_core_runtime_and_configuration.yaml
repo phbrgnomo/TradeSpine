@@ -7,14 +7,14 @@ id: SPEC-09
 title: Core Runtime and Configuration
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-04T00:00:00-03:00"
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-04T00:00:00-03:00"
   author: "Codex"
   component: "OptContext, SafeMath, Profiler, CommonInputs, CNewBarDetector"
   tdd_ready_score: "93/100"
@@ -54,6 +54,18 @@ interfaces:
       description: "Time source seam for broker time, local test time, timeout checks, and deterministic test advancement."
       errors:
         - "None; unavailable runtime time sources are surfaced by concrete implementations."
+    - name: "ILogSink"
+      type: "interface"
+      signature: "interface ILogSink"
+      description: "Diagnostics seam consumed by Profiler and future evidence sinks. Accepts ENUM_LOG_LEVEL for compile-time severity enforcement. Concrete CSV/journal sinks arrive with IPLAN-10+."
+      errors:
+        - "None; concrete implementations are responsible for surfacing write failures."
+    - name: "ENUM_LOG_LEVEL"
+      type: "enum"
+      signature: "enum ENUM_LOG_LEVEL"
+      description: "Log severity levels used by ILogSink: LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR."
+      errors:
+        - "None."
     - name: "CommonInputs"
       type: "struct"
       signature: "struct CommonInputs"
@@ -94,23 +106,27 @@ data_models:
         - name: "magic"
           type: "ulong"
           required: true
-          description: "Strategy magic number used for ownership, duplicate detection, and evidence."
-        - name: "account_mode_policy"
-          type: "ENUM_ACCOUNT_MODE_POLICY"
+          description: "Strategy magic number; must be non-zero and remain unsigned end-to-end."
+        - name: "day_trade_mode"
+          type: "bool"
           required: true
-          description: "Account-mode declaration: hedging is executable in v1; netting and exchange-netting are selectable diagnostics that fail initialization as deferred v2+ modes."
-        - name: "session_mode"
-          type: "ENUM_SESSION_MODE"
+          description: "true: close all positions before session end; false: swing/position (no forced intraday close)."
+        - name: "close_mins_before"
+          type: "int"
           required: true
-          description: "Market day-trade or user-defined entry-session behavior."
+          description: "[day_trade_mode] Minutes before session end to close. Must be >= 0."
+        - name: "entry_window_start"
+          type: "datetime"
+          required: true
+          description: "[day_trade_mode] Entries allowed from this broker time. Date ignored; HH:MM used."
+        - name: "entry_window_end"
+          type: "datetime"
+          required: true
+          description: "[day_trade_mode] No new entries after this broker time. Must be after start."
         - name: "sizing_mode"
           type: "ENUM_SIZING_MODE"
           required: true
-          description: "v1 fixed-lot or futures risk-percent mode; v2 placeholders are rejected visibly."
-        - name: "audit_in_optimization"
-          type: "bool"
-          required: true
-          description: "Controls whether high-volume evidence is enabled during optimization passes."
+          description: "v1: FIXED_LOT, RISK_PCT_EQUITY. v2 placeholders rejected visibly."
     - name: "RuntimeMode"
       type: "struct"
       fields:
@@ -166,7 +182,7 @@ behavior:
   validation_rules:
     - rule: "CommonInputs SHALL expose the documented v1 strategy authoring settings and reject unsupported v2 placeholder selections visibly."
       source: "@ears: EARS.01.03.0c0a"
-    - rule: "Optimization-mode logging and profiling SHALL avoid high-I/O work unless explicitly enabled for audit evidence."
+    - rule: "Optimization-mode logging and profiling SHALL avoid high-I/O work unconditionally; no audit override is provided during optimization."
       source: "@ears: EARS.01.03.c5b7"
     - rule: "SafeMath SHALL centralize finite-number, price-grid, lot-grid, and tolerance checks used by sizing, stops, and execution guards."
       source: "@ears: EARS.01.03.ec72"
@@ -174,6 +190,12 @@ behavior:
       source: "@ears: EARS.01.03.8044"
     - rule: "Memory-budget evidence SHALL use a documented baseline-and-delta harness rather than claiming exact per-object memory attribution."
       source: "@ears: EARS.01.03.8044"
+    - id: "VR-ACCT-01"
+      rule: |
+        THE framework SHALL fail initialization when AccountInfoInteger(ACCOUNT_MARGIN_MODE)
+        is not ACCOUNT_MARGIN_MODE_RETAIL_HEDGING. Account mode is a broker account property,
+        not a user input; it is read at OnInit() and checked before any CommonInputs validation.
+      source: "@ears: EARS.01.03.5d1b"
   state_transitions:
     - from: "RuntimeUnbound"
       to: "RuntimeReady"
@@ -209,7 +231,7 @@ tdd_contracts:
     - path: "Scripts/Tests/Test_CommonInputs.mq5"
       covers: "Input validation, v1/v2 boundary rejection, and strategy guide alignment."
     - path: "Scripts/Tests/Test_OptContextProfiler.mq5"
-      covers: "Tester/optimization policy, diagnostic gating, and profile sample enablement."
+      covers: "Tester/optimization policy, diagnostic gating, ILogSink severity contract, ENUM_LOG_LEVEL usage, and profile sample enablement."
     - path: "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
       covers: "Numeric normalization, grid snapping, finite checks, and new-bar detection."
 

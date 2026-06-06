@@ -7,21 +7,21 @@ id: SPEC-11
 title: Testing Support and Harnesses
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-05T00:00:00-03:00"
 
 ## Section 1: Document Control
 document_control:
   status: Draft
   version: "1.0"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-05T00:00:00-03:00"
   author: "Codex"
-  component: "Test doubles, clocks, brokers, stores, and scenario harnesses"
+  component: "Shared test doubles, clocks, log sinks, assertions, and harness primitives"
   tdd_ready_score: "94/100"
 
 ## Section 2: Component Overview
 component_overview:
-  description: "Testing support provides deterministic doubles for clock, broker port, state store, symbol/account context, log sinks, and scenario harnesses so Tier-1 and Tier-1.5 tests can validate TradeSpine behavior before Strategy Tester or live/demo release gates."
+  description: "Testing support provides shared deterministic primitives for clocks, log sinks, assertions, minimal scenario harness assembly, and release-evidence separation so Tier-1 and Tier-1.5 tests can start after IPLAN-09 without waiting for broker, position, or persistence owner interfaces."
   architecture_decision: "@adr: ADR.10.03.51ea"
   diagram:
     tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
@@ -29,16 +29,14 @@ component_overview:
       flowchart LR
         Tests["MQL5 test scripts"] --> Harness["ScenarioHarness"]
         Harness --> Clock["FakeClock"]
-        Harness --> Broker["FakeTradePort"]
-        Harness --> Store["FakeStateStore"]
-        Harness --> Symbol["FakeSymbolContext"]
+        Harness --> Extensions["Owner-plan fake extensions"]
         Harness --> Logs["FakeLogSink"]
         Harness --> Components["SPEC components"]
   language: "MQL5"
   dependencies:
     - name: "Core runtime shared interfaces"
       version: "v1"
-      purpose: "IPLAN-09 publishes stable interfaces for clocks, trade ports, stores, runtime context, and diagnostics before fakes implement them."
+      purpose: "IPLAN-09 publishes IClock, ILogSink, runtime context, and profiling data models for test support."
     - name: "Release governance"
       version: "v1"
       purpose: "Consumes test reports and manual evidence packs."
@@ -52,49 +50,28 @@ interfaces:
       description: "Deterministic time source for session, timeout, daily reset, and evidence ordering tests."
       errors:
         - "None."
-    - name: "FakeTradePort"
+    - name: "FakeLogSink"
       type: "class"
-      signature: "class FakeTradePort : public ITradePort"
-      description: "Deterministic broker boundary double returning configured GuardResult sequences."
+      signature: "class FakeLogSink : public ILogSink"
+      description: "Captures diagnostics and evidence messages for deterministic assertions without production logging side effects."
       errors:
-        - "Configured failures, pending outcomes, retry retcodes, or ambiguity."
-    - name: "FakeStateStore"
+        - "Assertion failure when required messages are missing."
+    - name: "TestAssert"
       type: "class"
-      signature: "class FakeStateStore : public IStateStore"
-      description: "In-memory persistence double for ledger, duplicate marker, HALT, and evidence tests."
+      signature: "class TestAssert"
+      description: "Shared assertion counters, equality checks, and pass/fail summary output for MQL5 test scripts."
       errors:
-        - "Configured write/read failures for recovery tests."
-    - name: "FakeSymbolContext"
-      type: "class"
-      signature: "class FakeSymbolContext"
-      description: "Deterministic symbol metadata and market data provider for sizing, stops, spread, and fill-mode tests."
-      errors:
-        - "Configured missing metadata, invalid grids, or unavailable ticks."
+        - "Assertion failure."
     - name: "ScenarioHarness"
       type: "class"
       signature: "class ScenarioHarness"
-      description: "Reusable assembly for component-under-test, fakes, stimulus, and evidence assertions."
+      description: "Minimal reusable assembly for component-under-test, shared fakes, owner-extension hooks, stimulus, and evidence assertions."
       errors:
         - "Test assertion failure."
 
 ## Section 4: Data Models
 data_models:
   models:
-    - name: "BrokerEventScript"
-      type: "struct"
-      fields:
-        - name: "step"
-          type: "int"
-          required: true
-          description: "Event sequence index."
-        - name: "guard_result"
-          type: "GuardResult"
-          required: true
-          description: "Configured execution outcome for the step."
-        - name: "transaction_event"
-          type: "TradeTransactionEvent"
-          required: false
-          description: "Optional synthetic trade transaction for router/state tests."
     - name: "EvidenceAssertion"
       type: "struct"
       fields:
@@ -114,9 +91,9 @@ data_models:
       type: "struct"
       fields:
         - name: "account_mode"
-          type: "ENUM_ACCOUNT_MODE"
+          type: "string"
           required: true
-          description: "Deferred account mode covered by init-failure evidence."
+          description: "Deferred account mode label covered by init-failure evidence."
         - name: "scenario"
           type: "string"
           required: true
@@ -129,7 +106,7 @@ data_models:
 ## Section 5: Behavior
 behavior:
   validation_rules:
-    - rule: "Tier-1 tests SHALL use deterministic fakes for broker, clock, store, symbol, account, logging, and runtime seams."
+    - rule: "Tier-1 tests SHALL use deterministic shared fakes for clock, logging, runtime, and assertion seams; broker, position, symbol, and store fakes are added by their owner plans."
       source: "@bdd: BDD.01.03.aa68"
     - rule: "Tier-1.5 tests SHALL cover hedging account ownership, deferred netting/exchange init failure, no side effects, and manual non-interference scenarios."
       source: "@bdd: BDD.01.03.f415"
@@ -143,8 +120,8 @@ behavior:
       trigger: "ScenarioHarness receives required component and fake dependencies."
       source: "@bdd: BDD.01.03.aa68"
   error_handling:
-    - condition: "Fake broker script is exhausted before component behavior completes."
-      response: "Fail the test with missing broker outcome evidence."
+    - condition: "Scenario requires an owner-specific broker, position, symbol, or store fake before the owner plan has published it."
+      response: "Fail the test with a missing owner-extension assertion and defer behavior-specific assertions to the owner IPLAN."
       source: "@bdd: BDD.01.03.e16a"
     - condition: "Manual evidence pack is required but absent."
       response: "Mark release gate blocked rather than substituting automated tester evidence."
@@ -154,12 +131,13 @@ behavior:
 implementation_notes:
   constraints:
     - "Test support modules MUST remain outside production execution paths."
-    - "Fakes MUST implement the same interfaces consumed by production components, and those interfaces MUST be published by IPLAN-09 before test support implementation starts."
+    - "IPLAN-11 fakes MUST implement only IPLAN-09 contracts: IClock, ILogSink, runtime context, and profiling data models."
+    - "Broker, position/account, symbol, and persistence fakes MUST be implemented by the owner plans that publish their production interfaces: IPLAN-03, IPLAN-04, IPLAN-06, and IPLAN-05 respectively."
     - "Manual evidence pack contracts MUST remain visible to release governance and must not be represented as Strategy Tester automation."
   patterns:
-    - "Use scenario scripts to drive fake broker outcomes and trade transaction callbacks."
-    - "Use in-memory stores to assert duplicate marker, ledger, HALT, and evidence writes."
+    - "Use owner-extension hooks so later plans can attach broker outcomes, position views, symbol context, and state stores without changing shared assertion helpers."
     - "Keep component construction explicit so TDD can map each BDD scenario to a harness."
+    - "Record deferred owner fake scope in the consuming owner IPLAN rather than in the shared testing foundation manifest."
   performance_considerations:
     - "Performance tests must collect evidence for @threshold: PRD.01.perf.tester_overhead, @threshold: PRD.01.perf.memory_per_ea, and @threshold: PRD.01.perf.idle_tick."
 
@@ -167,12 +145,16 @@ implementation_notes:
 tdd_contracts:
   tdd_document: "@tdd: TDD.11.04.6805"
   test_files:
+    - path: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
+      covers: "Executable entry point for minimal ScenarioHarness assembly, owner-extension hooks, and evidence assertions."
+    - path: "Scripts/Tests/Test_TestSupportClock.mq5"
+      covers: "Executable unit entry point for deterministic clock and assertion helper behavior."
     - path: "Scripts/Tests/Support/FakeClock.mqh"
       covers: "Deterministic time, session, timeout, and daily reset tests."
-    - path: "Scripts/Tests/Support/FakeTradePort.mqh"
-      covers: "Broker outcome, retry, pending, and ambiguity scripts."
+    - path: "Scripts/Tests/Support/FakeLogSink.mqh"
+      covers: "Capturing log sink tests for diagnostics and evidence assertions."
     - path: "Scripts/Tests/Support/ScenarioHarness.mqh"
-      covers: "Reusable component assembly and evidence assertions."
+      covers: "Reusable shared component assembly, owner-extension hooks, and evidence assertions."
     - path: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
       covers: "Manual evidence pack contracts and automated/manual gate separation."
 

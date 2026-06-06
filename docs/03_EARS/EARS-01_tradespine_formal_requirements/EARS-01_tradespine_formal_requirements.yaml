@@ -35,8 +35,8 @@ document_control:
   bdd_ready_score: "100/100"
   source_refs:
     - "../../02_PRD/PRD-01_tradespine_platform_requirements/PRD-01_tradespine_platform_requirements.yaml"
-    - "../../../Project/PRD.md"
-    - "../../../Project/architecture-diagram.html"
+    - "../../archive/PRD.md"
+    - "../../archive/architecture-diagram.html"
   revision_history:
     - version: "1.0"
       date: "2026-06-01T19:30:00-03:00"
@@ -211,9 +211,9 @@ requirements:
         WITHIN the idle tick path.
       traceability: "@brd: BRD.01.07.bf02 | @prd: PRD.01.09.3092"
     - id: "EARS.01.03.5e92"
-      name: "Futures risk percent sizing"
+      name: "Futures risk-pct-equity sizing"
       statement: >
-        WHILE calculating SIZING_RISK_PERCENT for a v1 futures strategy, THE
+        WHILE calculating SIZING_RISK_PCT_EQUITY for a v1 futures strategy, THE
         position sizer SHALL use initialized symbol information to calculate
         broker-valid lots from risk percent and stop-loss distance WITHIN the
         order calculation pipeline.
@@ -229,7 +229,7 @@ requirements:
     - id: "EARS.01.03.932d"
       name: "Equity sizing placeholder"
       statement: >
-        WHERE SIZING_FIXED_CASH or SIZING_PCT_EQUITY is selected in v1, THE
+        WHERE SIZING_FIXED_CASH or SIZING_VALUE_PCT_EQUITY is selected in v1, THE
         position sizer SHALL reject the sizing request as a visible v2
         placeholder.
       traceability: "@brd: BRD.01.07.69ef | @prd: PRD.01.09.60ad"

@@ -27,8 +27,8 @@ document_control:
   source_inputs:
     - "../07_TDD/TDD-04_position_account_mode_and_state/TDD-04_position_account_mode_and_state.yaml"
     - "../06_SPEC/SPEC-04_position_account_mode_and_state/SPEC-04_position_account_mode_and_state.yaml"
-    - "../../Project/PRD.md"
-    - "../../Project/architecture-diagram.html"
+    - "../archive/PRD.md"
+    - "../archive/architecture-diagram.html"
 
 file_manifest:
   files:

@@ -37,8 +37,8 @@ document_control:
   source_refs:
     - "../../03_EARS/EARS-01_tradespine_formal_requirements/EARS-01_tradespine_formal_requirements.yaml"
     - "../../02_PRD/PRD-01_tradespine_platform_requirements/PRD-01_tradespine_platform_requirements.yaml"
-    - "../../../Project/PRD.md"
-    - "../../../Project/architecture-diagram.html"
+    - "../../archive/PRD.md"
+    - "../../archive/architecture-diagram.html"
   revision_history:
     - version: "1.0"
       date: "2026-06-01T20:01:34-03:00"
@@ -519,11 +519,11 @@ scenario_structure:
           - "@p1-high"
           - "@scenario-id:BDD.01.03.e593"
         examples:
-          - sizing_mode: "SIZING_RISK_PERCENT"
+          - sizing_mode: "SIZING_RISK_PCT_EQUITY"
             expected: "broker-valid lots from risk percent and stop-loss distance"
           - sizing_mode: "SIZING_FIXED_LOT"
             expected: "fixed lots normalized to symbol lot step and limits"
-          - sizing_mode: "SIZING_EQUITY_PERCENT"
+          - sizing_mode: "SIZING_VALUE_PCT_EQUITY"
             expected: "rejected as a v2 placeholder"
         gherkin: |
           Scenario Outline: Sizing mode behavior uses initialized symbol information
@@ -534,10 +534,10 @@ scenario_structure:
             And the order definition remains broker-valid before submission
 
             Examples:
-              | sizing_mode           | expected                                                |
-              | SIZING_RISK_PERCENT   | broker-valid lots from risk percent and stop-loss distance |
-              | SIZING_FIXED_LOT      | fixed lots normalized to symbol lot step and limits     |
-              | SIZING_EQUITY_PERCENT | rejected as a v2 placeholder                            |
+              | sizing_mode              | expected                                                |
+              | SIZING_RISK_PCT_EQUITY   | broker-valid lots from risk percent and stop-loss distance |
+              | SIZING_FIXED_LOT         | fixed lots normalized to symbol lot step and limits     |
+              | SIZING_VALUE_PCT_EQUITY  | rejected as a v2 placeholder                            |
         threshold: "Only v1 sizing modes are executable; v2 placeholder selection is blocked."
         spec_trace:
           upstream:
