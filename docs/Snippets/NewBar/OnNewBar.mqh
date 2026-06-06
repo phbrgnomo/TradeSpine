@@ -6,7 +6,7 @@
 #property copyright "Copyright 2010, Lizar"
 #property link "Lizar@mail.ru"
 
-#include <Lib CisNewBar.mqh>
+`#include` "CisNewBar.mqh"
 CisNewBar current_chart;   // instance of the CisNewBar class: current chart
 
 //+------------------------------------------------------------------+

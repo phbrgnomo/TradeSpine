@@ -54,11 +54,11 @@ Create `Experts/Main/<name>.mq5` as a **single file** — no new files outside t
 Always include these; add others only when needed:
 
 ```mql5
-#include <Trade/Trade.mqh>        // CTrade — all order execution
-#include <Trade/RiskSizer.mqh>    // RiskSizerInit / RiskSizerCalcLot — % equity sizing
+#include "Include/Trade/Trade.mqh"        // CTrade — all order execution
+#include "Include/Trade/RiskSizer.mqh"    // RiskSizerInit / RiskSizerCalcLot — % equity sizing
 ```
 
-Include `<Trade/TradeRecorder.mqh>` only if the user asks for trade logging.
+Use quoted relative includes for `Trade/Trade.mqh` and `Trade/RiskSizer.mqh`; vendored libraries must live under the repository's `Include/` vendor path so builds do not rely on terminal-wide installs. Include `"Include/Trade/TradeRecorder.mqh"` only if the user asks for trade logging.
 
 ### Naming conventions
 

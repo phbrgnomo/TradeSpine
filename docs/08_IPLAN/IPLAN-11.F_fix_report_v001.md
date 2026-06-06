@@ -9,7 +9,7 @@
 | Fix timestamp | 2026-06-05T00:00:00-03:00 |
 | Fixer | Codex (aidoc-flow:doc-iplan-fixer) |
 | Source audit | `docs/08_IPLAN/IPLAN-11.A_audit_report_v002.md` |
-| Status | FIXED WITH ONE USER-ACCEPTED EXCEPTION |
+| Status | FIXED |
 | Backup | `tmp/backup/IPLAN-11_20260605_fixer/` |
 
 ---
@@ -21,7 +21,7 @@
 | B1 | FIXED | Verified upstream ownership for `ITradePort`, `IPositionView`, and `IStateStore`. IPLAN-11 now records that IPLAN-09 owns only core runtime/testable interfaces, while `ITradePort` belongs to SPEC/IPLAN-03, `IPositionView` belongs to SPEC/IPLAN-04, and `IStateStore` belongs to SPEC/IPLAN-05. IPLAN-11 source inputs, dependency text, handoff blocker, and SPEC-11 dependency notes were updated accordingly. |
 | B2 | FIXED | Added executable `.mq5` test entry points to the IPLAN-11 manifest and mapped TDD-11 unit/integration cases to runnable scripts instead of `.mqh` support includes. |
 | W1 | FIXED | Added explicit validation commands for all executable TDD-11 test scripts and documented the `RunAllTests.mq5` aggregate contract as including every executable mapped test script and calling all mapped functions. |
-| W2 | INTENTIONALLY UNCHANGED | User directed that only IPLAN-09 had an implementation session and this warning should be ignored. `document_control.session_count` remains `0`. |
+| W2 | FIXED | `document_control.session_count` set to `1` to match the single seed session recorded in `session_handoff.sessions`. |
 | Source move | FIXED | Updated active SDD `source_inputs` and source references from `Project/PRD.md` and `Project/architecture-diagram.html` to the new `docs/archive` locations. Historical audit/fix reports were left unchanged. |
 
 ---

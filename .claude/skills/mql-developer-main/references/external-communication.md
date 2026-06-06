@@ -417,6 +417,10 @@ double JsonGetDouble(const string json, const string key)
 //+------------------------------------------------------------------+
 int JsonGetBool(const string json, const string key)
 {
+    const string trueToken = "true";
+    const string falseToken = "false";
+    bool isTrue = false;
+    int tokenLen = 0;
     string searchKey = "\"" + key + "\"";
     int keyPos = StringFind(json, searchKey);
     if(keyPos == -1) return -1;
@@ -443,6 +447,7 @@ int JsonGetBool(const string json, const string key)
         if(ch == ',' || ch == '}' || ch == ']' || ch == ' ' || ch == '\n' || ch == '\r')
             break;
         valueEnd++;
+    }
 
     if(StringLen(json) >= valueStart + StringLen(trueToken) &&
        StringSubstr(json, valueStart, StringLen(trueToken)) == trueToken) {

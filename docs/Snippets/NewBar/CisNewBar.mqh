@@ -16,14 +16,14 @@ class CisNewBar {
    string          m_symbol;   // Symbol name
    ENUM_TIMEFRAMES m_period;   // Chart period
 
-   uint   m_retcode;    // Result code of detecting new bar
+   int    m_retcode;    // Result code of detecting new bar
    int    m_new_bars;   // Number of new bars
    string m_comment;    // Comment of execution
 
  public:
-   void CisNewBar();   // CisNewBar constructor
+   CisNewBar();   // CisNewBar constructor
    //--- Methods of access to protected data:
-   uint            GetRetCode() const { return (m_retcode); }            // Result code of detecting new bar
+   int             GetRetCode() const { return (m_retcode); }             // Result code of detecting new bar
    datetime        GetLastBarTime() const { return (m_lastbar_time); }   // Time of opening new bar
    int             GetNewBars() const { return (m_new_bars); }           // Number of new bars
    string          GetComment() const { return (m_comment); }            // Comment of execution
@@ -44,7 +44,7 @@ class CisNewBar {
 //| OUTPUT: no.                                                      |
 //| REMARK: no.                                                      |
 //+------------------------------------------------------------------+
-void CisNewBar::CisNewBar() {
+CisNewBar::CisNewBar() {
    m_retcode      = 0;          // Result code of detecting new bar
    m_lastbar_time = 0;          // Time of opening last bar
    m_new_bars     = 0;          // Number of new bars

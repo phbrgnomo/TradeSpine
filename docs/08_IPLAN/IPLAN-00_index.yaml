@@ -3,7 +3,7 @@ metadata:
   document_type: "iplan-registry"
   layer: 8
   total_plans: 12
-  last_updated: "2026-06-03"
+  last_updated: "2026-06-05"
 
 registry:
   plans:
@@ -163,17 +163,17 @@ registry:
     - id: "IPLAN-11"
       title: "Testing Support and Harnesses Implementation"
       source_spec: "@spec: SPEC-11"
-      scope: "Implement deterministic test doubles, scenario harnesses, assertion support, and release evidence harness contracts."
+      scope: "Implement shared deterministic clock/log fakes, assertion support, minimal scenario harness primitives, and release evidence separation contracts."
       status: "Draft"
       status_date: "2026-06-03"
       complexity: 4
       session_count: 0
       sessions_completed: 0
-      files_declared: 7
+      files_declared: 9
       files_done: 0
       skipped: []
       skip_reasons: {}
-      depends_on: ["IPLAN-09", "IPLAN-03", "IPLAN-04", "IPLAN-05"]
+      depends_on: ["IPLAN-09"]
       blocks: ["IPLAN-02", "IPLAN-03", "IPLAN-04", "IPLAN-05", "IPLAN-06", "IPLAN-07", "IPLAN-10"]
       parallel_with: []
       file_path: "IPLAN-11_testing_support_and_harnesses.yaml"
@@ -226,7 +226,7 @@ execution_path:
       plans: ["IPLAN-09"]
     - tier: 2
       label: "Testing Foundation"
-      status: "BLOCKED"
+      status: "NOT_STARTED"
       plans: ["IPLAN-11"]
     - tier: 3
       label: "Persistence and Market Foundations"
@@ -473,6 +473,10 @@ status_history:
         to: "Draft"
         date: "2026-06-05"
         reason: "CHG-05: depends_on corrected to include IPLAN-03/04/05; Tier 2 status set to BLOCKED until IPLAN-03/04/05 complete."
+      - from: "Draft"
+        to: "Draft"
+        date: "2026-06-05"
+        reason: "CHG-06 supersedes CHG-05 sequencing: IPLAN-11 scope narrowed to shared IPLAN-09-compatible test support, depends_on restored to IPLAN-09 only, and Tier 2 status set to NOT_STARTED."
   - plan_id: "IPLAN-12"
     transitions:
       - from: "BACKLOG"

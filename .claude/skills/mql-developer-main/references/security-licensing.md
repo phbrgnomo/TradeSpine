@@ -26,6 +26,8 @@ bool CheckAccountLicense() {
     }
     Alert("Account ", currentAccount, " is not authorized.");
     return false;
+}
+
 void OnTimer() {
     if(!CheckExpiration()) {
         // TODO: Close all positions, cancel pending orders
@@ -73,15 +75,8 @@ bool ValidateLicense() {
         if(StringCompare(hash, validHashes[i], false) == 0) return true;
     return false;
 }
-    string json = "{";
-    json += "\"license_key\":\"" + InpLicenseKey + "\",";
-    json += "\"account\":" + IntegerToString(account) + ",";
-    json += "\"broker\":\"" + broker + "\",";  // Note: Should escape special chars
-    json += "\"ea\":\"" + eaName + "\"";        // Note: Should escape special chars
-    json += "}";
+```
 
-    // WARNING: This example doesn't handle JSON escaping.
-    // In production, use a JSON library or implement proper escaping.
 ## Server-Side License Validation
 
 ### Implementation Pattern
@@ -100,6 +95,9 @@ bool ValidateLicenseOnServer() {
     json += "\"broker\":\"" + broker + "\",";
     json += "\"ea\":\"" + eaName + "\"";
     json += "}";
+
+    // WARNING: This example doesn't handle JSON escaping.
+    // In production, use a JSON library or implement proper escaping.
 
     // Send to server, check response
     // Handle network failures (fail-open vs fail-closed decision)

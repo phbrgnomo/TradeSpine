@@ -18,6 +18,10 @@ bool IsNewBar(
    datetime        Tnew;
    //----+ Declaration of a variable for storing sizes of arrays of variables
    static int Size_ = 0;
+   if(Number < 0) {
+      PrintFormat("IsNewBar( %d ): Error!!! Number must be non-negative.", Number);
+      return (false);
+   }
    //----+ Changing size of arrays of variables
    if(Number + 1 > Size_) {
       uint size = Number + 1;

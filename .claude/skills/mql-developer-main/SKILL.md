@@ -20,7 +20,6 @@ Load the appropriate reference file based on the task:
 
 | Task | Reference File |
 |------|---------------|
-| MQL4 syntax, types, functions, predefined vars | [references/mql4-reference.md](references/mql4-reference.md) |
 | MQL5 syntax, OOP, CTrade, Standard Library | [references/mql5-reference.md](references/mql5-reference.md) |
 | Project structure, EA architecture, design patterns | [references/architecture-patterns.md](references/architecture-patterns.md) |
 | Orders, positions, risk management, trailing stops | [references/trading-operations.md](references/trading-operations.md) |
@@ -33,25 +32,9 @@ Load the appropriate reference file based on the task:
 
 For targeted lookup in large files, grep for these section headers:
 
-**mql4-reference.md:** `Data Types`, `Variables`, `Operators`, `Arrays`, `Strings`, `Program Types`, `Predefined Variables`, `Technical Indicator Functions`, `Order Management`, `Market Information`, `Account Functions`, `Preprocessor`, `Error Handling`, `Common Gotchas`, `File Operations`, `WebRequest`, `Utility Functions`, `Global Terminal Variables`
-
 **architecture-patterns.md:** `Project Structure`, `Simple Single-File`, `Modular EA`, `State Machine`, `Multi-Timeframe`, `Multi-Symbol`, `Singleton`, `Strategy Pattern`, `Observer`, `Include File Design`, `Complete Templates`
 
 **mql5-reference.md:** `OOP Features`, `Trade Functions`, `CTrade`, `Native Trade`, `Event Handlers`, `Standard Library`, `Key Enumerations`, `SQLite`, `Sockets`, `Resources`, `OpenCL`
-
-## MQL4 vs MQL5 Key Differences
-
-| Aspect | MQL4 | MQL5 |
-|--------|------|------|
-| Paradigm | Procedural (C-like) | Full OOP (C++-like) |
-| Trade model | Orders only (`OrderSend`) | Orders + Deals + Positions (`CTrade`) |
-| Account model | Hedging only | Netting + Hedging |
-| Indicator buffers | Max 8 | Max 512 |
-| Draw styles | 6 basic | 18 (basic + color) |
-| Standard Library | Minimal | Comprehensive |
-| Database | None | SQLite built-in |
-| Sockets | None | TCP + TLS |
-| OpenCL | No | Yes |
 
 ## Core Workflow
 
@@ -134,7 +117,6 @@ For simpler projects, a single-file EA with inline functions is acceptable.
 
 ## Official Documentation
 
-- MQL4: https://docs.mql4.com/
 - MQL5: https://www.mql5.com/en/docs
 - MQL5 Articles: https://www.mql5.com/en/articles
 - MQL5 Code Base: https://www.mql5.com/en/code

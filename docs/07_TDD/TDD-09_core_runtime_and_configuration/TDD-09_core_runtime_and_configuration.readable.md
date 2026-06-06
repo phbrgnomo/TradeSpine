@@ -9,13 +9,13 @@
 | Document ID | TDD-09 |
 | Title | Core Runtime and Configuration Test-Driven Development Guide |
 | Status | Draft |
-| Version | 1.0 |
+| Version | 1.1 |
 | Component | OptContext, SafeMath, Profiler, CommonInputs, CNewBarDetector |
 | SPEC Reference | @spec: SPEC-09 |
 | Source SPEC | `../../06_SPEC/SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.yaml` |
 | IPLAN-ready Score | 94/100 |
 | Created | 2026-06-02T00:00:00-03:00 |
-| Updated | 2026-06-02T00:00:00-03:00 |
+| Updated | 2026-06-04T00:00:00-03:00 |
 
 ## Test Pyramid
 
@@ -36,7 +36,7 @@
 | BDD Scenario | Description | Unit Test | Integration Test | E2E Test |
 | --- | --- | --- | --- | --- |
 | @bdd: BDD.01.03.aa68 | Shipped strategy authoring, porting, and packaging | `Scripts/Tests/Test_CommonInputs.mq5` / `test_core_runtime_and_configuration_aa68_unit` | `Scripts/Tests/Test_OptContextProfiler.mq5` / `test_core_runtime_and_configuration_aa68_integration` | `Scripts/Tests/Test_SafeMathAndNewBar.mq5` / `test_core_runtime_and_configuration_aa68_e2e` |
-| @bdd: BDD.01.03.b37d | Performance budgets are evidenced | `Scripts/Tests/Test_CommonInputs.mq5` / `test_core_runtime_and_configuration_b37d_unit` | `Scripts/Tests/Test_OptContextProfiler.mq5` / `test_core_runtime_and_configuration_b37d_integration` | `Scripts/Tests/Test_SafeMathAndNewBar.mq5` / `test_core_runtime_and_configuration_b37d_e2e` |
+| @bdd: BDD.01.03.b37d | Performance budgets are evidenced | `Scripts/Tests/Test_OptContextProfiler.mq5` / `test_core_runtime_and_configuration_b37d_unit` | `Scripts/Tests/Test_OptContextProfiler.mq5` / `test_core_runtime_and_configuration_b37d_integration` | `Scripts/Tests/Test_SafeMathAndNewBar.mq5` / `test_core_runtime_and_configuration_b37d_e2e` |
 | @bdd: BDD.01.03.cb03 | Equity sizing remains placeholder | `Scripts/Tests/Test_CommonInputs.mq5` / `test_core_runtime_and_configuration_cb03_unit` | `Scripts/Tests/Test_OptContextProfiler.mq5` / `test_core_runtime_and_configuration_cb03_integration` | `Scripts/Tests/Test_SafeMathAndNewBar.mq5` / `test_core_runtime_and_configuration_cb03_e2e` |
 
 ## Test Cases

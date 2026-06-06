@@ -10,8 +10,8 @@
 | Document Type | iplan-registry |
 | Layer | 8 |
 | Total Permanent Plans | 12 |
-| Last Updated | 2026-06-03 |
-| Status | Draft registry; no implementation sessions started |
+| Last Updated | 2026-06-05 |
+| Status | 1 completed plan; 11 draft plans |
 
 ## Scope
 
@@ -22,62 +22,32 @@ The final documentation closeout is tracked as a registry execution step rather 
 ## Implementation Sequence
 
 ```mermaid
-sequenceDiagram
-  autonumber
-  participant Executor as Implementation Executor
-  participant T11 as IPLAN-11 Testing Support
-  participant T09 as IPLAN-09 Core Runtime
-  participant T05 as IPLAN-05 Persistence
-  participant T06 as IPLAN-06 Market Context
-  participant T04 as IPLAN-04 Position State
-  participant T07 as IPLAN-07 Behavior Policies
-  participant T10 as IPLAN-10 Visualization
-  participant T02 as IPLAN-02 Coordinator
-  participant T03 as IPLAN-03 Execution Safety
-  participant T01 as IPLAN-01 Strategy Surface
-  participant T12 as IPLAN-12 1minscalpv3 Port
-  participant T13 as IPLAN-13 Bullish/Bearish Port
-  participant Docs as Documentation Closeout
-
-  Executor->>T09: Implement CommonInputs, OptContext, SafeMath, Profiler, NewBarDetector
-  T09-->>Executor: Runtime and shared interface contracts ready
-  Executor->>T11: Build deterministic fakes, assertions, and harnesses
-  T11-->>Executor: Shared test support ready
-  par Foundation branches
-    Executor->>T05: Implement state store, logging, alerts, trade evidence
-  and
-    Executor->>T06: Implement symbol metadata, sessions, market context
-  end
-  par Component branches
-    Executor->>T04: Implement account adapters, ownership, state machine
-  and
-    Executor->>T07: Implement indicators, stops, sizers, trailing
-  and
-    Executor->>T10: Implement optional rendering services
-  end
-  Executor->>T02: Implement Signal, TradeIntent, coordinator processing, update sync
-  T02-->>Executor: Intent pipeline ready
-  Executor->>T03: Implement guarded execution and risk controls
-  T03-->>Executor: Broker boundary ready
-  Executor->>T01: Implement StrategyBase, template, samples, authoring surface
-  T01-->>Executor: Strategy authoring surface ready
-  par Hedging ports
-    Executor->>T12: Port 1minscalpv3_hedging.mq5
-  and
-    Executor->>T13: Port BullishBearish Engulfing all v7 hedging.mq5
-  end
-  T12-->>Executor: 1minscalpv3 port ready
-  T13-->>Executor: Bullish/Bearish port ready
-  Executor->>Docs: Write codebase reference docs and new strategy creation guide
-  Docs-->>Executor: Documentation closeout complete
+flowchart TD
+  T1["Tier 1: Core Runtime<br>COMPLETED<br>IPLAN-09"]
+  T2["Tier 2: Testing Foundation<br>NOT_STARTED<br>IPLAN-11"]
+  T1 --> T2
+  T3["Tier 3: Persistence and Market Foundations<br>NOT_STARTED<br>IPLAN-05, IPLAN-06"]
+  T2 --> T3
+  T4["Tier 4: State, Behavior, and Optional Services<br>NOT_STARTED<br>IPLAN-04, IPLAN-07, IPLAN-10"]
+  T3 --> T4
+  T5["Tier 5: Coordinator<br>NOT_STARTED<br>IPLAN-02"]
+  T4 --> T5
+  T6["Tier 6: Execution Safety<br>NOT_STARTED<br>IPLAN-03"]
+  T5 --> T6
+  T7["Tier 7: Strategy Surface<br>NOT_STARTED<br>IPLAN-01"]
+  T6 --> T7
+  T8["Tier 8: Strategy Ports<br>NOT_STARTED<br>IPLAN-12, IPLAN-13"]
+  T7 --> T8
+  T9["Tier 9: Documentation Closeout<br>NOT_STARTED<br>documentation_closeout"]
+  T8 --> T9
 ```
 
 ## Registry
 
 | ID | Title | Source | Status | Complexity | Files | Depends On |
 | --- | --- | --- | --- | --- | --- | --- |
-| IPLAN-09 | Core Runtime and Configuration Implementation | @spec: SPEC-09 | Draft | 4 | 9 | None |
-| IPLAN-11 | Testing Support and Harnesses Implementation | @spec: SPEC-11 | Draft | 4 | 7 | IPLAN-09 |
+| IPLAN-09 | Core Runtime and Configuration Implementation | @spec: SPEC-09 | Completed | 4 | 10 | None |
+| IPLAN-11 | Testing Support and Harnesses Implementation | @spec: SPEC-11 | Draft | 4 | 9 | IPLAN-09 |
 | IPLAN-05 | Persistence and Audit Evidence Implementation | @spec: SPEC-05 | Draft | 4 | 8 | IPLAN-09, IPLAN-11 |
 | IPLAN-06 | Market Session and Symbol Context Implementation | @spec: SPEC-06 | Draft | 4 | 6 | IPLAN-09, IPLAN-11 |
 | IPLAN-04 | Position Account Mode and State Implementation | @spec: SPEC-04 | Draft | 5 | 9 | IPLAN-05, IPLAN-11 |
@@ -101,7 +71,7 @@ sequenceDiagram
 | 6 | Execution Safety | IPLAN-03 | NOT_STARTED |
 | 7 | Strategy Surface | IPLAN-01 | NOT_STARTED |
 | 8 | Strategy Ports | IPLAN-12, IPLAN-13 | NOT_STARTED |
-| 9 | Documentation Closeout | Codebase reference docs and new strategy creation guide | NOT_STARTED |
+| 9 | Documentation Closeout | documentation_closeout | NOT_STARTED |
 
 ## Final Documentation Step
 
@@ -119,26 +89,27 @@ sequenceDiagram
 ### Documentation Acceptance Checks
 
 - Documentation references implemented file paths and public interfaces, not planned placeholders.
-- `Docs/AUTHORING.md` walks through creating a new strategy from the template through compile and first test.
-- `Docs/ARCHITECTURE.md` and `Docs/MODULES/*.md` document the implemented codebase, dependencies, and no-bypass boundaries.
-- `Docs/TESTING.md` explains how to run each declared script and collect release evidence.
-- Examples use the TradeSpine root `MQL5/Experts/Main/TradeSpine/` and quoted relative includes.
+- AUTHORING walks through creating a new strategy from the template through compile and first test.
+- ARCHITECTURE and MODULES document the codebase after implementation, including dependencies and no-bypass boundaries.
+- TESTING documents how to run each declared script and how to collect release evidence.
+- Docs use the TradeSpine root MQL5/Experts/Main/TradeSpine/ and quoted relative include examples.
 
 ## Cross-Plan Obligations
 
 | ID | Obligation | Owner |
 | --- | --- | --- |
-| CPO-001 | All framework code stays under `MQL5/Experts/Main/TradeSpine` with quoted relative includes; strategy files must not include terminal-global Trade or Expert headers. | IPLAN-09 |
-| CPO-002 | Every plan writes tests before implementation and leaves file manifest status untouched until a coding session starts. | IPLAN-11 |
+| CPO-001 | All framework code stays under MQL5/Experts/Main/TradeSpine with quoted relative includes; strategy files must not include terminal-global Trade or Expert headers. | IPLAN-09 |
+| CPO-002 | Every plan writes tests before implementation and leaves file_manifest status untouched until a coding session starts. | IPLAN-11 |
 | CPO-003 | Code inventory entries are added only by implementation sessions after files are actually created or modified. | IPLAN-00 |
 | CPO-004 | After source implementation, run documentation closeout for codebase reference documentation and the new strategy creation guide. | IPLAN-00 |
+| CPO-005 | Run aidoc-flow commands from MQL5/Experts/Main/TradeSpine so the authoritative TradeSpine .aidoc/profile.yaml governs docs generation and review. | IPLAN-00 |
 
 ## Deferred Items
 
 | Item | Reason | Revisit Trigger |
 | --- | --- | --- |
-| IPLAN-08 | `SPEC-08` is process/governance scope and `TDD-00` excludes it from Layer 7 code TDD generation. | Create a code-deliverable SPEC if release governance automation becomes source implementation scope. |
+| IPLAN-08 | SPEC-08 is process/governance scope and TDD-00 excludes it from Layer 7 code TDD generation. | Create a code-deliverable SPEC if release governance automation becomes source implementation scope. |
 
 ## Implementation Notes
 
-All permanent IPLANs remain in pre-code state: tests first, implementation files after, `NOT_STARTED` manifest entries, and empty code inventories. The documentation closeout must not mark implementation files complete; it verifies and documents the completed source tree after the component plans have run.
+Permanent IPLANs follow the registry state above: completed plans retain completed counts, draft plans stay test-first, and implementation files must not be marked done until their coding sessions verify them. The documentation closeout verifies and documents the completed source tree after the component plans have run.

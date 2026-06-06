@@ -15,10 +15,12 @@ static int last_processed_bar = -1;
 
 int OnCalculate(const int rates_total, const int prev_calculated, ...)
 {
+   int initial_last = last_processed_bar;
+
    for(int i = start; i < rates_total; i++)
    {
       // Detect if this is a NEW bar (not recalculation)
-      bool is_new_bar = (i > last_processed_bar);
+      bool is_new_bar = (i > initial_last);
 
       double current_value = GetValue(i);
 
@@ -44,11 +46,13 @@ int OnCalculate(const int rates_total, const int prev_calculated, ...)
 
       // Store for next recalculation
       BufHidden[i] = current_value;
-      last_processed_bar = i;
 
       // Calculate indicator using sum
       BufVisible[i] = sum / window_size;
    }
+
+   if(rates_total > 0)
+      last_processed_bar = rates_total - 1;
 
    return rates_total;
 }
