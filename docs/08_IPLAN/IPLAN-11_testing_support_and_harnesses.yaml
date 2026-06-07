@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-11"
   source_tdd: "@tdd: TDD.11.04.6805"
   total_sections: 6
-  last_updated: "2026-06-05T00:00:00-03:00"
+  last_updated: "2026-06-07T16:33:41-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
@@ -17,12 +17,12 @@ document_control:
   status: Draft
   version: "1.0"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-06-05T00:00:00-03:00"
+  last_updated: "2026-06-07T16:33:41-03:00"
   author: "Codex"
   component: "Shared test doubles, clocks, log sinks, assertions, and harness primitives"
   complexity: 4
   estimated_files: 9
-  session_count: 1
+  session_count: 2
   readiness_gate: "TDD-11 audit PASS 95/100"
   source_inputs:
     - "../07_TDD/TDD-11_testing_support_and_harnesses/TDD-11_testing_support_and_harnesses.yaml"
@@ -53,10 +53,10 @@ file_manifest:
       purpose: "Manual evidence pack and automated/manual gate separation tests."
     - path: "Scripts/Tests/Support/FakeClock.mqh"
       order: 4
-      status: NOT_STARTED
-      session: null
+      status: PARTIAL
+      session: 2
       verified: false
-      purpose: "Deterministic time, session, timeout, and daily reset support."
+      purpose: "Adopted deterministic IClock implementation; pending executable clock/assertion tests before DONE."
     - path: "Scripts/Tests/Support/FakeLogSink.mqh"
       order: 5
       status: NOT_STARTED
@@ -148,6 +148,19 @@ session_handoff:
         tests_passing: null
         coverage: null
         lint_clean: null
+    - date: "2026-06-07"
+      agent: "Codex doc-iplan-fixer"
+      files_touched:
+        - path: "Scripts/Tests/Support/FakeClock.mqh"
+          action: adopted
+          status: PARTIAL
+      partial_work: "Existing tracked FakeClock.mqh adopted into IPLAN-11 history. It implements IPLAN-09 IClock with deterministic Set/Advance/Now behavior, but remains unverified until Test_TestSupportClock.mq5 and Include/Testing/Assert.mqh are implemented."
+      blockers: "None for adoption. Do not mark FakeClock.mqh DONE until the executable clock/assertion harness compiles and passes."
+      next_session_directive: "Start with Scripts/Tests/Test_TestSupportClock.mq5 and Include/Testing/Assert.mqh, then verify the adopted Scripts/Tests/Support/FakeClock.mqh before continuing with FakeLogSink and ScenarioHarness."
+      validation_results:
+        tests_passing: null
+        coverage: null
+        lint_clean: null
 
 traceability:
   upstream:
@@ -162,4 +175,9 @@ traceability:
     code_paths: ["@code: Include/Testing/Assert.mqh", "@code: Include/Testing/Mocks.mqh", "@code: Scripts/Tests/Support/FakeClock.mqh", "@code: Scripts/Tests/Support/FakeLogSink.mqh", "@code: Scripts/Tests/Support/ScenarioHarness.mqh", "@code: Scripts/Tests/RunAllTests.mq5"]
     test_paths: ["@tests: Scripts/Tests/Test_TestSupportClock.mq5", "@tests: Scripts/Tests/Test_TestSupportScenarioHarness.mq5", "@tests: Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"]
   code_inventory:
-    files: []
+    files:
+      - path: "Scripts/Tests/Support/FakeClock.mqh"
+        status: adopted
+        session: 2
+        verified: false
+        evidence: "Tracked source file from commit 9b2b5c6; executable IPLAN-11 clock/assertion validation not implemented yet."

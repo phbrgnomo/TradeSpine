@@ -80,7 +80,7 @@ struct CommonInputs
       entry_window_start = 0;
       entry_window_end   = 0;
       sizing_mode        = (ENUM_SIZING_MODE) - 1;
-      signal_timeframe   = PERIOD_CURRENT;
+      signal_timeframe   = (ENUM_TIMEFRAMES) - 1;
      }
 
    //-------------------------------------------------------------------
