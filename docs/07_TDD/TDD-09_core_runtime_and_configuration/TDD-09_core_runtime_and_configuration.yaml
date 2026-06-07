@@ -27,7 +27,7 @@ document_control:
   date_created: "2026-06-02T00:00:00-03:00"
   last_updated: "2026-06-04T00:00:00-03:00"
   author: "Codex"
-  component: "OptContext, SafeMath, Profiler, CommonInputs, CNewBarDetector"
+  component: "COptContext, SafeMath, CProfiler, CommonInputs, CNewBarDetector"
   spec_reference: "@spec: SPEC-09"
   source_spec: "../../06_SPEC/SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.yaml"
   iplan_ready_score: "94/100"
@@ -129,9 +129,9 @@ test_cases:
     cases:
       - id: "TDD.09.04.8050"
         type: integration
-        name: "OptContext disables high-I/O diagnostics in optimization"
+        name: "COptContext disables high-I/O diagnostics in optimization"
         spec_ref: "@spec: SPEC-09"
-        contract: "OptContext plus Profiler and fake log sink"
+        contract: "COptContext plus CProfiler and fake log sink"
         test_file: "Scripts/Tests/Test_OptContextProfiler.mq5"
         test_function: "test_core_runtime_and_configuration_integration_contract"
         setup:
@@ -140,7 +140,7 @@ test_cases:
         action:
           description: "tester=true, optimization=true (optimization unconditionally silences all non-core work; no audit override)"
         expected_state:
-          - "Profiler and logging return without persistent writes"
+          - "CProfiler and logging return without persistent writes"
   e2e_tests:
     cases:
       - id: "TDD.09.04.bb66"

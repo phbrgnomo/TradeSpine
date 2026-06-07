@@ -6,8 +6,8 @@
 //| @spec: SPEC-09  @iplan: IPLAN-09                                 |
 //|                                                                  |
 //| Stable shared seams for the core runtime: a time-source clock,   |
-//| a diagnostics log sink (primitive params only), the runtime/     |
-//| profiling data models, and concrete test doubles.                |
+//| a diagnostics log sink (primitive params only), and the runtime/ |
+//| profiling data models consumed by production and test modules.   |
 //|                                                                  |
 //| SPEC-09 faithful, minimal scope. Trade/position/state seams      |
 //| (ITradePort, IPositionView, IStateStore) are intentionally       |
@@ -79,41 +79,6 @@ struct BenchmarkBaseline
    long   baseline_memory;        // memory before component under test
    long   component_memory_delta; // measured delta (MB); negative = noise/GC, not savings
    string timing_source;          // runtime timing source used
-  };
-
-//+------------------------------------------------------------------+
-//| FakeClock - deterministic IClock test double.                    |
-//+------------------------------------------------------------------+
-class FakeClock : public IClock
-  {
-private:
-   datetime m_now;
-public:
-                     FakeClock(void) { m_now = 0; }
-   void              Set(const datetime t) { m_now = t; }
-   void              Advance(const int seconds) { m_now += seconds; }
-   datetime          Now(void) override { return(m_now); }
-  };
-
-//+------------------------------------------------------------------+
-//| CapturingLogSink - ILogSink test double that counts writes so    |
-//| tests can prove "no persistent writes" when diagnostics gated.   |
-//+------------------------------------------------------------------+
-class CapturingLogSink : public ILogSink
-  {
-private:
-   int    m_count;
-   string m_last;
-public:
-                     CapturingLogSink(void) { m_count = 0; m_last = ""; }
-   void              Write(const ENUM_LOG_LEVEL level, const string category, const string message) override
-     {
-      m_count++;
-      m_last = StringFormat("[%d] %s: %s", (int)level, category, message);
-     }
-   int               Count(void) const { return(m_count); }
-   string            Last(void) const  { return(m_last); }
-   void              Reset(void)       { m_count = 0; m_last = ""; }
   };
 
 #endif // TRADESPINE_INTERFACES_MQH

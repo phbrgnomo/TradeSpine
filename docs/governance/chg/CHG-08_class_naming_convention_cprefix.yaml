@@ -1,0 +1,202 @@
+id: CHG-08
+title: "Apply MQL5 C-prefix convention to OptContext and Profiler class identifiers"
+
+# =============================================================================
+# Metadata
+# =============================================================================
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-07"
+
+  change_level:
+    value: C2  # Section update — identifier correction; no behavioral change
+
+  change_source:
+    value: feedback  # Implementation phase (IPLAN-09 code review) surfaced the inconsistency
+
+# =============================================================================
+# Section 1: Change Control
+# =============================================================================
+
+change_control:
+  chg_id: "CHG-08"
+  status: Approved   # C2 / GATE-CODE self-approved
+  change_level: C2
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null   # not a framework-spec change
+  author: "phbr"
+  date_proposed: "2026-06-07T00:00:00"
+  date_approved: "2026-06-07T00:00:00"
+  date_implemented: "2026-06-07T00:00:00"
+  supersedes: []
+
+# =============================================================================
+# Section 2: Change Description
+# =============================================================================
+
+change_description:
+  what: |
+    Rename two class identifiers in SPEC-09, TDD-09, and all Code artifacts to
+    follow the MQL5 C-prefix naming convention that is standard across the MT5
+    standard library and the rest of the TradeSpine codebase (CNewBarDetector
+    already used it; OptContext and Profiler did not).
+
+    Renames:
+      OptContext  → COptContext   (Include/Core/OptContext.mqh, SPEC-09, TDD-09)
+      Profiler    → CProfiler     (Include/Core/Profiler.mqh,  SPEC-09, TDD-09)
+
+    All associated test files and the global g_profiler pointer type are updated
+    accordingly. No interfaces, contracts, method signatures, or behavioral
+    requirements change.
+
+  why: |
+    The MT5 standard library convention prefixes all class names with "C".
+    CNewBarDetector already followed this convention while OptContext and Profiler
+    did not, creating an inconsistency within the same SPEC-09 component set.
+    Aligning the identifiers now, before any downstream strategy EA includes these
+    headers, avoids a more disruptive rename later when consumers multiply.
+
+  trigger: |
+    Code review of IPLAN-09 deliverables (2026-06-07) identified the naming
+    inconsistency. User instruction confirmed adoption of the standard convention
+    and requested SDD documentation be updated to match.
+
+# =============================================================================
+# Section 3: Impact Assessment
+# =============================================================================
+
+impact_assessment:
+  affected_layers:
+    - layer: SPEC
+      artifacts: ["SPEC-09"]
+      impact: |
+        Update component table entries, class signatures, Mermaid diagram labels,
+        and implementation-note references:
+          - component list: "OptContext" → "COptContext", "Profiler" → "CProfiler"
+          - signatures: "class OptContext" → "class COptContext",
+                        "class Profiler"   → "class CProfiler"
+          - Mermaid: Runtime["OptContext"] → Runtime["COptContext"],
+                     Profiler["Profiler"]  → Profiler["CProfiler"]
+          - Notes: identifier references in constraint/pattern bullets updated
+
+    - layer: TDD
+      artifacts: ["TDD-09"]
+      impact: |
+        Update component list and integration-test contract references:
+          - component list: "OptContext" → "COptContext", "Profiler" → "CProfiler"
+          - TDD.09.04.8050 test name and contract string updated
+
+    - layer: Code
+      artifacts: ["Include/Core/OptContext.mqh", "Include/Core/Profiler.mqh",
+                  "Scripts/Tests/Test_OptContextProfiler.mq5"]
+      impact: |
+        Already implemented as part of IPLAN-09 delivery (see implementation below).
+        Class declarations, constructor names, pointer types, and macro global type
+        updated. Test file updated: class instantiations, include paths (unchanged —
+        file names OptContext.mqh / Profiler.mqh are not renamed), CaptureBaselineMemory
+        signature change (scenario param dropped — separate IPLAN-09 fix, same commit).
+
+  cascade_direction: downstream→upstream  # feedback bubble-up: Code → TDD → SPEC
+
+  risk_level: Low  # Pure identifier rename; no behavioral change; no public consumers yet
+
+# =============================================================================
+# Section 4: Implementation
+# =============================================================================
+
+implementation:
+  steps:
+    - step: "Rename class OptContext → COptContext; update constructor and all references in OptContext.mqh"
+      artifact: "Include/Core/OptContext.mqh"
+      status: Completed
+
+    - step: "Rename class Profiler → CProfiler; update constructor, m_ctx type (COptContext*), g_profiler global type, and ownership comment in Profiler.mqh"
+      artifact: "Include/Core/Profiler.mqh"
+      status: Completed
+
+    - step: "Update Test_OptContextProfiler.mq5: replace all COptContext/CProfiler class instantiations; fix AllowsProfiler() method name (replace_all undid it to AllowsCProfiler — corrected back); update CaptureBaselineMemory() call (scenario param dropped)"
+      artifact: "Scripts/Tests/Test_OptContextProfiler.mq5"
+      status: Completed
+
+    - step: "Update SPEC-09 YAML: component names, class signatures, Mermaid labels, implementation notes"
+      artifact: "SPEC-09"
+      status: Completed
+
+    - step: "Update TDD-09 YAML: component list and integration-test contract string"
+      artifact: "TDD-09"
+      status: Completed
+
+    - step: "Regenerate SPEC-09 and TDD-09 readable.md from updated YAML (deferred — use doc-spec / doc-tdd skills)"
+      artifact: "SPEC-09, TDD-09 readable.md"
+      status: Pending
+
+  artifacts_modified:
+    - id: "Include/Core/OptContext.mqh"
+      file: "Include/Core/OptContext.mqh"
+      change_type: modified
+    - id: "Include/Core/Profiler.mqh"
+      file: "Include/Core/Profiler.mqh"
+      change_type: modified
+    - id: "Scripts/Tests/Test_OptContextProfiler.mq5"
+      file: "Scripts/Tests/Test_OptContextProfiler.mq5"
+      change_type: modified
+    - id: "SPEC-09"
+      file: "docs/06_SPEC/SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.yaml"
+      change_type: modified
+    - id: "TDD-09"
+      file: "docs/07_TDD/TDD-09_core_runtime_and_configuration/TDD-09_core_runtime_and_configuration.yaml"
+      change_type: modified
+
+# =============================================================================
+# Section 5: Verification
+# =============================================================================
+
+verification:
+  checks:
+    - check: "No occurrence of bare 'class OptContext' or 'class Profiler' in code or YAML artifacts"
+      result: Pass
+      method: "grep review of modified files"
+
+    - check: "AllowsProfiler() method name preserved in COptContext and all call sites"
+      result: Pass
+      method: "grep review — method name is not a class identifier; C-prefix applies to class names only"
+
+    - check: "Include file paths (OptContext.mqh, Profiler.mqh) unchanged — only class names renamed"
+      result: Pass
+      method: "file names confirmed unchanged"
+
+    - check: "Test suite labels (Test_OptContextProfiler, ReportSummary strings) unchanged — suite names are not class names"
+      result: Pass
+      method: "grep review of test script OnStart()"
+
+    - check: "TDD trace alias function names unchanged (test_core_runtime_and_configuration_*)"
+      result: Pass
+      method: "grep review — trace aliases are free functions, not class names; unaffected"
+
+    - check: "No behavioral contract, interface, or traceability link broken"
+      result: Pass
+      method: "Impact assessment confirms pure identifier rename with no contract change"
+
+# =============================================================================
+# Section 6: Gate Approval (C3 only — null for C2)
+# =============================================================================
+
+gate_approval:
+  gate: null
+  approver: null
+  approval_date: null
+  conditions: []
+
+# =============================================================================
+# Section 7: Rollback Plan
+# =============================================================================
+
+rollback_plan:
+  strategy: revert-commit
+  steps:
+    - "git revert the commit that introduced this CHG and the corresponding code edits"
+    - "No downstream consumers exist yet (IPLAN-09 is the initial delivery); revert is clean"
+  estimated_effort: "< 5 minutes"

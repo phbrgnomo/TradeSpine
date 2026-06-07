@@ -16,7 +16,7 @@ document_control:
   date_created: "2026-06-02T00:20:00-03:00"
   last_updated: "2026-06-04T00:00:00-03:00"
   author: "Codex"
-  component: "OptContext, SafeMath, Profiler, CommonInputs, CNewBarDetector"
+  component: "COptContext, SafeMath, CProfiler, CommonInputs, CNewBarDetector"
   tdd_ready_score: "93/100"
 
 ## Section 2: Component Overview
@@ -27,11 +27,11 @@ component_overview:
     tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
     mermaid: |
       flowchart LR
-        Inputs["CommonInputs"] --> Runtime["OptContext"]
+        Inputs["CommonInputs"] --> Runtime["COptContext"]
         Runtime --> Coordinator["CTradeCoordinator"]
         Runtime --> Logging["Evidence/logging"]
         SafeMath["SafeMath"] --> Sizing["Sizing/stops"]
-        Profiler["Profiler"] --> Release["Performance evidence"]
+        Profiler["CProfiler"] --> Release["Performance evidence"]
         Bars["CNewBarDetector"] --> Strategy["Strategy hooks"]
   language: "MQL5"
   dependencies:
@@ -57,7 +57,7 @@ interfaces:
     - name: "ILogSink"
       type: "interface"
       signature: "interface ILogSink"
-      description: "Diagnostics seam consumed by Profiler and future evidence sinks. Accepts ENUM_LOG_LEVEL for compile-time severity enforcement. Concrete CSV/journal sinks arrive with IPLAN-10+."
+      description: "Diagnostics seam consumed by CProfiler and future evidence sinks. Accepts ENUM_LOG_LEVEL for compile-time severity enforcement. Concrete CSV/journal sinks arrive with IPLAN-10+."
       errors:
         - "None; concrete implementations are responsible for surfacing write failures."
     - name: "ENUM_LOG_LEVEL"
@@ -72,9 +72,9 @@ interfaces:
       description: "Canonical framework input binding for magic, mode, session, sizing, risk, logging, and documentation-visible strategy settings."
       errors:
         - "INIT_FAILED when required input combinations are invalid or unsupported in v1."
-    - name: "OptContext"
+    - name: "COptContext"
       type: "class"
-      signature: "class OptContext"
+      signature: "class COptContext"
       description: "Detects tester/optimization/live mode and exposes policy decisions for logging, diagnostics, profiling, and release evidence."
       errors:
         - "None; invalid environment reads default to conservative live-safe behavior."
@@ -84,9 +84,9 @@ interfaces:
       description: "Shared numeric normalization, finite-value, price-grid, lot-grid, and comparison helpers."
       errors:
         - "False/0.0 sentinel when value cannot be normalized safely."
-    - name: "Profiler"
+    - name: "CProfiler"
       type: "class"
-      signature: "class Profiler"
+      signature: "class CProfiler"
       description: "Low-overhead timing and memory-budget evidence helper gated by runtime context."
       errors:
         - "Disabled in hot paths unless explicitly enabled for evidence."
@@ -199,13 +199,13 @@ behavior:
   state_transitions:
     - from: "RuntimeUnbound"
       to: "RuntimeReady"
-      trigger: "CommonInputs and OptContext initialize successfully."
+      trigger: "CommonInputs and COptContext initialize successfully."
       source: "@bdd: BDD.01.03.aa68"
   error_handling:
     - condition: "Unsupported v2 placeholder input is selected in v1."
       response: "Fail initialization or visibly reject the feature without silently mapping it to a v1 behavior."
       source: "@bdd: BDD.01.03.cb03"
-    - condition: "Profiler is invoked on a disabled hot path."
+    - condition: "CProfiler is invoked on a disabled hot path."
       response: "Return without I/O or persistent writes."
       source: "@bdd: BDD.01.03.b37d"
 
@@ -213,14 +213,14 @@ behavior:
 implementation_notes:
   constraints:
     - "Core runtime utilities MUST NOT call broker execution APIs."
-    - "Profiler and OptContext MUST be dependency-injectable for Tier-1 tests."
+    - "CProfiler and COptContext MUST be dependency-injectable for Tier-1 tests."
     - "CommonInputs is the canonical source for framework-wide input names; strategy templates document only their strategy-specific additions."
     - "Memory evidence MUST record the benchmark baseline, component delta, terminal/build context, and scenario name."
   patterns:
     - "Use pure functions in SafeMath where no terminal state is needed."
     - "Use lightweight runtime-mode predicates before diagnostic or evidence writes."
     - "Use CNewBarDetector inside strategy hook code, not as a framework-level hidden signal scheduler."
-    - "Use documented MQL runtime timing and memory introspection APIs through Profiler rather than direct calls scattered across components."
+    - "Use documented MQL runtime timing and memory introspection APIs through CProfiler rather than direct calls scattered across components."
   performance_considerations:
     - "Runtime helpers must respect @threshold: PRD.01.perf.idle_tick, @threshold: PRD.01.perf.memory_per_ea, and @threshold: PRD.01.perf.tester_overhead."
 

@@ -5,20 +5,59 @@
 //| @tests: Scripts/Tests/Test_OptContextProfiler.mq5                |
 //| @tdd: TDD.09.04.8050  @spec: SPEC-09  @iplan: IPLAN-09           |
 //|                                                                  |
-//| Tier-1 integration tests for OptContext + Profiler gating.       |
+//| Tier-1 integration tests for COptContext + CProfiler gating.       |
 //| Optimization unconditionally silences all non-core work;         |
 //| there is no audit_in_optimization override.                      |
 //| No broker execution APIs.                                        |
 //+------------------------------------------------------------------+
 #property copyright "phbr"
 #property version   "1.0"
-#property description "TradeSpine IPLAN-09 - OptContext and Profiler tests"
-#property script_show_inputs
-
+#property description "TradeSpine IPLAN-09 - COptContext and CProfiler tests"
 #include "TestAssert.mqh"
 #include "../../Include/Core/Interfaces.mqh"
 #include "../../Include/Core/OptContext.mqh"
 #include "../../Include/Core/Profiler.mqh"
+
+//+------------------------------------------------------------------+
+//| Local test double for ILogSink.                                  |
+//| Keep local until another test file needs the same fake; shared   |
+//| test doubles belong under Scripts/Tests/Support, never Core.     |
+//+------------------------------------------------------------------+
+class CapturingLogSink : public ILogSink
+  {
+private:
+   int    m_count;
+   string m_last;
+
+public:
+   CapturingLogSink(void)
+     {
+      m_count = 0;
+      m_last  = "";
+     }
+
+   void Write(const ENUM_LOG_LEVEL level, const string category, const string message) override
+     {
+      m_count++;
+      m_last = StringFormat("[%d] %s: %s", (int)level, category, message);
+     }
+
+   int Count(void) const
+     {
+      return(m_count);
+     }
+
+   string Last(void) const
+     {
+      return(m_last);
+     }
+
+   void Reset(void)
+     {
+      m_count = 0;
+      m_last  = "";
+     }
+  };
 
 //+------------------------------------------------------------------+
 //| Helper: build a RuntimeMode.                                     |
@@ -39,12 +78,12 @@ bool Test_OptimizationGated()
   {
    bool ok = true;
    RuntimeMode mode = MakeMode(true, true);
-   OptContext ctx(mode);
+   COptContext ctx(mode);
 
    ok &= CheckFalse(ctx.AllowsHighVolumeEvidence(),
                     "High-volume evidence disabled in optimization");
    ok &= CheckFalse(ctx.AllowsDiagnostics(), "Diagnostics disabled in optimization");
-   ok &= CheckFalse(ctx.AllowsProfiler(),    "Profiler disabled in optimization");
+   ok &= CheckFalse(ctx.AllowsProfiler(),    "CProfiler disabled in optimization");
    ok &= Check(ctx.IsOptimizing(),           "IsOptimizing true");
    ok &= Check(ctx.IsTesting(),              "IsTesting true");
    return(ok);
@@ -57,13 +96,13 @@ bool Test_TesterVsLive()
   {
    bool ok = true;
    RuntimeMode tester = MakeMode(true, false);
-   OptContext ctx_t(tester);
-   ok &= Check(ctx_t.AllowsProfiler(),    "Profiler on by default in plain tester");
+   COptContext ctx_t(tester);
+   ok &= Check(ctx_t.AllowsProfiler(),    "CProfiler on by default in plain tester");
    ok &= Check(ctx_t.AllowsDiagnostics(), "Diagnostics on in plain tester");
 
    RuntimeMode live = MakeMode(false, false);
-   OptContext ctx_l(live);
-   ok &= CheckFalse(ctx_l.AllowsProfiler(), "Profiler off by default in live");
+   COptContext ctx_l(live);
+   ok &= CheckFalse(ctx_l.AllowsProfiler(), "CProfiler off by default in live");
    ok &= Check(ctx_l.IsLive(),              "IsLive true off-tester");
    return(ok);
   }
@@ -75,9 +114,9 @@ bool Test_ProfilerNoWriteWhenGated()
   {
    bool ok = true;
    RuntimeMode mode = MakeMode(true, true); // optimization -> all gated
-   OptContext ctx(mode);
+   COptContext ctx(mode);
    CapturingLogSink sink;
-   Profiler prof(GetPointer(ctx), GetPointer(sink));
+   CProfiler prof(GetPointer(ctx), GetPointer(sink));
 
    prof.Start("entry_pipeline");
    prof.Stop("entry_pipeline");
@@ -88,7 +127,7 @@ bool Test_ProfilerNoWriteWhenGated()
    ProfileSample s = prof.GetSample("entry_pipeline");
    ok &= CheckFalse(s.enabled,        "Gated sample reports enabled=false");
    ok &= CheckEqualL(s.elapsed_us, 0, "Gated sample reports zero elapsed");
-   ok &= CheckFalse(prof.IsActive(),  "Profiler.IsActive false under gated policy");
+   ok &= CheckFalse(prof.IsActive(),  "CProfiler.IsActive false under gated policy");
    return(ok);
   }
 
@@ -99,11 +138,11 @@ bool Test_ProfilerActiveRecords()
   {
    bool ok = true;
    RuntimeMode mode = MakeMode(true, false); // plain tester -> profiler on
-   OptContext ctx(mode);
+   COptContext ctx(mode);
    CapturingLogSink sink;
-   Profiler prof(GetPointer(ctx), GetPointer(sink));
+   CProfiler prof(GetPointer(ctx), GetPointer(sink));
 
-   ok &= Check(prof.IsActive(), "Profiler active in plain tester");
+   ok &= Check(prof.IsActive(), "CProfiler active in plain tester");
    prof.Start("calc");
    long acc = 0;
    for(int i = 0; i < 1000; i++)
@@ -131,12 +170,12 @@ bool Test_ProfilerMemoryEvidence()
   {
    bool ok = true;
    RuntimeMode mode = MakeMode(true, false); // plain tester -> profiler on
-   OptContext ctx(mode);
-   Profiler prof(GetPointer(ctx));
+   COptContext ctx(mode);
+   CProfiler prof(GetPointer(ctx));
 
    int build = (int)TerminalInfoInteger(TERMINAL_BUILD);
 
-   long baseline = prof.CaptureBaselineMemory("bench_test");
+   long baseline = prof.CaptureBaselineMemory();
    BenchmarkBaseline b = prof.GetBenchmarkData("bench_test", baseline);
 
    ok &= CheckEqualStr(b.scenario, "bench_test",
@@ -158,8 +197,8 @@ bool Test_ProfilerNoDuplicateStop()
   {
    bool ok = true;
    RuntimeMode mode = MakeMode(true, false);
-   OptContext ctx(mode);
-   Profiler prof(GetPointer(ctx));
+   COptContext ctx(mode);
+   CProfiler prof(GetPointer(ctx));
 
    prof.Start("x");
    long acc = 0;
@@ -184,9 +223,9 @@ bool Test_ProfilerScopeOverflow()
   {
    bool ok = true;
    RuntimeMode mode = MakeMode(true, false);
-   OptContext ctx(mode);
+   COptContext ctx(mode);
    CapturingLogSink sink;
-   Profiler prof(GetPointer(ctx), GetPointer(sink));
+   CProfiler prof(GetPointer(ctx), GetPointer(sink));
 
    // Fill every slot
    for(int i = 0; i < PROFILER_MAX_SCOPES; i++)
@@ -207,7 +246,7 @@ bool Test_ProfilerScopeOverflow()
 
 //+------------------------------------------------------------------+
 //| M1: injected diagnostics_enabled=false is honored outside        |
-//| optimization. Profiler policy (tester/non-opt) is independent   |
+//| optimization. CProfiler policy (tester/non-opt) is independent   |
 //| of the diagnostics flag.                                         |
 //+------------------------------------------------------------------+
 bool Test_DiagnosticsInjectedDisabled()
@@ -217,12 +256,12 @@ bool Test_DiagnosticsInjectedDisabled()
    mode.is_tester           = true;
    mode.is_optimization     = false;
    mode.diagnostics_enabled = false; // explicitly disabled outside optimization
-   OptContext ctx(mode);
+   COptContext ctx(mode);
 
    ok &= CheckFalse(ctx.AllowsDiagnostics(),
                     "Injected diagnostics_enabled=false honored outside optimization");
    ok &= Check(ctx.AllowsProfiler(),
-               "Profiler policy (tester, non-opt) unaffected by diagnostics flag");
+               "CProfiler policy (tester, non-opt) unaffected by diagnostics flag");
    ok &= CheckFalse(ctx.IsOptimizing(), "Mode is not optimization");
    ok &= Check(ctx.IsTesting(),         "Mode is tester");
    return(ok);
@@ -247,8 +286,8 @@ bool Test_MacroNoEvalWhenInactive()
 
    // Case 2: profiler exists but IsActive()==false — scope still not evaluated.
    RuntimeMode mode = MakeMode(true, true); // optimization -> inactive
-   OptContext ctx(mode);
-   Profiler inactive_prof(GetPointer(ctx));
+   COptContext ctx(mode);
+   CProfiler inactive_prof(GetPointer(ctx));
    g_profiler = GetPointer(inactive_prof);
    ok &= CheckFalse(g_profiler.IsActive(), "Fixture profiler is inactive under optimization");
 

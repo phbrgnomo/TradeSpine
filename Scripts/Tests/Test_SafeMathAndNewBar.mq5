@@ -11,8 +11,6 @@
 #property copyright "phbr"
 #property version   "1.0"
 #property description "TradeSpine IPLAN-09 - SafeMath and NewBarDetector tests"
-#property script_show_inputs
-
 #include "TestAssert.mqh"
 #include "../../Include/Core/SafeMath.mqh"
 #include "../../Include/Core/NewBarDetector.mqh"

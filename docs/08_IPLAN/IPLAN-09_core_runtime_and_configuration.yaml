@@ -148,7 +148,7 @@ session_handoff:
         - "Scripts/Tests/Test_CommonInputs.mq5"
         - "Scripts/Tests/Test_OptContextProfiler.mq5"
         - "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
-      partial_work: "All 6 SPEC-09 core modules plus 3 test scripts and a shared assert harness implemented test-first. Interfaces.mqh kept SPEC-09-faithful (IClock, ILogSink, runtime/profile structs, FakeClock, CapturingLogSink); ITradePort/IPositionView/IStateStore deferred to SPEC-03/04/05 by a documented in-file note. Quoted relative includes only (ADR-01); core utilities free of broker execution APIs (SPEC-09)."
+      partial_work: "All 6 SPEC-09 core modules plus 3 test scripts and a shared assert harness implemented test-first. Interfaces.mqh kept SPEC-09-faithful production contracts (IClock, ILogSink, runtime/profile structs); concrete test doubles were moved out of Core by CHG-07 so FakeClock lives under Scripts/Tests/Support and CapturingLogSink remains local to Test_OptContextProfiler.mq5 until reused. ITradePort/IPositionView/IStateStore deferred to SPEC-03/04/05 by a documented in-file note. Quoted relative includes only (ADR-01); core utilities free of broker execution APIs (SPEC-09)."
       blockers: "Headless wine CLI compile is non-functional in the dev container (MetaEditor forks to GUI); compilation and test runs are performed in MetaEditor/MT5 directly, per repo convention."
       next_session_directive: "IPLAN-09 complete. Proceed to a downstream consumer IPLAN (e.g. IPLAN-06 market/session/symbol context or IPLAN-04 position/account-mode/state)."
       validation_results:

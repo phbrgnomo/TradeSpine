@@ -23,6 +23,8 @@ node_modules/
 # Artefatos de compilacao MetaTrader
 *.ex5
 
+# Sample code snippets
+docs/Snippets/
 
 # Artefatos de release local
 dist/
@@ -39,3 +41,4 @@ plan/
 
 # Noisy generated docs and backups
 tmp/
+docs/articles
