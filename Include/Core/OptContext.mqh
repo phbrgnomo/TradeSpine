@@ -24,7 +24,7 @@
 //+------------------------------------------------------------------+
 //| OptContext                                                       |
 //+------------------------------------------------------------------+
-class OptContext
+class COptContext
   {
   private:
     bool m_is_tester;
@@ -34,7 +34,7 @@ class OptContext
 
   public:
     //--- Auto-detecting constructor (production default).
-    OptContext(void)
+    COptContext(void)
       {
         m_is_tester           = (bool)MQLInfoInteger(MQL_TESTER);
         m_is_optimization     = (bool)MQLInfoInteger(MQL_OPTIMIZATION);
@@ -45,7 +45,7 @@ class OptContext
     //--- Injecting constructor (Tier-1 tests force the mode).
     //--- Optimization unconditionally wins; outside of optimization,
     //--- mode.diagnostics_enabled is honored so harnesses can disable it.
-    OptContext(const RuntimeMode &mode)
+    COptContext(const RuntimeMode &mode)
       {
         m_is_tester           = mode.is_tester;
         m_is_optimization     = mode.is_optimization;

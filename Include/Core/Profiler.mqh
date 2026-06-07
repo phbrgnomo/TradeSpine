@@ -6,7 +6,7 @@
 //| @spec: SPEC-09  @tdd: TDD.09.04.8050  @iplan: IPLAN-09           |
 //|                                                                  |
 //| Low-overhead timing and memory-budget evidence helper gated by   |
-//| an injected OptContext. When the runtime policy disables         |
+//| an injected COptContext. When the runtime policy disables         |
 //| profiling (BDD.01.03.b37d), Start/Stop return without any I/O or |
 //| persistent writes. Memory evidence uses a baseline-and-delta     |
 //| harness (EARS.01.03.8044). No broker execution APIs.             |
@@ -20,12 +20,12 @@
 #define PROFILER_MAX_SCOPES 64
 
 //+------------------------------------------------------------------+
-//| Profiler                                                         |
+//| CProfiler                                                        |
 //+------------------------------------------------------------------+
-class Profiler
+class CProfiler
   {
 private:
-   OptContext       *m_ctx;       // runtime-mode policy (not owned)
+   COptContext      *m_ctx;       // runtime-mode policy (not owned)
    ILogSink         *m_sink;      // optional diagnostics sink (not owned)
    bool              m_enabled;   // master switch (still subject to policy)
 
@@ -82,7 +82,7 @@ private:
      }
 
 public:
-   Profiler(OptContext *ctx, ILogSink *sink = NULL)
+   CProfiler(COptContext *ctx, ILogSink *sink = NULL)
      {
       m_ctx      = ctx;
       m_sink     = sink;
@@ -107,7 +107,7 @@ public:
 
    //--- End a measurement block; record the sample. No-op when inactive.
    //--- Clears m_start_us after recording so a duplicate Stop() sees the
-   //--- zero-guard on line 101 and exits without inflating the sample.
+   //--- zero-guard on line 116 and exits without inflating the sample.
    void Stop(const string scope)
      {
       if(!Active())
@@ -171,13 +171,17 @@ public:
    //--- two reads. A negative value is measurement noise, not a meaningful
    //--- "component saved memory" event. Callers should treat delta <= 0 as
    //--- a no-growth confirmation rather than a signed budget figure.
-   long CaptureBaselineMemory(const string scenario)
+   long CaptureBaselineMemory(void)
      {
+      if(!Active())
+         return(0);
       return((long)MQLInfoInteger(MQL_MEMORY_USED));
      }
 
-   long RecordMemoryDelta(const long baseline, const string scenario)
+   long RecordMemoryDelta(const long baseline)
      {
+      if(!Active())
+         return(0);
       long now = (long)MQLInfoInteger(MQL_MEMORY_USED);
       return(now - baseline);
      }
@@ -187,7 +191,7 @@ public:
       BenchmarkBaseline b;
       b.scenario               = scenario;
       b.baseline_memory        = baseline;
-      b.component_memory_delta = RecordMemoryDelta(baseline, scenario);
+      b.component_memory_delta = RecordMemoryDelta(baseline);
       b.timing_source          = StringFormat("GetMicrosecondCount|build=%d",
                                               (int)TerminalInfoInteger(TERMINAL_BUILD));
       return(b);
@@ -199,7 +203,7 @@ public:
 //|                                                                 |
 //| OWNERSHIP CONTRACT for g_profiler:                              |
 //|  - Assign in OnInit() to a heap-allocated or OnInit-scoped      |
-//|    Profiler instance (never a transient local variable).        |
+//|    CProfiler instance (never a transient local variable).       |
 //|  - Set g_profiler = NULL before the pointed-to instance is      |
 //|    destroyed (latest in OnDeinit). The macros null-guard so an  |
 //|    unassigned pointer is a safe no-op, but a dangling pointer   |
@@ -207,7 +211,7 @@ public:
 //|  - All macros short-circuit on IsActive()==false; the scope     |
 //|    argument is not evaluated when the profiler is inactive.     |
 //+------------------------------------------------------------------+
-Profiler *g_profiler = NULL;
+CProfiler *g_profiler = NULL;
 
 #define PROFILER_START(scope) do { if(g_profiler != NULL && g_profiler.IsActive()) g_profiler.Start(scope); } while(false)
 #define PROFILER_STOP(scope)  do { if(g_profiler != NULL && g_profiler.IsActive()) g_profiler.Stop(scope);  } while(false)
