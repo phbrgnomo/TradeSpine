@@ -21,6 +21,47 @@
 #include "../../Include/Core/Profiler.mqh"
 
 //+------------------------------------------------------------------+
+//| Local test double for ILogSink.                                  |
+//| Keep local until another test file needs the same fake; shared   |
+//| test doubles belong under Scripts/Tests/Support, never Core.     |
+//+------------------------------------------------------------------+
+class CapturingLogSink : public ILogSink
+  {
+private:
+   int    m_count;
+   string m_last;
+
+public:
+   CapturingLogSink(void)
+     {
+      m_count = 0;
+      m_last  = "";
+     }
+
+   void Write(const ENUM_LOG_LEVEL level, const string category, const string message) override
+     {
+      m_count++;
+      m_last = StringFormat("[%d] %s: %s", (int)level, category, message);
+     }
+
+   int Count(void) const
+     {
+      return(m_count);
+     }
+
+   string Last(void) const
+     {
+      return(m_last);
+     }
+
+   void Reset(void)
+     {
+      m_count = 0;
+      m_last  = "";
+     }
+  };
+
+//+------------------------------------------------------------------+
 //| Helper: build a RuntimeMode.                                     |
 //+------------------------------------------------------------------+
 RuntimeMode MakeMode(const bool tester, const bool optimization)

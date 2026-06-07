@@ -26,6 +26,7 @@ custom_fields:
 | CHG-04 | CommonInputs Design Revision | C2 | feedback | Approved | GATE-CODE self-approved |
 | CHG-05 | IPLAN-11 Resequence Dependencies | C2 | feedback | Approved | GATE-CODE self-approved |
 | CHG-06 | IPLAN-11 Testing Foundation Scope Repair | C2 | design | In Review | GATE-06 prepared |
+| CHG-07 | Test Double Boundary Refactor | C2 | feedback | Approved | GATE-CODE self-approved |
 
 ## Planned
 

@@ -30,6 +30,7 @@ CommonInputs MakeValid()
    ci.entry_window_start   = D'2026.01.01 09:00';
    ci.entry_window_end     = D'2026.01.01 17:00';
    ci.sizing_mode          = SIZING_RISK_PCT_EQUITY;
+   ci.signal_timeframe     = PERIOD_CURRENT;
    return(ci);
   }
 
@@ -51,6 +52,11 @@ bool Test_ValidCombos()
    ci.day_trade_mode = true;
    r = ci.Validate();
    ok &= Check(r.ok, "Day-trade mode with valid session window is accepted");
+
+   ci = MakeValid();
+   ci.signal_timeframe = PERIOD_M15;
+   r = ci.Validate();
+   ok &= Check(r.ok, "Explicit signal timeframe PERIOD_M15 is accepted");
    return(ok);
   }
 
@@ -163,6 +169,45 @@ bool Test_UnknownEnumRejected()
   }
 
 //+------------------------------------------------------------------+
+//| Signal timeframe: PERIOD_CURRENT and known constants are valid.  |
+//| Unknown/cast values are rejected by the whitelist gate.          |
+//+------------------------------------------------------------------+
+bool Test_SignalTimeframe()
+  {
+   bool ok = true;
+   CommonInputs ci = MakeValid();
+
+   ci.signal_timeframe = PERIOD_CURRENT;
+   InputValidation r = ci.Validate();
+   ok &= Check(r.ok, "PERIOD_CURRENT signal timeframe is accepted");
+
+   ci.signal_timeframe = PERIOD_M1;
+   r = ci.Validate();
+   ok &= Check(r.ok, "PERIOD_M1 signal timeframe is accepted");
+
+   ci.signal_timeframe = PERIOD_H1;
+   r = ci.Validate();
+   ok &= Check(r.ok, "PERIOD_H1 signal timeframe is accepted");
+
+   ci.signal_timeframe = PERIOD_D1;
+   r = ci.Validate();
+   ok &= Check(r.ok, "PERIOD_D1 signal timeframe is accepted");
+
+   ci.signal_timeframe = (ENUM_TIMEFRAMES)-1;
+   r = ci.Validate();
+   ok &= CheckFalse(r.ok, "Negative cast signal timeframe is rejected");
+   ok &= Check(StringFind(r.message, "signal_timeframe") >= 0,
+               "Diagnostic names the signal_timeframe problem");
+
+   ci.signal_timeframe = (ENUM_TIMEFRAMES)999;
+   r = ci.Validate();
+   ok &= CheckFalse(r.ok, "Unknown positive signal timeframe value 999 is rejected");
+   ok &= Check(StringFind(r.message, "999") >= 0,
+               "Diagnostic includes the unknown signal timeframe value");
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
 //| Default constructor sets sentinels so incomplete bindings fail.  |
 //+------------------------------------------------------------------+
 bool Test_DefaultConstructorIsInvalid()
@@ -176,6 +221,8 @@ bool Test_DefaultConstructorIsInvalid()
                "Default constructor sets magic=0");
    ok &= Check(ci.sizing_mode == (ENUM_SIZING_MODE) - 1,
                "Default constructor sets sizing_mode to invalid sentinel");
+   ok &= Check(ci.signal_timeframe == PERIOD_CURRENT,
+               "Default constructor sets signal_timeframe=PERIOD_CURRENT");
    return(ok);
   }
 
@@ -189,7 +236,7 @@ bool Test_DefaultConstructorIsInvalid()
 //| configuration_b37d_integration() in Test_OptContextProfiler.mq5.|
 //+------------------------------------------------------------------+
 bool test_core_runtime_and_configuration_cb03_unit()      { return(Test_SizingPlaceholderRejected()); }
-bool test_core_runtime_and_configuration_aa68_unit()      { return(Test_ValidCombos() && Test_DayTradeMode()); }
+bool test_core_runtime_and_configuration_aa68_unit()      { return(Test_ValidCombos() && Test_DayTradeMode() && Test_SignalTimeframe()); }
 bool test_core_runtime_and_configuration_e2e_acceptance() { return(Test_SizingPlaceholderRejected()); }
 
 //+------------------------------------------------------------------+
@@ -205,6 +252,7 @@ int OnStart()
    Test_DayTradeMode();
    Test_SizingPlaceholderRejected();
    Test_UnknownEnumRejected();
+   Test_SignalTimeframe();
    Test_DefaultConstructorIsInvalid();
    bool pass = ReportSummary("Test_CommonInputs");
    if(!pass)                return(1);

@@ -1,0 +1,135 @@
+---
+id: CHG-07
+title: "Test Double Boundary Refactor"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-06"
+  change_level:
+    value: C2
+  change_source:
+    value: feedback
+
+change_control:
+  chg_id: "CHG-07"
+  status: Approved
+  change_level: C2
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null
+  author: "Codex"
+  date_proposed: "2026-06-06T00:00:00-03:00"
+  date_approved: "2026-06-07T00:00:00-03:00"
+  date_implemented: "2026-06-06T00:00:00-03:00"
+  supersedes: []
+
+change_description:
+  what: |
+    Move concrete test doubles out of Include/Core so the core runtime exposes
+    only production-facing contracts and data models. FakeClock is relocated to
+    Scripts/Tests/Support/FakeClock.mqh because downstream testing-support
+    artifacts already identify it as shared test support. CapturingLogSink is
+    localized inside Scripts/Tests/Test_OptContextProfiler.mq5 because it is
+    currently used by only that test file.
+
+    Register the boundary rule:
+      - Local test doubles first.
+      - Extract to Scripts/Tests/Support only after the same fake is needed in
+        two or more test files.
+      - Never keep concrete fakes in Include/Core.
+  why: |
+    Include/Core/Interfaces.mqh mixed production contracts (IClock, ILogSink,
+    RuntimeMode, ProfileSample, BenchmarkBaseline) with concrete test doubles.
+    That made the Core boundary less clear and conflicted with the IPLAN-11
+    testing-support layout, which places shared fakes under Scripts/Tests/Support.
+  trigger: |
+    Architecture review on 2026-06-06 questioned whether test seams should live
+    in Core. Documentation history showed that IClock belongs to SPEC-09 Core,
+    while FakeClock belongs to SPEC-11/IPLAN-11 test support.
+
+impact_assessment:
+  affected_layers:
+    - layer: Code
+      artifacts:
+        - "Include/Core/Interfaces.mqh"
+        - "Scripts/Tests/Support/FakeClock.mqh"
+        - "Scripts/Tests/Test_OptContextProfiler.mq5"
+      impact: |
+        Remove concrete fakes from Core, add shared FakeClock under test support,
+        and keep CapturingLogSink local to its only current test consumer.
+      cascade_direction: bubble-up
+    - layer: IPLAN
+      artifacts: ["IPLAN-09", "IPLAN-11"]
+      impact: |
+        Correct IPLAN-09 implementation handoff text so it no longer says
+        Interfaces.mqh owns FakeClock or CapturingLogSink. Verify IPLAN-11
+        remains aligned with Scripts/Tests/Support/FakeClock.mqh.
+      cascade_direction: bubble-up
+    - layer: SPEC
+      artifacts: ["SPEC-09", "SPEC-11"]
+      impact: |
+        Verify SPEC-09 continues to own IClock/ILogSink contracts and SPEC-11
+        continues to own concrete test-support fakes. No SPEC behavior change is
+        required.
+      cascade_direction: bubble-up
+    - layer: SupportingDocs
+      artifacts: ["docs/articles/Article2-iplan-09.md"]
+      impact: |
+        Update publication prose so it describes the concrete FakeClock as test
+        support outside production Core rather than a Core-owned test double.
+      cascade_direction: bubble-up
+  risk_level: Low
+  risk_justification: |
+    Code behavior should remain unchanged. The risk is include-path or stale-doc
+    drift after moving a concrete fake out of Core. Static searches and MQL5 test
+    compilation cover the changed dependency boundary.
+  rollback_plan: |
+    Restore FakeClock and CapturingLogSink to Include/Core/Interfaces.mqh, remove
+    Scripts/Tests/Support/FakeClock.mqh, remove the local CapturingLogSink class
+    from Test_OptContextProfiler.mq5, and restore the previous IPLAN-09 handoff
+    wording.
+
+implementation:
+  steps:
+    - step: 1
+      action: "Remove FakeClock and CapturingLogSink from Include/Core/Interfaces.mqh and update header wording."
+      artifact: "Include/Core/Interfaces.mqh"
+      status: Completed
+    - step: 2
+      action: "Add Scripts/Tests/Support/FakeClock.mqh implementing IClock for deterministic test time."
+      artifact: "Scripts/Tests/Support/FakeClock.mqh"
+      status: Completed
+    - step: 3
+      action: "Move CapturingLogSink into Test_OptContextProfiler.mq5 as a local fake."
+      artifact: "Scripts/Tests/Test_OptContextProfiler.mq5"
+      status: Completed
+    - step: 4
+      action: "Update IPLAN-09 handoff text and article prose to reflect test-double ownership."
+      artifact: "docs/08_IPLAN/IPLAN-09_core_runtime_and_configuration.yaml"
+      status: Completed
+
+verification:
+  checks:
+    - "git diff --check passes for the changed files."
+    - "Search confirms Include/Core no longer contains concrete test doubles."
+    - "Search confirms no production Include file depends on Scripts/Tests/Support."
+    - "SPEC-11 and IPLAN-11 still reference Scripts/Tests/Support/FakeClock.mqh for shared test support."
+    - "MQL5 compile/run of Test_OptContextProfiler.mq5 is required for final confirmation; headless Wine output is advisory only."
+
+gate_approval:
+  gate: GATE-CODE
+  decision: Approved
+  approved_by: "Project owner"
+  approved_at: "2026-06-07T00:00:00-03:00"
+  notes: "Approved after CHG-07 audit v002 reported PASS and gate_ready true."
+
+traceability:
+  tags:
+    - "@spec: SPEC-09"
+    - "@spec: SPEC-11"
+    - "@iplan: IPLAN-09"
+    - "@iplan: IPLAN-11"
+  upstream:
+    spec_references: ["@spec: SPEC-09", "@spec: SPEC-11"]
+    iplan_references: ["@iplan: IPLAN-09", "@iplan: IPLAN-11"]

@@ -56,19 +56,19 @@ class OptContext
       }
 
     //--- Raw mode predicates.
-    bool              IsTesting(void)    const { return(m_is_tester); }
-    bool              IsOptimizing(void) const { return(m_is_optimization); }
-    bool              IsVisualMode(void) const { return(m_is_visual); }
-    bool              IsLive(void)       const { return(!m_is_tester); }
+    bool IsTesting(void)    const { return(m_is_tester); }
+    bool IsOptimizing(void) const { return(m_is_optimization); }
+    bool IsVisualMode(void) const { return(m_is_visual); }
+    bool IsLive(void)       const { return(!m_is_tester); }
 
     //--- Policy decisions.
     //--- Optimization unconditionally silences all non-core work.
-    bool              AllowsHighVolumeEvidence(void) const { return(!m_is_optimization); }
-    bool              AllowsDiagnostics(void)        const { return(m_diagnostics_enabled); }
-    bool              AllowsProfiler(void)           const { return(m_is_tester && !m_is_optimization); }
+    bool AllowsHighVolumeEvidence(void) const { return(!m_is_optimization); }
+    bool AllowsDiagnostics(void)        const { return(m_diagnostics_enabled); }
+    bool AllowsProfiler(void)           const { return(m_is_tester && !m_is_optimization); }
 
     //--- Snapshot for evidence records.
-    RuntimeMode       Snapshot(void) const
+    RuntimeMode Snapshot(void) const
       {
         RuntimeMode m;
         m.is_tester           = m_is_tester;

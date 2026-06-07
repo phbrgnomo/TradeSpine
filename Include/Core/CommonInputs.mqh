@@ -61,6 +61,9 @@ struct CommonInputs
    // --- Sizing ---
    ENUM_SIZING_MODE sizing_mode;
 
+   // --- Timeframe ---
+   ENUM_TIMEFRAMES signal_timeframe; // timeframe for signal generation; PERIOD_CURRENT means chart period
+
    //-------------------------------------------------------------------
    //| Default constructor: explicit invalid sentinels so any          |
    //| incompletely-filled binding fails Validate() rather than        |
@@ -77,6 +80,7 @@ struct CommonInputs
       entry_window_start = 0;
       entry_window_end   = 0;
       sizing_mode        = (ENUM_SIZING_MODE) - 1;
+      signal_timeframe   = PERIOD_CURRENT;
      }
 
    //-------------------------------------------------------------------
@@ -131,6 +135,14 @@ struct CommonInputs
          return(r);
         }
 
+      if(!IsValidSignalTimeframe(signal_timeframe))
+        {
+         r.message = StringFormat("Invalid signal_timeframe value %d: select PERIOD_CURRENT or a valid "
+                                  "MQL5 timeframe constant (for example, PERIOD_M15).",
+                                  (int)signal_timeframe);
+         return(r);
+        }
+
       r.ok      = true;
       r.message = "CommonInputs accepted for v1.";
       return(r);
@@ -146,6 +158,37 @@ struct CommonInputs
          case SIZING_VALUE_PCT_EQUITY: return("SIZING_VALUE_PCT_EQUITY");
         }
       return("SIZING_UNKNOWN");
+     }
+
+   static bool IsValidSignalTimeframe(const ENUM_TIMEFRAMES timeframe)
+     {
+      switch(timeframe)
+        {
+         case PERIOD_CURRENT:
+         case PERIOD_M1:
+         case PERIOD_M2:
+         case PERIOD_M3:
+         case PERIOD_M4:
+         case PERIOD_M5:
+         case PERIOD_M6:
+         case PERIOD_M10:
+         case PERIOD_M12:
+         case PERIOD_M15:
+         case PERIOD_M20:
+         case PERIOD_M30:
+         case PERIOD_H1:
+         case PERIOD_H2:
+         case PERIOD_H3:
+         case PERIOD_H4:
+         case PERIOD_H6:
+         case PERIOD_H8:
+         case PERIOD_H12:
+         case PERIOD_D1:
+         case PERIOD_W1:
+         case PERIOD_MN1:
+            return(true);
+        }
+      return(false);
      }
   };
 
