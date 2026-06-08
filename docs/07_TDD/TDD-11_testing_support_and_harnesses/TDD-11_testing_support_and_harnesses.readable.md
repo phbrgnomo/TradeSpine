@@ -47,7 +47,7 @@
 
 | ID | Name | Target | File | Function | Expected Output | Edge Cases |
 | --- | --- | --- | --- | --- | --- | --- |
-| TDD.11.04.6805 | Shared clock, log sink, and assertion helpers behave deterministically | FakeClock/FakeLogSink/TestAssert | `Scripts/Tests/Test_TestSupportClock.mq5` | `test_testing_support_and_harnesses_unit_contract` | Clock advances in configured order, log sink captures required messages, and assertions report deterministic pass/fail counts | Required log message is absent -> Case fails through TestAssert without broker, position, or store dependencies. |
+| TDD.11.04.6805 | Shared clock, log sink, and assertion helpers behave deterministically | FakeClock/FakeLogSink/CAssert | `Scripts/Tests/Test_TestSupportClock.mq5` | `test_testing_support_and_harnesses_unit_contract` | Clock advances in configured order, log sink captures required messages, and assertions report deterministic pass/fail counts | Required log message is absent -> Case fails through CAssert without broker, position, or store dependencies. |
 
 ### Integration Tests
 

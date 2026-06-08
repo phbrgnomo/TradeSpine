@@ -1,0 +1,231 @@
+//+------------------------------------------------------------------+
+//|                                                      Assert.mqh  |
+//|              Copyright 2026, phbr                                |
+//|                                                                  |
+//| SPEC-11 CAssert helper, evidence types, and pass/fail counters   |
+//| for TradeSpine Tier-1 test scripts.                              |
+//| @spec: SPEC-11  @iplan: IPLAN-11                                 |
+//+------------------------------------------------------------------+
+#ifndef TRADESPINE_TESTING_ASSERT_MQH
+#define TRADESPINE_TESTING_ASSERT_MQH
+
+#define TRADESPINE_ASSERT_FAILURE_RESERVE 32
+
+//+------------------------------------------------------------------+
+//| Evidence kind classification (SPEC-11 data model).               |
+//+------------------------------------------------------------------+
+enum ENUM_EVIDENCE_KIND
+  {
+   EVIDENCE_INTENT     = 0,
+   EVIDENCE_EXECUTION  = 1,
+   EVIDENCE_DIAGNOSTIC = 2,
+   EVIDENCE_STATE      = 3,
+   EVIDENCE_RELEASE    = 4
+  };
+
+//+------------------------------------------------------------------+
+//| One evidence assertion entry for ScenarioHarness.AssertEvidence. |
+//+------------------------------------------------------------------+
+struct EvidenceAssertion
+  {
+   ENUM_EVIDENCE_KIND expected_kind;   // intent, execution, diagnostic, state, or release
+   string             expected_trace;  // spec/req tag substring expected in captured log output
+   bool               required;        // false -> optional; absence is Skip, not FAIL
+  };
+
+//+------------------------------------------------------------------+
+//| Manual deferred account-mode evidence pack.                      |
+//| Empty artifacts field signals the pack is missing (blocks        |
+//| release gate). Not replaced by automated evidence.               |
+//+------------------------------------------------------------------+
+struct DeferredAccountModeEvidencePack
+  {
+   string account_mode;  // e.g. "hedging", "netting"
+   string scenario;      // deferred-mode validation scenario name
+   string artifacts;     // file paths or operator notes; empty = missing
+  };
+
+//+------------------------------------------------------------------+
+//| Lightweight state checkpoint for controlled-failure tests.        |
+//+------------------------------------------------------------------+
+struct AssertSnapshot
+  {
+   int tests_run;
+   int tests_passed;
+   int tests_skipped;
+   int failure_count;
+  };
+
+//+------------------------------------------------------------------+
+//| CAssert                                                          |
+//+------------------------------------------------------------------+
+class CAssert
+  {
+private:
+   int    m_tests_run;
+   int    m_tests_passed;
+   int    m_tests_skipped;
+   string m_fail_msgs[];
+
+   string FormatLocation(const string file, const int line) const
+     {
+      return(StringFormat("%s:%d", file, line));
+     }
+
+   bool AppendFailure(const string failure)
+     {
+      int n = ArraySize(m_fail_msgs);
+      int resized = ArrayResize(m_fail_msgs, n + 1, TRADESPINE_ASSERT_FAILURE_RESERVE);
+      if(resized != n + 1)
+        {
+         PrintFormat("    unable to record failure message: ArrayResize returned %d", resized);
+         return(false);
+        }
+      m_fail_msgs[n] = failure;
+      return(true);
+     }
+
+public:
+   CAssert(void) : m_tests_run(0), m_tests_passed(0), m_tests_skipped(0) {}
+
+   void Reset(void)
+     {
+      m_tests_run     = 0;
+      m_tests_passed  = 0;
+      m_tests_skipped = 0;
+      ArrayResize(m_fail_msgs, 0);
+     }
+
+   int TestsRun(void) const { return(m_tests_run); }
+   int TestsPassed(void) const { return(m_tests_passed); }
+   int TestsSkipped(void) const { return(m_tests_skipped); }
+   int FailureCount(void) const { return(ArraySize(m_fail_msgs)); }
+
+   string FailureMessage(const int index) const
+     {
+      if(index < 0 || index >= ArraySize(m_fail_msgs))
+         return("");
+      return(m_fail_msgs[index]);
+     }
+
+   AssertSnapshot Snapshot(void) const
+     {
+      AssertSnapshot snapshot;
+      snapshot.tests_run     = m_tests_run;
+      snapshot.tests_passed  = m_tests_passed;
+      snapshot.tests_skipped = m_tests_skipped;
+      snapshot.failure_count = ArraySize(m_fail_msgs);
+      return(snapshot);
+     }
+
+   void Restore(const AssertSnapshot &snapshot)
+     {
+      m_tests_run     = snapshot.tests_run;
+      m_tests_passed  = snapshot.tests_passed;
+      m_tests_skipped = snapshot.tests_skipped;
+      ArrayResize(m_fail_msgs, snapshot.failure_count, TRADESPINE_ASSERT_FAILURE_RESERVE);
+     }
+
+   void _Skip(const string msg, const string file, const int line)
+     {
+      m_tests_skipped++;
+      PrintFormat("  SKIP: %s  (%s)", msg, FormatLocation(file, line));
+     }
+
+   bool _Check(const bool cond, const string msg, const string file, const int line)
+     {
+      m_tests_run++;
+      if(cond)
+        {
+         m_tests_passed++;
+         PrintFormat("  PASS: %s", msg);
+         return(true);
+        }
+
+      string failure = StringFormat("%s  (%s)", msg, FormatLocation(file, line));
+      AppendFailure(failure);
+      PrintFormat("  FAIL: %s", failure);
+      return(false);
+     }
+
+   bool _CheckTrue(const bool cond, const string msg, const string file, const int line)
+     {
+      return(_Check(cond, msg, file, line));
+     }
+
+   bool _CheckFalse(const bool cond, const string msg, const string file, const int line)
+     {
+      return(_Check(!cond, msg, file, line));
+     }
+
+   bool _CheckEqualD(const double a, const double b, const double tol, const string msg,
+                     const string file, const int line)
+     {
+      if(!MathIsValidNumber(a) || !MathIsValidNumber(b))
+        {
+         PrintFormat("    non-finite operand: a=%.10g b=%.10g", a, b);
+         return(_Check(false, msg, file, line));
+        }
+      if(!MathIsValidNumber(tol) || tol < 0.0)
+        {
+         PrintFormat("    invalid tolerance: tol=%.10g", tol);
+         return(_Check(false, msg, file, line));
+        }
+      bool ok = (MathAbs(a - b) <= tol);
+      if(!ok)
+         PrintFormat("    expected %.10g, got %.10g (tol %.10g)", b, a, tol);
+      return(_Check(ok, msg, file, line));
+     }
+
+   bool _CheckEqualL(const long a, const long b, const string msg,
+                     const string file, const int line)
+     {
+      bool ok = (a == b);
+      if(!ok)
+         PrintFormat("    expected %I64d, got %I64d", b, a);
+      return(_Check(ok, msg, file, line));
+     }
+
+   bool _CheckEqualStr(const string a, const string b, const string msg,
+                       const string file, const int line)
+     {
+      bool ok = (a == b);
+      if(!ok)
+         PrintFormat("    expected '%s', got '%s'", b, a);
+      return(_Check(ok, msg, file, line));
+     }
+
+   bool _ReportSummary(const string suite)
+     {
+      int failed = m_tests_run - m_tests_passed;
+      bool all_pass = (failed == 0);
+      string skip_str = m_tests_skipped > 0
+                        ? StringFormat(", %d skipped", m_tests_skipped) : "";
+      if(all_pass)
+        {
+         PrintFormat("==== %s: %d of %d passed%s ====",
+                     suite, m_tests_passed, m_tests_run, skip_str);
+        }
+      else
+        {
+         PrintFormat("==== %s: %d of %d passed%s  <<< %d FAILURE%s >>> ====",
+                     suite, m_tests_passed, m_tests_run, skip_str,
+                     failed, failed == 1 ? "" : "S");
+         for(int i = 0; i < ArraySize(m_fail_msgs); i++)
+            PrintFormat("  [FAILED] %s", m_fail_msgs[i]);
+        }
+      return(all_pass);
+     }
+  };
+
+#define Check(cond, msg) _Check(cond, msg, __FILE__, __LINE__)
+#define CheckTrue(cond, msg) _CheckTrue(cond, msg, __FILE__, __LINE__)
+#define CheckFalse(cond, msg) _CheckFalse(cond, msg, __FILE__, __LINE__)
+#define CheckEqualD(a, b, tol, msg) _CheckEqualD(a, b, tol, msg, __FILE__, __LINE__)
+#define CheckEqualL(a, b, msg) _CheckEqualL(a, b, msg, __FILE__, __LINE__)
+#define CheckEqualStr(a, b, msg) _CheckEqualStr(a, b, msg, __FILE__, __LINE__)
+#define Skip(msg) _Skip(msg, __FILE__, __LINE__)
+#define ReportSummary(suite) _ReportSummary(suite)
+
+#endif // TRADESPINE_TESTING_ASSERT_MQH
+//+------------------------------------------------------------------+

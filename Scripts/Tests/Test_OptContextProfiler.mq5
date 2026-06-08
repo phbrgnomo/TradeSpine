@@ -13,7 +13,7 @@
 #property copyright "phbr"
 #property version   "1.0"
 #property description "TradeSpine IPLAN-09 - COptContext and CProfiler tests"
-#include "TestAssert.mqh"
+#include "../../Include/Testing/Assert.mqh"
 #include "../../Include/Core/Interfaces.mqh"
 #include "../../Include/Core/OptContext.mqh"
 #include "../../Include/Core/Profiler.mqh"
@@ -74,43 +74,43 @@ RuntimeMode MakeMode(const bool tester, const bool optimization)
 //+------------------------------------------------------------------+
 //| Optimization unconditionally gates all high-I/O work.            |
 //+------------------------------------------------------------------+
-bool Test_OptimizationGated()
+bool Test_OptimizationGated(CAssert &asserts)
   {
    bool ok = true;
    RuntimeMode mode = MakeMode(true, true);
    COptContext ctx(mode);
 
-   ok &= CheckFalse(ctx.AllowsHighVolumeEvidence(),
+   ok &= asserts.CheckFalse(ctx.AllowsHighVolumeEvidence(),
                     "High-volume evidence disabled in optimization");
-   ok &= CheckFalse(ctx.AllowsDiagnostics(), "Diagnostics disabled in optimization");
-   ok &= CheckFalse(ctx.AllowsProfiler(),    "CProfiler disabled in optimization");
-   ok &= Check(ctx.IsOptimizing(),           "IsOptimizing true");
-   ok &= Check(ctx.IsTesting(),              "IsTesting true");
+   ok &= asserts.CheckFalse(ctx.AllowsDiagnostics(), "Diagnostics disabled in optimization");
+   ok &= asserts.CheckFalse(ctx.AllowsProfiler(),    "CProfiler disabled in optimization");
+   ok &= asserts.Check(ctx.IsOptimizing(),           "IsOptimizing true");
+   ok &= asserts.Check(ctx.IsTesting(),              "IsTesting true");
    return(ok);
   }
 
 //+------------------------------------------------------------------+
 //| Plain tester enables profiler; live disables it by default.      |
 //+------------------------------------------------------------------+
-bool Test_TesterVsLive()
+bool Test_TesterVsLive(CAssert &asserts)
   {
    bool ok = true;
    RuntimeMode tester = MakeMode(true, false);
    COptContext ctx_t(tester);
-   ok &= Check(ctx_t.AllowsProfiler(),    "CProfiler on by default in plain tester");
-   ok &= Check(ctx_t.AllowsDiagnostics(), "Diagnostics on in plain tester");
+   ok &= asserts.Check(ctx_t.AllowsProfiler(),    "CProfiler on by default in plain tester");
+   ok &= asserts.Check(ctx_t.AllowsDiagnostics(), "Diagnostics on in plain tester");
 
    RuntimeMode live = MakeMode(false, false);
    COptContext ctx_l(live);
-   ok &= CheckFalse(ctx_l.AllowsProfiler(), "CProfiler off by default in live");
-   ok &= Check(ctx_l.IsLive(),              "IsLive true off-tester");
+   ok &= asserts.CheckFalse(ctx_l.AllowsProfiler(), "CProfiler off by default in live");
+   ok &= asserts.Check(ctx_l.IsLive(),              "IsLive true off-tester");
    return(ok);
   }
 
 //+------------------------------------------------------------------+
 //| Disabled profiler performs no persistent writes (BDD.01.03.b37d).|
 //+------------------------------------------------------------------+
-bool Test_ProfilerNoWriteWhenGated()
+bool Test_ProfilerNoWriteWhenGated(CAssert &asserts)
   {
    bool ok = true;
    RuntimeMode mode = MakeMode(true, true); // optimization -> all gated
@@ -122,19 +122,19 @@ bool Test_ProfilerNoWriteWhenGated()
    prof.Stop("entry_pipeline");
    prof.PrintResults();
 
-   ok &= CheckEqualL((long)sink.Count(), 0,
+   ok &= asserts.CheckEqualL((long)sink.Count(), 0,
                      "Gated profiler issued no log writes");
    ProfileSample s = prof.GetSample("entry_pipeline");
-   ok &= CheckFalse(s.enabled,        "Gated sample reports enabled=false");
-   ok &= CheckEqualL(s.elapsed_us, 0, "Gated sample reports zero elapsed");
-   ok &= CheckFalse(prof.IsActive(),  "CProfiler.IsActive false under gated policy");
+   ok &= asserts.CheckFalse(s.enabled,        "Gated sample reports enabled=false");
+   ok &= asserts.CheckEqualL(s.elapsed_us, 0, "Gated sample reports zero elapsed");
+   ok &= asserts.CheckFalse(prof.IsActive(),  "CProfiler.IsActive false under gated policy");
    return(ok);
   }
 
 //+------------------------------------------------------------------+
 //| Active profiler records a sample and can emit evidence.          |
 //+------------------------------------------------------------------+
-bool Test_ProfilerActiveRecords()
+bool Test_ProfilerActiveRecords(CAssert &asserts)
   {
    bool ok = true;
    RuntimeMode mode = MakeMode(true, false); // plain tester -> profiler on
@@ -142,7 +142,7 @@ bool Test_ProfilerActiveRecords()
    CapturingLogSink sink;
    CProfiler prof(GetPointer(ctx), GetPointer(sink));
 
-   ok &= Check(prof.IsActive(), "CProfiler active in plain tester");
+   ok &= asserts.Check(prof.IsActive(), "CProfiler active in plain tester");
    prof.Start("calc");
    long acc = 0;
    for(int i = 0; i < 1000; i++)
@@ -150,11 +150,11 @@ bool Test_ProfilerActiveRecords()
    prof.Stop("calc");
 
    ProfileSample s = prof.GetSample("calc");
-   ok &= Check(s.enabled,         "Active sample reports enabled=true");
-   ok &= Check(s.elapsed_us >= 0, "Active sample elapsed is non-negative");
+   ok &= asserts.Check(s.enabled,         "Active sample reports enabled=true");
+   ok &= asserts.Check(s.elapsed_us >= 0, "Active sample elapsed is non-negative");
    prof.PrintResults();
-   ok &= Check(sink.Count() >= 1, "Active profiler emitted evidence to the sink");
-   ok &= Check(StringFind(sink.Last(), "[1]") >= 0,
+   ok &= asserts.Check(sink.Count() >= 1, "Active profiler emitted evidence to the sink");
+   ok &= asserts.Check(StringFind(sink.Last(), "[1]") >= 0,
                "PrintResults writes at LOG_INFO (level 1)");
    return(ok);
   }
@@ -166,7 +166,7 @@ bool Test_ProfilerActiveRecords()
 //| Native TerminalInfoInteger used directly for the expected build  |
 //| string so the profiler path stays dependency-light.              |
 //+------------------------------------------------------------------+
-bool Test_ProfilerMemoryEvidence()
+bool Test_ProfilerMemoryEvidence(CAssert &asserts)
   {
    bool ok = true;
    RuntimeMode mode = MakeMode(true, false); // plain tester -> profiler on
@@ -178,13 +178,13 @@ bool Test_ProfilerMemoryEvidence()
    long baseline = prof.CaptureBaselineMemory();
    BenchmarkBaseline b = prof.GetBenchmarkData("bench_test", baseline);
 
-   ok &= CheckEqualStr(b.scenario, "bench_test",
+   ok &= asserts.CheckEqualStr(b.scenario, "bench_test",
                        "Scenario name propagates to benchmark record");
-   ok &= Check(b.baseline_memory >= 0,
+   ok &= asserts.Check(b.baseline_memory >= 0,
                "MQL program memory baseline is non-negative (MB)");
-   ok &= Check(StringFind(b.timing_source, "GetMicrosecondCount") == 0,
+   ok &= asserts.Check(StringFind(b.timing_source, "GetMicrosecondCount") == 0,
                "Timing source starts with GetMicrosecondCount");
-   ok &= Check(StringFind(b.timing_source,
+   ok &= asserts.Check(StringFind(b.timing_source,
                StringFormat("build=%d", build)) >= 0,
                "Timing source encodes the actual terminal build number");
    return(ok);
@@ -193,7 +193,7 @@ bool Test_ProfilerMemoryEvidence()
 //+------------------------------------------------------------------+
 //| Duplicate Stop() must not overwrite the recorded elapsed time.   |
 //+------------------------------------------------------------------+
-bool Test_ProfilerNoDuplicateStop()
+bool Test_ProfilerNoDuplicateStop(CAssert &asserts)
   {
    bool ok = true;
    RuntimeMode mode = MakeMode(true, false);
@@ -210,8 +210,8 @@ bool Test_ProfilerNoDuplicateStop()
    prof.Stop("x");         // duplicate stop — must be a no-op
    ProfileSample s2 = prof.GetSample("x");
 
-   ok &= Check(s1.enabled,             "First Stop records an enabled sample");
-   ok &= CheckEqualL(s2.elapsed_us, s1.elapsed_us,
+   ok &= asserts.Check(s1.enabled,             "First Stop records an enabled sample");
+   ok &= asserts.CheckEqualL(s2.elapsed_us, s1.elapsed_us,
                      "Duplicate Stop() does not overwrite the recorded elapsed time");
    return(ok);
   }
@@ -219,7 +219,7 @@ bool Test_ProfilerNoDuplicateStop()
 //+------------------------------------------------------------------+
 //| Scope-cap overflow emits exactly one gated diagnostic.           |
 //+------------------------------------------------------------------+
-bool Test_ProfilerScopeOverflow()
+bool Test_ProfilerScopeOverflow(CAssert &asserts)
   {
    bool ok = true;
    RuntimeMode mode = MakeMode(true, false);
@@ -233,13 +233,13 @@ bool Test_ProfilerScopeOverflow()
 
    int before = sink.Count();
    prof.Start("overflow_trigger"); // one beyond cap
-   ok &= Check(sink.Count() > before,
+   ok &= asserts.Check(sink.Count() > before,
                "Overflow diagnostic emitted when scope cap exceeded");
-   ok &= Check(StringFind(sink.Last(), "[2]") >= 0,
+   ok &= asserts.Check(StringFind(sink.Last(), "[2]") >= 0,
                "Overflow diagnostic written at LOG_WARN (level 2)");
 
    prof.Start("overflow_trigger2"); // second overflow — no second diagnostic
-   ok &= CheckEqualL((long)(sink.Count() - before), 1,
+   ok &= asserts.CheckEqualL((long)(sink.Count() - before), 1,
                      "Overflow diagnostic fires exactly once");
    return(ok);
   }
@@ -249,7 +249,7 @@ bool Test_ProfilerScopeOverflow()
 //| optimization. CProfiler policy (tester/non-opt) is independent   |
 //| of the diagnostics flag.                                         |
 //+------------------------------------------------------------------+
-bool Test_DiagnosticsInjectedDisabled()
+bool Test_DiagnosticsInjectedDisabled(CAssert &asserts)
   {
    bool ok = true;
    RuntimeMode mode;
@@ -258,12 +258,12 @@ bool Test_DiagnosticsInjectedDisabled()
    mode.diagnostics_enabled = false; // explicitly disabled outside optimization
    COptContext ctx(mode);
 
-   ok &= CheckFalse(ctx.AllowsDiagnostics(),
+   ok &= asserts.CheckFalse(ctx.AllowsDiagnostics(),
                     "Injected diagnostics_enabled=false honored outside optimization");
-   ok &= Check(ctx.AllowsProfiler(),
+   ok &= asserts.Check(ctx.AllowsProfiler(),
                "CProfiler policy (tester, non-opt) unaffected by diagnostics flag");
-   ok &= CheckFalse(ctx.IsOptimizing(), "Mode is not optimization");
-   ok &= Check(ctx.IsTesting(),         "Mode is tester");
+   ok &= asserts.CheckFalse(ctx.IsOptimizing(), "Mode is not optimization");
+   ok &= asserts.Check(ctx.IsTesting(),         "Mode is tester");
    return(ok);
   }
 
@@ -272,7 +272,7 @@ bool Test_DiagnosticsInjectedDisabled()
 //| the profiler is NULL or inactive. A side-effecting expression    |
 //| (++counter) proves the argument is never computed.               |
 //+------------------------------------------------------------------+
-bool Test_MacroNoEvalWhenInactive()
+bool Test_MacroNoEvalWhenInactive(CAssert &asserts)
   {
    bool ok = true;
    int counter = 0;
@@ -281,7 +281,7 @@ bool Test_MacroNoEvalWhenInactive()
    g_profiler = NULL;
    PROFILER_START("s" + IntegerToString(++counter));
    PROFILER_STOP( "s" + IntegerToString(++counter));
-   ok &= CheckEqualL((long)counter, 0,
+   ok &= asserts.CheckEqualL((long)counter, 0,
                      "PROFILER macros do not evaluate scope when g_profiler is NULL");
 
    // Case 2: profiler exists but IsActive()==false — scope still not evaluated.
@@ -289,12 +289,12 @@ bool Test_MacroNoEvalWhenInactive()
    COptContext ctx(mode);
    CProfiler inactive_prof(GetPointer(ctx));
    g_profiler = GetPointer(inactive_prof);
-   ok &= CheckFalse(g_profiler.IsActive(), "Fixture profiler is inactive under optimization");
+   ok &= asserts.CheckFalse(g_profiler.IsActive(), "Fixture profiler is inactive under optimization");
 
    counter = 0;
    PROFILER_START("s" + IntegerToString(++counter));
    PROFILER_STOP( "s" + IntegerToString(++counter));
-   ok &= CheckEqualL((long)counter, 0,
+   ok &= asserts.CheckEqualL((long)counter, 0,
                      "PROFILER macros do not evaluate scope when profiler is inactive");
 
    g_profiler = NULL; // release before inactive_prof goes out of scope
@@ -304,38 +304,41 @@ bool Test_MacroNoEvalWhenInactive()
 //+------------------------------------------------------------------+
 //| TDD trace aliases.                                               |
 //+------------------------------------------------------------------+
-bool test_core_runtime_and_configuration_integration_contract()
+bool test_core_runtime_and_configuration_integration_contract(CAssert &asserts)
   {
-   return(Test_OptimizationGated() && Test_ProfilerNoWriteWhenGated() &&
-          Test_ProfilerMemoryEvidence() && Test_ProfilerNoDuplicateStop() &&
-          Test_ProfilerScopeOverflow() && Test_DiagnosticsInjectedDisabled() &&
-          Test_MacroNoEvalWhenInactive());
+   return(Test_OptimizationGated(asserts) && Test_ProfilerNoWriteWhenGated(asserts) &&
+          Test_ProfilerMemoryEvidence(asserts) && Test_ProfilerNoDuplicateStop(asserts) &&
+          Test_ProfilerScopeOverflow(asserts) && Test_DiagnosticsInjectedDisabled(asserts) &&
+          Test_MacroNoEvalWhenInactive(asserts));
   }
-bool test_core_runtime_and_configuration_aa68_integration() { return(Test_TesterVsLive()); }
-bool test_core_runtime_and_configuration_b37d_unit()        { return(Test_ProfilerNoWriteWhenGated()); }
-bool test_core_runtime_and_configuration_b37d_integration() { return(Test_ProfilerActiveRecords() && Test_ProfilerMemoryEvidence()); }
-bool test_core_runtime_and_configuration_cb03_integration() { return(Test_OptimizationGated()); }
+bool test_core_runtime_and_configuration_aa68_integration(CAssert &asserts) { return(Test_TesterVsLive(asserts)); }
+bool test_core_runtime_and_configuration_b37d_unit(CAssert &asserts)        { return(Test_ProfilerNoWriteWhenGated(asserts)); }
+bool test_core_runtime_and_configuration_b37d_integration(CAssert &asserts) { return(Test_ProfilerActiveRecords(asserts) && Test_ProfilerMemoryEvidence(asserts)); }
+bool test_core_runtime_and_configuration_cb03_integration(CAssert &asserts) { return(Test_OptimizationGated(asserts)); }
 
 //+------------------------------------------------------------------+
 //| Script entry point.                                              |
 //| Returns 0=all pass, 1=any failure, 2=pass but skips present.    |
 //+------------------------------------------------------------------+
+#ifndef TRADESPINE_RUN_ALL_TESTS
 int OnStart()
   {
-   ResetAsserts();
+   CAssert asserts;
+   asserts.Reset();
    Print("== Test_OptContextProfiler ==");
-   Test_OptimizationGated();
-   Test_TesterVsLive();
-   Test_ProfilerNoWriteWhenGated();
-   Test_ProfilerActiveRecords();
-   Test_ProfilerMemoryEvidence();
-   Test_ProfilerNoDuplicateStop();
-   Test_ProfilerScopeOverflow();
-   Test_DiagnosticsInjectedDisabled();
-   Test_MacroNoEvalWhenInactive();
-   bool pass = ReportSummary("Test_OptContextProfiler");
+   Test_OptimizationGated(asserts);
+   Test_TesterVsLive(asserts);
+   Test_ProfilerNoWriteWhenGated(asserts);
+   Test_ProfilerActiveRecords(asserts);
+   Test_ProfilerMemoryEvidence(asserts);
+   Test_ProfilerNoDuplicateStop(asserts);
+   Test_ProfilerScopeOverflow(asserts);
+   Test_DiagnosticsInjectedDisabled(asserts);
+   Test_MacroNoEvalWhenInactive(asserts);
+   bool pass = asserts.ReportSummary("Test_OptContextProfiler");
    if(!pass)                return(1);
-   if(g_tests_skipped > 0) return(2);
+   if(asserts.TestsSkipped() > 0) return(2);
    return(0);
   }
+#endif
 //+------------------------------------------------------------------+

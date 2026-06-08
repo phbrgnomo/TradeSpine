@@ -56,9 +56,9 @@ interfaces:
       description: "Captures diagnostics and evidence messages for deterministic assertions without production logging side effects."
       errors:
         - "Assertion failure when required messages are missing."
-    - name: "TestAssert"
+    - name: "CAssert"
       type: "class"
-      signature: "class TestAssert"
+      signature: "class CAssert"
       description: "Shared assertion counters, equality checks, and pass/fail summary output for MQL5 test scripts."
       errors:
         - "Assertion failure."

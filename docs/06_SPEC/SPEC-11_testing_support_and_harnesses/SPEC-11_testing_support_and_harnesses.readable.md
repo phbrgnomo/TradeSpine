@@ -30,7 +30,7 @@ flowchart LR
 | --- | --- | --- |
 | FakeClock | class | Deterministic time source for session, timeout, daily reset, and evidence ordering tests. |
 | FakeLogSink | class | Captures diagnostics and evidence messages for deterministic assertions without production logging side effects. |
-| TestAssert | class | Shared assertion counters, equality checks, and pass/fail summary output for MQL5 test scripts. |
+| CAssert | class | Shared assertion counters, equality checks, and pass/fail summary output for MQL5 test scripts. |
 | ScenarioHarness | class | Minimal reusable assembly for component-under-test, shared fakes, owner-extension hooks, stimulus, and evidence assertions. |
 
 ## Data Models

@@ -63,6 +63,11 @@ Key architecture rules baked into the ADRs/SPECs — honor them in any generated
 
 ## Build / Test / CI
 
-- **There is no local build or test command.** MQL5 compiles only inside **MetaEditor / MetaTrader 5** (`.mq5`/`.mqh` → `.ex5`); testing is the MT5 **Strategy Tester**. `.ex5` artifacts are git-ignored.
+- **Authoritative compilation and test runs are in MetaEditor / MT5 IDE** (F7 or Ctrl+F7 to compile; run scripts from the Navigator). `.mq5`/`.mqh` → `.ex5`; `.ex5` artifacts are git-ignored.
+- **Aggregate test runner**: `Scripts/Tests/RunAllTests.mq5` — includes all IPLAN test scripts via `#define TRADESPINE_RUN_ALL_TESTS` guard pattern and calls all TDD-mapped functions in one pass.
+- **Compile script (supplementary)**: `../../../Scripts/compile_mql.sh <file.mq5>` wraps MetaEditor via Wine for headless checks. Interpret results as:
+  - `"MetaEditor exited with success"` + **no log generated** → compiled cleanly.
+  - `"MetaEditor exited with success"` + **log with `xxx.mqh not found` errors** → likely a **stale log** from a prior MT5 IDE session; cross-check with MT5 IDE (F7) before treating as a real failure. MetaEditor always exits 0 regardless of outcome; the script reads whatever `.log` MetaEditor left behind, which may predate the current run.
+  - If the script reports success for a file you just wrote, trust it. If it reports include-not-found errors for a file you know compiled in the IDE, discard the script output and rely on the IDE.
 - CI runs only documentation checks (GitHub Actions): `markdown-links.yml` (link checking) and `secret-scan.yml` (gitleaks). There is no code CI yet.
 - `.aidoc/`, `archive/`, `tmp/`, and `*.ex5` are git-ignored.

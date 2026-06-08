@@ -144,7 +144,7 @@ test_cases:
         type: unit
         name: "Shared clock, log sink, and assertion helpers behave deterministically"
         spec_ref: "@spec: SPEC-11"
-        target: "FakeClock/FakeLogSink/TestAssert"
+        target: "FakeClock/FakeLogSink/CAssert"
         test_file: "Scripts/Tests/Test_TestSupportClock.mq5"
         test_function: "test_testing_support_and_harnesses_unit_contract"
         inputs:
@@ -156,7 +156,7 @@ test_cases:
           value: "Clock advances in configured order, log sink captures required messages, and assertions report deterministic pass/fail counts"
         edge_cases:
           - condition: "Required log message is absent"
-            expected: "Case fails through TestAssert without broker, position, or store dependencies."
+            expected: "Case fails through CAssert without broker, position, or store dependencies."
   integration_tests:
     cases:
       - id: "TDD.11.04.aadd"
@@ -170,7 +170,7 @@ test_cases:
           - "Assemble component with deterministic shared fakes for clock, logs, runtime, and owner-extension hooks where required."
           - "Load SPEC-defined configuration and BDD trace tags."
         action:
-          description: "Component plus FakeClock, FakeLogSink, TestAssert, minimal ScenarioHarness, and deferred owner-extension slots"
+          description: "Component plus FakeClock, FakeLogSink, CAssert, minimal ScenarioHarness, and deferred owner-extension slots"
         expected_state:
           - "Stimulus runs with deterministic time and evidence assertions fail on missing required traces"
         error_paths:

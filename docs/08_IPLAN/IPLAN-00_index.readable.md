@@ -10,8 +10,8 @@
 | Document Type | iplan-registry |
 | Layer | 8 |
 | Total Permanent Plans | 12 |
-| Last Updated | 2026-06-05 |
-| Status | 1 completed plan; 11 draft plans |
+| Last Updated | 2026-06-08 |
+| Status | 2 completed plans; 10 draft plans |
 
 ## Scope
 
@@ -24,7 +24,7 @@ The final documentation closeout is tracked as a registry execution step rather 
 ```mermaid
 flowchart TD
   T1["Tier 1: Core Runtime<br>COMPLETED<br>IPLAN-09"]
-  T2["Tier 2: Testing Foundation<br>NOT_STARTED<br>IPLAN-11"]
+  T2["Tier 2: Testing Foundation<br>COMPLETED<br>IPLAN-11"]
   T1 --> T2
   T3["Tier 3: Persistence and Market Foundations<br>NOT_STARTED<br>IPLAN-05, IPLAN-06"]
   T2 --> T3
@@ -47,7 +47,7 @@ flowchart TD
 | ID | Title | Source | Status | Complexity | Files | Depends On |
 | --- | --- | --- | --- | --- | --- | --- |
 | IPLAN-09 | Core Runtime and Configuration Implementation | @spec: SPEC-09 | Completed | 4 | 10 | None |
-| IPLAN-11 | Testing Support and Harnesses Implementation | @spec: SPEC-11 | Draft | 4 | 9 | IPLAN-09 |
+| IPLAN-11 | Testing Support and Harnesses Implementation | @spec: SPEC-11 | Completed | 4 | 9 | IPLAN-09 |
 | IPLAN-05 | Persistence and Audit Evidence Implementation | @spec: SPEC-05 | Draft | 4 | 8 | IPLAN-09, IPLAN-11 |
 | IPLAN-06 | Market Session and Symbol Context Implementation | @spec: SPEC-06 | Draft | 4 | 6 | IPLAN-09, IPLAN-11 |
 | IPLAN-04 | Position Account Mode and State Implementation | @spec: SPEC-04 | Draft | 5 | 9 | IPLAN-05, IPLAN-11 |
@@ -64,7 +64,7 @@ flowchart TD
 | Tier | Label | Plans | Status |
 | --- | --- | --- | --- |
 | 1 | Core Runtime | IPLAN-09 | COMPLETED |
-| 2 | Testing Foundation | IPLAN-11 | NOT_STARTED |
+| 2 | Testing Foundation | IPLAN-11 | COMPLETED |
 | 3 | Persistence and Market Foundations | IPLAN-05, IPLAN-06 | NOT_STARTED |
 | 4 | State, Behavior, and Optional Services | IPLAN-04, IPLAN-07, IPLAN-10 | NOT_STARTED |
 | 5 | Coordinator | IPLAN-02 | NOT_STARTED |

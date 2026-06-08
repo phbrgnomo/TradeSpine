@@ -68,9 +68,10 @@ struct CommonInputs
    //| Default constructor: explicit invalid sentinels so any          |
    //| incompletely-filled binding fails Validate() rather than        |
    //| silently passing with MQL5's arbitrary uninitialized values.    |
-   //|  magic=0           -> rejected by the magic guard               |
+   //|  magic=0           -> rejected by the magic guard (sufficient   |
+   //|                       to guarantee Validate() returns false)     |
    //|  sizing_mode=-1    -> rejected by the whitelist gate            |
-   //| All other fields are set to safe/neutral defaults.              |
+   //|  signal_timeframe=-1 -> rejected by the whitelist gate          |
    //-------------------------------------------------------------------
    CommonInputs(void)
      {

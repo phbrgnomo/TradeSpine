@@ -28,6 +28,7 @@ custom_fields:
 | CHG-06 | IPLAN-11 Testing Foundation Scope Repair | C2 | design | In Review | GATE-06 prepared |
 | CHG-07 | Test Double Boundary Refactor | C2 | feedback | Approved | GATE-CODE self-approved |
 | CHG-08 | Apply MQL5 C-prefix convention to OptContext and Profiler class identifiers | C2 | feedback | Approved | GATE-CODE self-approved |
+| CHG-09 | CAssert canonical instance assertion helper refactor | C2 | feedback | In Review | GATE-CODE prepared |
 
 ## Planned
 
