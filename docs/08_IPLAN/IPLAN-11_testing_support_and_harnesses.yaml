@@ -22,7 +22,7 @@ document_control:
   component: "Shared test doubles, clocks, log sinks, assertions, and harness primitives"
   complexity: 4
   estimated_files: 9
-  session_count: 3
+  session_count: 4
   readiness_gate: "TDD-11 audit PASS 95/100"
   source_inputs:
     - "../07_TDD/TDD-11_testing_support_and_harnesses/TDD-11_testing_support_and_harnesses.yaml"
@@ -75,12 +75,12 @@ file_manifest:
       session: 3
       verified: true
       purpose: "Canonical CAssert helper with instance counters, failure log, summary output, snapshot/restore, and source-location macros."
-    - path: "Include/Testing/Mocks.mqh"
+    - path: "Scripts/Tests/Support/Mocks.mqh"
       order: 8
       status: DONE
-      session: 3
+      session: 4
       verified: true
-      purpose: "Shared mock aliases and helpers for component tests."
+      purpose: "Shared mock aliases and helpers colocated with reusable test-support fakes."
     - path: "Scripts/Tests/RunAllTests.mq5"
       order: 9
       status: DONE
@@ -204,6 +204,24 @@ session_handoff:
         lint_clean: true
         compile_passing: true
         notes: "MetaEditor compile helper returned success for standalone declared IPLAN-11 test scripts and Scripts/Tests/RunAllTests.mq5. One stale readable log appeared while compiling Test_OptContextProfiler.mq5, but the current source and MetaEditor return were consistent with success."
+    - date: "2026-06-08"
+      agent: "Codex"
+      files_touched:
+        - path: "Include/Testing/Mocks.mqh"
+          action: moved-from
+          status: DONE
+        - path: "Scripts/Tests/Support/Mocks.mqh"
+          action: moved-to
+          status: DONE
+      partial_work: "Moved the shared mock alias include from Include/Testing into Scripts/Tests/Support so the alias bridge is colocated with FakeClock and FakeLogSink. IPLAN-11 manifest, traceability, and audit notes now use Scripts/Tests/Support/Mocks.mqh as the canonical path."
+      blockers: "None. User confirmed compilation worked after the Mocks.mqh folder move."
+      next_session_directive: "Keep owner-plan tests including mock aliases from Scripts/Tests/Support/Mocks.mqh; do not reintroduce Include/Testing/Mocks.mqh unless a compatibility bridge is explicitly required."
+      validation_results:
+        tests_passing: null
+        coverage: null
+        lint_clean: true
+        compile_passing: true
+        notes: "User confirmed compilation worked after the CAssert TS_* migration and Mocks.mqh move."
 
 traceability:
   upstream:
@@ -215,7 +233,7 @@ traceability:
     bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.f415", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.b37d"]
     adr_references: ["@adr: ADR.06.03.b277", "@adr: ADR.07.03.6df1", "@adr: ADR.08.03.0a8f", "@adr: ADR.10.03.51ea"]
   downstream:
-    code_paths: ["@code: Include/Testing/Assert.mqh", "@code: Include/Testing/Mocks.mqh", "@code: Scripts/Tests/Support/FakeClock.mqh", "@code: Scripts/Tests/Support/FakeLogSink.mqh", "@code: Scripts/Tests/Support/ScenarioHarness.mqh", "@code: Scripts/Tests/RunAllTests.mq5"]
+    code_paths: ["@code: Include/Testing/Assert.mqh", "@code: Scripts/Tests/Support/Mocks.mqh", "@code: Scripts/Tests/Support/FakeClock.mqh", "@code: Scripts/Tests/Support/FakeLogSink.mqh", "@code: Scripts/Tests/Support/ScenarioHarness.mqh", "@code: Scripts/Tests/RunAllTests.mq5"]
     test_paths: ["@tests: Scripts/Tests/Test_TestSupportClock.mq5", "@tests: Scripts/Tests/Test_TestSupportScenarioHarness.mq5", "@tests: Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"]
   code_inventory:
     files:
@@ -224,11 +242,11 @@ traceability:
         session: 3
         verified: true
         evidence: "Canonical CAssert helper compiled through standalone IPLAN-11 scripts and RunAllTests.mq5."
-      - path: "Include/Testing/Mocks.mqh"
-        status: implemented
-        session: 3
+      - path: "Scripts/Tests/Support/Mocks.mqh"
+        status: moved
+        session: 4
         verified: true
-        evidence: "Shared mock alias include exists and compiles through current include graph."
+        evidence: "Shared mock alias include was moved from Include/Testing to Scripts/Tests/Support and user confirmed compilation worked."
       - path: "Scripts/Tests/Support/FakeClock.mqh"
         status: adopted
         session: 2

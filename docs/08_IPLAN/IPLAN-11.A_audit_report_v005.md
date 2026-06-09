@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | YAML parse | PASS | IPLAN-11 canonical YAML loads successfully. |
 | Document identity | PASS | `IPLAN-11`, Layer 8, `iplan-document`, source SPEC/TDD references are present. |
-| Document status | PASS | `document_control.status` is `Completed` with 3 recorded sessions. |
+| Document status | PASS | `document_control.status` is `Completed` with 4 recorded sessions. |
 | Registry status | PASS | `IPLAN-00_index.yaml` marks IPLAN-11 Completed, Tier 2 Completed, 9/9 files done. |
 
 ## Structural Findings
@@ -30,7 +30,7 @@
 | Required sections | PASS | Metadata, document control, manifest, commands, contracts, handoff, and traceability are present. |
 | File manifest | PASS | All 9 declared files are `DONE` and `verified: true`. |
 | Implementation contracts | PASS | `CAssert`, scenario harness, release evidence, and RunAll aggregate contracts are documented. |
-| Session handoff | PASS | The latest session records CAssert implementation, support helpers, aggregate runner, and compile validation boundary. |
+| Session handoff | PASS | The latest session records the `Mocks.mqh` move into `Scripts/Tests/Support` and user-confirmed compile validation. |
 | Code inventory | PASS | Declared files plus migrated current test scripts and the deprecated TestAssert bridge are inventoried. |
 | Deferred scope | PASS | Owner-specific broker, position, persistence, and symbol fakes remain deferred to their owner plans. |
 
@@ -45,7 +45,7 @@
 | `Scripts/Tests/Support/FakeLogSink.mqh` | DONE | true | Capturing log sink recorded. |
 | `Scripts/Tests/Support/ScenarioHarness.mqh` | DONE | true | Non-owned `CAssert *` dependency recorded. |
 | `Include/Testing/Assert.mqh` | DONE | true | Canonical CAssert helper recorded. |
-| `Include/Testing/Mocks.mqh` | DONE | true | Shared mock aliases recorded. |
+| `Scripts/Tests/Support/Mocks.mqh` | DONE | true | Shared mock aliases recorded under the test-support folder. |
 | `Scripts/Tests/RunAllTests.mq5` | DONE | true | Aggregate runner recorded. |
 
 ## Findings
@@ -56,7 +56,7 @@ No blocking findings.
 
 - YAML parse passed for IPLAN-11 and the IPLAN registry.
 - Static assertion API checks found no old assertion globals/procedural definitions and no active includes of deprecated `TestAssert.mqh`.
-- Compile validation was recorded by the implementation session. Runtime execution inside MT5 was not run and remains the next evidence step when terminal execution proof is required.
+- Compile validation was recorded by the implementation session, and the user confirmed compilation worked after the `Mocks.mqh` folder move. Runtime execution inside MT5 remains a separate evidence step when terminal execution proof is required.
 
 ## Fix Queue
 

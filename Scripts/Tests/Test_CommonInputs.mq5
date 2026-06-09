@@ -40,21 +40,21 @@ bool Test_ValidCombos(CAssert &asserts)
    bool ok = true;
    CommonInputs ci = MakeValid();
    InputValidation r = ci.Validate();
-   ok &= asserts.Check(r.ok, "Baseline (no day-trade, risk-pct-equity) is accepted");
+   ok &= asserts.TS_CHECK(r.ok, "Baseline (no day-trade, risk-pct-equity) is accepted");
 
    ci.sizing_mode = SIZING_FIXED_LOT;
    r = ci.Validate();
-   ok &= asserts.Check(r.ok, "Fixed-lot is accepted");
+   ok &= asserts.TS_CHECK(r.ok, "Fixed-lot is accepted");
 
    ci = MakeValid();
    ci.day_trade_mode = true;
    r = ci.Validate();
-   ok &= asserts.Check(r.ok, "Day-trade mode with valid session window is accepted");
+   ok &= asserts.TS_CHECK(r.ok, "Day-trade mode with valid session window is accepted");
 
    ci = MakeValid();
    ci.signal_timeframe = PERIOD_M15;
    r = ci.Validate();
-   ok &= asserts.Check(r.ok, "Explicit signal timeframe PERIOD_M15 is accepted");
+   ok &= asserts.TS_CHECK(r.ok, "Explicit signal timeframe PERIOD_M15 is accepted");
    return(ok);
   }
 
@@ -67,10 +67,10 @@ bool Test_MagicGuard(CAssert &asserts)
    CommonInputs ci = MakeValid();
 
    ci.magic = 0;
-   ok &= asserts.CheckFalse(ci.Validate().ok, "Zero magic is rejected");
-   ok &= asserts.Check(StringFind(ci.Validate().message, "magic") >= 0,
-               "Diagnostic names the magic problem");
-   // Note: magic is ulong; negative values are impossible (wrap to max ulong > 0).
+   ok &= asserts.TS_CHECK(!ci.Validate().ok, "Zero magic is rejected");
+   ok &= asserts.TS_CHECK(StringFind(ci.Validate().message, "magic") >= 0,
+                          "Diagnostic names the magic problem");
+// Note: magic is ulong; negative values are impossible (wrap to max ulong > 0).
    return(ok);
   }
 
@@ -82,45 +82,45 @@ bool Test_DayTradeMode(CAssert &asserts)
    bool ok = true;
    CommonInputs ci = MakeValid();
 
-   // Deliberately set invalid window fields while disabled — they must be ignored.
+// Deliberately set invalid window fields while disabled — they must be ignored.
    ci.day_trade_mode    = false;
    ci.entry_window_end  = D'2026.01.01 08:00'; // reversed: would fail if validated
    ci.close_mins_before = -1;                  // negative: would fail if validated
-   ok &= asserts.Check(ci.Validate().ok,
-               "day_trade_mode=false: deliberately invalid window fields are ignored");
-   // Restore before switching to enabled tests.
+   ok &= asserts.TS_CHECK(ci.Validate().ok,
+                          "day_trade_mode=false: deliberately invalid window fields are ignored");
+// Restore before switching to enabled tests.
    ci.entry_window_end  = D'2026.01.01 17:00';
    ci.close_mins_before = 5;
 
    ci.day_trade_mode = true;
    ci.entry_window_end = D'2026.01.01 08:00'; // end before start
-   ok &= asserts.CheckFalse(ci.Validate().ok, "entry_window_end before start is rejected");
-   ok &= asserts.Check(StringFind(ci.Validate().message, "entry window") >= 0,
-               "Diagnostic names the window problem");
+   ok &= asserts.TS_CHECK(!ci.Validate().ok, "entry_window_end before start is rejected");
+   ok &= asserts.TS_CHECK(StringFind(ci.Validate().message, "entry window") >= 0,
+                          "Diagnostic names the window problem");
 
    ci.entry_window_end   = D'2026.01.01 17:00'; // valid
    ci.close_mins_before  = -1;
-   ok &= asserts.CheckFalse(ci.Validate().ok, "Negative close_mins_before is rejected");
+   ok &= asserts.TS_CHECK(!ci.Validate().ok, "Negative close_mins_before is rejected");
 
    ci.close_mins_before = 0;
-   ok &= asserts.Check(ci.Validate().ok, "close_mins_before=0 is accepted");
+   ok &= asserts.TS_CHECK(ci.Validate().ok, "close_mins_before=0 is accepted");
 
-   // Date-ignored contract: comparison must use time-of-day only.
+// Date-ignored contract: comparison must use time-of-day only.
    ci.close_mins_before  = 5;
    ci.entry_window_start = D'2026.01.02 09:00'; // later date, earlier time
    ci.entry_window_end   = D'2026.01.01 17:00'; // earlier date, later time
-   ok &= asserts.Check(ci.Validate().ok,
-               "Different dates, valid time order (17:00 > 09:00): date component ignored");
+   ok &= asserts.TS_CHECK(ci.Validate().ok,
+                          "Different dates, valid time order (17:00 > 09:00): date component ignored");
 
    ci.entry_window_start = D'2026.01.01 09:00'; // earlier date
    ci.entry_window_end   = D'2026.01.02 08:00'; // later date but earlier time-of-day
-   ok &= asserts.CheckFalse(ci.Validate().ok,
-                    "Different dates, reversed time order (08:00 < 09:00): rejected despite later date");
+   ok &= asserts.TS_CHECK(!ci.Validate().ok,
+                                "Different dates, reversed time order (08:00 < 09:00): rejected despite later date");
 
    ci.entry_window_start = D'2026.01.01 09:00';
    ci.entry_window_end   = D'2026.01.01 09:00'; // same time — equal, not "after"
-   ok &= asserts.CheckFalse(ci.Validate().ok,
-                    "Equal start and end times are rejected (end must be strictly after start)");
+   ok &= asserts.TS_CHECK(!ci.Validate().ok,
+                                "Equal start and end times are rejected (end must be strictly after start)");
    return(ok);
   }
 
@@ -134,19 +134,19 @@ bool Test_SizingPlaceholderRejected(CAssert &asserts)
 
    ci.sizing_mode = SIZING_FIXED_CASH;
    InputValidation r = ci.Validate();
-   ok &= asserts.CheckFalse(r.ok, "SIZING_FIXED_CASH is rejected in v1");
-   ok &= asserts.Check(StringFind(r.message, "SIZING_FIXED_CASH") >= 0,
-               "Diagnostic names SIZING_FIXED_CASH");
-   ok &= asserts.Check(StringFind(r.message, "v2") >= 0,
-               "Diagnostic flags SIZING_FIXED_CASH as later release");
+   ok &= asserts.TS_CHECK(!r.ok, "SIZING_FIXED_CASH is rejected in v1");
+   ok &= asserts.TS_CHECK(StringFind(r.message, "SIZING_FIXED_CASH") >= 0,
+                          "Diagnostic names SIZING_FIXED_CASH");
+   ok &= asserts.TS_CHECK(StringFind(r.message, "v2") >= 0,
+                          "Diagnostic flags SIZING_FIXED_CASH as later release");
 
    ci.sizing_mode = SIZING_VALUE_PCT_EQUITY;
    r = ci.Validate();
-   ok &= asserts.CheckFalse(r.ok, "SIZING_VALUE_PCT_EQUITY is rejected in v1");
-   ok &= asserts.Check(StringFind(r.message, "SIZING_VALUE_PCT_EQUITY") >= 0,
-               "Diagnostic names SIZING_VALUE_PCT_EQUITY");
-   ok &= asserts.Check(StringFind(r.message, "v2") >= 0,
-               "Diagnostic flags SIZING_VALUE_PCT_EQUITY as later release");
+   ok &= asserts.TS_CHECK(!r.ok, "SIZING_VALUE_PCT_EQUITY is rejected in v1");
+   ok &= asserts.TS_CHECK(StringFind(r.message, "SIZING_VALUE_PCT_EQUITY") >= 0,
+                          "Diagnostic names SIZING_VALUE_PCT_EQUITY");
+   ok &= asserts.TS_CHECK(StringFind(r.message, "v2") >= 0,
+                          "Diagnostic flags SIZING_VALUE_PCT_EQUITY as later release");
    return(ok);
   }
 
@@ -160,9 +160,9 @@ bool Test_UnknownEnumRejected(CAssert &asserts)
 
    ci.sizing_mode = (ENUM_SIZING_MODE)99;
    InputValidation r = ci.Validate();
-   ok &= asserts.CheckFalse(r.ok, "Cast sizing mode value 99 is rejected");
-   ok &= asserts.Check(StringFind(r.message, "99") >= 0 || StringFind(r.message, "Unknown") >= 0,
-               "Diagnostic identifies the invalid sizing value");
+   ok &= asserts.TS_CHECK(!r.ok, "Cast sizing mode value 99 is rejected");
+   ok &= asserts.TS_CHECK(StringFind(r.message, "99") >= 0 || StringFind(r.message, "Unknown") >= 0,
+                          "Diagnostic identifies the invalid sizing value");
    return(ok);
   }
 
@@ -177,31 +177,31 @@ bool Test_SignalTimeframe(CAssert &asserts)
 
    ci.signal_timeframe = PERIOD_CURRENT;
    InputValidation r = ci.Validate();
-   ok &= asserts.Check(r.ok, "PERIOD_CURRENT signal timeframe is accepted");
+   ok &= asserts.TS_CHECK(r.ok, "PERIOD_CURRENT signal timeframe is accepted");
 
    ci.signal_timeframe = PERIOD_M1;
    r = ci.Validate();
-   ok &= asserts.Check(r.ok, "PERIOD_M1 signal timeframe is accepted");
+   ok &= asserts.TS_CHECK(r.ok, "PERIOD_M1 signal timeframe is accepted");
 
    ci.signal_timeframe = PERIOD_H1;
    r = ci.Validate();
-   ok &= asserts.Check(r.ok, "PERIOD_H1 signal timeframe is accepted");
+   ok &= asserts.TS_CHECK(r.ok, "PERIOD_H1 signal timeframe is accepted");
 
    ci.signal_timeframe = PERIOD_D1;
    r = ci.Validate();
-   ok &= asserts.Check(r.ok, "PERIOD_D1 signal timeframe is accepted");
+   ok &= asserts.TS_CHECK(r.ok, "PERIOD_D1 signal timeframe is accepted");
 
    ci.signal_timeframe = (ENUM_TIMEFRAMES)-1;
    r = ci.Validate();
-   ok &= asserts.CheckFalse(r.ok, "Negative cast signal timeframe is rejected");
-   ok &= asserts.Check(StringFind(r.message, "signal_timeframe") >= 0,
-               "Diagnostic names the signal_timeframe problem");
+   ok &= asserts.TS_CHECK(!r.ok, "Negative cast signal timeframe is rejected");
+   ok &= asserts.TS_CHECK(StringFind(r.message, "signal_timeframe") >= 0,
+                          "Diagnostic names the signal_timeframe problem");
 
    ci.signal_timeframe = (ENUM_TIMEFRAMES)999;
    r = ci.Validate();
-   ok &= asserts.CheckFalse(r.ok, "Unknown positive signal timeframe value 999 is rejected");
-   ok &= asserts.Check(StringFind(r.message, "999") >= 0,
-               "Diagnostic includes the unknown signal timeframe value");
+   ok &= asserts.TS_CHECK(!r.ok, "Unknown positive signal timeframe value 999 is rejected");
+   ok &= asserts.TS_CHECK(StringFind(r.message, "999") >= 0,
+                          "Diagnostic includes the unknown signal timeframe value");
    return(ok);
   }
 
@@ -213,14 +213,14 @@ bool Test_DefaultConstructorIsInvalid(CAssert &asserts)
    bool ok = true;
    CommonInputs ci;
    InputValidation r = ci.Validate();
-   ok &= asserts.CheckFalse(r.ok,
-                    "Default-constructed CommonInputs fails Validate() (magic sentinel=0)");
-   ok &= asserts.Check(ci.magic == 0,
-               "Default constructor sets magic=0");
-   ok &= asserts.Check(ci.sizing_mode == (ENUM_SIZING_MODE) - 1,
-               "Default constructor sets sizing_mode to invalid sentinel");
-   ok &= asserts.Check(ci.signal_timeframe == (ENUM_TIMEFRAMES) - 1,
-               "Default constructor sets signal_timeframe to invalid sentinel");
+   ok &= asserts.TS_CHECK(!r.ok,
+                                "Default-constructed CommonInputs fails Validate() (magic sentinel=0)");
+   ok &= asserts.TS_CHECK(ci.magic == 0,
+                          "Default constructor sets magic=0");
+   ok &= asserts.TS_CHECK(ci.sizing_mode == (ENUM_SIZING_MODE) - 1,
+                          "Default constructor sets sizing_mode to invalid sentinel");
+   ok &= asserts.TS_CHECK(ci.signal_timeframe == (ENUM_TIMEFRAMES) - 1,
+                          "Default constructor sets signal_timeframe to invalid sentinel");
    return(ok);
   }
 
@@ -234,6 +234,9 @@ bool Test_DefaultConstructorIsInvalid(CAssert &asserts)
 //| configuration_b37d_integration() in Test_OptContextProfiler.mq5.|
 //+------------------------------------------------------------------+
 bool test_core_runtime_and_configuration_cb03_unit(CAssert &asserts)      { return(Test_SizingPlaceholderRejected(asserts) && Test_UnknownEnumRejected(asserts)); }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
 bool test_core_runtime_and_configuration_aa68_unit(CAssert &asserts)      { return(Test_ValidCombos(asserts) && Test_MagicGuard(asserts) && Test_DayTradeMode(asserts) && Test_SignalTimeframe(asserts) && Test_DefaultConstructorIsInvalid(asserts)); }
 bool test_core_runtime_and_configuration_e2e_acceptance(CAssert &asserts) { return(Test_SizingPlaceholderRejected(asserts)); }
 
@@ -254,9 +257,11 @@ int OnStart()
    Test_UnknownEnumRejected(asserts);
    Test_SignalTimeframe(asserts);
    Test_DefaultConstructorIsInvalid(asserts);
-   bool pass = asserts.ReportSummary("Test_CommonInputs");
-   if(!pass)                return(1);
-   if(asserts.TestsSkipped() > 0) return(2);
+   bool pass = asserts.TS_REPORT_SUMMARY("Test_CommonInputs");
+   if(!pass)
+      return(1);
+   if(asserts.TestsSkipped() > 0)
+      return(2);
    return(0);
   }
 #endif

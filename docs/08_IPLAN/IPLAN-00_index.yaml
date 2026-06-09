@@ -167,8 +167,8 @@ registry:
       status: "Completed"
       status_date: "2026-06-08"
       complexity: 4
-      session_count: 3
-      sessions_completed: 3
+      session_count: 4
+      sessions_completed: 4
       files_declared: 9
       files_done: 9
       skipped: []
@@ -480,7 +480,7 @@ status_history:
       - from: "Draft"
         to: "Completed"
         date: "2026-06-08"
-        reason: "CHG-09: IPLAN-11 implementation completed across 9 declared files with CAssert canonical assertion support, shared harness fakes, aggregate runner, and compile validation evidence."
+        reason: "CHG-09: IPLAN-11 implementation completed across 9 declared files with CAssert canonical assertion support, shared harness fakes, aggregate runner, Scripts/Tests/Support/Mocks.mqh traceability, and compile validation evidence."
   - plan_id: "IPLAN-12"
     transitions:
       - from: "BACKLOG"

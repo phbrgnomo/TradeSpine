@@ -55,6 +55,6 @@ int OnStart()
    test_testing_support_and_harnesses_integration_contract(asserts);
    test_testing_support_and_harnesses_e2e_acceptance(asserts);
 
-   return(asserts.ReportSummary("TradeSpine RunAllTests") ? 0 : 1);
+   return(asserts.TS_REPORT_SUMMARY("TradeSpine RunAllTests") ? 0 : 1);
   }
 //+------------------------------------------------------------------+

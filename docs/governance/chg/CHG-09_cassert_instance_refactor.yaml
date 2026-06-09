@@ -73,6 +73,7 @@ impact_assessment:
         - "Include/Testing/Assert.mqh"
         - "Scripts/Tests/TestAssert.mqh"
         - "Scripts/Tests/RunAllTests.mq5"
+        - "Scripts/Tests/Support/Mocks.mqh"
         - "Scripts/Tests/Support/ScenarioHarness.mqh"
         - "Scripts/Tests/Test_TestSupportClock.mq5"
         - "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
@@ -133,6 +134,10 @@ implementation:
       action: "Update SPEC-11, TDD-11, IPLAN-11, IPLAN-00, and CHG registry documentation."
       artifact: "docs"
       status: Completed
+    - step: 9
+      action: "Record the `Mocks.mqh` folder move from `Include/Testing` to `Scripts/Tests/Support` and keep IPLAN-11 traceability on the moved path."
+      artifact: "docs"
+      status: Completed
 
 verification:
   checks:
@@ -150,7 +155,7 @@ verification:
       method: "Assertion helper unit coverage uses isolated probe instances."
     - check: "Standalone test scripts and aggregate runner compile."
       result: Pass
-      method: "MetaEditor compile helper returned success for declared IPLAN-11 scripts and `RunAllTests.mq5`; one stale readable log was ignored in favor of current source and MetaEditor success evidence."
+      method: "User confirmed compilation worked after the CAssert `TS_*` migration and `Mocks.mqh` folder move."
     - check: "Runtime execution inside MT5 IDE or Strategy Tester."
       result: Not Run
       method: "Compile validation completed; interactive MT5 script execution was not run in this pass."
@@ -173,4 +178,5 @@ traceability:
       - "@code: Include/Testing/Assert.mqh"
       - "@code: Scripts/Tests/TestAssert.mqh"
       - "@code: Scripts/Tests/RunAllTests.mq5"
+      - "@code: Scripts/Tests/Support/Mocks.mqh"
       - "@code: Scripts/Tests/Support/ScenarioHarness.mqh"

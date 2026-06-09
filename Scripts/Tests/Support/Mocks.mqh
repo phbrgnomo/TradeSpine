@@ -10,8 +10,8 @@
 #ifndef TRADESPINE_TESTING_MOCKS_MQH
 #define TRADESPINE_TESTING_MOCKS_MQH
 
-#include "../../Scripts/Tests/Support/FakeClock.mqh"
-#include "../../Scripts/Tests/Support/FakeLogSink.mqh"
+#include "FakeClock.mqh"
+#include "FakeLogSink.mqh"
 
 typedef FakeClock*   TestClock_t;
 typedef FakeLogSink* TestLogSink_t;
