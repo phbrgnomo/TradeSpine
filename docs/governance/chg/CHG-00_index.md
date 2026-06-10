@@ -29,6 +29,8 @@ custom_fields:
 | CHG-07 | Test Double Boundary Refactor | C2 | feedback | Approved | GATE-CODE self-approved |
 | CHG-08 | Apply MQL5 C-prefix convention to OptContext and Profiler class identifiers | C2 | feedback | Approved | GATE-CODE self-approved |
 | CHG-09 | CAssert canonical instance assertion helper refactor | C2 | feedback | In Review | GATE-CODE prepared |
+| CHG-10 | TDD-11 BDD-scenario test mapping reconciliation | C2 | feedback | Approved | GATE-CODE self-approved |
+| CHG-11 | CAssert negative-assertion primitive for expected failures | C2 | feedback | Approved | GATE-CODE self-approved |
 
 ## Planned
 

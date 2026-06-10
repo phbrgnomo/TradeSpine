@@ -65,7 +65,12 @@ class CAssert
     int    m_tests_run;
     int    m_tests_passed;
     int    m_tests_skipped;
+    int    m_dropped_failures;
     string m_fail_msgs[];
+    bool   m_verbose;        // when false, suppress PASS/FAIL/SKIP console lines (isolated probes)
+    bool   m_xfail_active;   // inside a negative-assertion (expect-failure) scope
+    bool   m_xfail_seen;     // at least one check failed inside the current scope
+    string m_xfail_label;    // label reported once by EndExpectFailure()
 
     // Builds the "file:line" suffix appended to every failure message.
     string FormatLocation(const string file, const int line) const
@@ -74,12 +79,14 @@ class CAssert
       }
 
     // Grows m_fail_msgs by one entry; pre-reserves TRADESPINE_ASSERT_FAILURE_RESERVE to minimise reallocs.
+    // On allocation failure, increments m_dropped_failures so missing messages are visible in the summary.
     bool AppendFailure(const string failure)
       {
         int n = ArraySize(m_fail_msgs);
         int resized = ArrayResize(m_fail_msgs, n + 1, TRADESPINE_ASSERT_FAILURE_RESERVE);
         if(resized != n + 1)
           {
+          m_dropped_failures++;
           PrintFormat("    unable to record failure message: ArrayResize returned %d", resized);
           return(false);
           }
@@ -88,17 +95,26 @@ class CAssert
       }
 
   public:
-    // Initialises all counters to zero; failure message array starts empty.
-    CAssert(void) : m_tests_run(0), m_tests_passed(0), m_tests_skipped(0) {}
+    // Initialises all counters to zero; failure message array starts empty; verbose by default.
+    CAssert(void) : m_tests_run(0), m_tests_passed(0), m_tests_skipped(0), m_dropped_failures(0),
+                    m_verbose(true), m_xfail_active(false), m_xfail_seen(false) {}
 
     // Zeroes all counters and releases the failure message array; call before each test function.
+    // Leaves the verbose setting untouched (it is per-instance configuration, not test state).
     void Reset(void)
       {
-        m_tests_run     = 0;
-        m_tests_passed  = 0;
-        m_tests_skipped = 0;
+        m_tests_run        = 0;
+        m_tests_passed     = 0;
+        m_tests_skipped    = 0;
+        m_dropped_failures = 0;
+        m_xfail_active     = false;
+        m_xfail_seen       = false;
         ArrayResize(m_fail_msgs, 0);
       }
+
+    // Silences PASS/FAIL/SKIP console output when false. Use on isolated probe instances whose
+    // outcome is inspected programmatically, so their provoked failures never look like real ones.
+    void SetVerbose(const bool v) { m_verbose = v; }
 
     // Counter accessors — read these in snapshot/restore patterns to verify assertion outcomes.
     int TestsRun(void) const { return(m_tests_run); }
@@ -138,23 +154,83 @@ class CAssert
     void _Skip(const string msg, const string file, const int line)
       {
         m_tests_skipped++;
-        PrintFormat("  SKIP: %s  (%s)", msg, FormatLocation(file, line));
+        if(m_verbose)
+           PrintFormat("  SKIP: %s  (%s)", msg, FormatLocation(file, line));
+      }
+
+    // Opens a negative-assertion scope: every check until EndExpectFailure() is EXPECTED to fail.
+    // A failing check satisfies the expectation (logged quietly as "(expected)") and does NOT
+    // record a failure or touch the pass/fail counters — so provoked failures never look real.
+    void _BeginExpectFailure(const string label, const string file, const int line)
+      {
+        if(m_xfail_active)            // defensive: an unterminated prior scope fails closed
+           _EndExpectFailure(file, line);
+        m_xfail_active = true;
+        m_xfail_seen   = false;
+        m_xfail_label  = label;
+      }
+
+    // Closes the scope and records exactly one result: PASS if >=1 check failed inside it,
+    // FAIL otherwise (we expected a failure and none occurred).
+    // A stray call (no matching BEGIN) is a no-op: counters are not touched and a
+    // diagnostic NOTE is always printed so the programming mistake is visible.
+    bool _EndExpectFailure(const string file, const int line)
+      {
+        if(!m_xfail_active)
+          {
+          PrintFormat("  NOTE: TS_EXPECT_FAIL_END() at %s called without a matching TS_EXPECT_FAIL_BEGIN(); ignored",
+                      FormatLocation(file, line));
+          return(true);
+          }
+        m_xfail_active = false;
+        m_tests_run++;
+        if(m_xfail_seen)
+          {
+          m_tests_passed++;
+          if(m_verbose)
+             PrintFormat("  PASS: %s (expected failure)", m_xfail_label);
+          return(true);
+          }
+        string failure = StringFormat("%s — expected a failure but none occurred  (%s)",
+                                      m_xfail_label, FormatLocation(file, line));
+        if(!AppendFailure(failure))
+           Print("    assertion failure message dropped (allocation failure)");
+        if(m_verbose)
+           PrintFormat("  FAIL: %s", failure);
+        return(false);
       }
 
     // Core assertion gate: increments run, increments passed on true, records failure message on false.
+    // Inside an expect-failure scope a false result is captured as the expected outcome instead.
     bool _Check(const bool cond, const string msg, const string file, const int line)
       {
+        if(m_xfail_active)
+          {
+          if(!cond)
+            {
+            m_xfail_seen = true;
+            if(m_verbose)
+               PrintFormat("    (expected) %s  (%s)", msg, FormatLocation(file, line));
+            }
+          else if(m_verbose)
+             PrintFormat("    (note) unexpected pass inside expect-failure: %s", msg);
+          return(cond);
+          }
+
         m_tests_run++;
         if(cond)
           {
           m_tests_passed++;
-          PrintFormat("  PASS: %s", msg);
+          if(m_verbose)
+             PrintFormat("  PASS: %s", msg);
           return(true);
           }
 
         string failure = StringFormat("%s  (%s)", msg, FormatLocation(file, line));
-        AppendFailure(failure);
-        PrintFormat("  FAIL: %s", failure);
+        if(!AppendFailure(failure))
+           Print("    assertion failure message dropped (allocation failure)");
+        if(m_verbose)
+           PrintFormat("  FAIL: %s", failure);
         return(false);
       }
 
@@ -201,8 +277,10 @@ class CAssert
     // Prints the pass/fail/skip summary line and all failure messages; returns true if zero failures.
     bool _ReportSummary(const string suite)
       {
-        int failed = m_tests_run - m_tests_passed;
-        bool all_pass = (failed == 0);
+        int failed_from_log    = ArraySize(m_fail_msgs);
+        int failed_from_counts = m_tests_run - m_tests_passed;
+        int failed    = failed_from_counts;  // counter-based; not subject to allocation failures
+        bool all_pass = (failed == 0 && m_dropped_failures == 0);
         string skip_str = m_tests_skipped > 0
                           ? StringFormat(", %d skipped", m_tests_skipped) : "";
         if(all_pass)
@@ -215,6 +293,11 @@ class CAssert
           PrintFormat("==== %s: %d of %d passed%s  <<< %d FAILURE%s >>> ====",
                       suite, m_tests_passed, m_tests_run, skip_str,
                       failed, failed == 1 ? "" : "S");
+          if(failed_from_log != failed_from_counts)
+             PrintFormat("  NOTE: failure count mismatch (logged=%d, run-passed=%d); some failures may not have been recorded.",
+                         failed_from_log, failed_from_counts);
+          if(m_dropped_failures > 0)
+             PrintFormat("  NOTE: %d failure message(s) dropped due to allocation failure.", m_dropped_failures);
           for(int i = 0; i < ArraySize(m_fail_msgs); i++)
               PrintFormat("  [FAILED] %s", m_fail_msgs[i]);
           }
@@ -227,6 +310,8 @@ class CAssert
 #define TS_CHECK_EQ_L(a, b, msg) _CheckEqualL(a, b, msg, __FILE__, __LINE__)
 #define TS_CHECK_EQ_STR(a, b, msg) _CheckEqualStr(a, b, msg, __FILE__, __LINE__)
 #define TS_SKIP(msg) _Skip(msg, __FILE__, __LINE__)
+#define TS_EXPECT_FAIL_BEGIN(label) _BeginExpectFailure(label, __FILE__, __LINE__)
+#define TS_EXPECT_FAIL_END() _EndExpectFailure(__FILE__, __LINE__)
 #define TS_REPORT_SUMMARY(suite) _ReportSummary(suite)
 
 #endif // TRADESPINE_TESTING_ASSERT_MQH

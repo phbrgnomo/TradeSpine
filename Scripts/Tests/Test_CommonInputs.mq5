@@ -233,12 +233,26 @@ bool Test_DefaultConstructorIsInvalid(CAssert &asserts)
 //| Definitive b37d coverage: test_core_runtime_and_               |
 //| configuration_b37d_integration() in Test_OptContextProfiler.mq5.|
 //+------------------------------------------------------------------+
-bool test_core_runtime_and_configuration_cb03_unit(CAssert &asserts)      { return(Test_SizingPlaceholderRejected(asserts) && Test_UnknownEnumRejected(asserts)); }
+bool test_core_runtime_and_configuration_cb03_unit(CAssert &asserts)
+  {
+   bool ok = true;
+   ok &= Test_SizingPlaceholderRejected(asserts);
+   ok &= Test_UnknownEnumRejected(asserts);
+   return(ok);
+  }
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-bool test_core_runtime_and_configuration_aa68_unit(CAssert &asserts)      { return(Test_ValidCombos(asserts) && Test_MagicGuard(asserts) && Test_DayTradeMode(asserts) && Test_SignalTimeframe(asserts) && Test_DefaultConstructorIsInvalid(asserts)); }
-bool test_core_runtime_and_configuration_e2e_acceptance(CAssert &asserts) { return(Test_SizingPlaceholderRejected(asserts)); }
+bool test_core_runtime_and_configuration_aa68_unit(CAssert &asserts)
+  {
+   bool ok = true;
+   ok &= Test_ValidCombos(asserts);
+   ok &= Test_MagicGuard(asserts);
+   ok &= Test_DayTradeMode(asserts);
+   ok &= Test_SignalTimeframe(asserts);
+   ok &= Test_DefaultConstructorIsInvalid(asserts);
+   return(ok);
+  }
 
 //+------------------------------------------------------------------+
 //| Script entry point.                                              |

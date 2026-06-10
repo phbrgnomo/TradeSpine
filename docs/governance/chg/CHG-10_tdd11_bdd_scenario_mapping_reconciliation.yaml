@@ -1,0 +1,178 @@
+id: CHG-10
+title: "TDD-11 BDD-scenario test mapping reconciliation"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-09"
+  change_level:
+    value: C2
+  change_source:
+    value: feedback
+
+change_control:
+  chg_id: "CHG-10"
+  status: Approved
+  change_level: C2
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null
+  author: "phbr"
+  date_proposed: "2026-06-09T00:00:00-03:00"
+  date_approved: "2026-06-09T00:00:00-03:00"
+  date_implemented: "2026-06-09T00:00:00-03:00"
+  supersedes: []
+
+change_description:
+  what: |
+    Reconcile TDD-11 `test_mapping.scenarios` and `coverage_table` with the
+    refactored IPLAN-11 test implementation, and decompose the three monolithic
+    IPLAN-11 test functions into single-responsibility helper functions with
+    honest BDD-scenario wrapper functions.
+
+    The three contract aggregators are unchanged as canonical run entry points:
+    `test_testing_support_and_harnesses_unit_contract` (TDD.11.04.6805),
+    `..._integration_contract` (TDD.11.04.aadd), and
+    `..._e2e_acceptance` (TDD.11.04.4f72). Each now delegates to named
+    PascalCase helpers (11 / 15 / 5 respectively). BDD-scenario wrappers were
+    added that each call a DISTINCT subset of those helpers:
+      - d6ae: unit + integration (ScenarioHarness file) + e2e (ReleaseEvidence file)
+      - f415: integration (ScenarioHarness file) + e2e (ReleaseEvidence file)
+      - b37d: unit (Clock file, clock-determinism slice) + integration
+        (ScenarioHarness file, harness assembly readiness)
+
+    Scenarios IPLAN-11 cannot drive are recorded as TS_SKIP deferral stubs:
+      - aa68 (shipped strategy authoring/porting/packaging) -> IPLAN-01/02
+      - e16a (ambiguous async broker outcome -> HALT) -> IPLAN-03 (FakeTradePort)
+
+    TDD-11 document edits: d6ae unit `file` corrected from
+    Test_TestSupportClock.mq5 to Test_TestSupportScenarioHarness.mq5 (the clock
+    file has no evidence-stream-separation behavior); f415 unit row and b37d e2e
+    row marked deferred (no genuine IPLAN-11 slice; b37d e2e is owned by
+    IPLAN-09); aa68 and e16a rows marked `status: deferred` with owner notes;
+    `coverage_table` recomputed.
+  why: |
+    Code review (findings F2/F3) flagged that TDD-11's `test_mapping.scenarios`
+    declared fifteen BDD-mapped function names that did not exist in code, while
+    the implementation exposed only three monolithic contract functions. This
+    broke traceability tooling and any aggregate runner keyed on the canonical
+    BDD-mapped names.
+
+    A first attempt added thin wrappers that all called the same monolithic
+    body — rejected as meaningless duplication. Investigation showed the
+    IPLAN-09 test files achieve real per-scenario coverage because each file is
+    decomposed into helpers and each BDD wrapper calls a distinct subset. The
+    IPLAN-11 files were never decomposed, so the wrappers had nothing distinct
+    to call. It further showed TDD-11's mapping was itself partly wrong: it
+    mis-assigned d6ae unit to the clock file and claimed aa68/e16a coverage that
+    IPLAN-11 cannot provide (those scenarios are owned by IPLAN-01/02 and
+    IPLAN-03 per TDD-11's own `owner_extension_scope`).
+  trigger: |
+    User-directed follow-up to code-review findings F2 ("BDD-level test mapping
+    names functions that this file does not expose") and F3 (controlled-failure
+    probes did not verify FailureCount()), then a user instruction to perform a
+    full refactor that separates what IPLAN-11/TDD-11 actually intended rather
+    than papering over the gap with duplicate wrappers.
+
+impact_assessment:
+  affected_layers:
+    - layer: TDD
+      artifacts: ["TDD-11"]
+      impact: |
+        Correct `test_mapping.scenarios`: fix the d6ae unit test file; mark the
+        f415 unit row and b37d e2e row deferred; mark all aa68 and e16a rows
+        `status: deferred` with owner IPLAN notes; point each implemented
+        scenario row at its real wrapper function. Recompute `coverage_table`
+        to aa68 deferred / f415 0,1,1 / e16a deferred / d6ae 1,1,1 / b37d 1,1,0.
+        The `test_cases` aggregators (6805/aadd/4f72) are unchanged.
+      cascade_direction: bubble-up
+    - layer: Code
+      artifacts:
+        - "Scripts/Tests/Test_TestSupportClock.mq5"
+        - "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
+        - "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
+        - "Scripts/Tests/RunAllTests.mq5"
+      impact: |
+        Decompose each monolithic test function into single-responsibility
+        helpers; keep the three contract aggregators as full-coverage callers;
+        add distinct BDD-scenario wrappers (d6ae/f415/b37d) and TS_SKIP deferral
+        stubs (aa68/e16a). Preserve the F3 fix (FailureCount() delta checks on
+        the four controlled-failure probes). RunAllTests calls the three
+        aggregators plus the two deferral stubs (no double execution).
+      cascade_direction: source
+  cascade_direction: bubble-up
+  risk_level: Low
+  risk_justification: |
+    The change is confined to test-support scope and SDD documentation. No
+    production runtime, trading, strategy, or harness capability changes — the
+    assertion blocks and their expected outcomes are identical, only reorganized
+    into helpers and re-described in the TDD mapping. The main risk is a broken
+    test aggregation or a wrapper that duplicates another; validation focuses on
+    compile evidence and wrapper-subset distinctness.
+  rollback_plan: |
+    Revert the CHG-10 commit. The pre-refactor monolithic test functions, the
+    prior TDD-11 mapping, and the prior RunAllTests call list are restored. No
+    production trading code depends on the test scripts or the TDD mapping, so
+    rollback is limited to test support and docs.
+
+implementation:
+  steps:
+    - step: 1
+      action: "Decompose Test_TestSupportClock.mq5 into 11 helpers; keep unit_contract aggregator; add b37d_unit wrapper (clock-determinism subset)."
+      artifact: "Scripts/Tests/Test_TestSupportClock.mq5"
+      status: Completed
+    - step: 2
+      action: "Decompose Test_TestSupportScenarioHarness.mq5 into 15 helpers with local fixtures; keep integration_contract aggregator; add d6ae_unit/d6ae_integration/f415_integration/b37d_integration wrappers and aa68/e16a TS_SKIP deferral stubs; preserve F3 FailureCount() checks."
+      artifact: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
+      status: Completed
+    - step: 3
+      action: "Decompose Test_ReleaseEvidenceHarness.mq5 into 5 helpers; keep e2e_acceptance aggregator; add f415_e2e and d6ae_e2e wrappers."
+      artifact: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
+      status: Completed
+    - step: 4
+      action: "Update RunAllTests.mq5 IPLAN-11 section to call the three contract aggregators plus the aa68/e16a deferral stubs (no double execution of BDD subsets)."
+      artifact: "Scripts/Tests/RunAllTests.mq5"
+      status: Completed
+    - step: 5
+      action: "Reconcile TDD-11 test_mapping.scenarios and coverage_table; fix d6ae unit file; defer f415 unit, b37d e2e, and all aa68/e16a rows; regenerate the readable view."
+      artifact: "docs/07_TDD/TDD-11_testing_support_and_harnesses"
+      status: Completed
+    - step: 6
+      action: "Register CHG-10 in the CHG index."
+      artifact: "docs/governance/chg/CHG-00_index.md"
+      status: Completed
+
+verification:
+  checks:
+    - check: "Aggregate runner and all three standalone test scripts compile."
+      result: Pass
+      method: "Headless ../../../Scripts/compile_mql.sh on RunAllTests.mq5 and each Test_*.mq5 — MetaEditor success, no compile log generated (clean)."
+    - check: "Every BDD-scenario wrapper calls a distinct, non-empty subset of helpers; none equals the full aggregator and no two are identical."
+      result: Pass
+      method: "Code inspection of the wrapper bodies against the helper inventory."
+    - check: "F3 controlled-failure probes retain FailureCount() delta checks after decomposition."
+      result: Pass
+      method: "Inspection of Test_EvidenceRequiredMissingFail/WrongKindFail/EmptyTraceFail/InvalidKindFail helpers."
+    - check: "TDD-11 mapping matches implemented function names, files, and deferral status; coverage_table recomputed."
+      result: Pass
+      method: "Cross-check TDD-11.yaml test_mapping.scenarios + coverage_table against the four refactored scripts."
+    - check: "Runtime execution inside MT5 IDE or Strategy Tester."
+      result: Pass
+      method: "RunAllTests executed in MT5 IDE 2026-06-09 18:40 (WDO$,M15): 197 of 197 passed, 4 skipped. All FAIL log lines are controlled-failure probes (isolated instances / Snapshot-Restore) and do not reach the summary counter."
+
+gate_approval: null
+
+traceability:
+  tags:
+    - "@tdd: TDD-11"
+    - "@iplan: IPLAN-11"
+    - "@chg: CHG-10"
+  upstream:
+    tdd_references: ["@tdd: TDD-11"]
+    iplan_references: ["@iplan: IPLAN-11"]
+  downstream:
+    code_references:
+      - "@code: Scripts/Tests/Test_TestSupportClock.mq5"
+      - "@code: Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
+      - "@code: Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
+      - "@code: Scripts/Tests/RunAllTests.mq5"

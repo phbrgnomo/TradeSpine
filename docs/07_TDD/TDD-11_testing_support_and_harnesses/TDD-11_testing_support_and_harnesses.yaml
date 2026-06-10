@@ -7,7 +7,7 @@ id: TDD-11
 title: "Testing Support and Harnesses Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-06-05T00:00:00-03:00"
+last_updated: "2026-06-09T00:00:00-03:00"
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -25,7 +25,7 @@ document_control:
   status: Draft
   version: "1.0"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-06-05T00:00:00-03:00"
+  last_updated: "2026-06-09T00:00:00-03:00"
   author: "Codex"
   component: "Shared test doubles, clocks, log sinks, assertions, and harness primitives"
   spec_reference: "@spec: SPEC-11"
@@ -55,87 +55,100 @@ test_mapping:
   scenarios:
     - bdd_scenario: "@bdd: BDD.01.03.aa68"
       description: "Shipped strategy authoring, porting, and packaging"
+      deferred_owner: "IPLAN-01/02"
+      deferral_reason: "Strategy authoring, porting, and packaging is owned by IPLAN-01/02; IPLAN-11 testing support has no strategy artifacts to compile or stage. Recorded as a TS_SKIP deferral stub."
       tests:
         - type: unit
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_aa68_unit"
-          status: pending
+          status: deferred
         - type: integration
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_aa68_integration"
-          status: pending
+          status: deferred
         - type: e2e
           file: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
           function: "test_testing_support_and_harnesses_aa68_e2e"
-          status: pending
+          status: deferred
     - bdd_scenario: "@bdd: BDD.01.03.f415"
       description: "Missing deferred account-mode evidence blocks signoff"
       tests:
         - type: unit
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_f415_unit"
-          status: pending
+          status: deferred
+          deferral_reason: "No genuine unit slice — the deferred-pack signoff gate is exercised at the integration (evidence-gating) and e2e (pack) levels only."
         - type: integration
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_f415_integration"
-          status: pending
+          status: implemented
         - type: e2e
           file: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
           function: "test_testing_support_and_harnesses_f415_e2e"
-          status: pending
+          status: implemented
     - bdd_scenario: "@bdd: BDD.01.03.e16a"
       description: "Ambiguous async outcome enters halt"
+      deferred_owner: "IPLAN-03"
+      deferral_reason: "Driving an ambiguous async broker outcome to HALT requires FakeTradePort, which TDD-11 owner_extension_scope defers to IPLAN-03. IPLAN-11 records a TS_SKIP deferral stub."
       tests:
         - type: unit
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_e16a_unit"
-          status: pending
+          status: deferred
         - type: integration
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_e16a_integration"
-          status: pending
+          status: deferred
         - type: e2e
           file: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
           function: "test_testing_support_and_harnesses_e16a_e2e"
-          status: pending
+          status: deferred
     - bdd_scenario: "@bdd: BDD.01.03.d6ae"
       description: "Evidence records remain paired and separated"
       tests:
         - type: unit
-          file: "Scripts/Tests/Test_TestSupportClock.mq5"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_d6ae_unit"
-          status: pending
+          status: implemented
+          note: "Corrected from Test_TestSupportClock.mq5 (CHG-10): evidence stream/category separation is a FakeLogSink behavior, not a clock behavior."
         - type: integration
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_d6ae_integration"
-          status: pending
+          status: implemented
         - type: e2e
           file: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
           function: "test_testing_support_and_harnesses_d6ae_e2e"
-          status: pending
+          status: implemented
     - bdd_scenario: "@bdd: BDD.01.03.b37d"
       description: "Performance budgets are evidenced"
       tests:
         - type: unit
           file: "Scripts/Tests/Test_TestSupportClock.mq5"
           function: "test_testing_support_and_harnesses_b37d_unit"
-          status: pending
+          status: implemented
+          note: "Clock-determinism slice only — the reproducible idle-time measurement IPLAN-11 owns."
         - type: integration
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_b37d_integration"
-          status: pending
+          status: implemented
+          note: "Deterministic harness assembly readiness. Perf-measurement integration is co-owned by IPLAN-09 (Test_OptContextProfiler.mq5::test_core_runtime_and_configuration_b37d_integration)."
         - type: e2e
           file: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
           function: "test_testing_support_and_harnesses_b37d_e2e"
-          status: pending
+          status: deferred
+          deferred_owner: "IPLAN-09"
+          deferral_reason: "Performance-budget e2e evidence is owned by IPLAN-09; the IPLAN-11 release-evidence harness holds no perf content."
   coverage_table:
+    _note: |
+      Counts reflect IPLAN-11-owned coverage after CHG-10. "deferred" rows are
+      owned by downstream IPLANs and carried as TS_SKIP stubs in this layer.
     columns: [BDD Scenario, Unit, Integration, E2E, Total]
     rows:
-      - ["@bdd: BDD.01.03.aa68", 1, 1, 1, 3]
-      - ["@bdd: BDD.01.03.f415", 1, 1, 1, 3]
-      - ["@bdd: BDD.01.03.e16a", 1, 1, 1, 3]
+      - ["@bdd: BDD.01.03.aa68", "deferred", "deferred", "deferred", "deferred (IPLAN-01/02)"]
+      - ["@bdd: BDD.01.03.f415", 0, 1, 1, 2]
+      - ["@bdd: BDD.01.03.e16a", "deferred", "deferred", "deferred", "deferred (IPLAN-03)"]
       - ["@bdd: BDD.01.03.d6ae", 1, 1, 1, 3]
-      - ["@bdd: BDD.01.03.b37d", 1, 1, 1, 3]
+      - ["@bdd: BDD.01.03.b37d", 1, 1, 0, 2]
 
 test_cases:
   unit_tests:

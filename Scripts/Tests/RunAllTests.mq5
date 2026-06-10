@@ -37,23 +37,26 @@ int OnStart()
    asserts.Reset();
 
    Print("=== IPLAN-09: Core Runtime and Configuration ===");
+   // Test_CommonInputs.mq5
    test_core_runtime_and_configuration_cb03_unit(asserts);           // SizingPlaceholderRejected, UnknownEnumRejected
    test_core_runtime_and_configuration_aa68_unit(asserts);           // ValidCombos, MagicGuard, DayTradeMode, SignalTimeframe, DefaultConstructorIsInvalid
-   test_core_runtime_and_configuration_e2e_acceptance(asserts);      // SizingPlaceholderRejected (v1 boundary)
+   // Test_SafeMathAndNewBar.mq5
    test_core_runtime_and_configuration_unit_contract(asserts);       // SafeMath_Finite, PriceGrid, LotGrid, LotGridFixtures, NewBarDetector_Deterministic
-   test_core_runtime_and_configuration_aa68_e2e(asserts);            // NewBarDetector (live history)
-   test_core_runtime_and_configuration_b37d_e2e(asserts);            // SafeMath_PriceGrid (live symbol)
-   test_core_runtime_and_configuration_cb03_e2e(asserts);            // SafeMath_LotGrid (live symbol)
-   test_core_runtime_and_configuration_b37d_unit(asserts);           // ProfilerNoWriteWhenGated
+   // Test_OptContextProfiler.mq5
    test_core_runtime_and_configuration_integration_contract(asserts);// OptimizationGated, ProfilerNoWriteWhenGated, ProfilerMemoryEvidence, NoDuplicateStop, ScopeOverflow, DiagnosticsInjectedDisabled, MacroNoEvalWhenInactive
-   test_core_runtime_and_configuration_aa68_integration(asserts);    // TesterVsLive
-   test_core_runtime_and_configuration_b37d_integration(asserts);    // ProfilerActiveRecords, ProfilerMemoryEvidence
-   test_core_runtime_and_configuration_cb03_integration(asserts);    // OptimizationGated
 
    Print("=== IPLAN-11: Testing Support and Harnesses ===");
-   test_testing_support_and_harnesses_unit_contract(asserts);
-   test_testing_support_and_harnesses_integration_contract(asserts);
-   test_testing_support_and_harnesses_e2e_acceptance(asserts);
+   // Contract aggregators run every decomposed helper (full coverage). The
+   // BDD-scenario wrappers (..._d6ae_*, _f415_*, _b37d_*) are additive subsets
+   // for traceability/targeted runs and are intentionally NOT called here to
+   // avoid double-executing the same assertion blocks.
+   test_testing_support_and_harnesses_unit_contract(asserts);         // FakeClock + Assert helpers (TDD.11.04.6805)
+   test_testing_support_and_harnesses_integration_contract(asserts);  // ScenarioHarness assembly (TDD.11.04.aadd)
+   test_testing_support_and_harnesses_e2e_acceptance(asserts);        // Release evidence separation (TDD.11.04.4f72)
+   // Deferred scenarios — owned by downstream IPLANs; recorded as SKIPs so the
+   // deferral is visible in the aggregate summary.
+   test_testing_support_and_harnesses_aa68_unit(asserts);             // SKIP: strategy authoring deferred to IPLAN-01/02
+   test_testing_support_and_harnesses_e16a_integration(asserts);      // SKIP: async-broker HALT deferred to IPLAN-03
 
    return(asserts.TS_REPORT_SUMMARY("TradeSpine RunAllTests") ? 0 : 1);
   }

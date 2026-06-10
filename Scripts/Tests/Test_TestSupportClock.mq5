@@ -17,57 +17,103 @@
 #include "Support/FakeClock.mqh"
 
 //+------------------------------------------------------------------+
-//| TDD.11.04.6805 — FakeClock + Assert helpers unit contract        |
+//| Decomposed helpers — one logical assertion block each.           |
+//| Each helper is independently callable (seeds its own baseline),  |
+//| so BDD-scenario wrappers can compose distinct subsets.           |
 //+------------------------------------------------------------------+
-bool test_testing_support_and_harnesses_unit_contract(CAssert &asserts)
+
+//--- FakeClock: initial Now() == 0 baseline.
+bool Test_FakeClockInitialState(CAssert &asserts)
+  {
+    FakeClock clk;
+    return(asserts.TS_CHECK_EQ_L((long)clk.Now(), 0L, "FakeClock initial Now() == 0"));
+  }
+
+//--- FakeClock: Set() jumps to an absolute timestamp.
+bool Test_FakeClockSetAbsolute(CAssert &asserts)
+  {
+    FakeClock clk;
+    clk.Set(D'2026.01.01 09:00');
+    return(asserts.TS_CHECK_EQ_L((long)clk.Now(), (long)D'2026.01.01 09:00',
+                                  "FakeClock Set() changes Now() to exact value"));
+  }
+
+//--- FakeClock: Advance(N) moves the clock forward by N seconds.
+bool Test_FakeClockAdvanceIncrement(CAssert &asserts)
+  {
+    FakeClock clk;
+    clk.Set(0);
+    clk.Advance(60);
+    return(asserts.TS_CHECK_EQ_L((long)clk.Now(), 60L,
+                                  "FakeClock Advance(60) yields Now() == 60"));
+  }
+
+//--- FakeClock: successive Advance() calls accumulate.
+bool Test_FakeClockAdvanceAccumulates(CAssert &asserts)
+  {
+    FakeClock clk;
+    clk.Set(0);
+    clk.Advance(60);
+    clk.Advance(30);
+    clk.Advance(10);
+    return(asserts.TS_CHECK_EQ_L((long)clk.Now(), 100L,
+                                  "FakeClock multiple Advance() calls accumulate correctly"));
+  }
+
+//--- FakeClock: Set() after Advance() resets to the absolute value.
+bool Test_FakeClockSetResetsAfterAdvance(CAssert &asserts)
+  {
+    FakeClock clk;
+    clk.Set(0);
+    clk.Advance(500);
+    clk.Set(1000);
+    return(asserts.TS_CHECK_EQ_L((long)clk.Now(), 1000L,
+                                  "FakeClock Set() after Advance() resets to absolute"));
+  }
+
+//--- Assert helper: CheckTrue / CheckFalse.
+bool Test_AssertCheckBool(CAssert &asserts)
+  {
+    bool ok = true;
+    ok &= asserts.TS_CHECK(true,   "CheckTrue(true) passes");
+    ok &= asserts.TS_CHECK(!false, "CheckFalse(false) passes");
+    return(ok);
+  }
+
+//--- Assert helper: CheckEqualL round-trip.
+bool Test_AssertCheckEqualLong(CAssert &asserts)
+  {
+   return(asserts.TS_CHECK_EQ_L(42L, 42L, "CheckEqualL equal values pass"));
+  }
+
+//--- Assert helper: CheckEqualStr.
+bool Test_AssertCheckEqualStr(CAssert &asserts)
+  {
+   return(asserts.TS_CHECK_EQ_STR("hello", "hello", "CheckEqualStr equal strings pass"));
+  }
+
+//--- Skip counter: isolated probe so the suite summary is not contaminated.
+//    Probe is silenced: its outcome is inspected programmatically, not visually.
+bool Test_AssertSkipCounter(CAssert &asserts)
+  {
+   CAssert skip_probe;
+   skip_probe.Reset();
+   skip_probe.SetVerbose(false);
+   skip_probe.TS_SKIP("example environment-conditional skip");
+   return(asserts.TS_CHECK_EQ_L((long)skip_probe.TestsSkipped(), 1L,
+                                "TS_SKIP() increments TestsSkipped() by 1"));
+  }
+
+//--- CAssert: controlled failure state, source location, and snapshot/restore.
+//    This is the authoritative meta-test of the failure-recording mechanism:
+//    it provokes a real recorded failure on an isolated (silenced) probe and
+//    verifies the counters, the file:line in the message, and Restore().
+bool Test_AssertControlledFailureAndRestore(CAssert &asserts)
   {
    bool ok = true;
-
-//--- FakeClock: initial state
-   FakeClock clk;
-   ok &= asserts.TS_CHECK_EQ_L((long)clk.Now(), 0L, "FakeClock initial Now() == 0");
-
-//--- FakeClock: Set() to absolute value
-   clk.Set(D'2026.01.01 09:00');
-   ok &= asserts.TS_CHECK_EQ_L((long)clk.Now(), (long)D'2026.01.01 09:00',
-                               "FakeClock Set() changes Now() to exact value");
-
-//--- FakeClock: Advance() increments by N seconds
-   clk.Set(0);
-   clk.Advance(60);
-   ok &= asserts.TS_CHECK_EQ_L((long)clk.Now(), 60L,
-                               "FakeClock Advance(60) yields Now() == 60");
-
-//--- FakeClock: multiple Advance() calls accumulate
-   clk.Advance(30);
-   clk.Advance(10);
-   ok &= asserts.TS_CHECK_EQ_L((long)clk.Now(), 100L,
-                               "FakeClock multiple Advance() calls accumulate correctly");
-
-//--- FakeClock: Set() after Advance() resets to absolute
-   clk.Set(1000);
-   ok &= asserts.TS_CHECK_EQ_L((long)clk.Now(), 1000L,
-                               "FakeClock Set() after Advance() resets to absolute");
-
-//--- Assert helper: CheckTrue / CheckFalse
-   ok &= asserts.TS_CHECK(true,  "CheckTrue(true) passes");
-   ok &= asserts.TS_CHECK(!false, "CheckFalse(false) passes");
-
-//--- Assert helper: CheckEqualL round-trip
-   ok &= asserts.TS_CHECK_EQ_L(42L, 42L, "CheckEqualL equal values pass");
-
-//--- Assert helper: CheckEqualStr
-   ok &= asserts.TS_CHECK_EQ_STR("hello", "hello", "CheckEqualStr equal strings pass");
-
-//--- Skip counter: verify asserts.TS_SKIP() increments the instance counter
-   int skipped_before = asserts.TestsSkipped();
-   asserts.TS_SKIP("example environment-conditional skip");
-   ok &= asserts.TS_CHECK_EQ_L((long)(asserts.TestsSkipped()), (long)(skipped_before + 1),
-                               "asserts.TS_SKIP() increments TestsSkipped() by 1");
-
-//--- CAssert: failure state, source location, and snapshot/restore
    CAssert probe;
    probe.Reset();
+   probe.SetVerbose(false);
    AssertSnapshot snapshot = probe.Snapshot();
    probe.TS_CHECK(false, "controlled CAssert failure");
    bool failure_recorded = (probe.TestsRun() == 1 &&
@@ -83,23 +129,68 @@ bool test_testing_support_and_harnesses_unit_contract(CAssert &asserts)
                                "CAssert Restore() removes controlled failure messages");
    ok &= asserts.TS_CHECK_EQ_L((long)probe.TestsRun(), 0L,
                                "CAssert Restore() resets controlled failure run counter");
+   return(ok);
+  }
 
-//--- CAssert: invalid tolerances fail explicitly without tainting this suite
-   CAssert tol_probe;
-   tol_probe.Reset();
+//--- CAssert: invalid tolerances are rejected. Each is a negative assertion —
+//    TS_CHECK_EQ_D is EXPECTED to fail, reported as one PASS per case.
+bool Test_AssertInvalidToleranceRejected(CAssert &asserts)
+  {
+   bool ok = true;
    double inf = DBL_MAX * 2.0;
    double nan = MathLog(-1.0);
-   tol_probe.TS_CHECK_EQ_D(1.0, 1.0, -1e-9, "negative tolerance rejected");
-   tol_probe.TS_CHECK_EQ_D(1.0, 1.0, inf,   "infinite tolerance rejected");
-   tol_probe.TS_CHECK_EQ_D(1.0, 1.0, nan,   "NaN tolerance rejected");
-   ok &= asserts.TS_CHECK_EQ_L((long)tol_probe.TestsRun(), 3L,
-                               "CAssert invalid tolerance probes execute three checks");
-   ok &= asserts.TS_CHECK_EQ_L((long)tol_probe.TestsPassed(), 0L,
-                               "CAssert invalid tolerances all fail");
-   ok &= asserts.TS_CHECK_EQ_L((long)tol_probe.FailureCount(), 3L,
-                               "CAssert invalid tolerance failures are logged");
 
+   asserts.TS_EXPECT_FAIL_BEGIN("CheckEqualD rejects a negative tolerance");
+   asserts.TS_CHECK_EQ_D(1.0, 1.0, -1e-9, "tolerance -1e-9");
+   ok &= asserts.TS_EXPECT_FAIL_END();
+
+   asserts.TS_EXPECT_FAIL_BEGIN("CheckEqualD rejects an infinite tolerance");
+   asserts.TS_CHECK_EQ_D(1.0, 1.0, inf, "tolerance +inf");
+   ok &= asserts.TS_EXPECT_FAIL_END();
+
+   asserts.TS_EXPECT_FAIL_BEGIN("CheckEqualD rejects a NaN tolerance");
+   asserts.TS_CHECK_EQ_D(1.0, 1.0, nan, "tolerance NaN");
+   ok &= asserts.TS_EXPECT_FAIL_END();
    return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| TDD.11.04.6805 — FakeClock + Assert helpers unit contract.       |
+//| Aggregator: runs every decomposed helper in this file.           |
+//+------------------------------------------------------------------+
+bool test_testing_support_and_harnesses_unit_contract(CAssert &asserts)
+  {
+    bool ok = true;
+    ok &= Test_FakeClockInitialState(asserts);
+    ok &= Test_FakeClockSetAbsolute(asserts);
+    ok &= Test_FakeClockAdvanceIncrement(asserts);
+    ok &= Test_FakeClockAdvanceAccumulates(asserts);
+    ok &= Test_FakeClockSetResetsAfterAdvance(asserts);
+    ok &= Test_AssertCheckBool(asserts);
+    ok &= Test_AssertCheckEqualLong(asserts);
+    ok &= Test_AssertCheckEqualStr(asserts);
+    ok &= Test_AssertSkipCounter(asserts);
+    ok &= Test_AssertControlledFailureAndRestore(asserts);
+    ok &= Test_AssertInvalidToleranceRejected(asserts);
+    return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| BDD.01.03.b37d (unit) — deterministic clock advancement slice.   |
+//| Performance budgets rely on FakeClock providing reproducible     |
+//| idle-time measurement; this is the clock-determinism portion of  |
+//| b37d that IPLAN-11 owns. Deeper perf evidence is owned by         |
+//| IPLAN-09 (Test_OptContextProfiler.mq5). Excludes the CAssert      |
+//| self-tests, which are framework infrastructure, not a scenario.  |
+//+------------------------------------------------------------------+
+bool test_testing_support_and_harnesses_b37d_unit(CAssert &asserts)
+  {
+    bool ok = true;
+    ok &= Test_FakeClockInitialState(asserts);
+    ok &= Test_FakeClockAdvanceIncrement(asserts);
+    ok &= Test_FakeClockAdvanceAccumulates(asserts);
+    ok &= Test_FakeClockSetResetsAfterAdvance(asserts);
+    return(ok);
   }
 
 //+------------------------------------------------------------------+

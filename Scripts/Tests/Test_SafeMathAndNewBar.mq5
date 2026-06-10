@@ -227,16 +227,34 @@ bool Test_NewBarDetector_Deterministic(CAssert &asserts)
 //+------------------------------------------------------------------+
 bool test_core_runtime_and_configuration_unit_contract(CAssert &asserts)
   {
-   return(Test_SafeMath_Finite(asserts) && Test_SafeMath_PriceGrid(asserts) &&
-          Test_SafeMath_LotGrid(asserts) && Test_SafeMath_LotGridFixtures(asserts) &&
-          Test_NewBarDetector_Deterministic(asserts));
+   bool ok = true;
+   ok &= Test_SafeMath_Finite(asserts);
+   ok &= Test_SafeMath_PriceGrid(asserts);
+   ok &= Test_SafeMath_LotGrid(asserts);
+   ok &= Test_SafeMath_LotGridFixtures(asserts);
+   ok &= Test_NewBarDetector_Deterministic(asserts);
+   ok &= Test_NewBarDetector(asserts);
+   return(ok);
   }
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-bool test_core_runtime_and_configuration_aa68_e2e(CAssert &asserts) { return(Test_NewBarDetector(asserts)); }
-bool test_core_runtime_and_configuration_b37d_e2e(CAssert &asserts) { return(Test_SafeMath_PriceGrid(asserts)); }
-bool test_core_runtime_and_configuration_cb03_e2e(CAssert &asserts) { return(Test_SafeMath_LotGrid(asserts)); }
+bool test_core_runtime_and_configuration_aa68_e2e(CAssert &asserts)
+  {
+   bool ok = true;
+   ok &= Test_NewBarDetector(asserts);
+   ok &= Test_NewBarDetector_Deterministic(asserts);
+   return(ok);
+  }
+bool test_core_runtime_and_configuration_b37d_e2e(CAssert &asserts)
+  { return(Test_SafeMath_PriceGrid(asserts)); }
+bool test_core_runtime_and_configuration_cb03_e2e(CAssert &asserts)
+  {
+   bool ok = true;
+   ok &= Test_SafeMath_LotGrid(asserts);
+   ok &= Test_SafeMath_LotGridFixtures(asserts);
+   return(ok);
+  }
 
 //+------------------------------------------------------------------+
 //| Script entry point.                                              |
