@@ -155,21 +155,21 @@ test_cases:
     cases:
       - id: "TDD.11.04.6805"
         type: unit
-        name: "Shared clock, log sink, and assertion helpers behave deterministically"
+        name: "Shared clock and assertion helpers behave deterministically"
         spec_ref: "@spec: SPEC-11"
-        target: "FakeClock/FakeLogSink/CAssert"
+        target: "FakeClock/CAssert"
         test_file: "Scripts/Tests/Test_TestSupportClock.mq5"
         test_function: "test_testing_support_and_harnesses_unit_contract"
         inputs:
           - name: fixture
             type: string
-            value: "time_sequence=[t0,t1,t2], log_messages=[diagnostic,evidence]"
+            value: "time_sequence=[t0,t1,t2]"
         expected_output:
           type: contract-result
-          value: "Clock advances in configured order, log sink captures required messages, and assertions report deterministic pass/fail counts"
+          value: "Clock advances in configured order; negative Advance() is rejected; assertions report deterministic pass/fail/skip counts including Snapshot/Restore round-trip across all four fields"
         edge_cases:
-          - condition: "Required log message is absent"
-            expected: "Case fails through CAssert without broker, position, or store dependencies."
+          - condition: "Negative seconds passed to Advance()"
+            expected: "FakeClock rejects the call and Now() remains unchanged."
   integration_tests:
     cases:
       - id: "TDD.11.04.aadd"
@@ -285,6 +285,9 @@ traceability:
     - "@ears: EARS.01.03.a71c"
     - "@bdd: BDD.01.03.aa68"
     - "@bdd: BDD.01.03.f415"
+    - "@bdd: BDD.01.03.e16a"
+    - "@bdd: BDD.01.03.d6ae"
+    - "@bdd: BDD.01.03.b37d"
     - "@adr: ADR.06.03.b277"
     - "@adr: ADR.07.03.6df1"
   upstream:

@@ -15,7 +15,7 @@
 | Source SPEC | `../../06_SPEC/SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.yaml` |
 | IPLAN-ready Score | 95/100 |
 | Created | 2026-06-02T00:00:00-03:00 |
-| Updated | 2026-06-05T00:00:00-03:00 |
+| Updated | 2026-06-09T00:00:00-03:00 |
 
 ## Test Pyramid
 
@@ -49,7 +49,7 @@
 
 | ID | Name | Target | File | Function | Expected Output | Edge Cases |
 | --- | --- | --- | --- | --- | --- | --- |
-| TDD.11.04.6805 | Shared clock, log sink, and assertion helpers behave deterministically | FakeClock/FakeLogSink/CAssert | `Scripts/Tests/Test_TestSupportClock.mq5` | `test_testing_support_and_harnesses_unit_contract` | Clock advances in configured order, log sink captures required messages, and assertions report deterministic pass/fail counts | Required log message is absent -> Case fails through CAssert without broker, position, or store dependencies. |
+| TDD.11.04.6805 | Shared clock and assertion helpers behave deterministically | FakeClock/CAssert | `Scripts/Tests/Test_TestSupportClock.mq5` | `test_testing_support_and_harnesses_unit_contract` | Clock advances in configured order; negative Advance() is rejected; assertions report deterministic pass/fail/skip counts including Snapshot/Restore round-trip across all four fields | Negative seconds passed to Advance() -> FakeClock rejects the call and Now() remains unchanged. |
 
 ### Integration Tests
 

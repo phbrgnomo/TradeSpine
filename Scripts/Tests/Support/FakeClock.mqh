@@ -32,9 +32,15 @@ public:
       m_now = t;
      }
 
-   // Moves the clock forward by N seconds; use to simulate elapsed time in a test scenario.
+   // Moves the clock forward by N seconds; negative values are rejected — backward movement is
+   // unsupported and likely a test authoring error.
    void Advance(const int seconds)
      {
+      if(seconds < 0)
+        {
+        PrintFormat("FakeClock::Advance(%d) rejected — negative advance is unsupported.", seconds);
+        return;
+        }
       m_now += seconds;
      }
 

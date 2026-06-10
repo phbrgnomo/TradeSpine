@@ -60,6 +60,16 @@ bool Test_FakeClockAdvanceAccumulates(CAssert &asserts)
                                   "FakeClock multiple Advance() calls accumulate correctly"));
   }
 
+//--- FakeClock: Advance() rejects negative values; Now() is unchanged.
+bool Test_FakeClockAdvanceNegativeRejected(CAssert &asserts)
+  {
+    FakeClock clk;
+    clk.Set(100);
+    clk.Advance(-50);
+    return(asserts.TS_CHECK_EQ_L((long)clk.Now(), 100L,
+                                  "FakeClock Advance(negative) is rejected; Now() is unchanged"));
+  }
+
 //--- FakeClock: Set() after Advance() resets to the absolute value.
 bool Test_FakeClockSetResetsAfterAdvance(CAssert &asserts)
   {
@@ -105,19 +115,21 @@ bool Test_AssertSkipCounter(CAssert &asserts)
   }
 
 //--- CAssert: controlled failure state, source location, and snapshot/restore.
-//    This is the authoritative meta-test of the failure-recording mechanism:
-//    it provokes a real recorded failure on an isolated (silenced) probe and
-//    verifies the counters, the file:line in the message, and Restore().
+//    This is the authoritative meta-test of the failure-recording mechanism.
+//    Probe is seeded with a pass and a skip before the snapshot so that
+//    Restore() is verified against all four AssertSnapshot fields.
 bool Test_AssertControlledFailureAndRestore(CAssert &asserts)
   {
    bool ok = true;
    CAssert probe;
    probe.Reset();
    probe.SetVerbose(false);
-   AssertSnapshot snapshot = probe.Snapshot();
-   probe.TS_CHECK(false, "controlled CAssert failure");
-   bool failure_recorded = (probe.TestsRun() == 1 &&
-                            probe.TestsPassed() == 0 &&
+   probe.TS_CHECK(true, "seeded pass");   // run=1, passed=1
+   probe.TS_SKIP("seeded skip");          // skipped=1
+   AssertSnapshot snapshot = probe.Snapshot();   // captures run=1, passed=1, skipped=1, failures=0
+   probe.TS_CHECK(false, "controlled CAssert failure");   // run=2, passed=1, failures=1
+   bool failure_recorded = (probe.TestsRun() == 2 &&
+                            probe.TestsPassed() == 1 &&
                             probe.FailureCount() == 1);
    bool location_recorded = (StringFind(probe.FailureMessage(0), "Test_TestSupportClock.mq5:") >= 0);
    probe.Restore(snapshot);
@@ -127,8 +139,12 @@ bool Test_AssertControlledFailureAndRestore(CAssert &asserts)
                           "CAssert failure message includes file and line location");
    ok &= asserts.TS_CHECK_EQ_L((long)probe.FailureCount(), 0L,
                                "CAssert Restore() removes controlled failure messages");
-   ok &= asserts.TS_CHECK_EQ_L((long)probe.TestsRun(), 0L,
-                               "CAssert Restore() resets controlled failure run counter");
+   ok &= asserts.TS_CHECK_EQ_L((long)probe.TestsRun(), 1L,
+                               "CAssert Restore() rewinds run counter to snapshot state");
+   ok &= asserts.TS_CHECK_EQ_L((long)probe.TestsPassed(), 1L,
+                               "CAssert Restore() rewinds pass counter to snapshot state");
+   ok &= asserts.TS_CHECK_EQ_L((long)probe.TestsSkipped(), 1L,
+                               "CAssert Restore() rewinds skip counter to snapshot state");
    return(ok);
   }
 
@@ -165,6 +181,7 @@ bool test_testing_support_and_harnesses_unit_contract(CAssert &asserts)
     ok &= Test_FakeClockSetAbsolute(asserts);
     ok &= Test_FakeClockAdvanceIncrement(asserts);
     ok &= Test_FakeClockAdvanceAccumulates(asserts);
+    ok &= Test_FakeClockAdvanceNegativeRejected(asserts);
     ok &= Test_FakeClockSetResetsAfterAdvance(asserts);
     ok &= Test_AssertCheckBool(asserts);
     ok &= Test_AssertCheckEqualLong(asserts);
