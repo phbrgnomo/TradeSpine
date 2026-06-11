@@ -135,7 +135,7 @@ verification:
       result: Pass
       method: "Test_AssertControlledFailureAndRestore retains FailureCount==1, file:line message, and Restore-to-zero assertions."
     - check: "Controlled failures render as expected in the run log."
-      result: Pending
+      result: Pass
       method: "Re-run RunAllTests in the MT5 IDE; confirm controlled failures now print as 'PASS: <label> (expected failure)' and isolated probes emit no FAIL/SKIP lines. Summary remains all-pass (assertion total changes vs the prior 197 because each expectation is one assertion)."
 
 gate_approval: null

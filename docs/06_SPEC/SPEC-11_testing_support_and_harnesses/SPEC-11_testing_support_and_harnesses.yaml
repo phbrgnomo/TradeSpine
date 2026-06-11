@@ -121,7 +121,7 @@ behavior:
       source: "@bdd: BDD.01.03.aa68"
   error_handling:
     - condition: "Scenario requires an owner-specific broker, position, symbol, or store fake before the owner plan has published it."
-      response: "Fail the test with a missing owner-extension assertion and defer behavior-specific assertions to the owner IPLAN."
+      response: "Owner-extension hooks (OnOwnerSetup/OnOwnerTeardown) are callable without crash; owner-specific assertions are deferred to the owner IPLAN."
       source: "@bdd: BDD.01.03.e16a"
     - condition: "Manual evidence pack is required but absent."
       response: "Mark release gate blocked rather than substituting automated tester evidence."
@@ -143,7 +143,7 @@ implementation_notes:
 
 ## Section 7: Downstream TDD Contracts
 tdd_contracts:
-  tdd_document: "@tdd: TDD.11.04.6805"
+  tdd_document: "@tdd: TDD-11"
   test_files:
     - path: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
       covers: "Executable entry point for minimal ScenarioHarness assembly, owner-extension hooks, and evidence assertions."
@@ -160,7 +160,12 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
-  tags: ["@spec: SPEC-11", "@brd: BRD.01.07.a94e", "@prd: PRD.01.14.8720", "@ears: EARS.01.03.d7e9", "@bdd: BDD.01.03.f415", "@adr: ADR.10.03.51ea"]
+  tags: ["@spec: SPEC-11",
+         "@brd: BRD.01.07.a94e", "@brd: BRD.01.08.0ce5",
+         "@prd: PRD.01.14.8720", "@prd: PRD.01.09.3f12", "@prd: PRD.01.13.edc4", "@prd: PRD.01.09.841a",
+         "@ears: EARS.01.03.d7e9", "@ears: EARS.01.03.a71c", "@ears: EARS.01.03.588b", "@ears: EARS.01.03.8044",
+         "@bdd: BDD.01.03.f415", "@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.b37d",
+         "@adr: ADR.10.03.51ea", "@adr: ADR.06.03.b277", "@adr: ADR.07.03.6df1", "@adr: ADR.08.03.0a8f"]
   upstream:
     adr_references: ["@adr: ADR.06.03.b277", "@adr: ADR.07.03.6df1", "@adr: ADR.08.03.0a8f", "@adr: ADR.10.03.51ea"]
     bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.f415", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.b37d"]

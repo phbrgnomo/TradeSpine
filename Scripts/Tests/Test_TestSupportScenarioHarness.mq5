@@ -153,13 +153,15 @@ bool Test_EvidenceOptionalMissingSkip(CAssert &asserts)
    ev_optional.required       = false;
    int before_skip = asserts.TestsSkipped();
    int before_run  = asserts.TestsRun();
-   harness.AssertEvidence(ev_optional);
+   bool ev_result = harness.AssertEvidence(ev_optional);
    bool skip_incremented    = (asserts.TestsSkipped() > before_skip);
    bool run_not_incremented = (asserts.TestsRun() == before_run);
    ok &= asserts.TS_CHECK(skip_incremented,
                           "Optional missing evidence increments skip counter");
    ok &= asserts.TS_CHECK(run_not_incremented,
                           "Optional missing evidence does not increment run counter");
+   ok &= asserts.TS_CHECK(ev_result,
+                          "Optional missing evidence returns true (skip, not fail)");
    return(ok);
   }
 
@@ -258,6 +260,23 @@ bool Test_HarnessNullCtxNoCrash(CAssert &asserts)
    return(ok);
   }
 
+//--- Null sink in AssertEvidence records a counted failure, not a silent false return.
+bool Test_AssertEvidenceNullSinkRecordsFailure(CAssert &asserts)
+  {
+   FakeClock clk;
+   RuntimeMode rm = MakeHarnessMode();
+   COptContext ctx(rm);
+   ScenarioHarness null_sink_harness(&clk, NULL, &ctx, &asserts);
+
+   EvidenceAssertion ev;
+   ev.expected_kind  = EVIDENCE_DIAGNOSTIC;
+   ev.expected_trace = "trace:NULL-SINK";
+   ev.required       = true;
+   asserts.TS_EXPECT_FAIL_BEGIN("Null sink in AssertEvidence records a counted failure");
+   null_sink_harness.AssertEvidence(ev);
+   return(asserts.TS_EXPECT_FAIL_END());
+  }
+
 //--- ScenarioHarness.Reset() clears FakeLogSink and resets FakeClock.
 bool Test_HarnessResetClearsState(CAssert &asserts)
   {
@@ -312,6 +331,7 @@ bool test_testing_support_and_harnesses_integration_contract(CAssert &asserts)
     ok &= Test_EvidenceInvalidKindFail(asserts);
     ok &= Test_EvidenceOverflowInconclusive(asserts);
     ok &= Test_HarnessNullCtxNoCrash(asserts);
+    ok &= Test_AssertEvidenceNullSinkRecordsFailure(asserts);
     ok &= Test_HarnessResetClearsState(asserts);
     ok &= Test_OwnerExtensionHooksCallable(asserts);
     return(ok);

@@ -73,11 +73,13 @@ public:
    // (substring); FAILs for required or malformed assertions, SKIPs for optional missing evidence.
    bool AssertEvidence(const EvidenceAssertion &ev)
      {
-      if(m_sink == NULL || m_asserts == NULL)
+      if(m_asserts == NULL)
         {
-         Print("[ERROR] ScenarioHarness: null pointer in AssertEvidence");
+         Print("[ERROR] ScenarioHarness: null asserts in AssertEvidence");
          return(false);
         }
+      if(m_sink == NULL)
+         return(m_asserts.TS_CHECK(false, "ScenarioHarness: null sink in AssertEvidence"));
       string kind_cat = KindToCategory(ev.expected_kind);
       if(StringLen(kind_cat) == 0)
          return(m_asserts.TS_CHECK(false, StringFormat(

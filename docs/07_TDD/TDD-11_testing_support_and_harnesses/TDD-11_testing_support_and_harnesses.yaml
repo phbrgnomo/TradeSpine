@@ -188,7 +188,7 @@ test_cases:
           - "Stimulus runs with deterministic time and evidence assertions fail on missing required traces"
         error_paths:
           - condition: "Owner extension slot is missing for a scenario that requires broker, position, symbol, or store behavior"
-            expected_error: "Harness reports the missing owner extension and leaves the owner-specific assertion to the downstream IPLAN."
+            expected_error: "Owner hooks (OnOwnerSetup/OnOwnerTeardown) are callable without crash; owner-specific assertions are deferred to the downstream IPLAN."
   e2e_tests:
     cases:
       - id: "TDD.11.04.4f72"
@@ -290,6 +290,12 @@ traceability:
     - "@bdd: BDD.01.03.b37d"
     - "@adr: ADR.06.03.b277"
     - "@adr: ADR.07.03.6df1"
+    - "@adr: ADR.08.03.0a8f"
+    - "@adr: ADR.10.03.51ea"
+    - "@ears: EARS.01.03.588b"
+    - "@ears: EARS.01.03.8044"
+    - "@prd: PRD.01.13.edc4"
+    - "@prd: PRD.01.09.841a"
   upstream:
     spec_references:
       - "@spec: SPEC-11"

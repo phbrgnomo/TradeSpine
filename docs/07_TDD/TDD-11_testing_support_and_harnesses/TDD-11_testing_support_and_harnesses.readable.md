@@ -55,7 +55,7 @@
 
 | ID | Name | Contract | File | Expected State | Error Paths |
 | --- | --- | --- | --- | --- | --- |
-| TDD.11.04.aadd | ScenarioHarness assembles fakes and evidence assertions | ScenarioHarness | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` | Stimulus runs with deterministic time and evidence assertions fail on missing required traces | Owner extension slot is missing for a scenario that requires broker, position, symbol, or store behavior -> Harness reports the missing owner extension and leaves the owner-specific assertion to the downstream IPLAN. |
+| TDD.11.04.aadd | ScenarioHarness assembles fakes and evidence assertions | ScenarioHarness | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` | Stimulus runs with deterministic time and evidence assertions fail on missing required traces | Owner extension slot is missing for a scenario that requires broker, position, symbol, or store behavior -> Owner hooks (OnOwnerSetup/OnOwnerTeardown) are callable without crashing; owner-specific assertions are deferred to the downstream IPLAN. |
 
 ### E2E Tests
 

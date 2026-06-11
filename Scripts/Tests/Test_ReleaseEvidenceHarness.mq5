@@ -17,6 +17,7 @@
 
 #include "../../Include/Testing/Assert.mqh"
 #include "Support/FakeLogSink.mqh"
+#include "Support/ScenarioHarness.mqh"
 
 //+------------------------------------------------------------------+
 //| Decomposed helpers — one logical assertion block each.           |
@@ -71,36 +72,25 @@ bool Test_AutomatedEvidenceSeparateFromManual(CAssert &asserts)
    return(ok);
   }
 
-//--- Optional evidence assertion: required=false, missing trace → Skip, no FAIL.
+//--- Optional evidence assertion: required=false, missing RELEASE trace → Skip, no FAIL.
+//    Counter contract is owned by Test_EvidenceOptionalMissingSkip (integration).
 bool Test_OptionalEvidenceMissingNoFail(CAssert &asserts)
   {
-   bool ok = true;
+   FakeClock clk;
    FakeLogSink sink;
    sink.Write(LOG_INFO, "release", "automated:strategy-tester-evidence");
+   RuntimeMode rm;
+   rm.is_tester           = true;
+   rm.is_optimization     = false;
+   rm.diagnostics_enabled = true;
+   COptContext ctx(rm);
+   ScenarioHarness harness(&clk, &sink, &ctx, &asserts);
 
    EvidenceAssertion ev_optional;
    ev_optional.expected_kind  = EVIDENCE_RELEASE;
    ev_optional.expected_trace = "trace:DEFERRED-ACCOUNT-MODE";
    ev_optional.required       = false;
-   int before_run  = asserts.TestsRun();
-   int before_pass = asserts.TestsPassed();
-   int before_skip = asserts.TestsSkipped();
-//--- Manually simulate the optional-missing path (no harness object needed)
-   if(!sink.HasMessage(ev_optional.expected_trace))
-     {
-      if(!ev_optional.required)
-         asserts.TS_SKIP(StringFormat("Optional evidence '%s' not present (deferred)", ev_optional.expected_trace));
-     }
-   bool run_not_incremented = (asserts.TestsRun() == before_run);
-   bool skip_incremented    = (asserts.TestsSkipped() > before_skip);
-   bool pass_not_changed    = (asserts.TestsPassed() == before_pass);
-   ok &= asserts.TS_CHECK(run_not_incremented,
-                          "Optional missing evidence does not increment run counter");
-   ok &= asserts.TS_CHECK(skip_incremented,
-                          "Optional missing evidence increments skip counter");
-   ok &= asserts.TS_CHECK(pass_not_changed,
-                          "Optional missing evidence does not change passed counter");
-   return(ok);
+   return(harness.AssertEvidence(ev_optional));
   }
 
 //--- No trade-path side effects: no GlobalVariable, no OrderSend calls.
