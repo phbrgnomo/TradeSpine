@@ -1,0 +1,182 @@
+id: CHG-09
+title: "CAssert canonical instance assertion helper refactor"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-08"
+  change_level:
+    value: C2
+  change_source:
+    value: feedback
+
+change_control:
+  chg_id: "CHG-09"
+  status: In Review
+  change_level: C2
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null
+  author: "Codex"
+  date_proposed: "2026-06-08T00:00:00-03:00"
+  date_approved: null
+  date_implemented: "2026-06-08T00:00:00-03:00"
+  supersedes: []
+
+change_description:
+  what: |
+    Refactor the canonical TradeSpine assertion helper from procedural global
+    state into an instance-based `CAssert` class in `Include/Testing/Assert.mqh`.
+    The helper now owns assertion counters and failure messages per instance,
+    exposes snapshot/restore support for controlled failure probes, and uses
+    thin macro wrappers to inject `__FILE__` and `__LINE__` into failure output.
+
+    `Scripts/Tests/TestAssert.mqh` is no longer a duplicate implementation. It
+    remains only as a deprecated include bridge to the canonical helper.
+  why: |
+    Implementation review found that the shared assertion helper should be a
+    reusable test object rather than mutable process-global state. The instance
+    model prevents intentional failure probes from contaminating suite-level
+    results, supports one aggregate assertion stream in `RunAllTests.mq5`, and
+    makes failures easier to locate without changing readable test call sites.
+  trigger: |
+    User-directed IPLAN-11 implementation refinement requested canonical
+    `Assert.mqh`, `CAssert` naming, instance migration, automatic
+    `__FILE__`/`__LINE__` failure locations, and recheck/fix of the M2/L1/L2
+    review findings.
+
+impact_assessment:
+  affected_layers:
+    - layer: SPEC
+      artifacts: ["SPEC-11"]
+      impact: |
+        Update the testing support component definition so the assertion helper
+        is documented as `CAssert` rather than the deprecated `TestAssert`
+        procedural helper.
+      cascade_direction: bubble-up
+    - layer: TDD
+      artifacts: ["TDD-11"]
+      impact: |
+        Update executable test expectations to assert through `CAssert`,
+        including location-aware failure messages and controlled failure
+        snapshot/restore behavior.
+      cascade_direction: bubble-up
+    - layer: IPLAN
+      artifacts: ["IPLAN-00", "IPLAN-11"]
+      impact: |
+        Record IPLAN-11 as implemented, update the declared file manifest and
+        code inventory, and carry compile/regression evidence into the session
+        handoff.
+      cascade_direction: bubble-up
+    - layer: Code
+      artifacts:
+        - "Include/Testing/Assert.mqh"
+        - "Scripts/Tests/TestAssert.mqh"
+        - "Scripts/Tests/RunAllTests.mq5"
+        - "Scripts/Tests/Support/Mocks.mqh"
+        - "Scripts/Tests/Support/ScenarioHarness.mqh"
+        - "Scripts/Tests/Test_TestSupportClock.mq5"
+        - "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
+        - "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
+        - "Scripts/Tests/Test_CommonInputs.mq5"
+        - "Scripts/Tests/Test_OptContextProfiler.mq5"
+        - "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
+      impact: |
+        Migrate tests and scenario harness code from procedural assertion
+        globals to `CAssert &asserts` or a non-owned `CAssert *` dependency.
+        Add guarded failure-log allocation, invalid tolerance rejection, and
+        source-location output.
+      cascade_direction: source
+  cascade_direction: bubble-up
+  risk_level: Medium
+  risk_justification: |
+    The change touches the shared test harness and every current executable test
+    entry point, but remains test-support scope only. Production runtime,
+    trading, and strategy behavior are unchanged. The main risk is broken test
+    aggregation or hidden duplicate assertion APIs, so validation focuses on
+    source migration, static duplicate checks, and MetaEditor compile evidence.
+  rollback_plan: |
+    Revert the CHG-09 commit or restore the previous procedural assertion helper
+    and pre-refactor test call signatures. No production trading code depends on
+    the assertion helper, so rollback is limited to test support and docs.
+
+implementation:
+  steps:
+    - step: 1
+      action: "Implement `CAssert` with private counters, failure log, accessors, reset, summary, snapshot, and restore."
+      artifact: "Include/Testing/Assert.mqh"
+      status: Completed
+    - step: 2
+      action: "Add macro wrappers for source-location injection across Check, CheckTrue, CheckFalse, CheckEqualD, CheckEqualL, CheckEqualStr, Skip, and ReportSummary."
+      artifact: "Include/Testing/Assert.mqh"
+      status: Completed
+    - step: 3
+      action: "Fix M2 failure-log allocation by checking `ArrayResize()` before assignment and reserving growth capacity."
+      artifact: "Include/Testing/Assert.mqh"
+      status: Completed
+    - step: 4
+      action: "Fix L1 invalid tolerance handling by rejecting negative, NaN, and infinite tolerances through located failures."
+      artifact: "Include/Testing/Assert.mqh"
+      status: Completed
+    - step: 5
+      action: "Fix L2 duplicate assertion API risk by replacing `Scripts/Tests/TestAssert.mqh` with a deprecated canonical include bridge."
+      artifact: "Scripts/Tests/TestAssert.mqh"
+      status: Completed
+    - step: 6
+      action: "Migrate current test scripts and `RunAllTests.mq5` to pass a shared `CAssert` instance."
+      artifact: "Scripts/Tests/*.mq5"
+      status: Completed
+    - step: 7
+      action: "Update `ScenarioHarness` to receive a non-owned `CAssert *` and assert through that instance."
+      artifact: "Scripts/Tests/Support/ScenarioHarness.mqh"
+      status: Completed
+    - step: 8
+      action: "Update SPEC-11, TDD-11, IPLAN-11, IPLAN-00, and CHG registry documentation."
+      artifact: "docs"
+      status: Completed
+    - step: 9
+      action: "Record the `Mocks.mqh` folder move from `Include/Testing` to `Scripts/Tests/Support` and keep IPLAN-11 traceability on the moved path."
+      artifact: "docs"
+      status: Completed
+
+verification:
+  checks:
+    - check: "No old assertion globals or procedural helper definitions remain in active Include/Scripts sources."
+      result: Pass
+      method: "Static grep for `g_tests_`, `g_fail_msgs`, `ResetAsserts`, and procedural assertion definitions."
+    - check: "No active source include depends on deprecated `Scripts/Tests/TestAssert.mqh`."
+      result: Pass
+      method: "Static grep for `#include .*TestAssert.mqh`; only the deprecated bridge file remains."
+    - check: "CAssert failure output records source locations."
+      result: Pass
+      method: "Assertion helper unit coverage checks failure messages contain `.mq5:` after controlled failure probes."
+    - check: "Negative, NaN, and infinite tolerances fail clearly."
+      result: Pass
+      method: "Assertion helper unit coverage uses isolated probe instances."
+    - check: "Standalone test scripts and aggregate runner compile."
+      result: Pass
+      method: "User confirmed compilation worked after the CAssert `TS_*` migration and `Mocks.mqh` folder move."
+    - check: "Runtime execution inside MT5 IDE or Strategy Tester."
+      result: Not Run
+      method: "Compile validation completed; interactive MT5 script execution was not run in this pass."
+
+gate_approval: null
+
+traceability:
+  tags:
+    - "@spec: SPEC-11"
+    - "@tdd: TDD-11"
+    - "@iplan: IPLAN-00"
+    - "@iplan: IPLAN-11"
+    - "@chg: CHG-09"
+  upstream:
+    spec_references: ["@spec: SPEC-11"]
+    tdd_references: ["@tdd: TDD-11"]
+    iplan_references: ["@iplan: IPLAN-00", "@iplan: IPLAN-11"]
+  downstream:
+    code_references:
+      - "@code: Include/Testing/Assert.mqh"
+      - "@code: Scripts/Tests/TestAssert.mqh"
+      - "@code: Scripts/Tests/RunAllTests.mq5"
+      - "@code: Scripts/Tests/Support/Mocks.mqh"
+      - "@code: Scripts/Tests/Support/ScenarioHarness.mqh"

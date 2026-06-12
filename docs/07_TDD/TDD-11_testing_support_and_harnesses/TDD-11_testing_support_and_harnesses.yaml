@@ -7,7 +7,7 @@ id: TDD-11
 title: "Testing Support and Harnesses Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-06-05T00:00:00-03:00"
+last_updated: "2026-06-09T00:00:00-03:00"
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -25,7 +25,7 @@ document_control:
   status: Draft
   version: "1.0"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-06-05T00:00:00-03:00"
+  last_updated: "2026-06-09T00:00:00-03:00"
   author: "Codex"
   component: "Shared test doubles, clocks, log sinks, assertions, and harness primitives"
   spec_reference: "@spec: SPEC-11"
@@ -55,108 +55,121 @@ test_mapping:
   scenarios:
     - bdd_scenario: "@bdd: BDD.01.03.aa68"
       description: "Shipped strategy authoring, porting, and packaging"
+      deferred_owner: "IPLAN-01/02"
+      deferral_reason: "Strategy authoring, porting, and packaging is owned by IPLAN-01/02; IPLAN-11 testing support has no strategy artifacts to compile or stage. Recorded as a TS_SKIP deferral stub."
       tests:
         - type: unit
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_aa68_unit"
-          status: pending
+          status: deferred
         - type: integration
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_aa68_integration"
-          status: pending
+          status: deferred
         - type: e2e
           file: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
           function: "test_testing_support_and_harnesses_aa68_e2e"
-          status: pending
+          status: deferred
     - bdd_scenario: "@bdd: BDD.01.03.f415"
       description: "Missing deferred account-mode evidence blocks signoff"
       tests:
         - type: unit
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_f415_unit"
-          status: pending
+          status: deferred
+          deferral_reason: "No genuine unit slice — the deferred-pack signoff gate is exercised at the integration (evidence-gating) and e2e (pack) levels only."
         - type: integration
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_f415_integration"
-          status: pending
+          status: implemented
         - type: e2e
           file: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
           function: "test_testing_support_and_harnesses_f415_e2e"
-          status: pending
+          status: implemented
     - bdd_scenario: "@bdd: BDD.01.03.e16a"
       description: "Ambiguous async outcome enters halt"
+      deferred_owner: "IPLAN-03"
+      deferral_reason: "Driving an ambiguous async broker outcome to HALT requires FakeTradePort, which TDD-11 owner_extension_scope defers to IPLAN-03. IPLAN-11 records a TS_SKIP deferral stub."
       tests:
         - type: unit
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_e16a_unit"
-          status: pending
+          status: deferred
         - type: integration
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_e16a_integration"
-          status: pending
+          status: deferred
         - type: e2e
           file: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
           function: "test_testing_support_and_harnesses_e16a_e2e"
-          status: pending
+          status: deferred
     - bdd_scenario: "@bdd: BDD.01.03.d6ae"
       description: "Evidence records remain paired and separated"
       tests:
         - type: unit
-          file: "Scripts/Tests/Test_TestSupportClock.mq5"
+          file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_d6ae_unit"
-          status: pending
+          status: implemented
+          note: "Corrected from Test_TestSupportClock.mq5 (CHG-10): evidence stream/category separation is a FakeLogSink behavior, not a clock behavior."
         - type: integration
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_d6ae_integration"
-          status: pending
+          status: implemented
         - type: e2e
           file: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
           function: "test_testing_support_and_harnesses_d6ae_e2e"
-          status: pending
+          status: implemented
     - bdd_scenario: "@bdd: BDD.01.03.b37d"
       description: "Performance budgets are evidenced"
       tests:
         - type: unit
           file: "Scripts/Tests/Test_TestSupportClock.mq5"
           function: "test_testing_support_and_harnesses_b37d_unit"
-          status: pending
+          status: implemented
+          note: "Clock-determinism slice only — the reproducible idle-time measurement IPLAN-11 owns."
         - type: integration
           file: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
           function: "test_testing_support_and_harnesses_b37d_integration"
-          status: pending
+          status: implemented
+          note: "Deterministic harness assembly readiness. Perf-measurement integration is co-owned by IPLAN-09 (Test_OptContextProfiler.mq5::test_core_runtime_and_configuration_b37d_integration)."
         - type: e2e
           file: "Scripts/Tests/Test_ReleaseEvidenceHarness.mq5"
           function: "test_testing_support_and_harnesses_b37d_e2e"
-          status: pending
+          status: deferred
+          deferred_owner: "IPLAN-09"
+          deferral_reason: "Performance-budget e2e evidence is owned by IPLAN-09; the IPLAN-11 release-evidence harness holds no perf content."
   coverage_table:
+    _note: |
+      Counts reflect IPLAN-11-owned coverage after CHG-10. "deferred" rows are
+      owned by downstream IPLANs and carried as TS_SKIP stubs in this layer.
     columns: [BDD Scenario, Unit, Integration, E2E, Total]
     rows:
-      - ["@bdd: BDD.01.03.aa68", 1, 1, 1, 3]
-      - ["@bdd: BDD.01.03.f415", 1, 1, 1, 3]
-      - ["@bdd: BDD.01.03.e16a", 1, 1, 1, 3]
+      - ["@bdd: BDD.01.03.aa68", "deferred", "deferred", "deferred", "deferred (IPLAN-01/02)"]
+      - ["@bdd: BDD.01.03.f415", 0, 1, 1, 2]
+      - ["@bdd: BDD.01.03.e16a", "deferred", "deferred", "deferred", "deferred (IPLAN-03)"]
       - ["@bdd: BDD.01.03.d6ae", 1, 1, 1, 3]
-      - ["@bdd: BDD.01.03.b37d", 1, 1, 1, 3]
+      - ["@bdd: BDD.01.03.b37d", 1, 1, 0, 2]
 
 test_cases:
   unit_tests:
     cases:
       - id: "TDD.11.04.6805"
         type: unit
-        name: "Shared clock, log sink, and assertion helpers behave deterministically"
+        name: "Shared clock and assertion helpers behave deterministically"
         spec_ref: "@spec: SPEC-11"
-        target: "FakeClock/FakeLogSink/TestAssert"
+        target: "FakeClock/CAssert"
         test_file: "Scripts/Tests/Test_TestSupportClock.mq5"
         test_function: "test_testing_support_and_harnesses_unit_contract"
         inputs:
           - name: fixture
             type: string
-            value: "time_sequence=[t0,t1,t2], log_messages=[diagnostic,evidence]"
+            value: "time_sequence=[t0,t1,t2]"
         expected_output:
           type: contract-result
-          value: "Clock advances in configured order, log sink captures required messages, and assertions report deterministic pass/fail counts"
+          value: "Clock advances in configured order; negative Advance() is rejected; assertions report deterministic pass/fail/skip counts including Snapshot/Restore round-trip across all four fields"
         edge_cases:
-          - condition: "Required log message is absent"
-            expected: "Case fails through TestAssert without broker, position, or store dependencies."
+          - condition: "Negative seconds passed to Advance()"
+            expected: "FakeClock rejects the call and Now() remains unchanged."
   integration_tests:
     cases:
       - id: "TDD.11.04.aadd"
@@ -170,12 +183,12 @@ test_cases:
           - "Assemble component with deterministic shared fakes for clock, logs, runtime, and owner-extension hooks where required."
           - "Load SPEC-defined configuration and BDD trace tags."
         action:
-          description: "Component plus FakeClock, FakeLogSink, TestAssert, minimal ScenarioHarness, and deferred owner-extension slots"
+          description: "Component plus FakeClock, FakeLogSink, CAssert, minimal ScenarioHarness, and deferred owner-extension slots"
         expected_state:
           - "Stimulus runs with deterministic time and evidence assertions fail on missing required traces"
         error_paths:
           - condition: "Owner extension slot is missing for a scenario that requires broker, position, symbol, or store behavior"
-            expected_error: "Harness reports the missing owner extension and leaves the owner-specific assertion to the downstream IPLAN."
+            expected_error: "Owner hooks (OnOwnerSetup/OnOwnerTeardown) are callable without crash; owner-specific assertions are deferred to the downstream IPLAN."
   e2e_tests:
     cases:
       - id: "TDD.11.04.4f72"
@@ -272,8 +285,17 @@ traceability:
     - "@ears: EARS.01.03.a71c"
     - "@bdd: BDD.01.03.aa68"
     - "@bdd: BDD.01.03.f415"
+    - "@bdd: BDD.01.03.e16a"
+    - "@bdd: BDD.01.03.d6ae"
+    - "@bdd: BDD.01.03.b37d"
     - "@adr: ADR.06.03.b277"
     - "@adr: ADR.07.03.6df1"
+    - "@adr: ADR.08.03.0a8f"
+    - "@adr: ADR.10.03.51ea"
+    - "@ears: EARS.01.03.588b"
+    - "@ears: EARS.01.03.8044"
+    - "@prd: PRD.01.13.edc4"
+    - "@prd: PRD.01.09.841a"
   upstream:
     spec_references:
       - "@spec: SPEC-11"

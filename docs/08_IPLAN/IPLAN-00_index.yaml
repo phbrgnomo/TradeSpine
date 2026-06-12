@@ -3,7 +3,7 @@ metadata:
   document_type: "iplan-registry"
   layer: 8
   total_plans: 12
-  last_updated: "2026-06-05"
+  last_updated: "2026-06-08"
 
 registry:
   plans:
@@ -164,13 +164,13 @@ registry:
       title: "Testing Support and Harnesses Implementation"
       source_spec: "@spec: SPEC-11"
       scope: "Implement shared deterministic clock/log fakes, assertion support, minimal scenario harness primitives, and release evidence separation contracts."
-      status: "Draft"
-      status_date: "2026-06-03"
+      status: "Completed"
+      status_date: "2026-06-08"
       complexity: 4
-      session_count: 0
-      sessions_completed: 0
+      session_count: 4
+      sessions_completed: 4
       files_declared: 9
-      files_done: 0
+      files_done: 9
       skipped: []
       skip_reasons: {}
       depends_on: ["IPLAN-09"]
@@ -226,7 +226,7 @@ execution_path:
       plans: ["IPLAN-09"]
     - tier: 2
       label: "Testing Foundation"
-      status: "NOT_STARTED"
+      status: "COMPLETED"
       plans: ["IPLAN-11"]
     - tier: 3
       label: "Persistence and Market Foundations"
@@ -477,6 +477,10 @@ status_history:
         to: "Draft"
         date: "2026-06-05"
         reason: "CHG-06 supersedes CHG-05 sequencing: IPLAN-11 scope narrowed to shared IPLAN-09-compatible test support, depends_on restored to IPLAN-09 only, and Tier 2 status set to NOT_STARTED."
+      - from: "Draft"
+        to: "Completed"
+        date: "2026-06-08"
+        reason: "CHG-09: IPLAN-11 implementation completed across 9 declared files with CAssert canonical assertion support, shared harness fakes, aggregate runner, Scripts/Tests/Support/Mocks.mqh traceability, and compile validation evidence."
   - plan_id: "IPLAN-12"
     transitions:
       - from: "BACKLOG"

@@ -15,7 +15,7 @@
 | Source SPEC | `../../06_SPEC/SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.yaml` |
 | IPLAN-ready Score | 95/100 |
 | Created | 2026-06-02T00:00:00-03:00 |
-| Updated | 2026-06-05T00:00:00-03:00 |
+| Updated | 2026-06-09T00:00:00-03:00 |
 
 ## Test Pyramid
 
@@ -33,13 +33,15 @@
 
 ## BDD Scenario Mapping
 
+> Reconciled by CHG-10. Status legend: **impl** = implemented in IPLAN-11; **def** = deferred (TS_SKIP stub, owned by the named downstream IPLAN).
+
 | BDD Scenario | Description | Unit Test | Integration Test | E2E Test |
 | --- | --- | --- | --- | --- |
-| @bdd: BDD.01.03.aa68 | Shipped strategy authoring, porting, and packaging | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_aa68_unit` | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_aa68_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_aa68_e2e` |
-| @bdd: BDD.01.03.f415 | Missing deferred account-mode evidence blocks signoff | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_f415_unit` | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_f415_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_f415_e2e` |
-| @bdd: BDD.01.03.e16a | Ambiguous async outcome enters halt | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_e16a_unit` | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_e16a_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_e16a_e2e` |
-| @bdd: BDD.01.03.d6ae | Evidence records remain paired and separated | `Scripts/Tests/Test_TestSupportClock.mq5` / `test_testing_support_and_harnesses_d6ae_unit` | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_d6ae_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_d6ae_e2e` |
-| @bdd: BDD.01.03.b37d | Performance budgets are evidenced | `Scripts/Tests/Test_TestSupportClock.mq5` / `test_testing_support_and_harnesses_b37d_unit` | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_b37d_integration` | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_b37d_e2e` |
+| @bdd: BDD.01.03.aa68 | Shipped strategy authoring, porting, and packaging — **deferred to IPLAN-01/02** | `Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_aa68_unit` (def) | `Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_aa68_integration` (def) | `Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_aa68_e2e` (def) |
+| @bdd: BDD.01.03.f415 | Missing deferred account-mode evidence blocks signoff | `Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_f415_unit` (def — no unit slice) | `Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_f415_integration` (impl) | `Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_f415_e2e` (impl) |
+| @bdd: BDD.01.03.e16a | Ambiguous async outcome enters halt — **deferred to IPLAN-03 (FakeTradePort)** | `Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_e16a_unit` (def) | `Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_e16a_integration` (def) | `Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_e16a_e2e` (def) |
+| @bdd: BDD.01.03.d6ae | Evidence records remain paired and separated | `Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_d6ae_unit` (impl — corrected from clock file) | `Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_d6ae_integration` (impl) | `Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_d6ae_e2e` (impl) |
+| @bdd: BDD.01.03.b37d | Performance budgets are evidenced | `Test_TestSupportClock.mq5` / `test_testing_support_and_harnesses_b37d_unit` (impl — clock-determinism slice) | `Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_b37d_integration` (impl — co-owned by IPLAN-09) | `Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_b37d_e2e` (def — perf e2e owned by IPLAN-09) |
 
 ## Test Cases
 
@@ -47,13 +49,13 @@
 
 | ID | Name | Target | File | Function | Expected Output | Edge Cases |
 | --- | --- | --- | --- | --- | --- | --- |
-| TDD.11.04.6805 | Shared clock, log sink, and assertion helpers behave deterministically | FakeClock/FakeLogSink/TestAssert | `Scripts/Tests/Test_TestSupportClock.mq5` | `test_testing_support_and_harnesses_unit_contract` | Clock advances in configured order, log sink captures required messages, and assertions report deterministic pass/fail counts | Required log message is absent -> Case fails through TestAssert without broker, position, or store dependencies. |
+| TDD.11.04.6805 | Shared clock and assertion helpers behave deterministically | FakeClock/CAssert | `Scripts/Tests/Test_TestSupportClock.mq5` | `test_testing_support_and_harnesses_unit_contract` | Clock advances in configured order; negative Advance() is rejected; assertions report deterministic pass/fail/skip counts including Snapshot/Restore round-trip across all four fields | Negative seconds passed to Advance() -> FakeClock rejects the call and Now() remains unchanged. |
 
 ### Integration Tests
 
 | ID | Name | Contract | File | Expected State | Error Paths |
 | --- | --- | --- | --- | --- | --- |
-| TDD.11.04.aadd | ScenarioHarness assembles fakes and evidence assertions | ScenarioHarness | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` | Stimulus runs with deterministic time and evidence assertions fail on missing required traces | Owner extension slot is missing for a scenario that requires broker, position, symbol, or store behavior -> Harness reports the missing owner extension and leaves the owner-specific assertion to the downstream IPLAN. |
+| TDD.11.04.aadd | ScenarioHarness assembles fakes and evidence assertions | ScenarioHarness | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` | Stimulus runs with deterministic time and evidence assertions fail on missing required traces | Owner extension slot is missing for a scenario that requires broker, position, symbol, or store behavior -> Owner hooks (OnOwnerSetup/OnOwnerTeardown) are callable without crashing; owner-specific assertions are deferred to the downstream IPLAN. |
 
 ### E2E Tests
 

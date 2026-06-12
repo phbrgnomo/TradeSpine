@@ -1,0 +1,157 @@
+id: CHG-11
+title: "CAssert negative-assertion primitive for expected failures"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-09"
+  change_level:
+    value: C2
+  change_source:
+    value: feedback
+
+change_control:
+  chg_id: "CHG-11"
+  status: Approved
+  change_level: C2
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null
+  author: "phbr"
+  date_proposed: "2026-06-09T00:00:00-03:00"
+  date_approved: "2026-06-09T00:00:00-03:00"
+  date_implemented: "2026-06-09T00:00:00-03:00"
+  supersedes: []
+
+change_description:
+  what: |
+    Add a negative-assertion primitive to the canonical CAssert helper
+    (`Include/Testing/Assert.mqh`) so controlled (intentionally provoked)
+    failures no longer print as `FAIL:` lines that look identical to real
+    regressions.
+
+    New CAssert surface:
+      - `BeginExpectFailure(label)` / `EndExpectFailure()` (macros
+        `TS_EXPECT_FAIL_BEGIN` / `TS_EXPECT_FAIL_END`): between Begin and End,
+        any check is EXPECTED to fail. A failing check satisfies the
+        expectation and is logged quietly as `(expected) ...`; it does not
+        record a failure or touch the pass/fail counters. End records exactly
+        one result — `PASS: <label> (expected failure)` when >=1 check failed,
+        or a real FAIL when none did.
+      - `SetVerbose(bool)`: silences PASS/FAIL/SKIP console output on isolated
+        probe instances whose outcome is inspected programmatically.
+
+    Call-site migration:
+      - Test_TestSupportClock.mq5: the invalid-tolerance test now uses three
+        `TS_EXPECT_FAIL` scopes on the shared CAssert (the separate `tol_probe`
+        is removed); the skip-counter probe and the failure-recording meta-test
+        probe are silenced with `SetVerbose(false)`.
+      - Test_TestSupportScenarioHarness.mq5: the five evidence-failure helpers
+        (required-missing, wrong-kind, empty-trace, invalid-kind, overflow-
+        inconclusive) drop their Snapshot/Restore + FailureCount bookkeeping and
+        wrap `AssertEvidence(...)` in a `TS_EXPECT_FAIL` scope.
+
+    ScenarioHarness.AssertEvidence is UNCHANGED — the inversion lives entirely
+    in CAssert, so the harness keeps calling `TS_CHECK`/`TS_SKIP` as before.
+  why: |
+    The aggregate run log interleaved `FAIL:` lines from controlled-failure
+    probes with genuine output. A reader scanning the log saw lines like
+    `FAIL: negative tolerance rejected` and reasonably assumed a regression,
+    even though that failure was the expected outcome being verified — the only
+    signal that it was fine was the PASS on the following line. The harness was
+    correct (those failures were isolated or rolled back via Snapshot/Restore)
+    but the OUTPUT was misleading. The negative-assertion primitive makes intent
+    explicit in the log (`PASS: ... (expected failure)`) and removes the
+    Snapshot/Restore boilerplate from the call sites.
+  trigger: |
+    User feedback after running RunAllTests in the MT5 IDE: the 197/197 pass
+    summary was correct, but the controlled `FAIL:` lines in the log were
+    confusing. User selected the negative-assertion-primitive approach over a
+    simpler XFAIL relabel or output suppression.
+
+impact_assessment:
+  affected_layers:
+    - layer: Code
+      artifacts:
+        - "Include/Testing/Assert.mqh"
+        - "Scripts/Tests/Test_TestSupportClock.mq5"
+        - "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
+      impact: |
+        Add the expect-failure scope + verbose toggle to CAssert; migrate the
+        clock-file invalid-tolerance test and the five harness evidence-failure
+        helpers to the new primitive; silence the two isolated inspection probes.
+      cascade_direction: source
+  cascade_direction: source
+  risk_level: Low
+  risk_justification: |
+    Test-harness ergonomics and log output only. No production runtime, trading,
+    strategy, or system-under-test behavior changes. The new CAssert API is
+    additive; existing macros (TS_CHECK*, TS_SKIP, Snapshot/Restore) are intact
+    and still used by the failure-recording meta-test. SPEC-11 and TDD-11
+    contracts are unaffected: the testing-support capabilities still hold, and
+    the IPLAN-11 test function names and BDD-scenario mapping (CHG-10) are
+    unchanged, so no TDD-11 edit is required.
+  notes: |
+    F3 coverage check: CHG-10 added per-scenario FailureCount() delta checks to
+    the five evidence-failure probes. Those per-case checks are superseded here
+    by (a) the expect-failure primitive proving a failure actually occurred, and
+    (b) Test_AssertControlledFailureAndRestore, which remains the authoritative
+    meta-test that a recorded failure increments FailureCount(), embeds the
+    file:line location in the message, and is cleared by Restore(). Net
+    failure-recording coverage is preserved at the suite level.
+  rollback_plan: |
+    Revert the CHG-11 commit. CAssert returns to the prior API and the test
+    files return to the Snapshot/Restore controlled-failure pattern. No
+    production trading code depends on the assertion helper.
+
+implementation:
+  steps:
+    - step: 1
+      action: "Add m_verbose + expect-failure state, SetVerbose(), _BeginExpectFailure/_EndExpectFailure, and the TS_EXPECT_FAIL_BEGIN/END macros; make _Check and _Skip honor verbose and the expect-failure scope."
+      artifact: "Include/Testing/Assert.mqh"
+      status: Completed
+    - step: 2
+      action: "Silence the skip-counter and failure-recording meta-test probes (SetVerbose(false)); rewrite the invalid-tolerance test with three TS_EXPECT_FAIL scopes and drop tol_probe."
+      artifact: "Scripts/Tests/Test_TestSupportClock.mq5"
+      status: Completed
+    - step: 3
+      action: "Migrate the five evidence-failure helpers to TS_EXPECT_FAIL scopes, removing Snapshot/Restore + FailureCount bookkeeping."
+      artifact: "Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
+      status: Completed
+    - step: 4
+      action: "Register CHG-11 in the CHG index and record the GATE-CODE report."
+      artifact: "docs/governance/chg/CHG-00_index.md"
+      status: Completed
+
+verification:
+  checks:
+    - check: "Aggregate runner and all three standalone test scripts compile."
+      result: Pass
+      method: "Headless ../../../Scripts/compile_mql.sh on RunAllTests.mq5 and each Test_*.mq5 — MetaEditor success, no compile log generated (clean)."
+    - check: "ScenarioHarness.AssertEvidence is unchanged (inversion lives in CAssert)."
+      result: Pass
+      method: "Code inspection — AssertEvidence still calls TS_CHECK/TS_SKIP; no signature or body change."
+    - check: "Failure-recording mechanism remains covered after dropping per-case FailureCount checks."
+      result: Pass
+      method: "Test_AssertControlledFailureAndRestore retains FailureCount==1, file:line message, and Restore-to-zero assertions."
+    - check: "Controlled failures render as expected in the run log."
+      result: Pass
+      method: "Re-run RunAllTests in the MT5 IDE; confirm controlled failures now print as 'PASS: <label> (expected failure)' and isolated probes emit no FAIL/SKIP lines. Summary remains all-pass (assertion total changes vs the prior 197 because each expectation is one assertion)."
+
+gate_approval: null
+
+traceability:
+  tags:
+    - "@spec: SPEC-11"
+    - "@tdd: TDD-11"
+    - "@iplan: IPLAN-11"
+    - "@chg: CHG-11"
+  upstream:
+    spec_references: ["@spec: SPEC-11"]
+    tdd_references: ["@tdd: TDD-11"]
+    iplan_references: ["@iplan: IPLAN-11"]
+  downstream:
+    code_references:
+      - "@code: Include/Testing/Assert.mqh"
+      - "@code: Scripts/Tests/Test_TestSupportClock.mq5"
+      - "@code: Scripts/Tests/Test_TestSupportScenarioHarness.mq5"
