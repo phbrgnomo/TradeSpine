@@ -67,7 +67,7 @@ bool Test_AutomatedEvidenceSeparateFromManual(CAssert &asserts)
    ok &= asserts.TS_CHECK(sink.HasMessage("automated:strategy-tester-evidence"),
                                "FakeLogSink holds automated evidence independently");
 //--- Manual pack is NOT derived from FakeLogSink; it remains separate
-   ok &= asserts.TS_CHECK(!(StringLen(missing_pack.artifacts) > 0),
+   ok &= asserts.TS_CHECK(StringLen(missing_pack.artifacts) == 0,
                                 "Automated FakeLogSink evidence does not populate missing pack");
    return(ok);
   }
