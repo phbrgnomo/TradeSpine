@@ -1,0 +1,175 @@
+---
+id: CHG-12
+title: "Incremental Per-IPLAN Documentation Model"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-13"
+  change_level:
+    value: C2
+  change_source:
+    value: execution
+
+change_control:
+  chg_id: "CHG-12"
+  status: In Review
+  change_level: C2
+  change_source: execution
+  entry_gate: GATE-08
+  semver_impact: null
+  author: "phbr"
+  date_proposed: "2026-06-13T00:00:00-03:00"
+  date_approved: null
+  date_implemented: "2026-06-13T00:00:00-03:00"
+  supersedes: []
+
+change_description:
+  what: |
+    Shift the codebase-documentation model from a single end-of-project batch to
+    incremental, per-IPLAN documentation.
+
+    Before: the Tier-9 documentation_closeout in IPLAN-00 instructed authors to
+    "Write documentation only after IPLAN-12 and IPLAN-13 complete," deferring
+    ALL Docs/ reference documentation to the very end.
+
+    After: every code-deliverable IPLAN's final session produces (a) in-code
+    Doxygen documentation for its new/changed public interfaces and (b) the
+    module's Docs/MODULES/<Module>.md reference page. The Tier-9
+    documentation_closeout is retained but re-scoped as the final
+    RELEASE-documentation reconciliation (AUTHORING, RECIPES, INPUTS_REFERENCE,
+    TESTING, and the strategy template README) plus a consistency sweep over the
+    per-module pages already written along the way.
+
+    Concretely:
+      - Add cross_plan_obligation CPO-006 to IPLAN-00:
+        "At the end of each code-deliverable IPLAN, produce in-code Doxygen
+        documentation and the module's Docs/MODULES/<Module>.md reference page
+        for the delivered files; update code_inventory accordingly."
+      - Update documentation_closeout._guidance to describe the
+        incremental-then-reconcile model (per-module docs are produced per IPLAN;
+        Tier-9 reconciles release docs and sweeps the module pages).
+  why: |
+    The batch model left the implemented IPLAN-09 and IPLAN-11 surface with no
+    reference documentation and created a large, error-prone end-of-project
+    documentation debt. Producing per-module reference docs as each IPLAN lands
+    keeps documentation accurate against the just-written interfaces, distributes
+    the effort, and lets readers navigate the framework while it is still being
+    built. The release gate (SPEC-08) is unaffected — it still requires the full
+    release documentation set before sign-off.
+  trigger: |
+    Project owner request on 2026-06-13 to start codebase documentation now
+    (after IPLAN-09/11) and update it at the end of each IPLAN execution, rather
+    than deferring everything to the Tier-9 closeout after IPLAN-13.
+
+impact_assessment:
+  affected_layers:
+    - layer: IPLAN
+      artifacts: ["IPLAN-00"]
+      impact: |
+        Add CPO-006 to cross_plan_obligations and update
+        documentation_closeout._guidance to the incremental-then-reconcile model.
+        Tier-9 deliverables, file_manifest, and acceptance_checks are unchanged;
+        only the sequencing guidance changes (per-module docs are no longer
+        exclusively end-of-project).
+      cascade_direction: downstream
+    - layer: SPEC
+      artifacts: ["SPEC-08"]
+      impact: |
+        No content change required. SPEC-08 governs the release documentation
+        gate (required docs present, same-change doc updates, Doxygen coverage if
+        retained, CHANGELOG record). Incremental authoring SATISFIES that gate
+        earlier rather than weakening it; the release reviewer's checks still
+        hold. Recorded as a lateral compatibility confirmation only.
+      cascade_direction: lateral
+    - layer: Code
+      artifacts: ["Docs/", "Include/Core/*", "Include/Testing/*", "Scripts/Tests/Support/*"]
+      impact: |
+        Establishes the Docs/ implementation-time tree (README, ARCHITECTURE,
+        MODULES/Core, MODULES/Testing, and Planned stubs for the remaining
+        modules) and a backfilled Doxygen pass over the already-implemented
+        IPLAN-09/11 modules. No behavioral code change; documentation only.
+      cascade_direction: downstream
+  cascade_direction: downstream
+  risk_level: Low
+  risk_justification: |
+    Process/governance and documentation scope only. No requirement, SPEC, TDD,
+    or executable-code behavior changes. The single substantive corpus edit is to
+    IPLAN-00 guidance plus a new cross-plan obligation; SPEC-08's release gate is
+    confirmed unchanged. Risk is limited to governance drift, mitigated by
+    keeping the Tier-9 closeout as the authoritative release-doc reconciliation.
+
+rollback_plan:
+  strategy: revert-commit
+  steps:
+    - "Remove CPO-006 from IPLAN-00 cross_plan_obligations."
+    - "Restore documentation_closeout._guidance to the prior batch-only wording."
+    - "Revert the CLAUDE.md 'Documentation at IPLAN Completion' section."
+    - "Optionally remove the Docs/ tree (leaving it is harmless; it is additive)."
+  estimated_effort: "Low — single-commit revert."
+
+implementation:
+  steps:
+    - step: 1
+      action: "Add CPO-006 to IPLAN-00 cross_plan_obligations.obligations."
+      artifact: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      status: Completed
+    - step: 2
+      action: "Update documentation_closeout._guidance to the incremental-then-reconcile model."
+      artifact: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      status: Completed
+    - step: 3
+      action: "Add the 'Documentation at IPLAN Completion' section to the TradeSpine instruction file."
+      artifact: "CLAUDE.md"
+      status: Completed
+    - step: 4
+      action: "Create the Docs/ implementation-time tree (README, ARCHITECTURE, MODULES/Core, MODULES/Testing, and Planned module stubs)."
+      artifact: "Docs/"
+      status: Completed
+    - step: 5
+      action: "Backfill Doxygen \\brief/\\param/\\return on the implemented IPLAN-09/11 public interfaces."
+      artifact: "Include/Core/*, Include/Testing/Assert.mqh, Scripts/Tests/Support/*"
+      status: Completed
+    - step: 6
+      action: "Register CHG-12 in the CHG index."
+      artifact: "docs/governance/chg/CHG-00_index.md"
+      status: Completed
+
+  artifacts_modified:
+    - id: "IPLAN-00"
+      file: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      change_type: "modified"
+    - id: "CLAUDE.md"
+      file: "CLAUDE.md"
+      change_type: "modified"
+    - id: "Docs"
+      file: "Docs/"
+      change_type: "created"
+
+verification:
+  checks:
+    - check: "YAML parser loads CHG-12 and IPLAN-00_index.yaml."
+      result: Pass
+      method: "ruby/python YAML load"
+    - check: "IPLAN-00 contains CPO-006 and the updated documentation_closeout guidance."
+      result: Pass
+      method: "grep CPO-006 and incremental wording in IPLAN-00_index.yaml"
+    - check: "SPEC-08 release documentation gate is unchanged and still satisfiable."
+      result: Pass
+      method: "review — no SPEC-08 edit; incremental docs satisfy the same gate earlier"
+    - check: "Docs/ tree exists with real interface references (CAssert, SafeMath, OptContext) and no placeholder strings."
+      result: Pass
+      method: "test -f + rg over Docs/"
+    - check: "Implemented modules still compile after the Doxygen pass."
+      result: Pass
+      method: "compile_mql.sh Scripts/Tests/RunAllTests.mq5 (clean) + MetaEditor F7"
+
+gate_approval: null
+
+traceability:
+  tags:
+    - "@iplan: IPLAN-00"
+    - "@spec: SPEC-08"
+  upstream:
+    spec_references: ["@spec: SPEC-08"]
+    iplan_references: ["@iplan: IPLAN-00"]

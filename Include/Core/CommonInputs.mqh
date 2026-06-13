@@ -21,9 +21,9 @@
 #define TRADESPINE_COMMON_INPUTS_MQH
 
 //+------------------------------------------------------------------+
-//| Position-sizing mode.                                            |
-//| v1 executable: FIXED_LOT, RISK_PCT_EQUITY.                       |
-//| v2 placeholders: FIXED_CASH, VALUE_PCT_EQUITY.                   |
+//| \brief Position-sizing mode.                                     |
+//|        v1 executable: FIXED_LOT, RISK_PCT_EQUITY.                |
+//|        v2 placeholders: FIXED_CASH, VALUE_PCT_EQUITY.            |
 //+------------------------------------------------------------------+
 enum ENUM_SIZING_MODE
   {
@@ -34,7 +34,7 @@ enum ENUM_SIZING_MODE
   };
 
 //+------------------------------------------------------------------+
-//| Result of a CommonInputs validation pass.                        |
+//| \brief Result of a CommonInputs validation pass.                 |
 //+------------------------------------------------------------------+
 struct InputValidation
   {
@@ -43,7 +43,9 @@ struct InputValidation
   };
 
 //+------------------------------------------------------------------+
-//| Canonical framework input binding.                               |
+//| \brief Canonical framework input binding shared by all           |
+//|        strategies; carries identity, day-trade, sizing, and      |
+//|        timeframe configuration plus its own validation.          |
 //+------------------------------------------------------------------+
 struct CommonInputs
   {
@@ -85,8 +87,10 @@ struct CommonInputs
      }
 
    //-------------------------------------------------------------------
-   //| Validate this binding against v1 scope.                         |
-   //| Rejects v2 placeholders *visibly* — no silent fallback.         |
+   //| \brief Validate this binding against v1 scope. Rejects v2        |
+   //|        placeholders *visibly* — no silent fallback.             |
+   //| \return InputValidation{ok,message}; ok=false carries an         |
+   //|         operator-facing diagnostic naming the offending field.   |
    //-------------------------------------------------------------------
    InputValidation Validate() const
      {
@@ -149,6 +153,9 @@ struct CommonInputs
       return(r);
      }
 
+   //--- \brief Human-readable name for a sizing mode.
+   //--- \param m  Sizing mode value.
+   //--- \return The enum constant's name, or "SIZING_UNKNOWN" if unrecognized.
    static string SizingModeName(const ENUM_SIZING_MODE m)
      {
       switch(m)
@@ -161,6 +168,9 @@ struct CommonInputs
       return("SIZING_UNKNOWN");
      }
 
+   //--- \brief Whitelist gate for the signal timeframe.
+   //--- \param timeframe  Timeframe constant to check.
+   //--- \return true for PERIOD_CURRENT or any standard MQL5 timeframe.
    static bool IsValidSignalTimeframe(const ENUM_TIMEFRAMES timeframe)
      {
       switch(timeframe)

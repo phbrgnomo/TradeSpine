@@ -312,8 +312,8 @@ bool Test_OwnerExtensionHooksCallable(CAssert &asserts)
   }
 
 //+------------------------------------------------------------------+
-//| TDD.11.04.aadd — ScenarioHarness assembly integration contract.  |
-//| Aggregator: runs every decomposed helper in this file.           |
+//| \brief TDD.11.04.aadd — ScenarioHarness assembly integration      |
+//|        contract. Runs every decomposed helper in this file.       |
 //+------------------------------------------------------------------+
 bool test_testing_support_and_harnesses_integration_contract(CAssert &asserts)
   {

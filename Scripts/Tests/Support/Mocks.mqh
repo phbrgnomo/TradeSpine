@@ -13,8 +13,8 @@
 #include "FakeClock.mqh"
 #include "FakeLogSink.mqh"
 
-typedef FakeClock*   TestClock_t;
-typedef FakeLogSink* TestLogSink_t;
+typedef FakeClock*   TestClock_t;   //!< \brief Alias for a FakeClock pointer in owner-plan tests.
+typedef FakeLogSink* TestLogSink_t; //!< \brief Alias for a FakeLogSink pointer in owner-plan tests.
 
 #endif // TRADESPINE_TESTING_MOCKS_MQH
 //+------------------------------------------------------------------+

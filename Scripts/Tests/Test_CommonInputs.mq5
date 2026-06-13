@@ -225,7 +225,8 @@ bool Test_DefaultConstructorIsInvalid(CAssert &asserts)
   }
 
 //+------------------------------------------------------------------+
-//| TDD trace aliases.                                               |
+//| \brief TDD/BDD trace-alias entry points called by RunAllTests;   |
+//|        each maps a BDD scenario id + test type to its helpers.    |
 //| unit_contract: absent — TDD-09 maps it to Test_SafeMathAndNewBar |
 //| .mq5; duplicate definition risks aggregate-compilation clash.   |
 //| b37d_unit: absent — "Performance budgets are evidenced" has no   |

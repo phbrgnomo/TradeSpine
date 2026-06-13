@@ -102,8 +102,8 @@ bool Test_NoTradePathSideEffects(CAssert &asserts)
   }
 
 //+------------------------------------------------------------------+
-//| TDD.11.04.4f72 — deferred account-mode evidence separation.      |
-//| Aggregator: runs every decomposed helper in this file.           |
+//| \brief TDD.11.04.4f72 — deferred account-mode evidence separation.|
+//|        Aggregator: runs every decomposed helper in this file.     |
 //+------------------------------------------------------------------+
 bool test_testing_support_and_harnesses_e2e_acceptance(CAssert &asserts)
   {

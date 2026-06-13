@@ -17,7 +17,11 @@
 #include "../../../Include/Testing/Assert.mqh"
 
 //+------------------------------------------------------------------+
-//| ScenarioHarness                                                  |
+//| \brief ScenarioHarness - minimal component assembly for          |
+//|        integration tests: wires FakeClock + FakeLogSink +         |
+//|        COptContext + CAssert, with owner-extension hooks and      |
+//|        evidence assertions. Broker/position/symbol/store fakes    |
+//|        are added by the owning IPLANs (CHG-06).                  |
 //+------------------------------------------------------------------+
 class ScenarioHarness
   {

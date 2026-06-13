@@ -12,7 +12,8 @@
 #include "../../../Include/Core/Interfaces.mqh"
 
 //+------------------------------------------------------------------+
-//| FakeClock                                                        |
+//| \brief FakeClock - deterministic IClock for tests; time advances |
+//|        only via Set()/Advance(), never from TimeCurrent().       |
 //+------------------------------------------------------------------+
 class FakeClock : public IClock
   {

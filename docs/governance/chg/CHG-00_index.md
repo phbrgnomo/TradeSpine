@@ -31,6 +31,7 @@ custom_fields:
 | CHG-09 | CAssert canonical instance assertion helper refactor | C2 | feedback | Completed | GATE-CODE self-approved |
 | CHG-10 | TDD-11 BDD-scenario test mapping reconciliation | C2 | feedback | Approved | GATE-CODE self-approved |
 | CHG-11 | CAssert negative-assertion primitive for expected failures | C2 | feedback | Approved | GATE-CODE self-approved |
+| CHG-12 | Incremental Per-IPLAN Documentation Model | C2 | execution | In Review | GATE-08 prepared |
 
 ## Planned
 

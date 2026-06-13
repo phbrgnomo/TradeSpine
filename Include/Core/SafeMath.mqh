@@ -19,7 +19,9 @@
 namespace SafeMath
   {
 //+------------------------------------------------------------------+
-//| Finite check - rejects NaN and +/-Inf.                           |
+//| \brief  Finite check - rejects NaN and +/-Inf.                   |
+//| \param  value  Number to test.                                   |
+//| \return true when value is a finite (non-NaN, non-Inf) number.   |
 //+------------------------------------------------------------------+
 bool IsFinite(const double value)
   {
@@ -27,7 +29,12 @@ bool IsFinite(const double value)
   }
 
 //+------------------------------------------------------------------+
-//| Tolerance comparison. Never compare doubles with ==.             |
+//| \brief  Tolerance comparison. Never compare doubles with ==.     |
+//| \param  a          First operand.                                |
+//| \param  b          Second operand.                               |
+//| \param  tolerance  Max allowed absolute difference (default 1e-9)|
+//| \return true when |a-b| <= tolerance; false if any operand or    |
+//|         the tolerance is non-finite, or tolerance is negative.   |
 //+------------------------------------------------------------------+
 bool EqualDoubles(const double a, const double b, const double tolerance = 1e-9)
   {
@@ -39,8 +46,11 @@ bool EqualDoubles(const double a, const double b, const double tolerance = 1e-9)
   }
 
 //+------------------------------------------------------------------+
-//| Effective price grid step for a symbol (tick size, else point).  |
-//| Returns 0.0 when neither is available.                           |
+//| \brief  Effective price grid step for a symbol (tick size, else  |
+//|         point).                                                  |
+//| \param  symbol  Symbol whose metadata is read.                   |
+//| \return The price step, or 0.0 when neither tick size nor point  |
+//|         is available.                                            |
 //+------------------------------------------------------------------+
 double PriceStep(const string symbol)
   {
@@ -53,9 +63,13 @@ double PriceStep(const string symbol)
   }
 
 //+------------------------------------------------------------------+
-//| True when the symbol exposes the metadata required for sizing    |
-//| and stop-price validation. Callers that get false should fail    |
-//| initialization (EARS / F-MKT-4: no fallback constants).          |
+//| \brief  True when the symbol exposes the metadata required for   |
+//|         sizing and stop-price validation.                        |
+//| \param  symbol  Symbol whose metadata is checked.                |
+//| \return true when price step and volume min/max/step are all     |
+//|         present and consistent; false otherwise.                 |
+//| \note   Callers that get false should fail initialization        |
+//|         (EARS / F-MKT-4: no fallback constants).                 |
 //+------------------------------------------------------------------+
 bool HasValidSymbolInfo(const string symbol)
   {
@@ -72,8 +86,11 @@ bool HasValidSymbolInfo(const string symbol)
   }
 
 //+------------------------------------------------------------------+
-//| Snap a price to the symbol grid. Returns 0.0 when the price is   |
-//| non-finite or the symbol grid is unavailable.                    |
+//| \brief  Snap a price to the symbol grid.                         |
+//| \param  symbol  Symbol whose price grid is used.                 |
+//| \param  price   Raw price to snap.                               |
+//| \return The grid-snapped, digit-normalized price, or 0.0 when    |
+//|         the price is non-finite or the symbol grid is missing.   |
 //+------------------------------------------------------------------+
 double NormalizePrice(const string symbol, const double price)
   {
@@ -90,9 +107,16 @@ double NormalizePrice(const string symbol, const double price)
   }
 
 //+------------------------------------------------------------------+
-//| Snap lots to an explicit step grid. Exposed for deterministic    |
-//| fixture testing with injected vmin/vmax/vstep values.            |
-//| Returns 0.0 on non-finite/invalid inputs or below-minimum lots. |
+//| \brief  Snap lots to an explicit step grid. Exposed for          |
+//|         deterministic fixture testing with injected grid values. |
+//| \param  lots   Raw requested volume.                             |
+//| \param  vmin   Minimum allowed volume.                           |
+//| \param  vmax   Maximum allowed volume.                           |
+//| \param  vstep  Volume step.                                      |
+//| \return The grid-snapped volume clamped to [vmin,vmax], or 0.0   |
+//|         on non-finite/invalid inputs or below-minimum lots.      |
+//| \note   Above-max input clamps down to the largest grid point    |
+//|         <= vmax, not to vmax itself (vmax may be off-grid).      |
 //+------------------------------------------------------------------+
 double NormalizeLotRaw(const double lots, const double vmin, const double vmax, const double vstep)
   {
@@ -134,9 +158,13 @@ double NormalizeLotRaw(const double lots, const double vmin, const double vmax, 
   }
 
 //+------------------------------------------------------------------+
-//| Snap lots to the broker volume step, clamped to [min, max].      |
-//| Returns 0.0 when lots are non-finite, below the minimum, or the  |
-//| symbol metadata is missing (no fallback). Above max clamps down. |
+//| \brief  Snap lots to the broker volume step, clamped to          |
+//|         [min, max], reading the grid from symbol metadata.       |
+//| \param  symbol  Symbol whose volume grid is used.                |
+//| \param  lots    Raw requested volume.                            |
+//| \return The grid-snapped volume, or 0.0 when lots are non-finite,|
+//|         below the minimum, or the symbol metadata is missing     |
+//|         (no fallback). Above-max input clamps down.              |
 //+------------------------------------------------------------------+
 double NormalizeLot(const string symbol, const double lots)
   {
@@ -152,7 +180,12 @@ double NormalizeLot(const string symbol, const double lots)
   }
 
 //+------------------------------------------------------------------+
-//| True when lots already sit on a valid grid point within bounds.  |
+//| \brief  True when lots already sit on a valid grid point within  |
+//|         bounds.                                                  |
+//| \param  symbol  Symbol whose volume grid is used.                |
+//| \param  lots    Volume to validate.                              |
+//| \return true when lots are finite, in [vmin,vmax], and aligned   |
+//|         to the volume step (within tolerance); false otherwise.  |
 //+------------------------------------------------------------------+
 bool IsValidLot(const string symbol, const double lots)
   {

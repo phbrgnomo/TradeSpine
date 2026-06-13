@@ -61,6 +61,32 @@ Key architecture rules baked into the ADRs/SPECs — honor them in any generated
 - Both **netting and hedging** account models supported, **hedging-first** ownership (ADR-07, SPEC-04).
 - Deterministic position state machine + reconciliation (ADR-08, SPEC-04); GV state + CSV audit evidence (ADR-02, SPEC-05).
 
+## Documentation at IPLAN Completion
+
+Documentation is written **incrementally as each IPLAN is implemented**, not deferred to a
+single end-of-project batch. The final session of every code-deliverable IPLAN MUST, before
+the plan is marked complete:
+
+1. **In-code documentation.** Give every new or changed public interface (class, struct,
+   enum, free function, macro) a Doxygen-style header — `\brief`, and `\param`/`\return`
+   where applicable — per the parent [AGENTS.md](../../../AGENTS.md) "Functions
+   documentation" convention. Keep the existing `@code:`/`@spec:`/`@tdd:`/`@iplan:`
+   traceability tags; the backslash Doxygen directives are distinct from those `@tag:`
+   cross-references. Do not edit vendored `Include/StdLib/*` beyond the exceptions recorded
+   in [Include/StdLib/VERSION.md](Include/StdLib/VERSION.md).
+2. **Reference documentation.** Create or update the module's page under `Docs/MODULES/`
+   (and any affected `Docs/` page such as `ARCHITECTURE.md` or `README.md`) to describe the
+   delivered public interfaces and file paths — never planned placeholders. A `Docs/MODULES/`
+   stub graduates to a full page when its owning IPLAN lands.
+3. **Code inventory.** Update the IPLAN's `code_inventory`, `file_manifest` status, and
+   `session_handoff`, and the IPLAN-00 registry status, per the normal completion process.
+
+The Tier-9 `documentation_closeout` in [docs/08_IPLAN/IPLAN-00_index.yaml](docs/08_IPLAN/IPLAN-00_index.yaml)
+remains the final **release-documentation reconciliation** (AUTHORING/RECIPES/INPUTS_REFERENCE/
+TESTING and the strategy template README), but per-module reference docs are now produced
+along the way rather than only at the end. Changes to that governance model go through the
+Change Management process (see below).
+
 ## Build / Test / CI
 
 - **Authoritative compilation and test runs are in MetaEditor / MT5 IDE** (F7 or Ctrl+F7 to compile; run scripts from the Navigator). `.mq5`/`.mqh` → `.ex5`; `.ex5` artifacts are git-ignored.

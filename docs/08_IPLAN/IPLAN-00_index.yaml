@@ -260,10 +260,19 @@ execution_path:
 
 documentation_closeout:
   _guidance: |
-    Final plan step after component implementation. This is intentionally not a
-    permanent IPLAN because SPEC-08 is process/governance scope and has no
-    Layer 7 code TDD. It closes the release documentation obligations after the
-    implemented source tree is available.
+    Final RELEASE-documentation reconciliation after component implementation.
+    This is intentionally not a permanent IPLAN because SPEC-08 is
+    process/governance scope and has no Layer 7 code TDD.
+
+    Per CHG-12 the documentation model is incremental-then-reconcile: each
+    code-deliverable IPLAN already produces in-code Doxygen docs and its
+    Docs/MODULES/<Module>.md reference page at completion (cross-plan obligation
+    CPO-006). This closeout therefore (1) authors the release-only documents that
+    span the whole framework (AUTHORING, RECIPES, INPUTS_REFERENCE, TESTING, and
+    the strategy template README) and (2) sweeps the per-module pages already
+    written for consistency against the final implemented tree. It still runs
+    after the strategy ports (IPLAN-12/13) so release docs reflect the shipped
+    framework, but per-module reference docs are no longer deferred to this step.
   status: "NOT_STARTED"
   sequence_after_tier: 8
   source_refs:
@@ -394,6 +403,10 @@ cross_plan_obligations:
       description: "Run aidoc-flow commands from MQL5/Experts/Main/TradeSpine so the authoritative TradeSpine .aidoc/profile.yaml governs docs generation and review."
       introduced_by: "IPLAN-00"
       adopted_date: "2026-06-03"
+    - id: "CPO-006"
+      description: "At the end of each code-deliverable IPLAN, produce in-code Doxygen documentation for the new/changed public interfaces AND the module's Docs/MODULES/<Module>.md reference page for the delivered files, and update code_inventory accordingly. The Tier-9 documentation_closeout then reconciles release docs and sweeps the per-module pages (see CHG-12)."
+      introduced_by: "IPLAN-00"
+      adopted_date: "2026-06-13"
 
 deferred_items:
   _guidance: "Cross-plan scope deferrals."

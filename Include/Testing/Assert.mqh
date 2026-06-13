@@ -12,7 +12,7 @@
 #define TRADESPINE_ASSERT_FAILURE_RESERVE 32
 
 //+------------------------------------------------------------------+
-//| Evidence kind classification (SPEC-11 data model).               |
+//| \brief Evidence kind classification (SPEC-11 data model).        |
 //+------------------------------------------------------------------+
 enum ENUM_EVIDENCE_KIND
   {
@@ -24,7 +24,8 @@ enum ENUM_EVIDENCE_KIND
   };
 
 //+------------------------------------------------------------------+
-//| One evidence assertion entry for ScenarioHarness.AssertEvidence. |
+//| \brief One evidence assertion entry for                          |
+//|        ScenarioHarness.AssertEvidence.                          |
 //+------------------------------------------------------------------+
 struct EvidenceAssertion
   {
@@ -34,9 +35,9 @@ struct EvidenceAssertion
   };
 
 //+------------------------------------------------------------------+
-//| Manual deferred account-mode evidence pack.                      |
-//| Empty artifacts field signals the pack is missing (blocks        |
-//| release gate). Not replaced by automated evidence.               |
+//| \brief Manual deferred account-mode evidence pack.               |
+//|        Empty artifacts field signals the pack is missing         |
+//|        (blocks release gate). Not replaced by automated evidence.|
 //+------------------------------------------------------------------+
 struct DeferredAccountModeEvidencePack
   {
@@ -46,7 +47,7 @@ struct DeferredAccountModeEvidencePack
   };
 
 //+------------------------------------------------------------------+
-//| Lightweight state checkpoint for controlled-failure tests.        |
+//| \brief Lightweight state checkpoint for controlled-failure tests.|
 //+------------------------------------------------------------------+
 struct AssertSnapshot
   {
@@ -57,7 +58,10 @@ struct AssertSnapshot
   };
 
 //+------------------------------------------------------------------+
-//| CAssert                                                          |
+//| \brief CAssert - assertion helper for Tier-1 test scripts:       |
+//|        source-located checks, pass/fail/skip counters, failure   |
+//|        log, snapshots, and expect-failure (xfail) scopes. Use    |
+//|        via the TS_* macros at the foot of this file.             |
 //+------------------------------------------------------------------+
 class CAssert
   {
@@ -305,6 +309,10 @@ class CAssert
       }
     };
 
+//+------------------------------------------------------------------+
+//| \brief Public assertion macros — call these (not the underscore   |
+//|        methods) so __FILE__/__LINE__ are captured automatically.  |
+//+------------------------------------------------------------------+
 #define TS_CHECK(cond, msg) _Check(cond, msg, __FILE__, __LINE__)
 #define TS_CHECK_EQ_D(a, b, tol, msg) _CheckEqualD(a, b, tol, msg, __FILE__, __LINE__)
 #define TS_CHECK_EQ_L(a, b, msg) _CheckEqualL(a, b, msg, __FILE__, __LINE__)

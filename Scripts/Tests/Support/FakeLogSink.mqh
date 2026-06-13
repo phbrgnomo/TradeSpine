@@ -17,7 +17,9 @@
 #define FAKE_LOG_SINK_CAPACITY 256
 
 //+------------------------------------------------------------------+
-//| FakeLogSink                                                      |
+//| \brief FakeLogSink - capturing ILogSink for tests; records       |
+//|        Write() calls in a fixed buffer for query/assertion with  |
+//|        no production logging side effects.                        |
 //+------------------------------------------------------------------+
 class FakeLogSink : public ILogSink
   {
