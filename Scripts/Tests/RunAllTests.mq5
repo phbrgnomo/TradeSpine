@@ -4,17 +4,19 @@
 //|                                                                  |
 //| @tests: Scripts/Tests/RunAllTests.mq5                             |
 //| @tdd: TDD.09.04.bb66, TDD.09.04.8050, TDD.09.04.f745,           |
-//|        TDD.11.04.6805, TDD.11.04.aadd, TDD.11.04.4f72           |
-//| @spec: SPEC-09, SPEC-11  @iplan: IPLAN-09, IPLAN-11              |
+//|        TDD.11.04.6805, TDD.11.04.aadd, TDD.11.04.4f72,          |
+//|        TDD.05.04.e64a, TDD.05.04.229f, TDD.05.04.ed21           |
+//| @spec: SPEC-09, SPEC-11, SPEC-05                                  |
+//| @iplan: IPLAN-09, IPLAN-11, IPLAN-05                             |
 //|                                                                  |
-//| Global aggregate runner: includes all TDD-09 and TDD-11 test    |
-//| scripts and calls their mapped test functions in a single pass.  |
-//| TRADESPINE_RUN_ALL_TESTS suppresses each individual OnStart()    |
-//| so only this runner's OnStart() is compiled.                     |
+//| Global aggregate runner: includes all TDD-09, TDD-11, and       |
+//| TDD-05 test scripts and calls their mapped test functions in a  |
+//| single pass. TRADESPINE_RUN_ALL_TESTS suppresses each individual |
+//| OnStart() so only this runner's OnStart() is compiled.           |
 //+------------------------------------------------------------------+
 #property copyright "phbr"
-#property version   "1.0"
-#property description "TradeSpine - aggregate test runner (IPLAN-09 + IPLAN-11)"
+#property version   "1.1"
+#property description "TradeSpine - aggregate test runner (IPLAN-09 + IPLAN-11 + IPLAN-05)"
 
 #define TRADESPINE_RUN_ALL_TESTS
 
@@ -29,6 +31,11 @@
 #include "Test_TestSupportClock.mq5"
 #include "Test_TestSupportScenarioHarness.mq5"
 #include "Test_ReleaseEvidenceHarness.mq5"
+
+// IPLAN-05: Persistence and Audit Evidence
+#include "Test_StateStore.mq5"
+#include "Test_TradeLogger.mq5"
+#include "Test_AlertSink.mq5"
 
 //+------------------------------------------------------------------+
 int OnStart()
@@ -57,6 +64,14 @@ int OnStart()
    // deferral is visible in the aggregate summary.
    test_testing_support_and_harnesses_aa68_unit(asserts);             // SKIP: strategy authoring deferred to IPLAN-01/02
    test_testing_support_and_harnesses_e16a_integration(asserts);      // SKIP: async-broker HALT deferred to IPLAN-03
+
+   Print("=== IPLAN-05: Persistence and Audit Evidence ===");
+   // Test_StateStore.mq5: KeyBuilder + CStateStore unit tests
+   test_persistence_and_audit_evidence_unit_contract(asserts);   // TDD.05.04.e64a
+   // Test_TradeLogger.mq5: paired evidence integration tests
+   test_persistence_and_audit_evidence_integration_contract(asserts); // TDD.05.04.229f
+   // Test_AlertSink.mq5: Logger + CAlertSink E2E acceptance tests
+   test_persistence_and_audit_evidence_e2e_acceptance(asserts);  // TDD.05.04.ed21
 
    return(asserts.TS_REPORT_SUMMARY("TradeSpine RunAllTests") ? 0 : 1);
   }
