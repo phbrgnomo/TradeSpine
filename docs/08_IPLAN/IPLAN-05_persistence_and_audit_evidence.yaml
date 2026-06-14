@@ -115,7 +115,7 @@ session_handoff:
       agent: "Codex IPLAN autopilot"
       files_touched: []
       partial_work: "No implementation started; this seed session only created the execution plan."
-      blockers: "Requires runtime mode helpers and test fakes for optimization-aware behavior."
+      blockers: "None — IPLAN-09 (Completed 2026-06-04) and IPLAN-11 (Completed 2026-06-08) provide runtime mode helpers and test fakes; implementation may begin immediately."
       next_session_directive: "Start with Scripts/Tests/Test_StateStore.mq5 and KeyBuilder before implementing GV-backed StateStore."
       validation_results:
         tests_passing: null

@@ -45,6 +45,7 @@ The corpus is created and maintained through `aidoc-flow:*` skills, **not** by e
 - Validate whole corpus / traceability: `aidoc-flow:doc-validator`.
 - IDs and naming authority: `aidoc-flow:doc-naming` (run before creating/renaming any artifact).
 - **Changing an existing artifact**: go through Change Management — `aidoc-flow:doc-chg` then `aidoc-flow:gate-check`. Cross-layer edits cascade; the CHG process picks the right approval gate. Do not silently edit an accepted artifact.
+- **Team-mode audits and subagents**: `.aidoc/profile.yaml` sets `review_mode: team`, but Codex can only spawn subagents when the user explicitly asks for subagents or parallel agent work. If an `aidoc-flow:*audit` skill expects team-mode lens fan-out and the prompt does not explicitly authorize subagents, ask the user, using the proper ask tool, for that authorization before falling back to `single_pass`. A sufficient user instruction is: "Use subagents for this audit; spawn one agent per required lens, wait for all results, then synthesize the report."
 
 ## Planned Code Layout (Layer 8 → Code)
 

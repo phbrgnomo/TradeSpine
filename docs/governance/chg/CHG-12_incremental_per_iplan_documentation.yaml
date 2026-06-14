@@ -5,24 +5,34 @@ title: "Incremental Per-IPLAN Documentation Model"
 metadata:
   document_type: "chg-document"
   purpose: governance
-  last_updated: "2026-06-13"
+  last_updated: "2026-06-14"
+  authored_by: "aidoc-flow:doc-chg"
   change_level:
-    value: C2
+    value: C3
   change_source:
     value: execution
 
 change_control:
   chg_id: "CHG-12"
-  status: In Review
-  change_level: C2
+  status: Implemented
+  change_level: C3
   change_source: execution
   entry_gate: GATE-08
   semver_impact: null
   author: "phbr"
   date_proposed: "2026-06-13T00:00:00-03:00"
-  date_approved: null
+  date_approved: "2026-06-14T10:01:54-03:00"
   date_implemented: "2026-06-13T00:00:00-03:00"
   supersedes: []
+  approval_history:
+    - type: "C2 peer review"
+      date: "2026-06-13"
+      approver: "phbr"
+      note: "Recorded before CHG-12 was reclassified to C3; retained as history only, not as formal C3 gate approval."
+    - type: "C3 GATE-08 approval"
+      date: "2026-06-14T10:01:54-03:00"
+      approver: "phbr"
+      note: "Project owner approved CHG-12 changes after C3 reclassification."
 
 change_description:
   what: |
@@ -139,12 +149,34 @@ implementation:
     - id: "IPLAN-00"
       file: "docs/08_IPLAN/IPLAN-00_index.yaml"
       change_type: "modified"
+    - id: "CHG-00-index"
+      file: "docs/governance/chg/CHG-00_index.md"
+      change_type: "modified"
     - id: "CLAUDE.md"
       file: "CLAUDE.md"
       change_type: "modified"
-    - id: "Docs"
-      file: "Docs/"
+    # Docs/ implementation-time tree (new). Full reference pages:
+    - id: "Docs-README"
+      file: "Docs/README.md"
       change_type: "created"
+    - id: "Docs-ARCHITECTURE"
+      file: "Docs/ARCHITECTURE.md"
+      change_type: "created"
+    - id: "Docs-MODULES-Core"
+      file: "Docs/MODULES/Core.md"
+      change_type: "created"
+    - id: "Docs-MODULES-Testing"
+      file: "Docs/MODULES/Testing.md"
+      change_type: "created"
+    # Planned-stub module pages (one per not-yet-implemented module), graduated
+    # to full pages by their owning IPLANs per CPO-006:
+    - id: "Docs-MODULES-stubs"
+      file: "Docs/MODULES/{Market,Persistence,Position,Coordination,Execution,Risk,Indicators,Strategy,Optional}.md"
+      change_type: "created"
+    # In-code Doxygen backfill over the implemented IPLAN-09/11 surface:
+    - id: "Code-doxygen-backfill"
+      file: "Include/Core/*.mqh, Include/Testing/Assert.mqh, Scripts/Tests/Support/*.mqh, Scripts/Tests/Test_*.mq5"
+      change_type: "modified"
 
 verification:
   checks:
@@ -164,7 +196,14 @@ verification:
       result: Pass
       method: "compile_mql.sh Scripts/Tests/RunAllTests.mq5 (clean) + MetaEditor F7"
 
-gate_approval: null
+# C3: formal GATE-08 approval required. Prior C2 peer review is retained in
+# change_control.approval_history only and is not formal C3 gate approval.
+gate_approval:
+  gate: GATE-08
+  approver: "phbr"
+  approval_date: "2026-06-14T10:01:54-03:00"
+  conditions: []
+  note: "Approved by project owner phbr after C3 reclassification."
 
 traceability:
   tags:
