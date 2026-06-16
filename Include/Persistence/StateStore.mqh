@@ -21,6 +21,7 @@
 #define TRADESPINE_PERSISTENCE_STATESTORE_MQH
 
 #include "KeyBuilder.mqh"
+#include "PersistenceTypes.mqh"
 
 //+------------------------------------------------------------------+
 //| Shared persistence type models (SPEC-05 data model section).     |
@@ -51,17 +52,6 @@ enum ENUM_GV_VALUE_ENCODING
    GV_ENC_HASH_FRAG   = 3, //!< Lower 53 bits of FNV-1a hash (identity fingerprint).
    GV_ENC_SPLIT_ID_HI = 4, //!< Upper 32 bits of a ulong ticket/deal/order ID.
    GV_ENC_SPLIT_ID_LO = 5  //!< Lower 32 bits of a ulong ticket/deal/order ID.
-  };
-
-//+------------------------------------------------------------------+
-//| \brief ENUM_TRADE_RECORD_TYPE - discriminates CSV evidence rows. |
-//|        Shared by StateStore and TradeLogger to avoid circular    |
-//|        inclusion.                                                |
-//+------------------------------------------------------------------+
-enum ENUM_TRADE_RECORD_TYPE
-  {
-   TRADE_RECORD_INTENT    = 0, //!< Pre-submit intent row.
-   TRADE_RECORD_EXECUTION = 1  //!< Post-result execution row.
   };
 
 //+------------------------------------------------------------------+
@@ -109,6 +99,8 @@ interface IStateStore
    bool IsDuplicate(string intent_id_hash);
 
    //--- \brief Set the HALT flag GV and write HaltEvidence to a file.
+   //---        Returns false if the GV write or any file write step fails.
+   //---        The HALT flag GV remains set even on file failure.
    bool SetHalt(const HaltEvidence &ev);
 
    //--- \brief Check whether the HALT flag GV is set.
@@ -140,6 +132,12 @@ class CStateStore : public IStateStore
 
    //--- Builds a GV key by overwriting the scope field of m_id.
    bool               _key(string scope, string &key);
+
+   //--- \brief Wraps GlobalVariableSet with error logging.
+   //--- \param key    Terminal GV key.
+   //--- \param value  Scalar double to store.
+   //--- \return true if GlobalVariableSet succeeded (non-zero); false on failure.
+   bool               _setGV(string key, double value);
 
   public:
                       CStateStore(void) : m_kb(NULL), m_initialized(false) {}
@@ -173,6 +171,18 @@ bool CStateStore::_key(string scope, string &key)
   }
 
 //+------------------------------------------------------------------+
+bool CStateStore::_setGV(string key, double value)
+  {
+   ResetLastError();
+   if(GlobalVariableSet(key, value) != 0)
+      return(true);
+
+   PrintFormat("CStateStore::_setGV failed: key='%s' value=%.17g error=%d",
+              key, value, GetLastError());
+   return(false);
+  }
+
+//+------------------------------------------------------------------+
 bool CStateStore::Init(const CanonicalIdentity &id, CKeyBuilder* kb)
   {
    if(kb == NULL)
@@ -201,7 +211,7 @@ bool CStateStore::Init(const CanonicalIdentity &id, CKeyBuilder* kb)
    else
      {
       //--- First initialisation: write fingerprint.
-      if(GlobalVariableSet(fp_key, computed) == -1)
+      if(!_setGV(fp_key, computed))
          return(false);
      }
 
@@ -215,7 +225,7 @@ bool CStateStore::WriteScalar(string scope, double value)
    if(!m_initialized) return(false);
    string key;
    if(!_key(scope, key)) return(false);
-   return(GlobalVariableSet(key, value) != -1);
+   return(_setGV(key, value));
   }
 
 //+------------------------------------------------------------------+
@@ -235,7 +245,7 @@ bool CStateStore::SetDuplicate(string intent_id_hash)
    if(!m_initialized) return(false);
    string key;
    if(!_key("dup_" + intent_id_hash, key)) return(false);
-   return(GlobalVariableSet(key, 1.0) != -1);
+   return(_setGV(key, 1.0));
   }
 
 //+------------------------------------------------------------------+
@@ -255,21 +265,25 @@ bool CStateStore::SetHalt(const HaltEvidence &ev)
 //--- 1. Set the HALT flag GV (the critical safety signal).
    string flag_key;
    if(!_key("halt_flag", flag_key)) return(false);
-   if(GlobalVariableSet(flag_key, 1.0) == -1) return(false);
+   if(!_setGV(flag_key, 1.0)) return(false);
 
 //--- 2. Write the string payload to a file (GVs store scalars only).
-//---    File write is best-effort: flag is set even if file fails.
-   string fname = "TradeSpine/Halt_" + IntegerToString((long)m_id.magic)
+//---    File write is mandatory: HALT flag is already set above, so the
+//---    EA is safe, but incomplete evidence would leave the operator without
+//---    a recovery action. Return false if any write step fails.
+   string fname = "TradeSpine/Halt_" + StringFormat("%I64u", m_id.magic)
                 + "_" + m_id.symbol + ".txt";
    int fh = FileOpen(fname, FILE_WRITE | FILE_TXT | FILE_ANSI);
-   if(fh != INVALID_HANDLE)
-     {
-      FileWriteString(fh, "reason=" + ev.reason + "\n");
-      FileWriteString(fh, "last_known_state=" + IntegerToString(ev.last_known_state) + "\n");
-      FileWriteString(fh, "operator_action=" + ev.operator_action + "\n");
-      FileClose(fh);
-     }
-   return(true);
+   if(fh == INVALID_HANDLE)
+      return(false);
+
+   bool ok = true;
+   ok &= (FileWriteString(fh, "reason=" + ev.reason + "\n") > 0);
+   ok &= (FileWriteString(fh, "last_known_state=" + IntegerToString(ev.last_known_state) + "\n") > 0);
+   ok &= (FileWriteString(fh, "operator_action=" + ev.operator_action + "\n") > 0);
+   FileFlush(fh);
+   FileClose(fh);
+   return(ok);
   }
 
 //+------------------------------------------------------------------+
@@ -290,8 +304,20 @@ bool CStateStore::WriteTicket(ulong ticket)
    if(!_key("tkt_lo", key_lo)) return(false);
 //--- Split into two 32-bit halves; both are ≤ 2^32-1 < 2^53 (exact in double).
    double hi = (double)(long)(ticket >> 32);
-   double lo = (double)(long)(ticket & 0xFFFFFFFFUL);
-   return(GlobalVariableSet(key_hi, hi) != -1 && GlobalVariableSet(key_lo, lo) != -1);
+   double lo = (double)(long)(ticket & (ulong)0xFFFFFFFF);
+   if(!_setGV(key_hi, hi))
+     {
+      GlobalVariableDel(key_hi);
+      GlobalVariableDel(key_lo);
+      return(false);
+     }
+   if(!_setGV(key_lo, lo))
+     {
+      GlobalVariableDel(key_hi);
+      GlobalVariableDel(key_lo);
+      return(false);
+     }
+   return(true);
   }
 
 //+------------------------------------------------------------------+

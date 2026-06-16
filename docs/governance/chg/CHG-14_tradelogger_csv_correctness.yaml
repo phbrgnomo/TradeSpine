@@ -1,0 +1,173 @@
+id: CHG-14
+title: "TradeLogger CSV correctness: ulong magic, RFC 4180 quoting, record_type enforcement"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-14"
+
+  change_level:
+    value: C2
+
+  change_source:
+    value: feedback  # Code-review findings on TradeLogger._WriteRow and WriteIntent/WriteExecution.
+
+change_control:
+  chg_id: "CHG-14"
+  status: Implemented
+  change_level: C2
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null
+  author: "phbr"
+  date_proposed: "2026-06-14T00:00:00Z"
+  date_approved: "2026-06-14T00:00:00Z"
+  date_implemented: "2026-06-14T00:00:00Z"
+  supersedes: []
+
+change_description:
+  what: |
+    Three correctness fixes to Include/Persistence/TradeLogger.mqh:
+
+    1. **ulong magic corrupted in CSV** (IMPORTANT — data integrity).
+       IntegerToString((long)rec.magic) casts ulong to long before formatting,
+       producing a negative signed value for magic numbers above LONG_MAX.
+       Fix: StringFormat("%I64u", rec.magic) — identical pattern to CKeyBuilder.
+
+    2. **CSV fields unquoted** (IMPORTANT — data integrity).
+       Concatenating raw string fields into a comma-delimited row without
+       RFC 4180 escaping allows broker_outcome (explicitly free-form in SPEC-05)
+       to corrupt columns if it contains a comma, double-quote, or newline.
+       Fix: add private static _CsvField(v) helper (quote + double-quote
+       escape) and apply it to all string data fields in _WriteRow.
+
+    3. **record_type not enforced by public methods** (SUGGESTION — API safety).
+       WriteIntent/WriteExecution delegate to _WriteRow which reads
+       rec.record_type from the caller. A caller passing the wrong type emits
+       a row that disagrees with the method contract.
+       Fix: WriteIntent/WriteExecution clone the record and override
+       record_type before calling _WriteRow, making the methods self-enforcing.
+
+  why: |
+    Trade evidence CSV is the forensic audit trail. Corrupted magic values
+    and split/shifted rows make post-mortem pairing unreliable and break
+    Python/SQLite ETL pipelines. The ulong issue was already solved in
+    CKeyBuilder but not applied consistently to the CSV serializer.
+
+  trigger: |
+    Code-review findings submitted to IPLAN-05 post-delivery session.
+
+impact_assessment:
+  affected_layers:
+    - layer: "Code"
+      artifacts:
+        - "Include/Persistence/TradeLogger.mqh (modified)"
+      impact: |
+        _WriteRow: use _CsvField() for string fields; use %I64u for magic.
+        New private static method _CsvField(v): RFC 4180 quote + escape.
+        WriteIntent: clone rec, force record_type = TRADE_RECORD_INTENT.
+        WriteExecution: clone rec, force record_type = TRADE_RECORD_EXECUTION.
+        Zero behavior change for well-formed inputs; correct output for
+        magic > LONG_MAX or broker_outcome containing commas/quotes.
+
+    - layer: "SPEC"
+      artifacts: ["SPEC-05"]
+      impact: |
+        Add two implementation_notes constraints:
+        (a) CSV string fields MUST use RFC 4180 double-quote escaping.
+        (b) ulong fields in serialized output MUST use %I64u (not cast to long).
+
+    - layer: "IPLAN"
+      artifacts: ["IPLAN-05"]
+      impact: |
+        Session_handoff: add CHG-14 entry. No manifest or exports changes —
+        no new files created.
+
+  cascade_direction: downstream→upstream
+  risk_level: Low
+  # No interface change. Existing consumers that pass correct records are unaffected.
+  # Records with magic > LONG_MAX or commas in broker_outcome were previously
+  # silently corrupted — CHG-14 fixes the output; no caller change required.
+
+implementation:
+  steps:
+    - step: "Add _CsvField declaration to TradeLogger private section; add static implementation"
+      artifact: "Include/Persistence/TradeLogger.mqh"
+      status: Pending
+
+    - step: "Update _WriteRow: use _CsvField for string fields; use %I64u for magic"
+      artifact: "Include/Persistence/TradeLogger.mqh"
+      status: Pending
+
+    - step: "Update WriteIntent: clone rec, override record_type = TRADE_RECORD_INTENT"
+      artifact: "Include/Persistence/TradeLogger.mqh"
+      status: Pending
+
+    - step: "Update WriteExecution: clone rec, override record_type = TRADE_RECORD_EXECUTION"
+      artifact: "Include/Persistence/TradeLogger.mqh"
+      status: Pending
+
+    - step: "Add CSV format constraints to SPEC-05 implementation_notes"
+      artifact: "SPEC-05"
+      status: Pending
+
+    - step: "Add CHG-14 session entry to IPLAN-05"
+      artifact: "IPLAN-05"
+      status: Pending
+
+    - step: "Compile Test_TradeLogger.mq5 in MetaEditor to confirm green"
+      artifact: "Scripts/Tests/Test_TradeLogger.mq5"
+      status: Pending
+
+  artifacts_modified:
+    - id: "TradeLogger.mqh"
+      file: "Include/Persistence/TradeLogger.mqh"
+      change_type: "modified"
+
+    - id: "SPEC-05"
+      file: "docs/06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
+      change_type: "modified"
+
+    - id: "IPLAN-05"
+      file: "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+      change_type: "modified"
+
+verification:
+  checks:
+    - check: "Test_TradeLogger.mq5 compiles and runs green after the change"
+      result: Pending
+      method: "MetaEditor compile (F7) + script run"
+
+    - check: "Magic value > LONG_MAX serializes as unsigned decimal in CSV output"
+      result: Pending
+      method: "Test case: pass rec.magic = 0xFFFFFFFFFFFFFFFF, verify no negative value in row"
+
+    - check: "broker_outcome containing a comma produces a quoted RFC 4180 field"
+      result: Pending
+      method: "Test case: pass broker_outcome = 'retcode=10004,retry=1', verify quoted field in CSV"
+
+    - check: "WriteIntent always emits INTENT row regardless of rec.record_type"
+      result: Pending
+      method: "Test case: pass rec.record_type = TRADE_RECORD_EXECUTION to WriteIntent, verify INTENT in output"
+
+gate_approval:
+  gate: null
+  approver: null
+  approval_date: null
+  conditions: []
+
+rollback_plan:
+  strategy: revert-commit
+  steps:
+    - "git revert the CHG-14 commit; TradeLogger.mqh reverts to signed-cast and unquoted fields"
+    - "Revert SPEC-05 and IPLAN-05 YAML to pre-CHG-14 content"
+    - "Compile and run tests to confirm green"
+  estimated_effort: "< 15 minutes"
+
+emergency_change:
+  emergency_id: null
+  incident_severity: null
+  fix_deployed: null
+  post_mortem_due: null
+  post_mortem_completed: false
+  post_hoc_gate: null

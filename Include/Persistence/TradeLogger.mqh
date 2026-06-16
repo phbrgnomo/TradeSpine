@@ -17,26 +17,62 @@
 //|                                                                  |
 //| CSV file: MQL5/Files/TradeSpine/<filename_prefix>_<YYYYMMDD>.csv |
 //| (one file per day, appended; header written once per new file). |
+//|                                                                  |
+//| CSV columns (16):                                                |
+//|   record_type, timestamp_utc, strategy_run_id, order_intent_id, |
+//|   symbol, magic, side,                                           |
+//|   intended_price, sl_price, tp_price, lots_requested,           |  <- INTENT only
+//|   retcode, ticket, fill_price, lots_submitted,                  |  <- EXECUTION only
+//|   broker_outcome                                                 |
+//| Intent-side and execution-side fields are written as empty for  |
+//| the inapplicable row type. side is written on both row types.   |
 //+------------------------------------------------------------------+
 #ifndef TRADESPINE_PERSISTENCE_TRADELOGGER_MQH
 #define TRADESPINE_PERSISTENCE_TRADELOGGER_MQH
 
-#include "StateStore.mqh"
+#include "PersistenceTypes.mqh"
 #include "../../Include/Core/OptContext.mqh"
+
+//+------------------------------------------------------------------+
+//| \brief ENUM_TRADE_SIDE - constrains TradeEvidenceRecord.side to   |
+//|        a well-defined domain so the evidence CSV cannot pick up  |
+//|        accidental casing/typo/localisation variants.            |
+//+------------------------------------------------------------------+
+enum ENUM_TRADE_SIDE
+  {
+   TRADE_SIDE_BUY  = 0, //!< Long-side order.
+   TRADE_SIDE_SELL = 1  //!< Short-side order.
+  };
 
 //+------------------------------------------------------------------+
 //| \brief TradeEvidenceRecord - one CSV row in the trade evidence   |
 //|        file. Intent and execution rows are paired by sharing the |
 //|        same strategy_run_id and order_intent_id.                 |
+//|                                                                  |
+//| Fields marked [INTENT] are populated on INTENT rows and written  |
+//| as empty on EXECUTION rows. Fields marked [EXECUTION] are the   |
+//| reverse. [BOTH] fields are populated on every row.              |
 //+------------------------------------------------------------------+
 struct TradeEvidenceRecord
   {
-   ENUM_TRADE_RECORD_TYPE record_type;     //!< TRADE_RECORD_INTENT or TRADE_RECORD_EXECUTION.
-   string                 strategy_run_id; //!< Correlates all records within one lifecycle.
-   string                 order_intent_id; //!< Pairs exactly one intent and one execution row.
-   string                 symbol;          //!< Instrument symbol.
-   ulong                  magic;           //!< EA magic number.
-   string                 broker_outcome;  //!< Empty for INTENT; retcode/deal for EXECUTION.
+   ENUM_TRADE_RECORD_TYPE record_type;     //!< [BOTH]      TRADE_RECORD_INTENT or TRADE_RECORD_EXECUTION.
+   string                 strategy_run_id; //!< [BOTH]      Correlates all records within one lifecycle.
+   string                 order_intent_id; //!< [BOTH]      Pairs exactly one intent and one execution row.
+   string                 symbol;          //!< [BOTH]      Instrument symbol.
+   ulong                  magic;           //!< [BOTH]      EA magic number.
+   ENUM_TRADE_SIDE        side;            //!< [BOTH]      TRADE_SIDE_BUY or TRADE_SIDE_SELL.
+   // --- Intent fields: populate before broker submission; leave default on EXECUTION rows. ---
+   double                 intended_price;  //!< [INTENT]    EA's calculated entry price.
+   double                 sl_price;        //!< [INTENT]    Requested stop loss (0.0 = none).
+   double                 tp_price;        //!< [INTENT]    Requested take profit (0.0 = none).
+   double                 lots_requested;  //!< [INTENT]    Lot size from position sizer.
+   // --- Execution fields: populate after broker result is known; leave default on INTENT rows. ---
+   uint                   retcode;         //!< [EXECUTION] Broker return code.
+   ulong                  ticket;          //!< [EXECUTION] Order/deal ticket (0 = not created).
+   double                 fill_price;      //!< [EXECUTION] Actual fill price (0.0 = rejected).
+   double                 lots_submitted;  //!< [EXECUTION] Lots that reached the broker.
+   // --- Free-form overflow: rejection messages, retry info, etc. ---
+   string                 broker_outcome;  //!< [BOTH]      Free-form overflow; empty is valid.
   };
 
 //+------------------------------------------------------------------+
@@ -64,6 +100,12 @@ class TradeLogger
 
    //--- UTC datetime → ISO-8601 timestamp for CSV rows.
    static string  _IsoTimestamp(datetime t);
+
+   //--- RFC 4180 quote a CSV field; escapes embedded double-quotes.
+   static string  _CsvField(const string v);
+
+   //--- ENUM_TRADE_SIDE → "BUY"/"SELL" for the CSV side column.
+   static string  _SideToString(ENUM_TRADE_SIDE s);
 
   public:
                   TradeLogger(void) : m_ctx(NULL), m_sink(NULL), m_fh(INVALID_HANDLE) {}
@@ -107,6 +149,20 @@ static string TradeLogger::_IsoTimestamp(datetime t)
   }
 
 //+------------------------------------------------------------------+
+static string TradeLogger::_CsvField(const string v)
+  {
+   string s = v;
+   StringReplace(s, "\"", "\"\"");
+   return("\"" + s + "\"");
+  }
+
+//+------------------------------------------------------------------+
+static string TradeLogger::_SideToString(ENUM_TRADE_SIDE s)
+  {
+   return(s == TRADE_SIDE_SELL ? "SELL" : "BUY");
+  }
+
+//+------------------------------------------------------------------+
 bool TradeLogger::_EnsureFile(void)
   {
    string today = _DateStamp(TimeGMT());
@@ -133,9 +189,20 @@ bool TradeLogger::_EnsureFile(void)
 
 //--- Write CSV header once per new file.
    if(is_new)
-      FileWriteString(m_fh,
+     {
+      uint written = FileWriteString(m_fh,
                       "record_type,timestamp_utc,strategy_run_id,order_intent_id,"
-                      "symbol,magic,broker_outcome\n");
+                      "symbol,magic,side,"
+                      "intended_price,sl_price,tp_price,lots_requested,"
+                      "retcode,ticket,fill_price,lots_submitted,"
+                      "broker_outcome\n");
+      if(written == 0)
+        {
+         FileClose(m_fh);
+         m_fh = INVALID_HANDLE;
+         return(false);
+        }
+     }
 
    m_today       = today;
    m_active_file = path;
@@ -147,14 +214,37 @@ bool TradeLogger::_WriteRow(const TradeEvidenceRecord &rec)
   {
    if(!_EnsureFile()) return(false);
 
-   string type_str = (rec.record_type == TRADE_RECORD_INTENT) ? "INTENT" : "EXECUTION";
+   bool   is_intent = (rec.record_type == TRADE_RECORD_INTENT);
+   string type_str  = is_intent ? "INTENT" : "EXECUTION";
+
+//--- Intent-side columns: populated on INTENT rows, empty on EXECUTION rows.
+   string col_intended_price = is_intent ? StringFormat("%.5f", rec.intended_price) : "";
+   string col_sl_price       = is_intent ? StringFormat("%.5f", rec.sl_price)       : "";
+   string col_tp_price       = is_intent ? StringFormat("%.5f", rec.tp_price)       : "";
+   string col_lots_requested = is_intent ? StringFormat("%.2f", rec.lots_requested) : "";
+
+//--- Execution-side columns: populated on EXECUTION rows, empty on INTENT rows.
+   string col_retcode        = !is_intent ? StringFormat("%u",    rec.retcode)       : "";
+   string col_ticket         = !is_intent ? StringFormat("%I64u", rec.ticket)        : "";
+   string col_fill_price     = !is_intent ? StringFormat("%.5f", rec.fill_price)    : "";
+   string col_lots_submitted = !is_intent ? StringFormat("%.2f", rec.lots_submitted): "";
+
    string row = type_str + ","
-              + _IsoTimestamp(TimeGMT()) + ","
-              + rec.strategy_run_id + ","
-              + rec.order_intent_id + ","
-              + rec.symbol + ","
-              + IntegerToString((long)rec.magic) + ","
-              + rec.broker_outcome + "\n";
+              + _CsvField(_IsoTimestamp(TimeGMT())) + ","
+              + _CsvField(rec.strategy_run_id) + ","
+              + _CsvField(rec.order_intent_id) + ","
+              + _CsvField(rec.symbol) + ","
+              + StringFormat("%I64u", rec.magic) + ","
+              + _CsvField(_SideToString(rec.side)) + ","
+              + col_intended_price + ","
+              + col_sl_price + ","
+              + col_tp_price + ","
+              + col_lots_requested + ","
+              + col_retcode + ","
+              + col_ticket + ","
+              + col_fill_price + ","
+              + col_lots_submitted + ","
+              + _CsvField(rec.broker_outcome) + "\n";
 
    uint written = FileWriteString(m_fh, row);
    if(written == 0)
@@ -183,7 +273,9 @@ bool TradeLogger::WriteIntent(const TradeEvidenceRecord &rec)
   {
    if(m_ctx == NULL) return(false);
    if(!m_ctx.AllowsHighVolumeEvidence()) return(true); // gated in optimization
-   if(!_WriteRow(rec))
+   TradeEvidenceRecord row = rec;
+   row.record_type = TRADE_RECORD_INTENT;
+   if(!_WriteRow(row))
      {
       m_sink.Write(LOG_ERROR, "TradeLogger",
                    "Intent write failed for order_intent_id=" + rec.order_intent_id);
@@ -197,7 +289,9 @@ bool TradeLogger::WriteExecution(const TradeEvidenceRecord &rec)
   {
    if(m_ctx == NULL) return(false);
    if(!m_ctx.AllowsHighVolumeEvidence()) return(true); // gated in optimization
-   if(!_WriteRow(rec))
+   TradeEvidenceRecord row = rec;
+   row.record_type = TRADE_RECORD_EXECUTION;
+   if(!_WriteRow(row))
      {
       m_sink.Write(LOG_ERROR, "TradeLogger",
                    "Execution write failed for order_intent_id=" + rec.order_intent_id);

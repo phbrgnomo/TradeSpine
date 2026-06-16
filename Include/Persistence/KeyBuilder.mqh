@@ -26,7 +26,7 @@ struct CanonicalIdentity
    long   account; //!< MT5 account login number.
    string symbol;  //!< Instrument symbol (e.g. "WINM26").
    ulong  magic;   //!< EA magic number.
-   string scope;   //!< GV namespace scope tag (e.g. "halt", "fp", "tkt_hi").
+   string scope;   //!< GV namespace scope tag (e.g. "halt", "fp", "tkt_hi"). Must not contain '|'.
   };
 
 //+------------------------------------------------------------------+
@@ -39,26 +39,27 @@ class CKeyBuilder
   private:
    //--- FNV-1a 64-bit hash constants split into 32-bit halves for portability.
    //--- offset_basis = 0xcbf29ce484222325  prime = 0x100000001b3
-   static ulong     FNV1a64(const string s);
+   static ulong FNV1a64(const string s);
 
   public:
    //--- \brief Build a deterministic, bounded GV key from a canonical identity.
-   //--- \param id   Identity fields; the scope field selects the GV slot.
+   //--- \param id   Identity fields; scope selects the GV slot.
+   //---             symbol and scope must not contain '|' (returns false if violated).
    //--- \param key  [out] 19-character GV key ("ts_" + 16 hex chars).
-   //--- \return true on success.
-   bool             Build(const CanonicalIdentity &id, string &key);
+   //--- \return true on success; false if symbol or scope contains '|'.
+   bool Build(const CanonicalIdentity &id, string &key);
 
    //--- \brief Recompute the key from \p expected and compare to \p key byte-for-byte.
    //--- \param key      Previously stored GV key to verify.
    //--- \param expected Identity to recompute the key from.
    //--- \return true if keys match; false on KeyCollision.
-   bool             Verify(const string key, const CanonicalIdentity &expected);
+   bool Verify(const string key, const CanonicalIdentity &expected);
 
    //--- \brief Compute a double-safe identity fingerprint (lower 53 bits of
    //---        FNV-1a hash of "<account>|<symbol>|<magic>", excluding scope).
    //--- \param id  Identity fields (scope is ignored).
    //--- \return Exact double value ∈ [0, 2^53-1].
-   double           Fingerprint(const CanonicalIdentity &id);
+   double Fingerprint(const CanonicalIdentity &id);
   };
 
 //+------------------------------------------------------------------+
@@ -68,10 +69,10 @@ ulong CKeyBuilder::FNV1a64(const string s)
 //--- potential compiler issues with very large integer literals.
 //--- offset_basis = 0xcbf29ce484222325 (14695981039346656037)
 //--- prime        = 0x00000100000001b3  (1099511628211)
-   const ulong basis_hi = 0xcbf29ce4UL;
-   const ulong basis_lo = 0x84222325UL;
-   const ulong prime_hi = 0x00000100UL;
-   const ulong prime_lo = 0x000001b3UL;
+   const ulong basis_hi = (ulong)0xcbf29ce4;
+   const ulong basis_lo = (ulong)0x84222325;
+   const ulong prime_hi = (ulong)0x00000100;
+   const ulong prime_lo = (ulong)0x000001b3;
    ulong hash  = (basis_hi << 32) | basis_lo;
    ulong prime = (prime_hi << 32) | prime_lo;
    int   len   = StringLen(s);
@@ -86,12 +87,14 @@ ulong CKeyBuilder::FNV1a64(const string s)
 //+------------------------------------------------------------------+
 bool CKeyBuilder::Build(const CanonicalIdentity &id, string &key)
   {
-   string input = IntegerToString(id.account) + "|"
-                + id.symbol + "|"
-                + IntegerToString((long)id.magic) + "|"
-                + id.scope;
-   ulong hash = FNV1a64(input);
-   key = "ts_" + StringFormat("%016llX", hash);
+   if(StringFind(id.symbol, "|") >= 0 || StringFind(id.scope, "|") >= 0)
+      return(false);
+   string pre_hash = IntegerToString(id.account) + "|"
+                   + id.symbol + "|"
+                   + StringFormat("%I64u", id.magic) + "|"
+                   + id.scope;
+   ulong hash = FNV1a64(pre_hash);
+   key = "ts_" + StringFormat("%016I64X", hash);
    return(StringLen(key) <= 63);
   }
 
@@ -109,10 +112,10 @@ double CKeyBuilder::Fingerprint(const CanonicalIdentity &id)
   {
 //--- Hash the raw identity without scope; mask to 53 bits for exact double storage.
    string raw = IntegerToString(id.account) + "|" + id.symbol + "|"
-              + IntegerToString((long)id.magic);
+              + StringFormat("%I64u", id.magic);
    ulong  hash = FNV1a64(raw);
 //--- 2^53 - 1 = 0x001FFFFFFFFFFFFF = 9007199254740991 (max exact integer in double)
-   const ulong mask = 0x001FFFFFFFFFFFFFUL;
+   const ulong mask = (ulong)0x001FFFFFFFFFFFFF;
    ulong  safe = hash & mask;
    return((double)(long)safe); // long cast is lossless: safe ≤ 2^53-1 < LLONG_MAX
   }

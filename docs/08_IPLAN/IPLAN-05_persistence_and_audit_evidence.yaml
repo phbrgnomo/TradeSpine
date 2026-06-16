@@ -7,22 +7,23 @@ metadata:
   source_spec: "@spec: SPEC-05"
   source_tdd: "@tdd: TDD.05.04.e64a"
   total_sections: 6
-  last_updated: "2026-06-14T00:00:00-03:00"
+  last_updated: "2026-06-16T00:00:00-03:00"
+  chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18"]
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
   iplan_id: "IPLAN-05"
   source_spec: "@spec: SPEC-05"
   source_tdd: "@tdd: TDD.05.04.e64a"
-  status: Accepted
-  version: "1.1"
+  status: Completed
+  version: "1.5"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-06-14T00:00:00-03:00"
+  last_updated: "2026-06-16T00:00:00-03:00"
   author: "Codex"
-  component: "CStateStore, CKeyBuilder, TradeLogger, Logger, AlertSink"
+  component: "PersistenceTypes, CStateStore, CKeyBuilder, TradeLogger, Logger, AlertSink"
   complexity: 4
-  estimated_files: 8
-  session_count: 1
+  estimated_files: 9
+  session_count: 8
   readiness_gate: "TDD-05 audit PASS 95/100"
   source_inputs:
     - "../07_TDD/TDD-05_persistence_and_audit_evidence/TDD-05_persistence_and_audit_evidence.yaml"
@@ -80,13 +81,19 @@ file_manifest:
       session: 1
       verified: true
       purpose: "HALT and operator alert sink abstraction."
+    - path: "Include/Persistence/PersistenceTypes.mqh"
+      order: 9
+      status: DONE
+      session: 2
+      verified: true
+      purpose: "Shared persistence type models (ENUM_TRADE_RECORD_TYPE); extracted from StateStore.mqh by CHG-13 to eliminate spurious coupling between StateStore and TradeLogger."
 
 execution_commands:
   cwd: "MQL5/Experts/Main/TradeSpine"
   setup:
     - "mkdir -p Include/Persistence Scripts/Tests"
   implementation:
-    - "# All 8 files delivered in session 1 (2026-06-14)."
+    - "# All 9 files delivered (8 in session 1, PersistenceTypes.mqh added by CHG-13 in session 3)."
     - "# Tests: Test_StateStore.mq5, Test_TradeLogger.mq5, Test_AlertSink.mq5"
     - "# Implementation: KeyBuilder.mqh, StateStore.mqh, TradeLogger.mqh, Logger.mqh, AlertSink.mqh"
   validation:
@@ -142,6 +149,103 @@ session_handoff:
         tests_passing: pending_compile
         coverage: "≥90% unit / ≥85% integration / ≥75% E2E (target; verified after MT5 compile+run)"
         lint_clean: pending_compile
+    - date: "2026-06-14"
+      agent: "Claude Sonnet 4.6 / CHG-13"
+      files_touched:
+        - "Include/Persistence/PersistenceTypes.mqh"
+        - "Include/Persistence/StateStore.mqh"
+        - "Include/Persistence/TradeLogger.mqh"
+        - "Docs/MODULES/Persistence.md"
+      partial_work: "CHG-13: extracted ENUM_TRADE_RECORD_TYPE into PersistenceTypes.mqh. StateStore.mqh now includes PersistenceTypes.mqh; TradeLogger.mqh includes PersistenceTypes.mqh directly instead of StateStore.mqh. Zero behavioral change; existing consumers resolve the enum transitively."
+      blockers: "Recompile Test_StateStore.mq5 and Test_TradeLogger.mq5 in MetaEditor to confirm no include errors."
+      next_session_directive: "IPLAN-05 remains complete. Verify test compile green after CHG-13. No further structural changes expected."
+      validation_results:
+        tests_passing: pending_compile
+        coverage: "unchanged from session 1"
+        lint_clean: pending_compile
+    - date: "2026-06-14"
+      agent: "Claude Sonnet 4.6 / CHG-14"
+      files_touched:
+        - "Include/Persistence/TradeLogger.mqh"
+        - "docs/06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
+      partial_work: "CHG-14: three correctness fixes to TradeLogger._WriteRow and WriteIntent/WriteExecution — RFC 4180 CSV quoting via _CsvField(), %I64u magic formatting, record_type enforcement by public methods. SPEC-05 implementation_notes updated with CSV format constraints."
+      blockers: "Recompile Test_TradeLogger.mq5 in MetaEditor; test cases for quoted fields and ulong magic should be added to the test file."
+      next_session_directive: "Add CHG-14 test cases to Test_TradeLogger.mq5 for (a) magic > LONG_MAX, (b) comma in broker_outcome, (c) WriteIntent called with EXECUTION type. Then compile and run."
+      validation_results:
+        tests_passing: pending_compile
+        coverage: "new test cases required for CHG-14 scenarios"
+        lint_clean: pending_compile
+    - date: "2026-06-15"
+      agent: "Claude Sonnet 4.6 / CHG-15"
+      files_touched:
+        - "Include/Persistence/TradeLogger.mqh"
+        - "Scripts/Tests/Test_TradeLogger.mq5"
+        - "docs/06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
+        - "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+        - "Docs/MODULES/Persistence.md"
+        - "docs/governance/chg/CHG-15_tradelogger_schema_extension.yaml"
+        - "docs/governance/chg/CHG-00_index.md"
+      partial_work: "CHG-15: expanded TradeEvidenceRecord with 9 structured forensic columns (side, intended_price, sl_price, tp_price, lots_requested, retcode, ticket, fill_price, lots_submitted). _WriteRow updated to 16-column output with empty cells for inapplicable fields per row type. MakeRecord() in tests populates all new fields. Three new tests added: Test_TradeLogger_IntentFieldSeparation (CHG-15 field scope), Test_TradeLogger_ExecutionFieldSeparation (CHG-15 field scope), Test_TradeLogger_CSVEncoding (CHG-14 regression: magic > LONG_MAX signed corruption, RFC 4180 comma+quote escaping, WriteIntent record_type override). SPEC-05 data_models and implementation_notes updated. Single-file design preserved."
+      blockers: "Recompile TradeLogger.mqh and Test_TradeLogger.mq5 in MetaEditor to confirm 0 errors. Run Test_TradeLogger.mq5 and verify all 8 tests green."
+      next_session_directive: "Compile and run Test_TradeLogger.mq5 in MetaEditor. Spot-check MQL5/Files/TradeSpine/Test/ CSV output: INTENT row has intent columns populated and execution columns empty; EXECUTION row is inverse; side present on both; CHG14 file shows INTENT, unsigned magic 9223372036854775808, and double-quote escaping. Mark TradeLogger.mqh and Test_TradeLogger.mq5 verified: true once green."
+      validation_results:
+        tests_passing: pending_compile
+        coverage: "3 new tests added: 2 for CHG-15 field separation, 1 CHG-14 regression covering all three data-integrity failure modes"
+        lint_clean: pending_compile
+    - date: "2026-06-15"
+      agent: "Claude Sonnet 4.6 / CHG-16"
+      files_touched:
+        - "Include/Persistence/AlertSink.mqh"
+        - "Scripts/Tests/Test_AlertSink.mq5"
+        - "docs/06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
+        - "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+        - "Docs/MODULES/Persistence.md"
+        - "docs/governance/chg/CHG-16_alertsink_halt_circuit_breaker.yaml"
+        - "docs/governance/chg/CHG-00_index.md"
+      partial_work: "CHG-16: wired persistent GV HALT flag into CAlertSink.Halt() via IStateStore. CAlertSink.Init() gains optional IStateStore* parameter (default NULL). Halt() calls store.SetHalt(ev) between logger.Error() and Alert(), so the EA remains halted after dialog dismissal. FakeStateStore added inline to Test_AlertSink.mq5. New test Test_AlertSink_Halt_FlagPersisted verifies SetHalt() is called with correct HaltEvidence. SPEC-05 behavior.error_handling, interfaces.CAlertSink, and implementation_notes updated. IAlertSink interface unchanged; existing Init() call sites unchanged (default NULL)."
+      blockers: "Recompile Include/Persistence/AlertSink.mqh and run Scripts/Tests/Test_AlertSink.mq5 in MetaEditor to confirm all tests green including new Test_AlertSink_Halt_FlagPersisted."
+      next_session_directive: "Compile Include/Persistence/AlertSink.mqh (F7) — expect 0 errors. Run Test_AlertSink.mq5 — all 10 tests green. Run Test_StateStore.mq5 — expect 0 errors (confirm include graph intact). Mark AlertSink.mqh verified: true once green."
+      validation_results:
+        tests_passing: pending_compile
+        coverage: "1 new test: Test_AlertSink_Halt_FlagPersisted verifies IStateStore.SetHalt() called with correct HaltEvidence"
+        lint_clean: pending_compile
+    - date: "2026-06-15"
+      agent: "Claude Sonnet 4.6 / CHG-17"
+      files_touched:
+        - "Include/Persistence/AlertSink.mqh"
+        - "Scripts/Tests/Test_AlertSink.mq5"
+        - "docs/06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
+        - "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+        - "Docs/MODULES/Persistence.md"
+        - "docs/governance/chg/CHG-17_alertsink_sethalt_failure_diagnostic.yaml"
+        - "docs/governance/chg/CHG-00_index.md"
+      partial_work: "CHG-17: CAlertSink.Halt() now checks the bool returned by IStateStore.SetHalt(). On false, emits secondary logger.Error('HALT', 'HALT persistence failed; persistent circuit breaker may not be set') or Print() if logger is NULL. FakeStateStore gains should_fail_halt bool member. New test Test_AlertSink_Halt_PersistenceFailureDiagnostic verifies that when SetHalt() fails, (a) halt_set is not set on the store, and (b) the persistence-failure message appears in logger output. Total tests: 11 (was 10). SPEC-05 version 1.4→1.5, CHG-17 added to all chg_references. Docs/MODULES/Persistence.md routing table updated with failure-diagnostic bullet."
+      blockers: "Recompile Include/Persistence/AlertSink.mqh and run Scripts/Tests/Test_AlertSink.mq5 in MetaEditor to confirm all 11 tests green including new Test_AlertSink_Halt_PersistenceFailureDiagnostic."
+      next_session_directive: "Compile Include/Persistence/AlertSink.mqh (F7) — expect 0 errors. Run Test_AlertSink.mq5 — all 11 tests green. Mark AlertSink.mqh verified: true (already set from session 1; confirm still valid). Mark PersistenceTypes.mqh verified: true once compile confirmed. Record tests_passing: true in a subsequent session entry."
+      validation_results:
+        tests_passing: pending_compile
+        coverage: "1 new test: Test_AlertSink_Halt_PersistenceFailureDiagnostic verifies SetHalt() failure path emits persistence-failure diagnostic"
+        lint_clean: pending_compile
+    - date: "2026-06-16"
+      agent: "Claude Sonnet 4.6 / CHG-18"
+      files_touched:
+        - "Include/Persistence/TradeLogger.mqh"
+        - "Include/Persistence/StateStore.mqh"
+        - "Scripts/Tests/Test_TradeLogger.mq5"
+        - "Scripts/Tests/Test_AlertSink.mq5"
+        - "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+        - "docs/08_IPLAN/IPLAN-00_index.yaml"
+        - "docs/06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
+        - "Docs/MODULES/Persistence.md"
+        - "docs/governance/chg/CHG-18_persistence_defensive_write_and_test_fixes.yaml"
+        - "docs/governance/chg/CHG-00_index.md"
+      partial_work: "CHG-18: five code-review-driven fixes. (1) Test_TradeLogger.mq5 prefixes included \"TradeSpine/\", which TradeLogger._EnsureFile() also prepends, so tests read/deleted a different file than the logger wrote; added a TradeLoggerPath() helper and made all prefixes relative to the TradeSpine/ root. (2) Test_TradeLogger_WriteFailure made deterministic by occupying the target file path with a folder instead of relying on sandbox path-rejection behavior. (3) Test_AlertSink.mq5 FakeStateStore gained halt_call_count to independently prove CAlertSink.Halt() attempts SetHalt() in both the success and failure paths (CHG-17 regression guard). (4) TradeEvidenceRecord.side changed from a free-form string to ENUM_TRADE_SIDE (TRADE_SIDE_BUY/TRADE_SIDE_SELL) with a _SideToString() CSV formatter. (5) CStateStore::_setGV() now logs GetLastError() via PrintFormat on GlobalVariableSet() failure. Also: TradeLogger::_EnsureFile() previously ignored the CSV header FileWriteString() result on new-file creation; it now checks the result, closes/resets the handle, and returns false on failure so WriteIntent()/WriteExecution() emit the existing failure diagnostic. file_manifest.PersistenceTypes.mqh verified flag corrected true (compile-confirmed across this and prior sessions). SPEC-05 (1.5→1.6) and Docs/MODULES/Persistence.md updated; CHG-18 registered in CHG-00_index.md."
+      blockers: "Full MT5 IDE test execution (assertions actually run, not just MetaEditor headless compile) still outstanding for all three test scripts."
+      next_session_directive: "Run Test_StateStore.mq5, Test_TradeLogger.mq5, Test_AlertSink.mq5, and RunAllTests.mq5 in the MT5 IDE and record tests_passing: true once all assertions are confirmed green at runtime."
+      validation_results:
+        tests_passing: pending_run
+        coverage: "unchanged; existing assertions strengthened (halt_call_count, path-prefix correctness) rather than new test functions added"
+        lint_clean: true
 
 traceability:
   upstream:
@@ -153,15 +257,18 @@ traceability:
     bdd_references: ["@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.b37d"]
     adr_references: ["@adr: ADR.02.03.c7dd", "@adr: ADR.03.03.4124", "@adr: ADR.05.03.2586"]
   downstream:
-    code_paths: ["@code: Include/Persistence/KeyBuilder.mqh", "@code: Include/Persistence/StateStore.mqh", "@code: Include/Persistence/TradeLogger.mqh", "@code: Include/Persistence/Logger.mqh", "@code: Include/Persistence/AlertSink.mqh"]
+    code_paths: ["@code: Include/Persistence/PersistenceTypes.mqh", "@code: Include/Persistence/KeyBuilder.mqh", "@code: Include/Persistence/StateStore.mqh", "@code: Include/Persistence/TradeLogger.mqh", "@code: Include/Persistence/Logger.mqh", "@code: Include/Persistence/AlertSink.mqh"]
     test_paths: ["@tests: Scripts/Tests/Test_StateStore.mq5", "@tests: Scripts/Tests/Test_TradeLogger.mq5", "@tests: Scripts/Tests/Test_AlertSink.mq5"]
   code_inventory:
     files:
       - path: "Include/Persistence/KeyBuilder.mqh"
         exports: ["CanonicalIdentity", "CKeyBuilder"]
         status: delivered
+      - path: "Include/Persistence/PersistenceTypes.mqh"
+        exports: ["ENUM_TRADE_RECORD_TYPE"]
+        status: delivered
       - path: "Include/Persistence/StateStore.mqh"
-        exports: ["ENUM_POSITION_STATE", "ENUM_GV_VALUE_ENCODING", "ENUM_TRADE_RECORD_TYPE", "HaltEvidence", "GlobalVariableScalarState", "IStateStore", "CStateStore"]
+        exports: ["ENUM_POSITION_STATE", "ENUM_GV_VALUE_ENCODING", "HaltEvidence", "GlobalVariableScalarState", "IStateStore", "CStateStore"]
         status: delivered
       - path: "Include/Persistence/TradeLogger.mqh"
         exports: ["TradeEvidenceRecord", "TradeLogger"]

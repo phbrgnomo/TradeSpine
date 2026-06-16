@@ -1,0 +1,95 @@
+id: CHG-15
+title: "TradeLogger schema extension: structured intent and execution columns"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-15"
+
+  change_level:
+    value: C2
+
+  change_source:
+    value: feedback  # Design review: broker_outcome buries all forensic detail in a free-form string.
+
+change_control:
+  chg_id: "CHG-15"
+  status: Implemented
+  change_level: C2
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null
+  author: "phbr"
+  date_proposed: "2026-06-15T00:00:00Z"
+  date_approved: "2026-06-15T00:00:00Z"
+  date_implemented: "2026-06-15T00:00:00Z"
+  supersedes: []
+
+change_description:
+  what: |
+    Add 9 structured forensic columns to TradeEvidenceRecord and the TradeLogger CSV output.
+
+    Before: all forensic detail (fill price, lot size, retcode, stop levels) was buried in the
+    free-form broker_outcome string, making it impossible to audit individual fields without
+    string parsing.
+
+    After: intent-side fields (side, intended_price, sl_price, tp_price, lots_requested) are
+    populated on INTENT rows; execution-side fields (retcode, ticket, fill_price, lots_submitted)
+    are populated on EXECUTION rows. Fields inapplicable to the row type are written as empty
+    cells. side is written on both row types to allow standalone EXECUTION row auditing without
+    joining back to the INTENT row. broker_outcome is retained as free-form overflow for
+    rejection messages and retry info. Single-file design is preserved (no split files).
+
+  why: |
+    After the forensic audit trail purpose was clarified (MT5 trade history owns strategy
+    performance analysis; TradeLogger owns the pre/post-broker evidence record), it became
+    clear that broker_outcome as a catch-all string cannot serve that forensic purpose:
+    you cannot ask "what SL did the EA request?" or "was this fill at the intended price?"
+    without parsing opaque strings. Structured columns make those questions answerable
+    with a pandas filter.
+
+  trigger: "Design review of TradeLogger after SPEC-05 scope discussion."
+
+impact_assessment:
+  affected_layers:
+    - artifact: "Include/Persistence/TradeLogger.mqh"
+      what_changes: "TradeEvidenceRecord struct gains 9 fields; _WriteRow builds 16-column row; CSV header updated."
+      cascade_direction: downstream
+    - artifact: "Scripts/Tests/Test_TradeLogger.mq5"
+      what_changes: "MakeRecord() populates new fields; 2 new field-separation tests added."
+      cascade_direction: downstream
+    - artifact: "SPEC-05"
+      what_changes: "data_models.TradeEvidenceRecord expanded; version bumped to 1.3; CHG-15 added to chg_references."
+      cascade_direction: downstream
+    - artifact: "IPLAN-05"
+      what_changes: "Session 5 handoff entry added; CHG-15 added to chg_references."
+      cascade_direction: downstream
+    - artifact: "Docs/MODULES/Persistence.md"
+      what_changes: "TradeLogger section: field table and CSV header example updated."
+      cascade_direction: downstream
+  risk: low
+  rollback_plan: |
+    Revert TradeLogger.mqh struct and _WriteRow to the CHG-14 state. Existing CSV files
+    written with the old 7-column header remain valid for that period. New files will
+    revert to the 7-column header on the next date rollover. No GV or StateStore state
+    is affected.
+
+implementation:
+  files_changed:
+    - "Include/Persistence/TradeLogger.mqh"
+    - "Scripts/Tests/Test_TradeLogger.mq5"
+    - "docs/06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
+    - "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+    - "Docs/MODULES/Persistence.md"
+    - "docs/governance/chg/CHG-00_index.md"
+
+verification:
+  steps:
+    - step: "Compile Include/Persistence/TradeLogger.mqh in MetaEditor — expect 0 errors."
+      status: Pending
+    - step: "Compile and run Scripts/Tests/Test_TradeLogger.mq5 — all tests green including 2 new separation tests."
+      status: Pending
+    - step: "Spot-check MQL5/Files/TradeSpine/Test/ CSV: INTENT row has intent columns, execution columns empty; EXECUTION row inverse; side present on both."
+      status: Pending
+    - step: "Run doc-spec-audit SPEC-05 and doc-iplan-audit IPLAN-05 — both PASS."
+      status: Pending

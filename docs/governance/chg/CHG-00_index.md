@@ -32,6 +32,12 @@ custom_fields:
 | CHG-10 | TDD-11 BDD-scenario test mapping reconciliation | C2 | feedback | Approved | GATE-CODE self-approved |
 | CHG-11 | CAssert negative-assertion primitive for expected failures | C2 | feedback | Approved | GATE-CODE self-approved |
 | CHG-12 | Incremental Per-IPLAN Documentation Model | C3 | execution | Implemented | GATE-08 approved |
+| CHG-13 | Extract ENUM_TRADE_RECORD_TYPE into PersistenceTypes.mqh | C2 | feedback | Implemented | GATE-CODE self-approved |
+| CHG-14 | TradeLogger CSV correctness: ulong magic, RFC 4180 quoting, record_type enforcement | C2 | feedback | Implemented | GATE-CODE self-approved |
+| CHG-15 | TradeLogger schema extension: structured intent and execution columns | C2 | feedback | Implemented | GATE-CODE self-approved |
+| CHG-16 | CAlertSink HALT circuit-breaker: persistent GV flag via IStateStore | C2 | feedback | Approved | GATE-CODE self-approved |
+| CHG-17 | CAlertSink: emit diagnostic when SetHalt() fails | C2 | feedback | Approved | GATE-CODE self-approved |
+| CHG-18 | Persistence layer: defensive-write checks, side enum, and test-determinism fixes | C2 | feedback | Approved | GATE-CODE self-approved |
 
 ## Planned
 

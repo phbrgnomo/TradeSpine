@@ -56,7 +56,7 @@ void CleanupGVs(CKeyBuilder &kb)
          GlobalVariableDel(key);
      }
 //--- Also delete any halt evidence file.
-   FileDelete("TradeSpine/Halt_" + IntegerToString(TEST_MAGIC) + "_" + TEST_SYMBOL + ".txt");
+   FileDelete("TradeSpine/Halt_" + StringFormat("%I64u", TEST_MAGIC) + "_" + TEST_SYMBOL + ".txt");
   }
 
 //+------------------------------------------------------------------+
@@ -254,7 +254,63 @@ bool Test_StateStore_Halt(CAssert &a)
    ok &= a.TS_CHECK(store.SetHalt(ev), "SetHalt returns true");
    ok &= a.TS_CHECK(store.IsHalted(),  "IsHalted true after SetHalt");
 
+   string halt_file = "TradeSpine/Halt_" + StringFormat("%I64u", TEST_MAGIC) + "_" + TEST_SYMBOL + ".txt";
+   ok &= a.TS_CHECK(FileIsExist(halt_file), "HALT evidence file exists after SetHalt");
+
    CleanupGVs(kb);
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| CStateStore: HALT evidence filename uses unsigned decimal for    |
+//| magic values above LONG_MAX (no signed-cast corruption).         |
+//+------------------------------------------------------------------+
+bool Test_StateStore_Halt_LargeMagic(CAssert &a)
+  {
+   bool ok = true;
+
+//--- 0x8000000000000000 is 2^63 — positive as ulong, negative as long.
+   ulong large_magic = ((ulong)0x80000000 << 32);
+
+   CanonicalIdentity id;
+   id.account = 0;
+   id.symbol  = "TSTEST";
+   id.magic   = large_magic;
+   id.scope   = "";
+
+   CKeyBuilder kb;
+   CStateStore store;
+   ok &= a.TS_CHECK(store.Init(id, &kb), "Init with large magic succeeds");
+
+//--- The unsigned filename must differ from the signed one (test self-check).
+   string expected_file = "TradeSpine/Halt_"
+                        + StringFormat("%I64u", large_magic)
+                        + "_TSTEST.txt";
+   string signed_file   = "TradeSpine/Halt_"
+                        + IntegerToString((long)large_magic)
+                        + "_TSTEST.txt";
+   ok &= a.TS_CHECK(expected_file != signed_file,
+                    "Unsigned and signed filenames differ (self-check)");
+
+   HaltEvidence ev;
+   ev.reason           = "LargeMagic HALT test";
+   ev.last_known_state = POSITION_STATE_ACTIVE;
+   ev.operator_action  = "Verify and restart";
+
+   ok &= a.TS_CHECK(store.SetHalt(ev), "SetHalt with large magic returns true");
+   ok &= a.TS_CHECK(FileIsExist(expected_file),
+                    "HALT file uses unsigned decimal path for large magic");
+   ok &= a.TS_CHECK(!FileIsExist(signed_file),
+                    "No HALT file at signed-negative path for large magic");
+
+//--- Cleanup: remove evidence file and GVs created for this identity.
+   FileDelete(expected_file);
+   string fp_key, halt_key;
+   id.scope = "fp";      kb.Build(id, fp_key);
+   id.scope = "halt_flag"; kb.Build(id, halt_key);
+   GlobalVariableDel(fp_key);
+   GlobalVariableDel(halt_key);
+
    return(ok);
   }
 
@@ -271,24 +327,24 @@ bool Test_StateStore_Ticket(CAssert &a)
    MakeStore(store, kb);
 
 //--- Typical broker ticket value.
-   ulong t1 = 12345678901UL;
+   ulong t1 = (ulong)12345678901;
    ok &= a.TS_CHECK(store.WriteTicket(t1), "WriteTicket (typical) returns true");
-   ulong r1 = 0;
+   ulong r1 = (ulong)0;
    ok &= a.TS_CHECK(store.ReadTicket(r1),  "ReadTicket (typical) returns true");
    ok &= a.TS_CHECK_EQ_L((long)r1, (long)t1, "Typical ticket round-trip exact");
 
 //--- Edge case: ULONG_MAX (all 64 bits set).
    ulong ulong_max = (ulong) - 1; // 0xFFFFFFFFFFFFFFFF
    ok &= a.TS_CHECK(store.WriteTicket(ulong_max), "WriteTicket (ULONG_MAX) returns true");
-   ulong r_max = 0;
+   ulong r_max = (ulong)0;
    ok &= a.TS_CHECK(store.ReadTicket(r_max),      "ReadTicket (ULONG_MAX) returns true");
    ok &= a.TS_CHECK_EQ_L((long)r_max, (long)ulong_max, "ULONG_MAX ticket round-trip exact");
 
 //--- Edge case: zero ticket.
-   ok &= a.TS_CHECK(store.WriteTicket(0UL), "WriteTicket (0) returns true");
-   ulong r_zero = 99UL;
+   ok &= a.TS_CHECK(store.WriteTicket((ulong)0), "WriteTicket (0) returns true");
+   ulong r_zero = (ulong)99;
    ok &= a.TS_CHECK(store.ReadTicket(r_zero),     "ReadTicket (0) returns true");
-   ok &= a.TS_CHECK_EQ_L((long)r_zero, (long)0UL, "Zero ticket round-trip exact");
+   ok &= a.TS_CHECK_EQ_L((long)r_zero, (long)(ulong)0, "Zero ticket round-trip exact");
 
    CleanupGVs(kb);
    return(ok);
@@ -343,9 +399,12 @@ bool Test_StateStore_InitMismatch(CAssert &a)
   }
 
 //+------------------------------------------------------------------+
-//| b37d: GV ops happen only on meaningful transitions, not every    |
-//| call. We verify that no redundant ops are triggered by reading   |
-//| a value that was set earlier (count of GV calls is bounded).    |
+//| b37d: IsDuplicate is a pure read — it must not create or modify  |
+//| GVs. Two timing-free proofs:                                     |
+//|  1. Unset key: IsDuplicate must not create the GV.               |
+//|  2. Sentinel: SetDuplicate writes 1.0; we replace with 2.0 then  |
+//|     verify repeated IsDuplicate calls leave the value at 2.0.    |
+//|     Any erroneous GlobalVariableSet would overwrite to 1.0.      |
 //+------------------------------------------------------------------+
 bool Test_StateStore_LowIO(CAssert &a)
   {
@@ -356,16 +415,93 @@ bool Test_StateStore_LowIO(CAssert &a)
    CStateStore store;
    MakeStore(store, kb);
 
-//--- Write once; check total GVs referencing our test namespace does not
-//--- grow unexpectedly from repeated duplicate checks on the same key.
+//--- Proof 1: IsDuplicate on an unset key must not create the GV.
+   string key_unset;
+   kb.Build(MakeTestId("dup_xyz"), key_unset);
+   ok &= a.TS_CHECK(!store.IsDuplicate("xyz"),       "IsDuplicate false for unset key");
+   ok &= a.TS_CHECK(!GlobalVariableCheck(key_unset), "IsDuplicate on unset key creates no GV");
+
+//--- Proof 2: IsDuplicate must not overwrite an existing GV.
+//--- SetDuplicate writes 1.0; replace with sentinel 2.0 (still ≥ 0.5 so IsDuplicate is true).
+//--- If IsDuplicate erroneously called SetDuplicate or GlobalVariableSet, the 2.0 would
+//--- be overwritten with 1.0, which the final assertion would catch.
    store.SetDuplicate("xyz");
-   ok &= a.TS_CHECK(store.IsDuplicate("xyz"), "Duplicate correctly detected");
-//--- Calling IsDuplicate multiple times is idempotent (no new GVs).
-   bool dup1 = store.IsDuplicate("xyz");
-   bool dup2 = store.IsDuplicate("xyz");
-   ok &= a.TS_CHECK(dup1 == dup2, "IsDuplicate is idempotent (no new GVs per call)");
+   GlobalVariableSet(key_unset, 2.0); // sentinel differs from the 1.0 that SetDuplicate writes
+
+   ok &= a.TS_CHECK(store.IsDuplicate("xyz"), "IsDuplicate true for sentinel value");
+   ok &= a.TS_CHECK(store.IsDuplicate("xyz"), "IsDuplicate true on repeated call");
+
+   double sentinel_val = GlobalVariableGet(key_unset);
+   ok &= a.TS_CHECK(sentinel_val == 2.0,
+                    "IsDuplicate does not rewrite the GV (sentinel 2.0 preserved)");
 
    CleanupGVs(kb);
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| CKeyBuilder: magic > LONG_MAX is encoded as unsigned decimal;    |
+//| resulting key is 19 chars with uppercase-only hex digits.        |
+//+------------------------------------------------------------------+
+bool Test_KeyBuilder_LargeMagic(CAssert &a)
+  {
+   bool ok = true;
+   CKeyBuilder kb;
+
+//--- Use a magic value above LONG_MAX (0x8000000000000000).
+//--- Build via bit-shift to avoid unsupported UL literal suffix.
+   ulong large_magic = ((ulong)0x80000000 << 32); // 0x8000000000000000
+
+   CanonicalIdentity id;
+   id.account = 0;
+   id.symbol  = "TSTEST";
+   id.magic   = large_magic;
+   id.scope   = "halt";
+
+   string key1, key2;
+   ok &= a.TS_CHECK(kb.Build(id, key1), "Build with large magic succeeds");
+   ok &= a.TS_CHECK(kb.Build(id, key2), "Second Build with large magic succeeds (deterministic)");
+   ok &= a.TS_CHECK_EQ_STR(key1, key2,  "Large magic key is deterministic");
+   ok &= a.TS_CHECK(StringLen(key1) == 19, "Large magic key is exactly 19 chars");
+   ok &= a.TS_CHECK(StringSubstr(key1, 0, 3) == "ts_", "Large magic key has 'ts_' prefix");
+
+//--- All 16 hex digits must be uppercase [0-9A-F].
+   string hex_part = StringSubstr(key1, 3);
+   bool all_upper_hex = true;
+   for(int i = 0; i < StringLen(hex_part); i++)
+     {
+      ushort c = StringGetCharacter(hex_part, i);
+      if(!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')))
+        {
+         all_upper_hex = false;
+         break;
+        }
+     }
+   ok &= a.TS_CHECK(all_upper_hex, "Key hex digits are all uppercase [0-9A-F]");
+
+//--- Large magic must produce a different key than small magic.
+   CanonicalIdentity id_small = id;
+   id_small.magic = 42;
+   string key_small;
+   kb.Build(id_small, key_small);
+   ok &= a.TS_CHECK(key1 != key_small, "Large magic key differs from small magic key");
+
+//--- Fingerprint with large magic stays within [0, 2^53-1].
+   double fp = kb.Fingerprint(id);
+   ok &= a.TS_CHECK(fp >= 0.0,               "Fingerprint with large magic is non-negative");
+   ok &= a.TS_CHECK(fp <= 9007199254740991.0, "Fingerprint with large magic ≤ 2^53-1");
+   ok &= a.TS_CHECK(fp == (double)(long)fp,   "Fingerprint with large magic is exact double integer");
+
+//--- Known-vector assertions: these exact values pin the %I64u + %016I64X contract.
+//--- Input: "0|TSTEST|9223372036854775808|halt"
+//--- If the unsigned-magic fix reverted to IntegerToString((long)magic), the pre-hash
+//--- string would be "0|TSTEST|-9223372036854775808|halt" and produce a different key.
+   ok &= a.TS_CHECK_EQ_STR(key1, "ts_B19B1FFA609D0940",
+                            "Known-vector key for 0|TSTEST|9223372036854775808|halt");
+//--- Scope-free fingerprint: FNV1a64("0|TSTEST|9223372036854775808") & (2^53-1)
+   ok &= a.TS_CHECK_EQ_D(fp, 7871618290286861.0, 0.0,
+                          "Known-vector fingerprint for 0|TSTEST|9223372036854775808");
+
    return(ok);
   }
 
@@ -381,10 +517,12 @@ bool test_persistence_and_audit_evidence_unit_contract(CAssert &a)
    ok &= Test_KeyBuilder_ScopeIsolation(a);
    ok &= Test_KeyBuilder_Verify(a);
    ok &= Test_KeyBuilder_Fingerprint(a);
+   ok &= Test_KeyBuilder_LargeMagic(a);
    ok &= Test_StateStore_Init(a);
    ok &= Test_StateStore_Scalar(a);
    ok &= Test_StateStore_Duplicate(a);
    ok &= Test_StateStore_Halt(a);
+   ok &= Test_StateStore_Halt_LargeMagic(a);
    ok &= Test_StateStore_Ticket(a);
    ok &= Test_StateStore_VerifyFailOnCorruption(a);
    ok &= Test_StateStore_InitMismatch(a);
@@ -398,6 +536,7 @@ bool test_persistence_and_audit_evidence_0073_unit(CAssert &a)
    bool ok = true;
    ok &= Test_StateStore_Duplicate(a);
    ok &= Test_StateStore_Halt(a);
+   ok &= Test_StateStore_Halt_LargeMagic(a);
    return(ok);
   }
 
@@ -436,10 +575,12 @@ int OnStart()
    Test_KeyBuilder_ScopeIsolation(asserts);
    Test_KeyBuilder_Verify(asserts);
    Test_KeyBuilder_Fingerprint(asserts);
+   Test_KeyBuilder_LargeMagic(asserts);
    Test_StateStore_Init(asserts);
    Test_StateStore_Scalar(asserts);
    Test_StateStore_Duplicate(asserts);
    Test_StateStore_Halt(asserts);
+   Test_StateStore_Halt_LargeMagic(asserts);
    Test_StateStore_Ticket(asserts);
    Test_StateStore_VerifyFailOnCorruption(asserts);
    Test_StateStore_InitMismatch(asserts);

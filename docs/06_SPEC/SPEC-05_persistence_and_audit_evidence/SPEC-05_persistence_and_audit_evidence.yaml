@@ -7,16 +7,18 @@ id: SPEC-05
 title: Persistence and Audit Evidence
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-16T00:00:00-03:00"
+chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18"]
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.6"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-16T00:00:00-03:00"
   author: "Codex"
-  component: "CStateStore, CKeyBuilder, TradeLogger, Logger, AlertSink"
+  chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18"]
+  component: "PersistenceTypes, CStateStore, CKeyBuilder, TradeLogger, Logger, AlertSink"
   tdd_ready_score: "94/100"
 
 ## Section 2: Component Overview
@@ -64,15 +66,15 @@ interfaces:
     - name: "CStateStore"
       type: "class"
       signature: "class CStateStore : public IStateStore"
-      description: "Reads and writes GV-backed strategy state with lossless ticket storage."
+      description: "Reads and writes GV-backed strategy state with lossless ticket storage. On GlobalVariableSet() failure, the private _setGV() logs the GetLastError() code via PrintFormat() for diagnostics; the public method return contract is unchanged (CHG-18)."
       errors:
         - "StateCorruption: identity mismatch or unrecoverable missing active ownership evidence."
     - name: "TradeLogger"
       type: "class"
       signature: "class TradeLogger"
-      description: "Writes paired intent and execution records for trade evaluation."
+      description: "Writes paired intent and execution records for trade evaluation. _EnsureFile() checks the CSV header write on a newly created file and fails closed if it cannot be written (CHG-18)."
       errors:
-        - "LogFailure: evidence write failed; component returns status for caller policy."
+        - "LogFailure: evidence write failed, including header-write failure on new-file creation (CHG-18); component returns status for caller policy."
     - name: "Logger"
       type: "class"
       signature: "class Logger"
@@ -85,6 +87,13 @@ interfaces:
       description: "Routes HALT and operator-facing alert payloads by runtime mode."
       errors:
         - "None; unavailable UI alerts degrade to log-only sink."
+    - name: "CAlertSink"
+      type: "class"
+      signature: "class CAlertSink : public IAlertSink"
+      description: "Production implementation of IAlertSink. Init(ctx, logger, store=NULL) accepts an optional IStateStore* for the persistent HALT flag circuit-breaker (CHG-16). When store is non-NULL, Halt() calls store.SetHalt(ev) before Alert(), so the EA remains halted after dialog dismissal. If SetHalt() returns false, a secondary logger.Error() is emitted to inform the operator that the circuit breaker may not have been written (CHG-17)."
+      errors:
+        - "None; missing store pointer degrades to log+Alert only (no persistent flag)."
+        - "SetHalt() failure: secondary Error emitted; circuit breaker state uncertain — operator must treat as unhalted until confirmed."
 
 ## Section 4: Data Models
 data_models:
@@ -110,23 +119,83 @@ data_models:
           description: "GV namespace scope."
     - name: "TradeEvidenceRecord"
       type: "struct"
+      notes: "One CSV row. Intent-side fields are written as empty on EXECUTION rows; execution-side fields are written as empty on INTENT rows. side is written on both row types. CHG-15. side is ENUM_TRADE_SIDE, not a free-form string (CHG-18)."
       fields:
         - name: "record_type"
           type: "ENUM_TRADE_RECORD_TYPE"
           required: true
-          description: "Intent or execution."
+          scope: both
+          description: "TRADE_RECORD_INTENT or TRADE_RECORD_EXECUTION."
         - name: "strategy_run_id"
           type: "string"
           required: true
-          description: "Correlates records within one strategy lifecycle."
+          scope: both
+          description: "Correlates all records within one strategy lifecycle."
         - name: "order_intent_id"
           type: "string"
           required: true
-          description: "Pairs intent and execution rows."
+          scope: both
+          description: "Pairs exactly one intent and one execution row."
+        - name: "symbol"
+          type: "string"
+          required: true
+          scope: both
+          description: "Instrument symbol."
+        - name: "magic"
+          type: "ulong"
+          required: true
+          scope: both
+          description: "EA magic number. Written as %I64u; never cast to long."
+        - name: "side"
+          type: "ENUM_TRADE_SIDE"
+          required: true
+          scope: both
+          description: "TRADE_SIDE_BUY or TRADE_SIDE_SELL; rendered as \"BUY\"/\"SELL\" in the CSV via _SideToString() (CHG-18). Written on both row types to allow standalone EXECUTION row auditing."
+        - name: "intended_price"
+          type: "double"
+          required: false
+          scope: intent
+          description: "EA's calculated entry price. Empty on EXECUTION rows."
+        - name: "sl_price"
+          type: "double"
+          required: false
+          scope: intent
+          description: "Requested stop loss price (0.0 = none requested). Empty on EXECUTION rows."
+        - name: "tp_price"
+          type: "double"
+          required: false
+          scope: intent
+          description: "Requested take profit price (0.0 = none requested). Empty on EXECUTION rows."
+        - name: "lots_requested"
+          type: "double"
+          required: false
+          scope: intent
+          description: "Lot size from position sizer. Empty on EXECUTION rows."
+        - name: "retcode"
+          type: "uint"
+          required: false
+          scope: execution
+          description: "Broker return code. Empty on INTENT rows."
+        - name: "ticket"
+          type: "ulong"
+          required: false
+          scope: execution
+          description: "Order/deal ticket (0 = not created / rejected). Written as %I64u. Empty on INTENT rows."
+        - name: "fill_price"
+          type: "double"
+          required: false
+          scope: execution
+          description: "Actual fill price (0.0 = rejected). Empty on INTENT rows."
+        - name: "lots_submitted"
+          type: "double"
+          required: false
+          scope: execution
+          description: "Lots that reached the broker. Empty on INTENT rows."
         - name: "broker_outcome"
           type: "string"
           required: false
-          description: "Broker retcode, deal, order, fill, or rejection evidence."
+          scope: both
+          description: "Free-form overflow for rejection messages, retry info, or supplementary evidence not covered by structured fields."
     - name: "HaltEvidence"
       type: "struct"
       fields:
@@ -180,10 +249,10 @@ behavior:
       source: "@bdd: BDD.01.03.e16a"
   error_handling:
     - condition: "GV identity hash mismatch."
-      response: "Fail init before live trading or enter HALT if detected live."
+      response: "Fail init before live trading, or set persistent GV HALT flag via IStateStore.SetHalt() and notify operator via Alert()/SendNotification() if detected live. EA remains halted on subsequent ticks until operator resets the flag. If SetHalt() fails, a secondary Error is emitted; the operator must treat the halt state as unconfirmed. (CHG-16, CHG-17)"
       source: "@bdd: BDD.01.03.a31d"
     - condition: "Trade evidence write fails."
-      response: "Log diagnostic failure and preserve broker safety outcome."
+      response: "Log diagnostic failure and preserve broker safety outcome. Header-write failure on new-file creation is treated as a write failure: the file handle is closed and reset, and the call returns false (CHG-18)."
       source: "@bdd: BDD.01.03.d6ae"
 
 ## Section 6: Implementation Notes
@@ -198,6 +267,15 @@ implementation_notes:
     - "Use deterministic canonical identity strings before hashing GV keys."
     - "Use separate sinks for diagnostic logs, trade records, and alerts."
     - "Use GlobalVariableSetOnCondition-compatible scalar values for duplicate markers; execution mutex state is v2+ with netting/exchange support."
+    - "ENUM_TRADE_RECORD_TYPE is defined in Include/Persistence/PersistenceTypes.mqh (CHG-13). StateStore.mqh re-exports it transitively via its own include; TradeLogger.mqh includes PersistenceTypes.mqh directly and does not depend on StateStore.mqh."
+    - "CSV string fields MUST be RFC 4180 quoted (double-quote wrap; internal double-quotes doubled). broker_outcome is explicitly free-form evidence and MUST be quoted unconditionally (CHG-14)."
+    - "ulong fields (magic, ticket, deal IDs) in serialized CSV output MUST use StringFormat(\"%I64u\", v) — never cast to long before formatting, which corrupts values above LONG_MAX (CHG-14). Consistent with CKeyBuilder's %I64u canonical identity pattern."
+    - "TradeEvidenceRecord has 16 CSV columns (CHG-15). Intent-side fields (intended_price, sl_price, tp_price, lots_requested) are written as empty cells on EXECUTION rows; execution-side fields (retcode, ticket, fill_price, lots_submitted) are written as empty cells on INTENT rows. side is written on both row types. broker_outcome is retained as free-form overflow. Single-file design is preserved; strategy performance analysis is out of scope for TradeLogger (MT5 trade history owns that)."
+    - "CAlertSink.Init() accepts optional IStateStore* (default NULL). When wired, Halt() calls store.SetHalt(ev) before Alert(), writing the persistent GV HALT flag. Alert() stays as the operator notification; the flag is the circuit breaker that keeps the EA halted after dialog dismissal. The Coordinator MUST call IStateStore.IsHalted() as the first action in OnTick() and return immediately if true. Resume requires explicit operator action: remove/re-attach the EA or clear the flag via a recovery script. (CHG-16)"
+    - "CAlertSink.Halt() checks the bool returned by SetHalt(). On false, a secondary logger.Error() is emitted: 'HALT persistence failed; persistent circuit breaker may not be set'. Fall-back to Print() when logger is NULL. This gives the operator maximum information in the degraded path while preserving the primary HALT log already written above the SetHalt() call. (CHG-17)"
+    - "TradeEvidenceRecord.side uses ENUM_TRADE_SIDE (TRADE_SIDE_BUY/TRADE_SIDE_SELL), not a free-form string; TradeLogger::_SideToString() renders \"BUY\"/\"SELL\" for the CSV column. Closes off casing/typo/localisation variants entering the audit evidence file. (CHG-18)"
+    - "CStateStore::_setGV() logs GetLastError() via PrintFormat() on GlobalVariableSet() failure (key, value, error code), distinguishing permission/storage/transient failures for operators; the public method still returns bool per the IStateStore contract. (CHG-18)"
+    - "TradeLogger::_EnsureFile() checks the FileWriteString() result when writing the CSV header on a newly created file. On failure, it closes and resets the file handle and returns false so WriteIntent()/WriteExecution() emit the existing LogFailure diagnostic, instead of silently proceeding with a possibly headerless evidence file. (CHG-18)"
   performance_considerations:
     - "State writes occur on meaningful transitions, not every tick, and release evidence must cover @threshold: PRD.01.perf.idle_tick."
 

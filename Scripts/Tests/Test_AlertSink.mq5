@@ -12,10 +12,10 @@
 //|     optimization → silent; live/visual → logger.Error() emitted. |
 //|   - FakeAlertSink defined inline to capture calls without        |
 //|     triggering Alert() dialogs in the test environment.          |
-//|   - CAlertSink.Halt() in live/visual mode calls Alert() —       |
-//|     these paths are NOT triggered from auto-run tests to avoid   |
-//|     blocking modal dialogs; they are tested via logger.Error()   |
-//|     capture and a TS_SKIP note.                                  |
+//|   - CAlertSink.Halt() logger-first contract verified via tester  |
+//|     context; Alert() modal path untestable in automated runs —   |
+//|     ordering is structural (logger.Error() precedes Alert() in   |
+//|     AlertSink.mqh source).                                       |
 //+------------------------------------------------------------------+
 #property copyright "phbr"
 #property version   "1.0"
@@ -43,6 +43,37 @@ class FakeAlertSink : public IAlertSink
      { halt_called = true; last_halt = ev; }
    void         Warn(string category, string msg) override
      { warn_count++; last_warn_category = category; }
+  };
+
+//+------------------------------------------------------------------+
+//| FakeStateStore - captures SetHalt/IsHalted without real GVs.   |
+//+------------------------------------------------------------------+
+class FakeStateStore : public IStateStore
+  {
+  public:
+   bool         halt_set;
+   bool         should_fail_halt; // when true, SetHalt() returns false (simulates GV/file failure)
+   int          halt_call_count;  // independent proof SetHalt() was attempted, regardless of outcome
+   HaltEvidence last_halt_ev;
+
+                FakeStateStore(void) : halt_set(false), should_fail_halt(false), halt_call_count(0) {}
+
+   bool         WriteScalar(string scope, double value)   override { return(true); }
+   bool         ReadScalar(string scope, double &value)   override { return(false); }
+   bool         SetDuplicate(string intent_id_hash)       override { return(true); }
+   bool         IsDuplicate(string intent_id_hash)        override { return(false); }
+   bool         SetHalt(const HaltEvidence &ev)           override
+     {
+      halt_call_count++;
+      last_halt_ev = ev;
+      if(should_fail_halt) return(false);
+      halt_set = true;
+      return(true);
+     }
+   bool         IsHalted()                                override { return(halt_set); }
+   bool         WriteTicket(ulong ticket)                 override { return(true); }
+   bool         ReadTicket(ulong &ticket)                 override { return(false); }
+   bool         Verify()                                  override { return(true); }
   };
 
 //+------------------------------------------------------------------+
@@ -240,16 +271,21 @@ bool Test_AlertSink_NonVisualTester_Warn(CAssert &a)
   }
 
 //+------------------------------------------------------------------+
-//| Live mode: Halt calls logger.Error (Alert() path noted as       |
-//| untestable in automated runs — modal dialog would block).       |
+//| Halt logger-first contract: logger.Error() is captured before    |
+//| Alert() could block. Non-visual-tester context used to call     |
+//| Halt() safely; Alert() modal path is untestable in automated    |
+//| runs — the ordering guarantee is structural (code-level).       |
 //+------------------------------------------------------------------+
-bool Test_AlertSink_Live_LoggerCalled(CAssert &a)
+bool Test_AlertSink_Halt_LoggerFirstContract(CAssert &a)
   {
    bool ok = true;
 
-   RuntimeMode live;
-   live.is_tester = false; live.is_optimization = false; live.diagnostics_enabled = true;
-   COptContext ctx(live);
+//--- Use non-visual-tester context: IsLive()=false, so Alert() is not
+//--- called, but logger.Error() IS called — proving it would fire before
+//--- any modal in the live/visual path (where it also precedes Alert()).
+   RuntimeMode mode;
+   mode.is_tester = true; mode.is_optimization = false; mode.diagnostics_enabled = true;
+   COptContext ctx(mode);
 
    FakeLogSink sink;
    Logger logger;
@@ -258,11 +294,79 @@ bool Test_AlertSink_Live_LoggerCalled(CAssert &a)
    CAlertSink alert;
    alert.Init(&ctx, &logger);
 
-//--- We test only the logger.Error() side-effect; the Alert() call is
-//--- present in the implementation but not triggered here to avoid
-//--- a blocking modal dialog in automated test runs.
-   a.TS_SKIP("CAlertSink.Halt() in live mode calls Alert() — blocking modal; "
-             "logger.Error() path verified via non-visual-tester test");
+   HaltEvidence ev = MakeHalt("logger-first HALT", "Verify log written");
+   alert.Halt(ev);
+
+   ok &= a.TS_CHECK(sink.HasMessage("TRADESPINE HALT"),
+                    "logger.Error() called during Halt() — written before Alert() in live/visual path");
+   ok &= a.TS_CHECK(sink.HasMessage("logger-first HALT"),
+                    "HALT reason present in logger message");
+
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| Halt circuit-breaker: IStateStore.SetHalt() called with correct  |
+//| HaltEvidence when IStateStore is wired into CAlertSink.Init().  |
+//+------------------------------------------------------------------+
+bool Test_AlertSink_Halt_FlagPersisted(CAssert &a)
+  {
+   bool ok = true;
+
+   RuntimeMode mode;
+   mode.is_tester = true; mode.is_optimization = false; mode.diagnostics_enabled = true;
+   COptContext ctx(mode);
+
+   FakeLogSink  sink;
+   Logger       logger;
+   logger.Init(&ctx, &sink);
+
+   FakeStateStore store;
+   CAlertSink     alert;
+   alert.Init(&ctx, &logger, &store);
+
+   HaltEvidence ev = MakeHalt("Ambiguous state", "Check positions");
+   alert.Halt(ev);
+
+   ok &= a.TS_CHECK(store.halt_call_count == 1,
+                    "CAlertSink.Halt() attempts IStateStore.SetHalt() exactly once");
+   ok &= a.TS_CHECK(store.halt_set,
+                    "CAlertSink.Halt() calls IStateStore.SetHalt()");
+   ok &= a.TS_CHECK_EQ_STR(store.last_halt_ev.reason, "Ambiguous state",
+                             "SetHalt receives correct HaltEvidence.reason");
+
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| SetHalt() failure: secondary Error emitted when GV write fails. |
+//+------------------------------------------------------------------+
+bool Test_AlertSink_Halt_PersistenceFailureDiagnostic(CAssert &a)
+  {
+   bool ok = true;
+
+   RuntimeMode mode;
+   mode.is_tester = true; mode.is_optimization = false; mode.diagnostics_enabled = true;
+   COptContext ctx(mode);
+
+   FakeLogSink  sink;
+   Logger       logger;
+   logger.Init(&ctx, &sink);
+
+   FakeStateStore store;
+   store.should_fail_halt = true; // simulate GV / file-write failure
+   CAlertSink     alert;
+   alert.Init(&ctx, &logger, &store);
+
+   HaltEvidence ev = MakeHalt("GV failure scenario", "Check MT5 terminal");
+   alert.Halt(ev);
+
+   ok &= a.TS_CHECK(store.halt_call_count == 1,
+                    "CAlertSink.Halt() attempts IStateStore.SetHalt() even though it will fail");
+   ok &= a.TS_CHECK(!store.halt_set,
+                    "SetHalt() returned false — flag not recorded in store");
+   ok &= a.TS_CHECK(sink.HasMessage("HALT persistence failed"),
+                    "Persistence-failure diagnostic emitted via logger.Error()");
 
    return(ok);
   }
@@ -342,7 +446,9 @@ bool test_persistence_and_audit_evidence_e2e_acceptance(CAssert &a)
    ok &= Test_AlertSink_NonVisualTester_Halt(a);
    ok &= Test_AlertSink_Optimization_Silent(a);
    ok &= Test_AlertSink_NonVisualTester_Warn(a);
-   ok &= Test_AlertSink_Live_LoggerCalled(a);
+   ok &= Test_AlertSink_Halt_LoggerFirstContract(a);
+   ok &= Test_AlertSink_Halt_FlagPersisted(a);
+   ok &= Test_AlertSink_Halt_PersistenceFailureDiagnostic(a);
    ok &= Test_AlertSink_FakeSink_E2E(a);
    ok &= Test_AlertSink_Optimization_ZeroOverhead(a);
    return(ok);
@@ -387,7 +493,9 @@ int OnStart()
    Test_AlertSink_NonVisualTester_Halt(asserts);
    Test_AlertSink_Optimization_Silent(asserts);
    Test_AlertSink_NonVisualTester_Warn(asserts);
-   Test_AlertSink_Live_LoggerCalled(asserts);
+   Test_AlertSink_Halt_LoggerFirstContract(asserts);
+   Test_AlertSink_Halt_FlagPersisted(asserts);
+   Test_AlertSink_Halt_PersistenceFailureDiagnostic(asserts);
    Test_AlertSink_FakeSink_E2E(asserts);
    Test_AlertSink_Optimization_ZeroOverhead(asserts);
    bool pass = asserts.TS_REPORT_SUMMARY("Test_AlertSink");

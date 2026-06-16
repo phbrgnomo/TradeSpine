@@ -11,7 +11,8 @@
 //|   - Optimization-gated: no file I/O when evidence suppressed.   |
 //|   - Write failure path: returns false and logs diagnostic.       |
 //| Uses real MT5 file I/O to TradeSpine/Test/ subdirectory.        |
-//| Files are cleaned up after every test function.                  |
+//| Evidence CSVs are deleted at the start of each test, then left  |
+//| on disk after success for manual inspection.                    |
 //+------------------------------------------------------------------+
 #property copyright "phbr"
 #property version   "1.0"
@@ -22,11 +23,10 @@
 #include "../../Include/Persistence/TradeLogger.mqh"
 #include "Support/FakeLogSink.mqh"
 
-//--- Unique prefix for all test-generated files.
-#define TL_TEST_PREFIX "TradeSpine/Test/TradeLoggerTest"
-
 //+------------------------------------------------------------------+
-//| Build a minimal valid TradeEvidenceRecord.                       |
+//| Build a representative TradeEvidenceRecord for testing.          |
+//| Populates all intent and execution fields so field-separation    |
+//| tests can verify which columns are written vs left empty.        |
 //+------------------------------------------------------------------+
 TradeEvidenceRecord MakeRecord(ENUM_TRADE_RECORD_TYPE t,
                                string run_id,
@@ -40,6 +40,17 @@ TradeEvidenceRecord MakeRecord(ENUM_TRADE_RECORD_TYPE t,
    r.symbol          = "WINM26";
    r.magic           = 99090;
    r.broker_outcome  = outcome;
+   // --- Intent fields ---
+   r.side            = TRADE_SIDE_BUY;
+   r.intended_price  = 130000.0;
+   r.sl_price        = 129900.0;
+   r.tp_price        = 130200.0;
+   r.lots_requested  = 1.0;
+   // --- Execution fields (large ulong exercises %I64u path) ---
+   r.retcode         = 10009;                // TRADE_RETCODE_DONE
+   r.ticket          = 123456789012345;
+   r.fill_price      = 130001.0;
+   r.lots_submitted  = 1.0;
    return(r);
   }
 
@@ -64,11 +75,23 @@ string ReadFileContent(string path)
   }
 
 //+------------------------------------------------------------------+
-//| Delete the test file; ignore errors if it doesn't exist.        |
+//| Resolve the actual on-disk path TradeLogger writes for a given   |
+//| test prefix + date stamp. Mirrors TradeLogger::_EnsureFile,      |
+//| which prepends "TradeSpine/" to the caller-supplied prefix —     |
+//| test prefixes here must therefore be relative to that root      |
+//| (e.g. "Test/TL_pairing"), not include it themselves.            |
+//+------------------------------------------------------------------+
+string TradeLoggerPath(string prefix, string date_stamp)
+  {
+   return("TradeSpine/" + prefix + "_" + date_stamp + ".csv");
+  }
+
+//+------------------------------------------------------------------+
+//| Delete the test file before writing fresh evidence.             |
 //+------------------------------------------------------------------+
 void DeleteTestFile(string prefix, string date_stamp)
   {
-   FileDelete(prefix + "_" + date_stamp + ".csv");
+   FileDelete(TradeLoggerPath(prefix, date_stamp));
   }
 
 //+------------------------------------------------------------------+
@@ -110,7 +133,7 @@ bool Test_TradeLogger_Pairing(CAssert &a)
    FakeLogSink sink;
 
    TradeLogger logger;
-   string prefix = "TradeSpine/Test/TL_pairing";
+   string prefix = "Test/TL_pairing";
    string stamp  = TodayStamp();
    DeleteTestFile(prefix, stamp);
 
@@ -128,7 +151,7 @@ bool Test_TradeLogger_Pairing(CAssert &a)
    logger.Close();
 
 //--- Verify CSV content.
-   string content = ReadFileContent(prefix + "_" + stamp + ".csv");
+   string content = ReadFileContent(TradeLoggerPath(prefix, stamp));
    ok &= a.TS_CHECK(StringFind(content, "INTENT")      >= 0, "CSV contains INTENT row");
    ok &= a.TS_CHECK(StringFind(content, "EXECUTION")   >= 0, "CSV contains EXECUTION row");
    ok &= a.TS_CHECK(StringFind(content, run_id)        >= 0, "CSV contains shared strategy_run_id");
@@ -138,7 +161,6 @@ bool Test_TradeLogger_Pairing(CAssert &a)
 //--- Header row must be present (only once per file).
    ok &= a.TS_CHECK(StringFind(content, "record_type") >= 0, "CSV header is present");
 
-   DeleteTestFile(prefix, stamp);
    return(ok);
   }
 
@@ -156,7 +178,7 @@ bool Test_TradeLogger_SeparateDiagnostics(CAssert &a)
    FakeLogSink sink;
 
    TradeLogger logger;
-   string prefix = "TradeSpine/Test/TL_separation";
+   string prefix = "Test/TL_separation";
    string stamp  = TodayStamp();
    DeleteTestFile(prefix, stamp);
 
@@ -170,7 +192,7 @@ bool Test_TradeLogger_SeparateDiagnostics(CAssert &a)
 
    logger.Close();
 
-   string csv = ReadFileContent(prefix + "_" + stamp + ".csv");
+   string csv = ReadFileContent(TradeLoggerPath(prefix, stamp));
 
 //--- The diagnostic message must NOT be in the trade CSV.
    ok &= a.TS_CHECK(StringFind(csv, "diagnostic message") < 0,
@@ -179,7 +201,6 @@ bool Test_TradeLogger_SeparateDiagnostics(CAssert &a)
    ok &= a.TS_CHECK(sink.HasMessage("diagnostic message"),
                     "Sink captured the diagnostic message");
 
-   DeleteTestFile(prefix, stamp);
    return(ok);
   }
 
@@ -198,7 +219,7 @@ bool Test_TradeLogger_OptimizationGated(CAssert &a)
    FakeLogSink sink;
 
    TradeLogger logger;
-   string prefix = "TradeSpine/Test/TL_optgate";
+   string prefix = "Test/TL_optgate";
    string stamp  = TodayStamp();
    DeleteTestFile(prefix, stamp);
 
@@ -211,22 +232,26 @@ bool Test_TradeLogger_OptimizationGated(CAssert &a)
    logger.Close();
 
 //--- No file should have been created.
-   ok &= a.TS_CHECK(!FileIsExist(prefix + "_" + stamp + ".csv"),
+   ok &= a.TS_CHECK(!FileIsExist(TradeLoggerPath(prefix, stamp)),
                     "No CSV file created in optimization mode");
 //--- No error diagnostic logged through the sink.
    ok &= a.TS_CHECK(sink.Count() == 0, "No diagnostic messages from gated writes");
 
-   DeleteTestFile(prefix, stamp);
    return(ok);
   }
 
 //+------------------------------------------------------------------+
 //| Write failure returns false and logs a LogFailure diagnostic.    |
-//| Simulated by providing an invalid (empty) file prefix.          |
+//| Forced deterministically: a folder is created at the exact path  |
+//| TradeLogger would open as a file, so FileOpen() must fail (a     |
+//| directory cannot be opened for file I/O). This avoids relying on |
+//| sandbox path-rejection behavior, which MQL5's FileOpen() does not|
+//| guarantee (it can create missing intermediate subfolders).      |
 //+------------------------------------------------------------------+
 bool Test_TradeLogger_WriteFailure(CAssert &a)
   {
    bool ok = true;
+   FolderCreate("TradeSpine/Test");
 
    RuntimeMode mode;
    mode.is_tester = false; mode.is_optimization = false; mode.diagnostics_enabled = true;
@@ -234,34 +259,25 @@ bool Test_TradeLogger_WriteFailure(CAssert &a)
    FakeLogSink sink;
 
    TradeLogger logger;
-//--- Use a path to a folder that cannot be created (starts with /).
-//--- This forces FileOpen to fail, triggering the error path.
-//--- On MT5 sandboxed files, "/invalid" cannot be created.
-   string bad_prefix = "/invalid/path/TL_fail";
+   string prefix = "Test/TL_fail";
+   string stamp  = TodayStamp();
+   string path   = TradeLoggerPath(prefix, stamp);
+   DeleteTestFile(prefix, stamp);
 
-   logger.Init(bad_prefix, &ctx, &sink);
+//--- Occupy the target file path with a directory so FileOpen() fails.
+   FolderCreate(path);
+
+   ok &= a.TS_CHECK(logger.Init(prefix, &ctx, &sink), "Init succeeds (failure occurs on write, not init)");
 
    TradeEvidenceRecord r = MakeRecord(TRADE_RECORD_INTENT, "run-fail", "intent-fail");
-//--- WriteIntent should fail (file cannot be opened) and log an error.
    bool result = logger.WriteIntent(r);
 
-//--- The result depends on whether the invalid path is truly unwritable.
-//--- If FileOpen fails, result=false and sink has an error.
-//--- If the platform somehow allows it, we just verify no crash occurred.
-   if(!result)
-     {
-      ok &= a.TS_CHECK(!result, "WriteIntent returns false on I/O failure");
-      ok &= a.TS_CHECK(sink.HasMessage("Intent write failed"),
-                       "LogFailure diagnostic captured in sink");
-     }
-   else
-     {
-      //--- Path was accepted by the platform; skip the failure assertion.
-      a.TS_SKIP("Platform allowed invalid path; I/O failure path not triggerable in this environment");
-      logger.Close();
-      FileDelete(bad_prefix + "_" + TodayStamp() + ".csv");
-     }
+   ok &= a.TS_CHECK(!result, "WriteIntent returns false on I/O failure");
+   ok &= a.TS_CHECK(sink.HasMessage("Intent write failed"),
+                    "LogFailure diagnostic captured in sink");
 
+   logger.Close();
+   FolderDelete(path);
    return(ok);
   }
 
@@ -279,7 +295,7 @@ bool Test_TradeLogger_WriteCount(CAssert &a)
    FakeLogSink sink;
 
    TradeLogger logger;
-   string prefix = "TradeSpine/Test/TL_count";
+   string prefix = "Test/TL_count";
    string stamp  = TodayStamp();
    DeleteTestFile(prefix, stamp);
 
@@ -291,7 +307,7 @@ bool Test_TradeLogger_WriteCount(CAssert &a)
    logger.WriteExecution(exec);
    logger.Close();
 
-   string content = ReadFileContent(prefix + "_" + stamp + ".csv");
+   string content = ReadFileContent(TradeLoggerPath(prefix, stamp));
 //--- Count newlines to verify bounded output (header + 2 data rows + trailing newline).
    int newline_count = 0;
    int pos = 0;
@@ -304,7 +320,145 @@ bool Test_TradeLogger_WriteCount(CAssert &a)
    ok &= a.TS_CHECK(newline_count >= 3, "CSV has at least header + 2 data rows");
    ok &= a.TS_CHECK(newline_count <= 4, "CSV has no more than header + 2 data rows + trailing (no redundant writes)");
 
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| CHG-14 regression: all three data-integrity failure modes in one |
+//| focused test so they can never silently regress.                 |
+//| (a) magic > LONG_MAX — signed cast would produce a negative CSV  |
+//| (b) broker_outcome with comma and embedded double-quote — needs  |
+//|     RFC 4180 quoting or the column structure is corrupted        |
+//| (c) WriteIntent called with TRADE_RECORD_EXECUTION — public API  |
+//|     must override to INTENT regardless of caller-supplied type   |
+//+------------------------------------------------------------------+
+bool Test_TradeLogger_CSVEncoding(CAssert &a)
+  {
+   bool ok = true;
+   FolderCreate("TradeSpine/Test");
+
+   RuntimeMode mode;
+   mode.is_tester = false; mode.is_optimization = false; mode.diagnostics_enabled = true;
+   COptContext ctx(mode);
+   FakeLogSink sink;
+
+   TradeLogger logger;
+   string prefix = "Test/TL_chg14";
+   string stamp  = TodayStamp();
    DeleteTestFile(prefix, stamp);
+
+   ok &= a.TS_CHECK(logger.Init(prefix, &ctx, &sink), "Init succeeds");
+
+//--- (c) pass TRADE_RECORD_EXECUTION to WriteIntent deliberately.
+   TradeEvidenceRecord r = MakeRecord(TRADE_RECORD_EXECUTION, "run-chg14", "int-chg14",
+                                      "reject, reason=\"bad fill\"");
+//--- (a) 0x8000000000000000 = 2^63 = 9223372036854775808; signed cast gives -9223372036854775808.
+   r.magic = 0x8000000000000000;
+   r.side  = TRADE_SIDE_SELL;
+
+   ok &= a.TS_CHECK(logger.WriteIntent(r), "WriteIntent returns true despite EXECUTION record_type");
+   logger.Close();
+
+   string csv = ReadFileContent(TradeLoggerPath(prefix, stamp));
+
+//--- (c) WriteIntent MUST override to INTENT regardless of caller input.
+   ok &= a.TS_CHECK(StringFind(csv, "INTENT")    >= 0, "(c) record_type forced to INTENT by WriteIntent");
+   ok &= a.TS_CHECK(StringFind(csv, "EXECUTION") <  0, "(c) EXECUTION not present in WriteIntent output");
+
+//--- (a) %I64u must produce the unsigned decimal, not a negative signed value.
+   ok &= a.TS_CHECK(StringFind(csv, "9223372036854775808")  >= 0,
+                    "(a) magic > LONG_MAX formatted as unsigned");
+   ok &= a.TS_CHECK(StringFind(csv, "-9223372036854775808") <  0,
+                    "(a) signed corruption of magic absent");
+
+//--- (b) RFC 4180: comma in broker_outcome forces double-quote wrap;
+//---     embedded double-quote is escaped by doubling ("" inside "...").
+   ok &= a.TS_CHECK(StringFind(csv, "\"reject,") >= 0,
+                    "(b) broker_outcome with comma is RFC 4180 wrapped");
+   ok &= a.TS_CHECK(StringFind(csv, "reason=\"\"bad fill\"\"") >= 0,
+                    "(b) embedded double-quote escaped as \"\" in CSV");
+
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| CHG-15: INTENT row contains intent columns; execution cols empty. |
+//+------------------------------------------------------------------+
+bool Test_TradeLogger_IntentFieldSeparation(CAssert &a)
+  {
+   bool ok = true;
+   FolderCreate("TradeSpine/Test");
+
+   RuntimeMode mode;
+   mode.is_tester = false; mode.is_optimization = false; mode.diagnostics_enabled = true;
+   COptContext ctx(mode);
+   FakeLogSink sink;
+
+   TradeLogger logger;
+   string prefix = "Test/TL_intent_sep";
+   string stamp  = TodayStamp();
+   DeleteTestFile(prefix, stamp);
+
+   ok &= a.TS_CHECK(logger.Init(prefix, &ctx, &sink), "Init succeeds");
+
+   TradeEvidenceRecord r = MakeRecord(TRADE_RECORD_INTENT, "run-isep", "int-isep");
+   ok &= a.TS_CHECK(logger.WriteIntent(r), "WriteIntent returns true");
+   logger.Close();
+
+   string csv = ReadFileContent(TradeLoggerPath(prefix, stamp));
+
+//--- Intent columns must be present.
+   ok &= a.TS_CHECK(StringFind(csv, "130000.00000") >= 0, "intended_price written on INTENT row");
+   ok &= a.TS_CHECK(StringFind(csv, "129900.00000") >= 0, "sl_price written on INTENT row");
+   ok &= a.TS_CHECK(StringFind(csv, "130200.00000") >= 0, "tp_price written on INTENT row");
+   ok &= a.TS_CHECK(StringFind(csv, "1.00")         >= 0, "lots_requested written on INTENT row");
+   ok &= a.TS_CHECK(StringFind(csv, "\"BUY\"")      >= 0, "side written on INTENT row");
+
+//--- Execution columns must be absent (empty cells between consecutive commas).
+//--- The row has ",," where retcode, ticket, fill_price, lots_submitted would be.
+   ok &= a.TS_CHECK(StringFind(csv, "10009") < 0, "retcode absent from INTENT row");
+   ok &= a.TS_CHECK(StringFind(csv, "123456789012345") < 0, "ticket absent from INTENT row");
+
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| CHG-15: EXECUTION row contains execution cols; intent cols empty. |
+//+------------------------------------------------------------------+
+bool Test_TradeLogger_ExecutionFieldSeparation(CAssert &a)
+  {
+   bool ok = true;
+   FolderCreate("TradeSpine/Test");
+
+   RuntimeMode mode;
+   mode.is_tester = false; mode.is_optimization = false; mode.diagnostics_enabled = true;
+   COptContext ctx(mode);
+   FakeLogSink sink;
+
+   TradeLogger logger;
+   string prefix = "Test/TL_exec_sep";
+   string stamp  = TodayStamp();
+   DeleteTestFile(prefix, stamp);
+
+   ok &= a.TS_CHECK(logger.Init(prefix, &ctx, &sink), "Init succeeds");
+
+   TradeEvidenceRecord r = MakeRecord(TRADE_RECORD_EXECUTION, "run-esep", "int-esep",
+                                      "fill_ok");
+   ok &= a.TS_CHECK(logger.WriteExecution(r), "WriteExecution returns true");
+   logger.Close();
+
+   string csv = ReadFileContent(TradeLoggerPath(prefix, stamp));
+
+//--- Execution columns must be present.
+   ok &= a.TS_CHECK(StringFind(csv, "10009")           >= 0, "retcode written on EXECUTION row");
+   ok &= a.TS_CHECK(StringFind(csv, "123456789012345") >= 0, "ticket written as ulong on EXECUTION row");
+   ok &= a.TS_CHECK(StringFind(csv, "130001.00000")    >= 0, "fill_price written on EXECUTION row");
+   ok &= a.TS_CHECK(StringFind(csv, "\"BUY\"")         >= 0, "side written on EXECUTION row");
+
+//--- Intent-only price columns must be absent.
+   ok &= a.TS_CHECK(StringFind(csv, "129900.00000") < 0, "sl_price absent from EXECUTION row");
+   ok &= a.TS_CHECK(StringFind(csv, "130200.00000") < 0, "tp_price absent from EXECUTION row");
+
    return(ok);
   }
 
@@ -321,6 +475,9 @@ bool test_persistence_and_audit_evidence_integration_contract(CAssert &a)
    ok &= Test_TradeLogger_OptimizationGated(a);
    ok &= Test_TradeLogger_WriteFailure(a);
    ok &= Test_TradeLogger_WriteCount(a);
+   ok &= Test_TradeLogger_IntentFieldSeparation(a);
+   ok &= Test_TradeLogger_ExecutionFieldSeparation(a);
+   ok &= Test_TradeLogger_CSVEncoding(a);
    return(ok);
   }
 
@@ -362,6 +519,9 @@ int OnStart()
    Test_TradeLogger_OptimizationGated(asserts);
    Test_TradeLogger_WriteFailure(asserts);
    Test_TradeLogger_WriteCount(asserts);
+   Test_TradeLogger_IntentFieldSeparation(asserts);
+   Test_TradeLogger_ExecutionFieldSeparation(asserts);
+   Test_TradeLogger_CSVEncoding(asserts);
    bool pass = asserts.TS_REPORT_SUMMARY("Test_TradeLogger");
    if(!pass)
       return(1);
