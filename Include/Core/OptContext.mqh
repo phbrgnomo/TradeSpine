@@ -49,13 +49,16 @@ class COptContext
     //--- \param mode  Forced runtime-mode snapshot.
     //--- \note  Optimization unconditionally wins; outside of optimization,
     //---        mode.diagnostics_enabled is honored so harnesses can disable it.
+    //---        Set mode.is_visual=true to exercise the Alert() branch in tests
+    //---        (Alert() itself cannot fire in the Strategy Tester, so it remains
+    //---         manual-only evidence — see Test_AlertSink.mq5 comments).
     COptContext(const RuntimeMode &mode)
       {
         m_is_tester           = mode.is_tester;
         m_is_optimization     = mode.is_optimization;
         // Optimization can only occur inside the tester; normalize contradictory input.
         if(m_is_optimization) m_is_tester = true;
-        m_is_visual           = false;
+        m_is_visual           = mode.is_visual;
         m_diagnostics_enabled = mode.is_optimization ? false : mode.diagnostics_enabled;
       }
 
@@ -77,6 +80,7 @@ class COptContext
         RuntimeMode m;
         m.is_tester           = m_is_tester;
         m.is_optimization     = m_is_optimization;
+        m.is_visual           = m_is_visual;
         m.diagnostics_enabled = AllowsDiagnostics();
         return(m);
       }

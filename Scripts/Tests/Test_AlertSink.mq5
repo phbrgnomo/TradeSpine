@@ -13,9 +13,10 @@
 //|   - FakeAlertSink defined inline to capture calls without        |
 //|     triggering Alert() dialogs in the test environment.          |
 //|   - CAlertSink.Halt() logger-first contract verified via tester  |
-//|     context; Alert() modal path untestable in automated runs —   |
-//|     ordering is structural (logger.Error() precedes Alert() in   |
-//|     AlertSink.mqh source).                                       |
+//|     context; the live/visual branch (Alert() call) is code-     |
+//|     structurally exercisable by setting mode.is_visual=true, but |
+//|     Alert() itself is a documented no-op in the Strategy Tester  |
+//|     (MQL5 docs). The modal path remains manual-only evidence.   |
 //+------------------------------------------------------------------+
 #property copyright "phbr"
 #property version   "1.0"

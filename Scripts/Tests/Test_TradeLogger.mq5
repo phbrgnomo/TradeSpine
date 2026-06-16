@@ -463,6 +463,46 @@ bool Test_TradeLogger_ExecutionFieldSeparation(CAssert &a)
   }
 
 //+------------------------------------------------------------------+
+//| Out-of-domain ENUM_TRADE_SIDE must be rejected; no row written.  |
+//| Regression for H1 finding: invalid side values were silently     |
+//| coerced to BUY, misrepresenting trade direction in evidence CSV. |
+//+------------------------------------------------------------------+
+bool Test_TradeLogger_InvalidSide(CAssert &a)
+  {
+   bool ok = true;
+   FolderCreate("TradeSpine/Test");
+
+   RuntimeMode mode;
+   mode.is_tester = false; mode.is_optimization = false; mode.diagnostics_enabled = true;
+   COptContext ctx(mode);
+   FakeLogSink sink;
+
+   TradeLogger logger;
+   string prefix = "Test/TL_invalid_side";
+   string stamp  = TodayStamp();
+   DeleteTestFile(prefix, stamp);
+
+   ok &= a.TS_CHECK(logger.Init(prefix, &ctx, &sink), "Init succeeds");
+
+   TradeEvidenceRecord r = MakeRecord(TRADE_RECORD_INTENT, "run-side", "int-side");
+   r.side = (ENUM_TRADE_SIDE)-1; // cast a value outside the defined enum domain
+
+   bool result = logger.WriteIntent(r);
+   ok &= a.TS_CHECK(!result, "WriteIntent returns false for out-of-domain side value");
+   ok &= a.TS_CHECK(sink.HasMessage("invalid trade side"),
+                    "Diagnostic emitted for invalid side rejection");
+
+   logger.Close();
+
+//--- File may exist (header written by _EnsureFile before the side check), but must have no data rows.
+   string csv = ReadFileContent(TradeLoggerPath(prefix, stamp));
+   ok &= a.TS_CHECK(StringFind(csv, "INTENT")    < 0, "No INTENT row written for out-of-domain side");
+   ok &= a.TS_CHECK(StringFind(csv, "EXECUTION") < 0, "No EXECUTION row written for out-of-domain side");
+
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
 //| TDD/BDD trace-alias entry points called by RunAllTests.          |
 //+------------------------------------------------------------------+
 
@@ -478,6 +518,7 @@ bool test_persistence_and_audit_evidence_integration_contract(CAssert &a)
    ok &= Test_TradeLogger_IntentFieldSeparation(a);
    ok &= Test_TradeLogger_ExecutionFieldSeparation(a);
    ok &= Test_TradeLogger_CSVEncoding(a);
+   ok &= Test_TradeLogger_InvalidSide(a);
    return(ok);
   }
 
@@ -522,6 +563,7 @@ int OnStart()
    Test_TradeLogger_IntentFieldSeparation(asserts);
    Test_TradeLogger_ExecutionFieldSeparation(asserts);
    Test_TradeLogger_CSVEncoding(asserts);
+   Test_TradeLogger_InvalidSide(asserts);
    bool pass = asserts.TS_REPORT_SUMMARY("Test_TradeLogger");
    if(!pass)
       return(1);

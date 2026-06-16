@@ -19,6 +19,7 @@ owning IPLAN id.
 
 Current implemented surface:
 
+- **IPLAN-05 — Persistence and Audit Evidence** → [MODULES/Persistence.md](MODULES/Persistence.md)
 - **IPLAN-09 — Core Runtime and Configuration** → [MODULES/Core.md](MODULES/Core.md)
 - **IPLAN-11 — Testing Support and Harnesses** → [MODULES/Testing.md](MODULES/Testing.md)
 
@@ -26,14 +27,15 @@ Current implemented surface:
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — component boundaries, dependency direction, and the
   rules every module honors (self-contained project, quoted relative includes, no-bypass).
-- [MODULES/](MODULES/) — one reference page per module. Implemented: `Core`, `Testing`.
-  The remaining pages are stubs that their owning IPLANs will fill.
+- [MODULES/](MODULES/) — one reference page per module. Implemented: `Core`, `Persistence`,
+  `Testing`. The remaining pages are stubs that their owning IPLANs will fill.
 
 ## Repository layout (implemented today)
 
 | Path | Contents |
 |---|---|
 | [`Include/Core/`](../Include/Core) | Core runtime modules (IPLAN-09). |
+| [`Include/Persistence/`](../Include/Persistence) | State store, trade logger, and alert/log sinks (IPLAN-05). |
 | [`Include/Testing/`](../Include/Testing) | Shared testing helper `CAssert` (IPLAN-11). |
 | [`Include/StdLib/`](../Include/StdLib) | Vendored MQL5 standard-library subset (ADR-06); see [`VERSION.md`](../Include/StdLib/VERSION.md). |
 | [`Scripts/Tests/`](../Scripts/Tests) | Executable `Test_*.mq5` scripts and `RunAllTests.mq5`. |

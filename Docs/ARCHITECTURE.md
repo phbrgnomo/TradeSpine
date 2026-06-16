@@ -26,7 +26,8 @@ These come from the ADRs and are non-negotiable for any generated code:
    through one guarded boundary with layered defensive risk guards; bypass is a guarded
    policy. *(Implemented by IPLAN-03; not present yet.)*
 5. **Deterministic state + reconciliation (ADR-08, SPEC-04)** with GV state and CSV audit
-   evidence (ADR-02, SPEC-05). *(Implemented by IPLAN-04/05; not present yet.)*
+   evidence (ADR-02, SPEC-05). *(GV state and CSV audit evidence implemented by IPLAN-05.
+   SPEC-04 position state machine is owned by IPLAN-04; not present yet.)*
 6. **Test-first.** Every IPLAN writes its `Test_*.mq5` scripts before the module code.
 
 ## Dependency direction
@@ -40,7 +41,10 @@ pulling in production execution paths.
 Strategies / Ports            (IPLAN-01, 12, 13)   — planned
 Coordination / Execution      (IPLAN-02, 03)       — planned
 Position / Indicators / Optional (IPLAN-04, 07, 10) — planned
-Persistence / Market          (IPLAN-05, 06)       — planned (next)
+Market                        (IPLAN-06)            — planned (next)
+        │
+        ▼
+Persistence                   (IPLAN-05)            — IMPLEMENTED
         │
         ▼
 Core Runtime                  (IPLAN-09)            — IMPLEMENTED
@@ -63,6 +67,22 @@ Test-time only. The canonical assertion helper `CAssert`, deterministic `FakeClo
 `FakeLogSink`, and a `ScenarioHarness` for integration assembly. Full reference:
 [MODULES/Testing.md](MODULES/Testing.md). These types never ship inside a strategy.
 
+### Persistence and Audit Evidence — `Include/Persistence/` (IPLAN-05)
+Three separated streams: GV-backed state, CSV trade evidence, and leveled diagnostics.
+
+- `CStateStore` — GV-backed `IStateStore`: deterministic hashed keys (FNV-1a, never raw identity
+  in GV names), lossless ulong ticket split across two 32-bit GVs, duplicate order-intent markers,
+  HALT circuit-breaker (flag GV + evidence file). `SetHalt()` sanitizes the symbol component of
+  the filename and strips `\n`/`\r` from payload fields before writing. IPLAN-04 scope owns the
+  account-symbol-magic ownership heartbeat (`GlobalVariableSetOnCondition`); IPLAN-05 provides the
+  primitive GV infrastructure.
+- `TradeLogger` — paired CSV intent/execution evidence per SPEC-05. Out-of-domain
+  `ENUM_TRADE_SIDE` values are rejected (not silently coerced to `BUY`).
+- `Logger` / `CAlertSink` — leveled diagnostic routing; `CAlertSink` routes HALT signals to
+  `SetHalt()` + `Alert()` (live/visual) or log-only (tester), silent in optimization.
+
+Full reference: [MODULES/Persistence.md](MODULES/Persistence.md).
+
 ## Runtime-mode policy (cross-cutting)
 
 `COptContext` ([`Include/Core/OptContext.mqh`](../Include/Core/OptContext.mqh)) is the single
@@ -78,8 +98,8 @@ through a `COptContext` rather than checking `MQLInfoInteger` directly.
 |---|---|---|---|
 | Core | `Include/Core/` | IPLAN-09 | Implemented |
 | Testing | `Include/Testing/`, `Scripts/Tests/Support/` | IPLAN-11 | Implemented |
+| Persistence | `Include/Persistence/` | IPLAN-05 | Implemented — see [Persistence.md](MODULES/Persistence.md) |
 | Market | `Include/Market/` | IPLAN-06 | Planned (next) |
-| Persistence | `Include/Persistence/` | IPLAN-05 | Planned (next) |
 | Position | `Include/Position/` | IPLAN-04 | Planned |
 | Indicators | `Include/Indicators/` | IPLAN-07 | Planned |
 | Coordination | `Include/Coordination/` | IPLAN-02 | Planned |

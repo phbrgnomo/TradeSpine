@@ -87,8 +87,9 @@ Every `Test_*.mq5` follows the same shape so it can run standalone **and** be ag
 2. **Quoted includes** of `Assert.mqh` and the unit under test.
 3. **Decomposed test helpers** returning `bool` and taking `CAssert &asserts`.
 4. **TDD-trace alias functions** named `test_<slug>_<id>_<type>` (e.g.
-   `test_core_runtime_and_configuration_aa68_unit`) that the aggregate runner calls — these
-   map each test to its BDD scenario / TDD case.
+   `test_core_runtime_and_configuration_aa68_unit`) that map each test to its BDD scenario /
+   TDD case. Every canonical mapped alias must exist. Deferred owner-plan coverage is
+   represented by an alias that calls `TS_SKIP(...)`.
 5. **Guarded `OnStart()`** so the file is a runnable script on its own but yields its
    `OnStart` to the aggregate runner when included:
 
@@ -110,8 +111,14 @@ int OnStart()
 ## Aggregate runner
 
 [`RunAllTests.mq5`](../../Scripts/Tests/RunAllTests.mq5) `#define`s `TRADESPINE_RUN_ALL_TESTS`,
-includes every `Test_*.mq5` (their own `OnStart` suppressed by the guard), and calls all
-TDD-mapped alias functions against one shared `CAssert`, returning non-zero on any failure.
+includes every implemented `Test_*.mq5` (their own `OnStart` suppressed by the guard), and
+calls the contract aggregators for full helper coverage against one shared `CAssert`,
+returning non-zero on any failure.
+
+BDD subset aliases remain callable trace/targeted-run entry points, but the aggregate runner
+does not call every subset alias because doing so would double-run helpers already covered by
+the broader contract aggregators. If a canonical mapping is deferred to another IPLAN, the
+alias still exists and records the deferral with `TS_SKIP(...)`.
 
 ## Running the tests
 
@@ -123,6 +130,8 @@ the Navigator; read results in the Experts/Journal log. The headless helper
 
 - [ ] Create `Scripts/Tests/Test_<Thing>.mq5` with the header, includes, and the guarded `OnStart()`.
 - [ ] Write decomposed `bool` helpers taking `CAssert &asserts`.
-- [ ] Add `test_<slug>_<id>_<type>` alias functions mapping to the TDD cases.
-- [ ] `#include` it and call its alias functions from `RunAllTests.mq5`.
+- [ ] Add `test_<slug>_<id>_<type>` alias functions mapping to the TDD cases; use `TS_SKIP(...)`
+  aliases for deferred owner-plan coverage.
+- [ ] `#include` it from `RunAllTests.mq5`; call the contract aggregator there unless the
+  alias is an intentionally visible deferral skip.
 - [ ] Compile and run in MT5; confirm green before marking the IPLAN file `verified`.

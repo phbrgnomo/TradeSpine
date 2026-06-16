@@ -64,6 +64,11 @@ GV write failures (`WriteScalar`, `SetDuplicate`, `SetHalt`, `WriteTicket`, `Ini
 `GlobalVariableSet()` error code via `PrintFormat()` for diagnostics; the bool return contract
 is unchanged.
 
+> **IPLAN-04 boundary.** Account-symbol-magic duplicate *ownership* detection — heartbeat GV
+> via `GlobalVariableSetOnCondition()`, stale recovery after 90 s, and owner diagnostics
+> (PRD AC-39/AC-42) — is IPLAN-04 scope. `CStateStore` provides the primitive GV write
+> infrastructure that IPLAN-04 will consume; it does not implement the ownership protocol.
+
 ### Shared enums — `Include/Persistence/PersistenceTypes.mqh`
 
 Types used by more than one Persistence module live here to avoid spurious cross-module coupling.
@@ -91,8 +96,11 @@ void Close();
 Writes paired CSV rows to `MQL5/Files/TradeSpine/<prefix>_<YYYYMMDD>.csv`.
 Gated by `ctx.AllowsHighVolumeEvidence()` — silent in optimization mode.
 `WriteIntent`/`WriteExecution` return `false` on I/O failure (LogFailure); caller decides policy.
-Header-write failure on a newly created file is treated the same way: the file handle is
-closed and reset, and the call returns `false`.
+An out-of-domain `ENUM_TRADE_SIDE` value causes `_WriteRow()` to emit a diagnostic and return
+`false` without disturbing the open file handle, so a subsequent valid write can succeed on the
+same handle without reopening. Header-write failure on a newly created file and a zero-byte
+`FileWriteString()` result during row write do close and reset the handle before returning `false`,
+so the next write attempt gets a clean reopen.
 
 Purpose: forensic audit trail (what the EA intended before the broker call, and what the broker
 returned). Strategy performance analysis (P&L, win rate, drawdown) is out of scope — use MT5
@@ -197,6 +205,6 @@ Standard scope tags used by `CStateStore`:
 
 | Test file | Coverage |
 |---|---|
-| `Scripts/Tests/Test_StateStore.mq5` | KeyBuilder determinism, bounds, collision detection; GV round-trips, duplicate markers, HALT flag, ticket lossless split, fingerprint corruption detection |
-| `Scripts/Tests/Test_TradeLogger.mq5` | Intent/execution pairing, CSV content verification, log separation, optimization gate, write failure path |
-| `Scripts/Tests/Test_AlertSink.mq5` | Logger gating per mode, Error always emits, CAlertSink routing for tester/optimization/live, logger-first contract, HALT flag persistence via FakeStateStore, FakeAlertSink E2E |
+| `Scripts/Tests/Test_StateStore.mq5` | KeyBuilder determinism, bounds, collision detection; GV round-trips, duplicate markers, HALT flag and evidence file, HALT filename sanitization (path-like symbols), HALT payload newline stripping, large magic unsigned encoding, ticket lossless split, fingerprint corruption detection |
+| `Scripts/Tests/Test_TradeLogger.mq5` | Intent/execution pairing, CSV content verification, log separation, optimization gate, write failure path, invalid `ENUM_TRADE_SIDE` rejection |
+| `Scripts/Tests/Test_AlertSink.mq5` | Logger gating per mode, Error always emits, CAlertSink routing for tester/optimization/live, logger-first contract, HALT flag persistence via FakeStateStore, FakeAlertSink E2E (visual-mode path is structurally injectable via `RuntimeMode.is_visual` but `Alert()` remains manual-only in Strategy Tester) |

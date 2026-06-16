@@ -31,7 +31,7 @@ calling `TimeCurrent()` directly.
 sinks arrive with the evidence IPLANs).
 - `void Write(ENUM_LOG_LEVEL level, string category, string message)`
 
-Data models: `RuntimeMode{is_tester, is_optimization, diagnostics_enabled}`,
+Data models: `RuntimeMode{is_tester, is_optimization, diagnostics_enabled, is_visual=false}`,
 `ProfileSample{scope, elapsed_us, enabled}`,
 `BenchmarkBaseline{scenario, baseline_memory, component_memory_delta, timing_source}`.
 

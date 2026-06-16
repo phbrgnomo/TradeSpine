@@ -62,9 +62,10 @@ interface ILogSink
 //+------------------------------------------------------------------+
 struct RuntimeMode
   {
-   bool is_tester;          // inside Strategy Tester
-   bool is_optimization;    // optimization pass
-   bool diagnostics_enabled;// detailed diagnostics allowed for this mode
+   bool is_tester;              // inside Strategy Tester
+   bool is_optimization;        // optimization pass
+   bool diagnostics_enabled;    // detailed diagnostics allowed for this mode
+   bool is_visual = false;      // visual tester mode; explicit default guards uninitialized fixtures
   };
 
 //+------------------------------------------------------------------+

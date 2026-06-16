@@ -92,7 +92,7 @@ class TradeLogger
    //--- Open (or reopen after date rollover) the CSV file; write header if new.
    bool           _EnsureFile(void);
 
-   //--- Format and write one evidence row.
+   //--- Format and write one evidence row; returns false (with diagnostic) on invalid side or I/O failure.
    bool           _WriteRow(const TradeEvidenceRecord &rec);
 
    //--- UTC datetime → "YYYYMMDD" for file naming.
@@ -214,6 +214,13 @@ bool TradeLogger::_WriteRow(const TradeEvidenceRecord &rec)
   {
    if(!_EnsureFile()) return(false);
 
+//--- Reject out-of-domain side values; coercing them to BUY would silently misrepresent direction.
+   if(rec.side != TRADE_SIDE_BUY && rec.side != TRADE_SIDE_SELL)
+     {
+      m_sink.Write(LOG_ERROR, "TradeLogger", "invalid trade side value; record rejected");
+      return(false);
+     }
+
    bool   is_intent = (rec.record_type == TRADE_RECORD_INTENT);
    string type_str  = is_intent ? "INTENT" : "EXECUTION";
 
@@ -248,7 +255,12 @@ bool TradeLogger::_WriteRow(const TradeEvidenceRecord &rec)
 
    uint written = FileWriteString(m_fh, row);
    if(written == 0)
+     {
+      FileClose(m_fh);
+      m_fh    = INVALID_HANDLE;
+      m_today = "";
       return(false);
+     }
 
 //--- Flush immediately so evidence survives a terminal crash.
    FileFlush(m_fh);

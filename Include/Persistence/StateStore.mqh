@@ -122,6 +122,13 @@ interface IStateStore
 //|        Call Init() once before any other method. All GV keys are |
 //|        built via the injected CKeyBuilder; raw identity fields   |
 //|        never appear in GV names or values.                       |
+//|                                                                  |
+//| \note  Account-symbol-magic duplicate *ownership* detection —   |
+//|        heartbeat GV via GlobalVariableSetOnCondition(), stale   |
+//|        recovery, and owner diagnostics (PRD AC-39/AC-42) — is  |
+//|        IPLAN-04 scope. CStateStore provides the primitive GV    |
+//|        write infrastructure that IPLAN-04 will consume; it does |
+//|        not implement the ownership protocol itself.             |
 //+------------------------------------------------------------------+
 class CStateStore : public IStateStore
   {
@@ -138,6 +145,12 @@ class CStateStore : public IStateStore
    //--- \param value  Scalar double to store.
    //--- \return true if GlobalVariableSet succeeded (non-zero); false on failure.
    bool               _setGV(string key, double value);
+
+   //--- Replaces filesystem-special characters (/\:*?"<>|\n\r) with '_' in a filename component.
+   static string      _SanitizePath(const string s);
+
+   //--- Replaces \n and \r with a space in a HALT evidence payload value to prevent line injection.
+   static string      _StripNewlines(const string s);
 
   public:
                       CStateStore(void) : m_kb(NULL), m_initialized(false) {}
@@ -272,15 +285,15 @@ bool CStateStore::SetHalt(const HaltEvidence &ev)
 //---    EA is safe, but incomplete evidence would leave the operator without
 //---    a recovery action. Return false if any write step fails.
    string fname = "TradeSpine/Halt_" + StringFormat("%I64u", m_id.magic)
-                + "_" + m_id.symbol + ".txt";
+                + "_" + _SanitizePath(m_id.symbol) + ".txt";
    int fh = FileOpen(fname, FILE_WRITE | FILE_TXT | FILE_ANSI);
    if(fh == INVALID_HANDLE)
       return(false);
 
    bool ok = true;
-   ok &= (FileWriteString(fh, "reason=" + ev.reason + "\n") > 0);
+   ok &= (FileWriteString(fh, "reason=" + _StripNewlines(ev.reason) + "\n") > 0);
    ok &= (FileWriteString(fh, "last_known_state=" + IntegerToString(ev.last_known_state) + "\n") > 0);
-   ok &= (FileWriteString(fh, "operator_action=" + ev.operator_action + "\n") > 0);
+   ok &= (FileWriteString(fh, "operator_action=" + _StripNewlines(ev.operator_action) + "\n") > 0);
    FileFlush(fh);
    FileClose(fh);
    return(ok);
@@ -344,6 +357,33 @@ bool CStateStore::Verify()
    double stored   = GlobalVariableGet(fp_key);
    double expected = m_kb.Fingerprint(m_id);
    return(stored == expected);
+  }
+
+//+------------------------------------------------------------------+
+static string CStateStore::_SanitizePath(const string s)
+  {
+   string r = s;
+   StringReplace(r, "/",  "_");
+   StringReplace(r, "\\", "_");
+   StringReplace(r, ":",  "_");
+   StringReplace(r, "*",  "_");
+   StringReplace(r, "?",  "_");
+   StringReplace(r, "\"", "_");
+   StringReplace(r, "<",  "_");
+   StringReplace(r, ">",  "_");
+   StringReplace(r, "|",  "_");
+   StringReplace(r, "\n", "_");
+   StringReplace(r, "\r", "_");
+   return(r);
+  }
+
+//+------------------------------------------------------------------+
+static string CStateStore::_StripNewlines(const string s)
+  {
+   string r = s;
+   StringReplace(r, "\n", " ");
+   StringReplace(r, "\r", " ");
+   return(r);
   }
 
 #endif // TRADESPINE_PERSISTENCE_STATESTORE_MQH

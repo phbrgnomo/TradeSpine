@@ -416,7 +416,20 @@ bool test_testing_support_and_harnesses_aa68_integration(CAssert &asserts)
    return(true);
   }
 
+//--- BDD.01.03.f415: no genuine unit slice; exercised by integration/e2e pack gates.
+bool test_testing_support_and_harnesses_f415_unit(CAssert &asserts)
+  {
+   asserts.TS_SKIP("BDD.01.03.f415 account-mode evidence unit slice deferred; covered by integration/e2e gates");
+   return(true);
+  }
+
 //--- BDD.01.03.e16a: ambiguous async broker outcome -> HALT — requires FakeTradePort (IPLAN-03).
+bool test_testing_support_and_harnesses_e16a_unit(CAssert &asserts)
+  {
+   asserts.TS_SKIP("BDD.01.03.e16a async-broker HALT unit slice deferred to IPLAN-03 (FakeTradePort)");
+   return(true);
+  }
+
 bool test_testing_support_and_harnesses_e16a_integration(CAssert &asserts)
   {
    asserts.TS_SKIP("BDD.01.03.e16a async-broker HALT deferred to IPLAN-03 (FakeTradePort)");

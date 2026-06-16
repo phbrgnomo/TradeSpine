@@ -48,7 +48,7 @@ flowchart TD
 | --- | --- | --- | --- | --- | --- | --- |
 | IPLAN-09 | Core Runtime and Configuration Implementation | @spec: SPEC-09 | Completed | 4 | 10 | None |
 | IPLAN-11 | Testing Support and Harnesses Implementation | @spec: SPEC-11 | Completed | 4 | 9 | IPLAN-09 |
-| IPLAN-05 | Persistence and Audit Evidence Implementation | @spec: SPEC-05 | Draft | 4 | 8 | IPLAN-09, IPLAN-11 |
+| IPLAN-05 | Persistence and Audit Evidence Implementation | @spec: SPEC-05 | Completed | 4 | 8 | IPLAN-09, IPLAN-11 |
 | IPLAN-06 | Market Session and Symbol Context Implementation | @spec: SPEC-06 | Draft | 4 | 6 | IPLAN-09, IPLAN-11 |
 | IPLAN-04 | Position Account Mode and State Implementation | @spec: SPEC-04 | Draft | 5 | 9 | IPLAN-05, IPLAN-11 |
 | IPLAN-07 | Indicators Stops Sizing and Trailing Implementation | @spec: SPEC-07 | Draft | 5 | 8 | IPLAN-06, IPLAN-09, IPLAN-11 |

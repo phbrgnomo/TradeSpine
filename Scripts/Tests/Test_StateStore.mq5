@@ -506,6 +506,119 @@ bool Test_KeyBuilder_LargeMagic(CAssert &a)
   }
 
 //+------------------------------------------------------------------+
+//| Read all lines of a text file; return concatenated content.      |
+//+------------------------------------------------------------------+
+string ReadHaltFile(string path)
+  {
+   int fh = FileOpen(path, FILE_READ | FILE_TXT | FILE_ANSI | FILE_SHARE_READ);
+   if(fh == INVALID_HANDLE)
+      return("");
+   string content = "";
+   while(!FileIsEnding(fh))
+      content += FileReadString(fh) + "\n";
+   FileClose(fh);
+   return(content);
+  }
+
+//+------------------------------------------------------------------+
+//| HALT filename sanitisation: symbol with path separator '/' must  |
+//| not redirect evidence into a subdirectory.                       |
+//| Regression for H1 finding: raw m_id.symbol in filename could    |
+//| allow a broker symbol like "INDEX/SPOT" to create subdirs or    |
+//| fail FileOpen().                                                 |
+//+------------------------------------------------------------------+
+bool Test_StateStore_Halt_PathSymbol(CAssert &a)
+  {
+   bool ok = true;
+
+   CanonicalIdentity id;
+   id.account = TEST_ACCOUNT;
+   id.symbol  = "TST/EST"; // forward slash in symbol name
+   id.magic   = TEST_MAGIC;
+   id.scope   = "";
+
+   CKeyBuilder kb;
+   CStateStore store;
+   ok &= a.TS_CHECK(store.Init(id, &kb), "Init with path-like symbol succeeds");
+
+   HaltEvidence ev;
+   ev.reason           = "PathSymbol HALT test";
+   ev.last_known_state = POSITION_STATE_ACTIVE;
+   ev.operator_action  = "Verify and restart";
+
+   ok &= a.TS_CHECK(store.SetHalt(ev), "SetHalt with path-like symbol returns true");
+
+   string sanitized_file   = "TradeSpine/Halt_" + StringFormat("%I64u", TEST_MAGIC) + "_TST_EST.txt";
+   string unsanitized_file = "TradeSpine/Halt_" + StringFormat("%I64u", TEST_MAGIC) + "_TST/EST.txt";
+
+   ok &= a.TS_CHECK(FileIsExist(sanitized_file),
+                    "HALT file at sanitized path (/ replaced with _)");
+   ok &= a.TS_CHECK(!FileIsExist(unsanitized_file),
+                    "No HALT file at unsanitized path (no subdirectory traversal)");
+
+//--- Cleanup: delete evidence file and GVs created for this non-standard identity.
+   FileDelete(sanitized_file);
+   string fp_key, halt_key;
+   id.scope = "fp";        kb.Build(id, fp_key);
+   id.scope = "halt_flag"; kb.Build(id, halt_key);
+   GlobalVariableDel(fp_key);
+   GlobalVariableDel(halt_key);
+
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| HALT payload sanitisation: embedded \n and \r in reason and      |
+//| operator_action must not inject extra key=value lines into the   |
+//| evidence file.                                                   |
+//| Regression for H1 finding: unsanitised payloads allowed forged- |
+//| looking evidence lines via newline injection.                    |
+//+------------------------------------------------------------------+
+bool Test_StateStore_Halt_PayloadEscape(CAssert &a)
+  {
+   bool ok = true;
+   CKeyBuilder kb;
+   CleanupGVs(kb);
+
+   CStateStore store;
+   MakeStore(store, kb);
+
+   HaltEvidence ev;
+   ev.reason           = "line1\nline2";           // embedded LF must be stripped
+   ev.last_known_state = POSITION_STATE_ACTIVE;
+   ev.operator_action  = "action\r\nwith\nnewlines"; // embedded CRLF and LF must be stripped
+
+   ok &= a.TS_CHECK(store.SetHalt(ev), "SetHalt with newlines in payload returns true");
+
+   string halt_file = "TradeSpine/Halt_" + StringFormat("%I64u", TEST_MAGIC) + "_" + TEST_SYMBOL + ".txt";
+   ok &= a.TS_CHECK(FileIsExist(halt_file), "HALT evidence file exists");
+
+//--- Read lines one by one; count only non-empty ones.
+   int fh = FileOpen(halt_file, FILE_READ | FILE_TXT | FILE_ANSI | FILE_SHARE_READ);
+   int line_count = 0;
+   if(fh != INVALID_HANDLE)
+     {
+      while(!FileIsEnding(fh))
+        {
+         string line = FileReadString(fh);
+         if(StringLen(line) > 0)
+            line_count++;
+        }
+      FileClose(fh);
+     }
+   ok &= a.TS_CHECK(line_count == 3,
+                    "HALT file has exactly 3 lines (no injected lines from payload newlines)");
+
+//--- Positive check: reason payload newline was replaced with space, not silently dropped.
+   string content = ReadHaltFile(halt_file);
+   ok &= a.TS_CHECK(StringFind(content, "reason=line1 line2") >= 0,
+                    "Reason newline replaced with space in HALT evidence");
+
+   CleanupGVs(kb);
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
 //| TDD/BDD trace-alias entry points called by RunAllTests.          |
 //+------------------------------------------------------------------+
 
@@ -523,6 +636,8 @@ bool test_persistence_and_audit_evidence_unit_contract(CAssert &a)
    ok &= Test_StateStore_Duplicate(a);
    ok &= Test_StateStore_Halt(a);
    ok &= Test_StateStore_Halt_LargeMagic(a);
+   ok &= Test_StateStore_Halt_PathSymbol(a);
+   ok &= Test_StateStore_Halt_PayloadEscape(a);
    ok &= Test_StateStore_Ticket(a);
    ok &= Test_StateStore_VerifyFailOnCorruption(a);
    ok &= Test_StateStore_InitMismatch(a);
@@ -537,6 +652,8 @@ bool test_persistence_and_audit_evidence_0073_unit(CAssert &a)
    ok &= Test_StateStore_Duplicate(a);
    ok &= Test_StateStore_Halt(a);
    ok &= Test_StateStore_Halt_LargeMagic(a);
+   ok &= Test_StateStore_Halt_PathSymbol(a);
+   ok &= Test_StateStore_Halt_PayloadEscape(a);
    return(ok);
   }
 
@@ -581,6 +698,8 @@ int OnStart()
    Test_StateStore_Duplicate(asserts);
    Test_StateStore_Halt(asserts);
    Test_StateStore_Halt_LargeMagic(asserts);
+   Test_StateStore_Halt_PathSymbol(asserts);
+   Test_StateStore_Halt_PayloadEscape(asserts);
    Test_StateStore_Ticket(asserts);
    Test_StateStore_VerifyFailOnCorruption(asserts);
    Test_StateStore_InitMismatch(asserts);

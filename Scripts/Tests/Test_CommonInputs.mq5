@@ -256,6 +256,20 @@ bool test_core_runtime_and_configuration_aa68_unit(CAssert &asserts)
   }
 
 //+------------------------------------------------------------------+
+//| \brief TDD.09.04.bb66 e2e alias for unsupported-placeholder      |
+//|        rejection in CommonInputs.                                |
+//| \param asserts Shared assertion recorder.                        |
+//| \return true when the delegated CommonInputs rejection checks pass.|
+//+------------------------------------------------------------------+
+bool test_core_runtime_and_configuration_e2e_acceptance(CAssert &asserts)
+  {
+   bool ok = true;
+   ok &= Test_SizingPlaceholderRejected(asserts);
+   ok &= Test_UnknownEnumRejected(asserts);
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
 //| Script entry point.                                              |
 //| Returns 0=all pass, 1=any failure, 2=pass but skips present.    |
 //+------------------------------------------------------------------+

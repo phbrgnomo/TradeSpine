@@ -32,9 +32,17 @@ private:
   bool              m_overflow_warning_logged;
 
 public:
+  //+------------------------------------------------------------------+
+  //| \brief Construct an empty fixed-capacity fake log sink.           |
+  //+------------------------------------------------------------------+
   FakeLogSink(void) : m_count(0), m_overflow(false), m_overflow_warning_logged(false) {}
 
-   // Captures the write into the fixed buffer, or sets the overflow flag and discards if full.
+   //+------------------------------------------------------------------+
+   //| \brief Capture a log write into the fixed buffer.                 |
+   //| \param level Log severity.                                       |
+   //| \param category Log category.                                    |
+   //| \param message Log message text.                                 |
+   //+------------------------------------------------------------------+
    void Write(const ENUM_LOG_LEVEL level, const string category, const string message) override
      {
       if(m_count >= FAKE_LOG_SINK_CAPACITY)
@@ -53,13 +61,23 @@ public:
       m_count++;
      }
 
-   // Returns the number of messages retained (capped at FAKE_LOG_SINK_CAPACITY).
+   //+------------------------------------------------------------------+
+   //| \brief Return the number of retained messages.                   |
+   //| \return Retained message count, capped at FAKE_LOG_SINK_CAPACITY.|
+   //+------------------------------------------------------------------+
    int Count(void) const { return(m_count); }
 
-   // True if any Write() call was discarded due to buffer exhaustion.
+   //+------------------------------------------------------------------+
+   //| \brief Report whether any write was discarded due to capacity.    |
+   //| \return true after the fixed buffer overflows.                    |
+   //+------------------------------------------------------------------+
   bool HasOverflow(void) const { return(m_overflow); }
 
-   // Searches all retained messages for fragment; empty fragment always returns false.
+   //+------------------------------------------------------------------+
+   //| \brief Search retained messages for a substring.                  |
+   //| \param fragment Non-empty substring to find.                      |
+   //| \return true when any retained message contains fragment.         |
+   //+------------------------------------------------------------------+
    bool HasMessage(const string fragment) const
      {
       if(StringLen(fragment) == 0)
@@ -70,7 +88,11 @@ public:
       return(false);
      }
 
-   // Returns the captured message text at the given index, or "" if out of range.
+   //+------------------------------------------------------------------+
+   //| \brief Return retained message text by index.                    |
+   //| \param idx Zero-based retained message index.                    |
+   //| \return Message text, or "" when idx is out of range.            |
+   //+------------------------------------------------------------------+
    string GetMessage(const int idx) const
      {
       if(idx < 0 || idx >= m_count)
@@ -78,7 +100,11 @@ public:
       return(m_messages[idx]);
      }
 
-   // Returns the log level of the entry at idx; returns (ENUM_LOG_LEVEL)-1 if out of range.
+   //+------------------------------------------------------------------+
+   //| \brief Return retained log level by index.                       |
+   //| \param idx Zero-based retained message index.                    |
+   //| \return Log level, or (ENUM_LOG_LEVEL)-1 when idx is out of range.|
+   //+------------------------------------------------------------------+
    ENUM_LOG_LEVEL GetLevel(const int idx) const
      {
       if(idx < 0 || idx >= m_count)
@@ -86,7 +112,11 @@ public:
       return(m_levels[idx]);
      }
 
-   // Returns the category string of the entry at idx, or "" if out of range.
+   //+------------------------------------------------------------------+
+   //| \brief Return retained category by index.                        |
+   //| \param idx Zero-based retained message index.                    |
+   //| \return Category string, or "" when idx is out of range.         |
+   //+------------------------------------------------------------------+
    string GetCategory(const int idx) const
      {
       if(idx < 0 || idx >= m_count)
@@ -94,7 +124,12 @@ public:
       return(m_categories[idx]);
      }
 
-   // True only when a retained entry matches both exact category and contains trace_fragment.
+   //+------------------------------------------------------------------+
+   //| \brief Search retained messages by exact category and trace text. |
+   //| \param category Exact category to match.                         |
+   //| \param trace_fragment Non-empty substring to find in the message.|
+   //| \return true when a retained entry matches both fields.          |
+   //+------------------------------------------------------------------+
    bool HasMessageInCategory(const string category, const string trace_fragment) const
      {
       if(StringLen(trace_fragment) == 0)
@@ -105,7 +140,9 @@ public:
       return(false);
      }
 
-   // Resets count, overflow flag, and warning guard so the sink can be reused between sub-tests.
+   //+------------------------------------------------------------------+
+   //| \brief Clear retained messages and overflow state for reuse.      |
+   //+------------------------------------------------------------------+
    void Clear(void)
      {
     m_count                   = 0;

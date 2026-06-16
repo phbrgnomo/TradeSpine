@@ -99,12 +99,16 @@ class CAssert
       }
 
   public:
-    // Initialises all counters to zero; failure message array starts empty; verbose by default.
+    //+------------------------------------------------------------------+
+    //| \brief Construct a clean assertion recorder with verbose output.  |
+    //+------------------------------------------------------------------+
     CAssert(void) : m_tests_run(0), m_tests_passed(0), m_tests_skipped(0), m_dropped_failures(0),
                     m_verbose(true), m_xfail_active(false), m_xfail_seen(false) {}
 
-    // Zeroes all counters and releases the failure message array; call before each test function.
-    // Leaves the verbose setting untouched (it is per-instance configuration, not test state).
+    //+------------------------------------------------------------------+
+    //| \brief Reset counters, xfail state, and recorded failure messages.|
+    //|        Leaves verbose output configuration unchanged.             |
+    //+------------------------------------------------------------------+
     void Reset(void)
       {
         m_tests_run        = 0;
@@ -116,17 +120,41 @@ class CAssert
         ArrayResize(m_fail_msgs, 0);
       }
 
-    // Silences PASS/FAIL/SKIP console output when false. Use on isolated probe instances whose
-    // outcome is inspected programmatically, so their provoked failures never look like real ones.
+    //+------------------------------------------------------------------+
+    //| \brief Enable or disable PASS/FAIL/SKIP console output.           |
+    //| \param v false silences output for isolated probe instances.      |
+    //+------------------------------------------------------------------+
     void SetVerbose(const bool v) { m_verbose = v; }
 
-    // Counter accessors — read these in snapshot/restore patterns to verify assertion outcomes.
+    //+------------------------------------------------------------------+
+    //| \brief Return the number of counted assertion checks.             |
+    //| \return Number of checks counted as test runs.                    |
+    //+------------------------------------------------------------------+
     int TestsRun(void) const { return(m_tests_run); }
+
+    //+------------------------------------------------------------------+
+    //| \brief Return the number of passed assertion checks.              |
+    //| \return Number of checks counted as passed.                       |
+    //+------------------------------------------------------------------+
     int TestsPassed(void) const { return(m_tests_passed); }
+
+    //+------------------------------------------------------------------+
+    //| \brief Return the number of recorded skips.                       |
+    //| \return Number of skip records.                                   |
+    //+------------------------------------------------------------------+
     int TestsSkipped(void) const { return(m_tests_skipped); }
+
+    //+------------------------------------------------------------------+
+    //| \brief Return the number of retained failure messages.            |
+    //| \return Current retained failure-message count.                   |
+    //+------------------------------------------------------------------+
     int FailureCount(void) const { return(ArraySize(m_fail_msgs)); }
 
-    // Returns the recorded failure message at the given index, or "" if out of range.
+    //+------------------------------------------------------------------+
+    //| \brief Return a retained failure message by index.                |
+    //| \param index Zero-based failure-message index.                    |
+    //| \return Failure message, or "" when index is out of range.        |
+    //+------------------------------------------------------------------+
     string FailureMessage(const int index) const
       {
         if(index < 0 || index >= ArraySize(m_fail_msgs))
@@ -134,7 +162,10 @@ class CAssert
         return(m_fail_msgs[index]);
       }
 
-    // Captures all four counters so a controlled-failure sub-test can be rolled back with Restore().
+    //+------------------------------------------------------------------+
+    //| \brief Capture counters for later rollback with Restore().        |
+    //| \return Snapshot of run, pass, skip, and failure-message counts.  |
+    //+------------------------------------------------------------------+
     AssertSnapshot Snapshot(void) const
       {
         AssertSnapshot snapshot;
@@ -145,7 +176,10 @@ class CAssert
         return(snapshot);
       }
 
-    // Rewinds counters and truncates the failure array to the snapshot state, erasing intervening results.
+    //+------------------------------------------------------------------+
+    //| \brief Restore counters and truncate failures to a snapshot.      |
+    //| \param snapshot Snapshot previously returned by Snapshot().       |
+    //+------------------------------------------------------------------+
     void Restore(const AssertSnapshot &snapshot)
       {
         m_tests_run     = snapshot.tests_run;
@@ -154,7 +188,12 @@ class CAssert
         ArrayResize(m_fail_msgs, snapshot.failure_count, TRADESPINE_ASSERT_FAILURE_RESERVE);
       }
 
-    // Increments the skip counter and prints a SKIP line; does not count as a run or failure.
+    //+------------------------------------------------------------------+
+    //| \brief Record a skip without counting a run or failure.           |
+    //| \param msg Human-readable skip reason.                            |
+    //| \param file Source file captured by the TS_SKIP macro.            |
+    //| \param line Source line captured by the TS_SKIP macro.            |
+    //+------------------------------------------------------------------+
     void _Skip(const string msg, const string file, const int line)
       {
         m_tests_skipped++;
@@ -162,9 +201,13 @@ class CAssert
            PrintFormat("  SKIP: %s  (%s)", msg, FormatLocation(file, line));
       }
 
-    // Opens a negative-assertion scope: every check until EndExpectFailure() is EXPECTED to fail.
-    // A failing check satisfies the expectation (logged quietly as "(expected)") and does NOT
-    // record a failure or touch the pass/fail counters — so provoked failures never look real.
+    //+------------------------------------------------------------------+
+    //| \brief Open a scope where at least one assertion is expected to   |
+    //|        fail without recording a real failure.                     |
+    //| \param label Label printed when the expected-failure scope closes.|
+    //| \param file Source file captured by the macro.                   |
+    //| \param line Source line captured by the macro.                   |
+    //+------------------------------------------------------------------+
     void _BeginExpectFailure(const string label, const string file, const int line)
       {
         if(m_xfail_active)            // defensive: an unterminated prior scope fails closed
@@ -174,10 +217,12 @@ class CAssert
         m_xfail_label  = label;
       }
 
-    // Closes the scope and records exactly one result: PASS if >=1 check failed inside it,
-    // FAIL otherwise (we expected a failure and none occurred).
-    // A stray call (no matching BEGIN) is a no-op: counters are not touched and a
-    // diagnostic NOTE is always printed so the programming mistake is visible.
+    //+------------------------------------------------------------------+
+    //| \brief Close an expected-failure scope and record its result.     |
+    //| \param file Source file captured by the macro.                   |
+    //| \param line Source line captured by the macro.                   |
+    //| \return true for a satisfied expectation or stray no-op close.    |
+    //+------------------------------------------------------------------+
     bool _EndExpectFailure(const string file, const int line)
       {
         if(!m_xfail_active)
@@ -204,8 +249,14 @@ class CAssert
         return(false);
       }
 
-    // Core assertion gate: increments run, increments passed on true, records failure message on false.
-    // Inside an expect-failure scope a false result is captured as the expected outcome instead.
+    //+------------------------------------------------------------------+
+    //| \brief Core boolean assertion gate used by TS_CHECK.             |
+    //| \param cond Assertion condition.                                 |
+    //| \param msg Assertion message.                                    |
+    //| \param file Source file captured by the macro.                   |
+    //| \param line Source line captured by the macro.                   |
+    //| \return cond, after updating assertion counters.                 |
+    //+------------------------------------------------------------------+
     bool _Check(const bool cond, const string msg, const string file, const int line)
       {
         if(m_xfail_active)
@@ -238,7 +289,16 @@ class CAssert
         return(false);
       }
 
-    // Compares two doubles within tol; rejects non-finite operands or a negative/NaN tolerance.
+    //+------------------------------------------------------------------+
+    //| \brief Compare two doubles within a non-negative finite tolerance.|
+    //| \param a Actual value.                                           |
+    //| \param b Expected value.                                         |
+    //| \param tol Maximum absolute difference.                          |
+    //| \param msg Assertion message.                                    |
+    //| \param file Source file captured by the macro.                   |
+    //| \param line Source line captured by the macro.                   |
+    //| \return true when values are finite and within tolerance.         |
+    //+------------------------------------------------------------------+
     bool _CheckEqualD(const double a, const double b, const double tol, const string msg,
                       const string file, const int line)
       {
@@ -258,7 +318,15 @@ class CAssert
         return(_Check(ok, msg, file, line));
       }
 
-    // Compares two longs for exact equality; prints the expected/got pair on mismatch.
+    //+------------------------------------------------------------------+
+    //| \brief Compare two long values for exact equality.               |
+    //| \param a Actual value.                                           |
+    //| \param b Expected value.                                         |
+    //| \param msg Assertion message.                                    |
+    //| \param file Source file captured by the macro.                   |
+    //| \param line Source line captured by the macro.                   |
+    //| \return true when values are equal.                              |
+    //+------------------------------------------------------------------+
     bool _CheckEqualL(const long a, const long b, const string msg,
                       const string file, const int line)
       {
@@ -268,7 +336,15 @@ class CAssert
         return(_Check(ok, msg, file, line));
       }
 
-    // Compares two strings for exact equality; prints the expected/got pair on mismatch.
+    //+------------------------------------------------------------------+
+    //| \brief Compare two strings for exact equality.                   |
+    //| \param a Actual value.                                           |
+    //| \param b Expected value.                                         |
+    //| \param msg Assertion message.                                    |
+    //| \param file Source file captured by the macro.                   |
+    //| \param line Source line captured by the macro.                   |
+    //| \return true when strings are identical.                         |
+    //+------------------------------------------------------------------+
     bool _CheckEqualStr(const string a, const string b, const string msg,
                         const string file, const int line)
       {
@@ -278,7 +354,11 @@ class CAssert
         return(_Check(ok, msg, file, line));
       }
 
-    // Prints the pass/fail/skip summary line and all failure messages; returns true if zero failures.
+    //+------------------------------------------------------------------+
+    //| \brief Print pass/fail/skip summary and retained failures.       |
+    //| \param suite Suite name printed in the summary line.             |
+    //| \return true when no failures were counted or dropped.           |
+    //+------------------------------------------------------------------+
     bool _ReportSummary(const string suite)
       {
         int failed_from_log    = ArraySize(m_fail_msgs);

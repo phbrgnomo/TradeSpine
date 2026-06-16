@@ -117,6 +117,18 @@ bool test_testing_support_and_harnesses_e2e_acceptance(CAssert &asserts)
   }
 
 //+------------------------------------------------------------------+
+//| \brief BDD.01.03.aa68 e2e deferral alias. Strategy authoring,    |
+//|        porting, and packaging are owned by IPLAN-01/02.          |
+//| \param asserts Shared assertion recorder.                        |
+//| \return true after recording the explicit deferral skip.          |
+//+------------------------------------------------------------------+
+bool test_testing_support_and_harnesses_aa68_e2e(CAssert &asserts)
+  {
+   asserts.TS_SKIP("BDD.01.03.aa68 strategy release packaging deferred to IPLAN-01/02");
+   return(true);
+  }
+
+//+------------------------------------------------------------------+
 //| BDD.01.03.f415 (e2e) — missing deferred account-mode evidence    |
 //| blocks signoff: an empty pack is the recorded blocker, a supplied|
 //| pack clears it, and a missing optional trace skips (never a       |
@@ -139,6 +151,30 @@ bool test_testing_support_and_harnesses_f415_e2e(CAssert &asserts)
 bool test_testing_support_and_harnesses_d6ae_e2e(CAssert &asserts)
   {
    return(Test_AutomatedEvidenceSeparateFromManual(asserts));
+  }
+
+//+------------------------------------------------------------------+
+//| \brief BDD.01.03.e16a e2e deferral alias. Ambiguous async broker |
+//|        HALT requires FakeTradePort, owned by IPLAN-03.            |
+//| \param asserts Shared assertion recorder.                        |
+//| \return true after recording the explicit deferral skip.          |
+//+------------------------------------------------------------------+
+bool test_testing_support_and_harnesses_e16a_e2e(CAssert &asserts)
+  {
+   asserts.TS_SKIP("BDD.01.03.e16a async-broker HALT e2e deferred to IPLAN-03 (FakeTradePort)");
+   return(true);
+  }
+
+//+------------------------------------------------------------------+
+//| \brief BDD.01.03.b37d e2e deferral alias. Performance-budget e2e |
+//|        evidence is owned by IPLAN-09.                            |
+//| \param asserts Shared assertion recorder.                        |
+//| \return true after recording the explicit deferral skip.          |
+//+------------------------------------------------------------------+
+bool test_testing_support_and_harnesses_b37d_e2e(CAssert &asserts)
+  {
+   asserts.TS_SKIP("BDD.01.03.b37d performance-budget e2e evidence deferred to IPLAN-09");
+   return(true);
   }
 
 //+------------------------------------------------------------------+
