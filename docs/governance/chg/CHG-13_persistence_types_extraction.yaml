@@ -22,15 +22,15 @@ metadata:
 
 change_control:
   chg_id: "CHG-13"
-  status: Proposed
+  status: Implemented
   change_level: C2
   change_source: feedback
   entry_gate: GATE-CODE
   semver_impact: null
   author: "phbr"
   date_proposed: "2026-06-14T00:00:00Z"
-  date_approved: null
-  date_implemented: null
+  date_approved: "2026-06-14T00:00:00Z"
+  date_implemented: "2026-06-14T00:00:00Z"
   supersedes: []
 
 # =============================================================================
@@ -44,8 +44,8 @@ change_description:
     CStateStore does not use) into that file. Update StateStore.mqh to
     '#include "PersistenceTypes.mqh"' instead of hosting the definition.
     Update TradeLogger.mqh to '#include "PersistenceTypes.mqh"' directly,
-    removing its current dependency on StateStore.mqh. Update IPLAN-05 file
-    manifest and exports map and SPEC-05 module exports to reflect the new file.
+    removing its current dependency on StateStore.mqh. Update @iplan:IPLAN-05 file
+    manifest and exports map and @spec:SPEC-05 module exports to reflect the new file.
 
   why: |
     StateStore.mqh currently owns ENUM_TRADE_RECORD_TYPE but never references
@@ -86,7 +86,7 @@ impact_assessment:
         remains intact.
 
     - layer: "IPLAN"
-      artifacts: ["IPLAN-05"]
+      artifacts: ["@iplan:IPLAN-05"]
       impact: |
         file_manifest: add PersistenceTypes.mqh entry (status: created).
         code_inventory exports map: add PersistenceTypes.mqh with export
@@ -95,7 +95,7 @@ impact_assessment:
         session_handoff and build_commands may reference the new file.
 
     - layer: "SPEC"
-      artifacts: ["SPEC-05"]
+      artifacts: ["@spec:SPEC-05"]
       impact: |
         Module exports entry for StateStore.mqh: remove ENUM_TRADE_RECORD_TYPE
         from the exports list. Add a PersistenceTypes.mqh module entry with
@@ -103,7 +103,7 @@ impact_assessment:
         invariants, or behavioral requirements change.
 
   cascade_direction: downstream→upstream
-  # Root cause is in Code; documentation layers (IPLAN-05, SPEC-05) are updated
+  # Root cause is in Code; documentation layers (@iplan:IPLAN-05, @spec:SPEC-05) are updated
   # to stay in sync — a limited bubble-up for doc accuracy, no upstream requirement change.
 
   risk_level: Low
@@ -119,31 +119,35 @@ implementation:
   steps:
     - step: "Create Include/Persistence/PersistenceTypes.mqh with ENUM_TRADE_RECORD_TYPE definition and include guard"
       artifact: "Include/Persistence/PersistenceTypes.mqh"
-      status: Pending
+      status: Completed
+
+    - step: "Add Doxygen-style header (\\brief + per-value doc) to ENUM_TRADE_RECORD_TYPE in Include/Persistence/PersistenceTypes.mqh"
+      artifact: "Include/Persistence/PersistenceTypes.mqh"
+      status: Completed
 
     - step: "Remove ENUM_TRADE_RECORD_TYPE definition from StateStore.mqh; add '#include \"PersistenceTypes.mqh\"' after the include guard"
       artifact: "Include/Persistence/StateStore.mqh"
-      status: Pending
+      status: Completed
 
     - step: "Replace '#include \"StateStore.mqh\"' with '#include \"PersistenceTypes.mqh\"' in TradeLogger.mqh"
       artifact: "Include/Persistence/TradeLogger.mqh"
-      status: Pending
+      status: Completed
 
-    - step: "Update IPLAN-05 file_manifest, code_inventory exports map, and code_paths to include PersistenceTypes.mqh"
-      artifact: "IPLAN-05"
-      status: Pending
+    - step: "Update @iplan:IPLAN-05 file_manifest, code_inventory exports map, and code_paths to include PersistenceTypes.mqh"
+      artifact: "@iplan:IPLAN-05"
+      status: Completed
 
-    - step: "Update SPEC-05 module exports: remove ENUM_TRADE_RECORD_TYPE from StateStore.mqh entry; add PersistenceTypes.mqh module entry"
-      artifact: "SPEC-05"
-      status: Pending
+    - step: "Update @spec:SPEC-05 module exports: remove ENUM_TRADE_RECORD_TYPE from StateStore.mqh entry; add PersistenceTypes.mqh module entry"
+      artifact: "@spec:SPEC-05"
+      status: Completed
 
     - step: "Compile StateStore.mqh, TradeLogger.mqh, Test_StateStore.mq5, Test_TradeLogger.mq5 in MetaEditor to confirm zero errors"
       artifact: "Scripts/Tests/Test_StateStore.mq5, Scripts/Tests/Test_TradeLogger.mq5"
-      status: Pending
+      status: Completed
 
     - step: "Update Docs/MODULES/Persistence.md to document PersistenceTypes.mqh public interface"
       artifact: "Docs/MODULES/Persistence.md"
-      status: Pending
+      status: Completed
 
   artifacts_modified:
     - id: "PersistenceTypes.mqh"
@@ -177,23 +181,23 @@ implementation:
 verification:
   checks:
     - check: "Test_StateStore.mq5 compiles and runs green in MetaEditor after the change"
-      result: Pending
+      result: Pass
       method: "MetaEditor compile (F7) + script run; zero errors, all assertions pass"
 
     - check: "Test_TradeLogger.mq5 compiles and runs green in MetaEditor after the change"
-      result: Pending
+      result: Pass
       method: "MetaEditor compile (F7) + script run; zero errors, all assertions pass"
 
     - check: "No include-not-found errors for ENUM_TRADE_RECORD_TYPE in any file that previously resolved it via StateStore.mqh"
-      result: Pending
+      result: Pass
       method: "Grep for '#include.*StateStore' in files that use ENUM_TRADE_RECORD_TYPE; confirm none remain broken"
 
-    - check: "IPLAN-05 exports map accurately reflects post-change file→symbol ownership"
-      result: Pending
+    - check: "@iplan:IPLAN-05 exports map accurately reflects post-change file→symbol ownership"
+      result: Pass
       method: "Peer review of IPLAN-05 code_inventory section"
 
-    - check: "SPEC-05 module exports accurately reflect post-change file→symbol ownership"
-      result: Pending
+    - check: "@spec:SPEC-05 module exports accurately reflect post-change file→symbol ownership"
+      result: Pass
       method: "Peer review of SPEC-05 module description section"
 
 # =============================================================================

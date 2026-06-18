@@ -65,7 +65,16 @@ struct RuntimeMode
    bool is_tester;              // inside Strategy Tester
    bool is_optimization;        // optimization pass
    bool diagnostics_enabled;    // detailed diagnostics allowed for this mode
-   bool is_visual = false;      // visual tester mode; explicit default guards uninitialized fixtures
+   bool is_visual;              // visual tester mode
+
+   //--- \brief Default constructor: deterministic false values for every flag.
+   RuntimeMode(void)
+     {
+      is_tester           = false;
+      is_optimization     = false;
+      diagnostics_enabled = false;
+      is_visual           = false;
+     }
   };
 
 //+------------------------------------------------------------------+

@@ -228,13 +228,13 @@ bool TradeLogger::_WriteRow(const TradeEvidenceRecord &rec)
    string col_intended_price = is_intent ? StringFormat("%.5f", rec.intended_price) : "";
    string col_sl_price       = is_intent ? StringFormat("%.5f", rec.sl_price)       : "";
    string col_tp_price       = is_intent ? StringFormat("%.5f", rec.tp_price)       : "";
-   string col_lots_requested = is_intent ? StringFormat("%.2f", rec.lots_requested) : "";
+   string col_lots_requested = is_intent ? StringFormat("%.3f", rec.lots_requested) : "";
 
 //--- Execution-side columns: populated on EXECUTION rows, empty on INTENT rows.
    string col_retcode        = !is_intent ? StringFormat("%u",    rec.retcode)       : "";
    string col_ticket         = !is_intent ? StringFormat("%I64u", rec.ticket)        : "";
    string col_fill_price     = !is_intent ? StringFormat("%.5f", rec.fill_price)    : "";
-   string col_lots_submitted = !is_intent ? StringFormat("%.2f", rec.lots_submitted): "";
+   string col_lots_submitted = !is_intent ? StringFormat("%.3f", rec.lots_submitted): "";
 
    string row = type_str + ","
               + _CsvField(_IsoTimestamp(TimeGMT())) + ","

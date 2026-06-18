@@ -116,6 +116,8 @@ rollback_plan:
     - "Restore documentation_closeout._guidance to the prior batch-only wording."
     - "Revert the CLAUDE.md 'Documentation at IPLAN Completion' section."
     - "Optionally remove the Docs/ tree (leaving it is harmless; it is additive)."
+    - "Revert all Doxygen-backfill edits (\\brief/\\param/\\return headers) in Include/ and Scripts/Tests/ files modified during the Doxygen backfill phase."
+    - "Remove the CHG-12 entry from docs/governance/chg/CHG-00_index.md."
   estimated_effort: "Low — single-commit revert."
 
 implementation:

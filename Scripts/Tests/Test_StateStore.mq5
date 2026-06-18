@@ -26,9 +26,7 @@
 #define TEST_SYMBOL   "TSTEST"
 #define TEST_MAGIC    ((ulong)99905)
 
-//+------------------------------------------------------------------+
-//| Build a test CanonicalIdentity with the given scope.             |
-//+------------------------------------------------------------------+
+/** \brief Build a test CanonicalIdentity with the given scope. */
 CanonicalIdentity MakeTestId(string scope)
   {
    CanonicalIdentity id;
@@ -39,9 +37,7 @@ CanonicalIdentity MakeTestId(string scope)
    return(id);
   }
 
-//+------------------------------------------------------------------+
-//| Delete test GVs created during a test; ignores missing keys.     |
-//+------------------------------------------------------------------+
+/** \brief Delete test GVs and halt evidence file created during a test; ignores missing keys. */
 void CleanupGVs(CKeyBuilder &kb)
   {
    string scopes[] =
@@ -59,10 +55,12 @@ void CleanupGVs(CKeyBuilder &kb)
    FileDelete("TradeSpine/Halt_" + StringFormat("%I64u", TEST_MAGIC) + "_" + TEST_SYMBOL + ".txt");
   }
 
-//+------------------------------------------------------------------+
-//| Helper: create and init a fresh StateStore for tests.            |
-//| Returns true when Init() succeeds.                               |
-//+------------------------------------------------------------------+
+/**
+ * \brief Create and initialize a fresh CStateStore for tests.
+ * \param store  Output: the store to initialize.
+ * \param kb     Key builder to use.
+ * \return true when Init() succeeds.
+ */
 bool MakeStore(CStateStore &store, CKeyBuilder &kb)
   {
    CanonicalIdentity base = MakeTestId(""); // scope overwritten internally
@@ -73,9 +71,7 @@ bool MakeStore(CStateStore &store, CKeyBuilder &kb)
 //--- KeyBuilder tests                                                |
 //--- ----------------------------------------------------------------+
 
-//+------------------------------------------------------------------+
-//| CKeyBuilder: determinism, length, raw-identity absence.          |
-//+------------------------------------------------------------------+
+/** \brief Verify CKeyBuilder produces deterministic, bounded keys that hide raw identity. */
 bool Test_KeyBuilder_Determinism(CAssert &a)
   {
    bool ok = true;
@@ -102,9 +98,7 @@ bool Test_KeyBuilder_Determinism(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CKeyBuilder: different scopes produce different keys.            |
-//+------------------------------------------------------------------+
+/** \brief Verify different scopes produce different CKeyBuilder keys. */
 bool Test_KeyBuilder_ScopeIsolation(CAssert &a)
   {
    bool ok = true;
@@ -119,9 +113,7 @@ bool Test_KeyBuilder_ScopeIsolation(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CKeyBuilder: Verify detects mismatch (KeyCollision path).        |
-//+------------------------------------------------------------------+
+/** \brief Verify CKeyBuilder.Verify() detects identity mismatches (KeyCollision path). */
 bool Test_KeyBuilder_Verify(CAssert &a)
   {
    bool ok = true;
@@ -139,9 +131,7 @@ bool Test_KeyBuilder_Verify(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CKeyBuilder: Fingerprint is exact double in [0, 2^53-1].        |
-//+------------------------------------------------------------------+
+/** \brief Verify CKeyBuilder.Fingerprint() returns an exact double in [0, 2^53-1]. */
 bool Test_KeyBuilder_Fingerprint(CAssert &a)
   {
    bool ok = true;
@@ -164,9 +154,7 @@ bool Test_KeyBuilder_Fingerprint(CAssert &a)
 //--- StateStore tests (use real terminal GVs; cleaned up after)      |
 //--- ----------------------------------------------------------------+
 
-//+------------------------------------------------------------------+
-//| CStateStore: Init() writes fingerprint; reinit with same id ok.  |
-//+------------------------------------------------------------------+
+/** \brief Verify CStateStore.Init() writes a fingerprint and tolerates reinit with the same identity. */
 bool Test_StateStore_Init(CAssert &a)
   {
    bool ok = true;
@@ -185,9 +173,7 @@ bool Test_StateStore_Init(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CStateStore: scalar read/write round-trip.                       |
-//+------------------------------------------------------------------+
+/** \brief Verify CStateStore scalar read/write round-trip. */
 bool Test_StateStore_Scalar(CAssert &a)
   {
    bool ok = true;
@@ -211,9 +197,7 @@ bool Test_StateStore_Scalar(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CStateStore: duplicate markers guard against double-processing.  |
-//+------------------------------------------------------------------+
+/** \brief Verify CStateStore duplicate markers guard against double-processing. */
 bool Test_StateStore_Duplicate(CAssert &a)
   {
    bool ok = true;
@@ -232,9 +216,7 @@ bool Test_StateStore_Duplicate(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CStateStore: HALT flag round-trip; file evidence written.        |
-//+------------------------------------------------------------------+
+/** \brief Verify CStateStore HALT flag round-trip and file evidence creation. */
 bool Test_StateStore_Halt(CAssert &a)
   {
    bool ok = true;
@@ -261,10 +243,7 @@ bool Test_StateStore_Halt(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CStateStore: HALT evidence filename uses unsigned decimal for    |
-//| magic values above LONG_MAX (no signed-cast corruption).         |
-//+------------------------------------------------------------------+
+/** \brief Verify HALT evidence filename uses unsigned decimal for magic values above LONG_MAX. */
 bool Test_StateStore_Halt_LargeMagic(CAssert &a)
   {
    bool ok = true;
@@ -280,6 +259,19 @@ bool Test_StateStore_Halt_LargeMagic(CAssert &a)
 
    CKeyBuilder kb;
    CStateStore store;
+
+//--- Pre-test cleanup: remove any stale artifacts from prior MT5 test runs.
+   {
+      string pre_file = "TradeSpine/Halt_" + StringFormat("%I64u", large_magic) + "_TSTEST.txt";
+      FileDelete(pre_file);
+      string k_fp, k_halt;
+      CanonicalIdentity pre_id = id;
+      pre_id.scope = "fp";        kb.Build(pre_id, k_fp);
+      pre_id.scope = "halt_flag"; kb.Build(pre_id, k_halt);
+      GlobalVariableDel(k_fp);
+      GlobalVariableDel(k_halt);
+   }
+
    ok &= a.TS_CHECK(store.Init(id, &kb), "Init with large magic succeeds");
 
 //--- The unsigned filename must differ from the signed one (test self-check).
@@ -314,9 +306,7 @@ bool Test_StateStore_Halt_LargeMagic(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CStateStore: lossless ulong ticket split (including ULONG_MAX).  |
-//+------------------------------------------------------------------+
+/** \brief Verify CStateStore lossless ulong ticket split, including ULONG_MAX and zero. */
 bool Test_StateStore_Ticket(CAssert &a)
   {
    bool ok = true;
@@ -350,10 +340,7 @@ bool Test_StateStore_Ticket(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CStateStore: Verify() fails after fingerprint is corrupted.      |
-//| This simulates a StateCorruption / ambiguous-evidence scenario.  |
-//+------------------------------------------------------------------+
+/** \brief Verify CStateStore.Verify() fails after fingerprint corruption (StateCorruption scenario). */
 bool Test_StateStore_VerifyFailOnCorruption(CAssert &a)
   {
    bool ok = true;
@@ -375,9 +362,7 @@ bool Test_StateStore_VerifyFailOnCorruption(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CStateStore: Init returns false when fingerprint already wrong.  |
-//+------------------------------------------------------------------+
+/** \brief Verify CStateStore.Init() returns false on fingerprint mismatch (StateCorruption guard). */
 bool Test_StateStore_InitMismatch(CAssert &a)
   {
    bool ok = true;
@@ -398,14 +383,7 @@ bool Test_StateStore_InitMismatch(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| b37d: IsDuplicate is a pure read — it must not create or modify  |
-//| GVs. Two timing-free proofs:                                     |
-//|  1. Unset key: IsDuplicate must not create the GV.               |
-//|  2. Sentinel: SetDuplicate writes 1.0; we replace with 2.0 then  |
-//|     verify repeated IsDuplicate calls leave the value at 2.0.    |
-//|     Any erroneous GlobalVariableSet would overwrite to 1.0.      |
-//+------------------------------------------------------------------+
+/** \brief Verify IsDuplicate() is a pure read: it neither creates nor overwrites GVs. */
 bool Test_StateStore_LowIO(CAssert &a)
   {
    bool ok = true;
@@ -439,10 +417,10 @@ bool Test_StateStore_LowIO(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CKeyBuilder: magic > LONG_MAX is encoded as unsigned decimal;    |
-//| resulting key is 19 chars with uppercase-only hex digits.        |
-//+------------------------------------------------------------------+
+/**
+ * \brief Verify CKeyBuilder encodes magic > LONG_MAX as unsigned decimal,
+ *        producing a 19-char key with uppercase-only hex digits.
+ */
 bool Test_KeyBuilder_LargeMagic(CAssert &a)
   {
    bool ok = true;
@@ -505,9 +483,7 @@ bool Test_KeyBuilder_LargeMagic(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| Read all lines of a text file; return concatenated content.      |
-//+------------------------------------------------------------------+
+/** \brief Read all lines of a text file and return the concatenated content. */
 string ReadHaltFile(string path)
   {
    int fh = FileOpen(path, FILE_READ | FILE_TXT | FILE_ANSI | FILE_SHARE_READ);
@@ -520,13 +496,7 @@ string ReadHaltFile(string path)
    return(content);
   }
 
-//+------------------------------------------------------------------+
-//| HALT filename sanitisation: symbol with path separator '/' must  |
-//| not redirect evidence into a subdirectory.                       |
-//| Regression for H1 finding: raw m_id.symbol in filename could    |
-//| allow a broker symbol like "INDEX/SPOT" to create subdirs or    |
-//| fail FileOpen().                                                 |
-//+------------------------------------------------------------------+
+/** \brief Verify HALT filename sanitises '/' in symbol names to prevent subdirectory traversal. */
 bool Test_StateStore_Halt_PathSymbol(CAssert &a)
   {
    bool ok = true;
@@ -567,13 +537,7 @@ bool Test_StateStore_Halt_PathSymbol(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| HALT payload sanitisation: embedded \n and \r in reason and      |
-//| operator_action must not inject extra key=value lines into the   |
-//| evidence file.                                                   |
-//| Regression for H1 finding: unsanitised payloads allowed forged- |
-//| looking evidence lines via newline injection.                    |
-//+------------------------------------------------------------------+
+/** \brief Verify HALT payload sanitises embedded newlines to prevent injection into evidence files. */
 bool Test_StateStore_Halt_PayloadEscape(CAssert &a)
   {
    bool ok = true;
@@ -622,7 +586,7 @@ bool Test_StateStore_Halt_PayloadEscape(CAssert &a)
 //| TDD/BDD trace-alias entry points called by RunAllTests.          |
 //+------------------------------------------------------------------+
 
-//--- TDD.05.04.e64a: canonical unit contract for KeyBuilder + StateStore.
+/** \brief TDD.05.04.e64a — canonical unit contract for CKeyBuilder and CStateStore. */
 bool test_persistence_and_audit_evidence_unit_contract(CAssert &a)
   {
    bool ok = true;
@@ -645,7 +609,7 @@ bool test_persistence_and_audit_evidence_unit_contract(CAssert &a)
    return(ok);
   }
 
-//--- BDD.01.03.0073: guarded order writes duplicate + HALT markers.
+/** \brief BDD.01.03.0073 — guarded order writes duplicate + HALT markers. */
 bool test_persistence_and_audit_evidence_0073_unit(CAssert &a)
   {
    bool ok = true;
@@ -657,13 +621,13 @@ bool test_persistence_and_audit_evidence_0073_unit(CAssert &a)
    return(ok);
   }
 
-//--- BDD.01.03.d6ae: state-side scope isolation (records remain separated).
+/** \brief BDD.01.03.d6ae — state-side scope isolation (records remain separated). */
 bool test_persistence_and_audit_evidence_d6ae_unit(CAssert &a)
   {
    return(Test_KeyBuilder_ScopeIsolation(a));
   }
 
-//--- BDD.01.03.e16a: ambiguous evidence → StateCorruption detected.
+/** \brief BDD.01.03.e16a — ambiguous evidence triggers StateCorruption detection. */
 bool test_persistence_and_audit_evidence_e16a_unit(CAssert &a)
   {
    bool ok = true;
@@ -672,7 +636,7 @@ bool test_persistence_and_audit_evidence_e16a_unit(CAssert &a)
    return(ok);
   }
 
-//--- BDD.01.03.b37d: GV ops stay bounded (low-I/O requirement).
+/** \brief BDD.01.03.b37d — GV operations stay bounded (low-I/O requirement). */
 bool test_persistence_and_audit_evidence_b37d_unit(CAssert &a)
   {
    return(Test_StateStore_LowIO(a));

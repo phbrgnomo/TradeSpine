@@ -23,11 +23,14 @@
 #include "../../Include/Persistence/TradeLogger.mqh"
 #include "Support/FakeLogSink.mqh"
 
-//+------------------------------------------------------------------+
-//| Build a representative TradeEvidenceRecord for testing.          |
-//| Populates all intent and execution fields so field-separation    |
-//| tests can verify which columns are written vs left empty.        |
-//+------------------------------------------------------------------+
+/**
+ * \brief Build a representative TradeEvidenceRecord for testing.
+ * \param t          Record type (TRADE_RECORD_INTENT or TRADE_RECORD_EXECUTION).
+ * \param run_id     Strategy run identifier.
+ * \param intent_id  Order intent identifier.
+ * \param outcome    Optional broker outcome string (default: "").
+ * \return Fully populated TradeEvidenceRecord.
+ */
 TradeEvidenceRecord MakeRecord(ENUM_TRADE_RECORD_TYPE t,
                                string run_id,
                                string intent_id,
@@ -54,9 +57,7 @@ TradeEvidenceRecord MakeRecord(ENUM_TRADE_RECORD_TYPE t,
    return(r);
   }
 
-//+------------------------------------------------------------------+
-//| Read the entire contents of a file as a single string.           |
-//+------------------------------------------------------------------+
+/** \brief Read the entire contents of a file as a single string. */
 string ReadFileContent(string path)
   {
    int fh = FileOpen(path, FILE_READ | FILE_TXT | FILE_ANSI | FILE_SHARE_READ);
@@ -74,29 +75,24 @@ string ReadFileContent(string path)
    return(content);
   }
 
-//+------------------------------------------------------------------+
-//| Resolve the actual on-disk path TradeLogger writes for a given   |
-//| test prefix + date stamp. Mirrors TradeLogger::_EnsureFile,      |
-//| which prepends "TradeSpine/" to the caller-supplied prefix —     |
-//| test prefixes here must therefore be relative to that root      |
-//| (e.g. "Test/TL_pairing"), not include it themselves.            |
-//+------------------------------------------------------------------+
+/**
+ * \brief Resolve the on-disk path TradeLogger writes for a test prefix and date stamp.
+ * \param prefix      File prefix relative to "TradeSpine/" (e.g. "Test/TL_pairing").
+ * \param date_stamp  YYYYMMDD date string.
+ * \return Full path including "TradeSpine/" root.
+ */
 string TradeLoggerPath(string prefix, string date_stamp)
   {
    return("TradeSpine/" + prefix + "_" + date_stamp + ".csv");
   }
 
-//+------------------------------------------------------------------+
-//| Delete the test file before writing fresh evidence.             |
-//+------------------------------------------------------------------+
+/** \brief Delete the test evidence file before writing fresh data. */
 void DeleteTestFile(string prefix, string date_stamp)
   {
    FileDelete(TradeLoggerPath(prefix, date_stamp));
   }
 
-//+------------------------------------------------------------------+
-//| Get today's YYYYMMDD date stamp to predict the file name.       |
-//+------------------------------------------------------------------+
+/** \brief Return today's YYYYMMDD date stamp (UTC) to predict the log file name. */
 string TodayStamp(void)
   {
    MqlDateTime dt;
@@ -104,9 +100,14 @@ string TodayStamp(void)
    return(StringFormat("%04d%02d%02d", dt.year, dt.mon, dt.day));
   }
 
-//+------------------------------------------------------------------+
-//| Helper: init a TradeLogger with a test prefix, live mode ctx.   |
-//+------------------------------------------------------------------+
+/**
+ * \brief Initialize a TradeLogger with the given prefix, context, and sink.
+ * \param logger  Output: the logger to initialize.
+ * \param prefix  File prefix relative to "TradeSpine/".
+ * \param ctx     Execution context pointer.
+ * \param sink    Diagnostic log sink pointer.
+ * \return true when Init() succeeds.
+ */
 bool MakeLogger(TradeLogger &logger, string prefix,
                 COptContext* ctx, FakeLogSink* sink)
   {
@@ -117,9 +118,7 @@ bool MakeLogger(TradeLogger &logger, string prefix,
 //--- Tests                                                           |
 //--- ----------------------------------------------------------------+
 
-//+------------------------------------------------------------------+
-//| Intent and execution rows are paired (same run_id + intent_id).  |
-//+------------------------------------------------------------------+
+/** \brief Verify intent and execution rows share the same run_id and intent_id (pairing contract). */
 bool Test_TradeLogger_Pairing(CAssert &a)
   {
    bool ok = true;
@@ -164,9 +163,7 @@ bool Test_TradeLogger_Pairing(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| Diagnostic sink messages do NOT appear in the trade CSV.         |
-//+------------------------------------------------------------------+
+/** \brief Verify diagnostic sink messages do not appear in the trade evidence CSV. */
 bool Test_TradeLogger_SeparateDiagnostics(CAssert &a)
   {
    bool ok = true;
@@ -204,9 +201,7 @@ bool Test_TradeLogger_SeparateDiagnostics(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| In optimization mode no file I/O occurs; methods return true.   |
-//+------------------------------------------------------------------+
+/** \brief Verify no file I/O occurs in optimization mode; all write methods still return true. */
 bool Test_TradeLogger_OptimizationGated(CAssert &a)
   {
    bool ok = true;
@@ -240,14 +235,7 @@ bool Test_TradeLogger_OptimizationGated(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| Write failure returns false and logs a LogFailure diagnostic.    |
-//| Forced deterministically: a folder is created at the exact path  |
-//| TradeLogger would open as a file, so FileOpen() must fail (a     |
-//| directory cannot be opened for file I/O). This avoids relying on |
-//| sandbox path-rejection behavior, which MQL5's FileOpen() does not|
-//| guarantee (it can create missing intermediate subfolders).      |
-//+------------------------------------------------------------------+
+/** \brief Verify write failure: FolderCreate occupies the target CSV path so FileOpen fails; WriteIntent must return false and emit a LogFailure diagnostic. */
 bool Test_TradeLogger_WriteFailure(CAssert &a)
   {
    bool ok = true;
@@ -281,9 +269,7 @@ bool Test_TradeLogger_WriteFailure(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| b37d: write count is bounded — exactly 2 rows per trade.        |
-//+------------------------------------------------------------------+
+/** \brief Verify write count is bounded: header + exactly 2 data rows per trade. */
 bool Test_TradeLogger_WriteCount(CAssert &a)
   {
    bool ok = true;
@@ -299,12 +285,12 @@ bool Test_TradeLogger_WriteCount(CAssert &a)
    string stamp  = TodayStamp();
    DeleteTestFile(prefix, stamp);
 
-   logger.Init(prefix, &ctx, &sink);
+   ok &= a.TS_CHECK(logger.Init(prefix, &ctx, &sink), "TradeLogger Init succeeds");
 
    TradeEvidenceRecord intent = MakeRecord(TRADE_RECORD_INTENT,    "run-cnt", "int-cnt");
    TradeEvidenceRecord exec   = MakeRecord(TRADE_RECORD_EXECUTION,  "run-cnt", "int-cnt", "OK");
-   logger.WriteIntent(intent);
-   logger.WriteExecution(exec);
+   ok &= a.TS_CHECK(logger.WriteIntent(intent),    "WriteIntent returns true");
+   ok &= a.TS_CHECK(logger.WriteExecution(exec),  "WriteExecution returns true");
    logger.Close();
 
    string content = ReadFileContent(TradeLoggerPath(prefix, stamp));
@@ -323,15 +309,10 @@ bool Test_TradeLogger_WriteCount(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CHG-14 regression: all three data-integrity failure modes in one |
-//| focused test so they can never silently regress.                 |
-//| (a) magic > LONG_MAX — signed cast would produce a negative CSV  |
-//| (b) broker_outcome with comma and embedded double-quote — needs  |
-//|     RFC 4180 quoting or the column structure is corrupted        |
-//| (c) WriteIntent called with TRADE_RECORD_EXECUTION — public API  |
-//|     must override to INTENT regardless of caller-supplied type   |
-//+------------------------------------------------------------------+
+/**
+ * \brief CHG-14 regression: verify CSV encoding for large magic (%I64u),
+ *        RFC 4180 quoting of special chars, and WriteIntent record_type override.
+ */
 bool Test_TradeLogger_CSVEncoding(CAssert &a)
   {
    bool ok = true;
@@ -381,9 +362,7 @@ bool Test_TradeLogger_CSVEncoding(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CHG-15: INTENT row contains intent columns; execution cols empty. |
-//+------------------------------------------------------------------+
+/** \brief CHG-15: Verify INTENT row contains intent columns and leaves execution columns empty. */
 bool Test_TradeLogger_IntentFieldSeparation(CAssert &a)
   {
    bool ok = true;
@@ -411,7 +390,7 @@ bool Test_TradeLogger_IntentFieldSeparation(CAssert &a)
    ok &= a.TS_CHECK(StringFind(csv, "130000.00000") >= 0, "intended_price written on INTENT row");
    ok &= a.TS_CHECK(StringFind(csv, "129900.00000") >= 0, "sl_price written on INTENT row");
    ok &= a.TS_CHECK(StringFind(csv, "130200.00000") >= 0, "tp_price written on INTENT row");
-   ok &= a.TS_CHECK(StringFind(csv, "1.00")         >= 0, "lots_requested written on INTENT row");
+   ok &= a.TS_CHECK(StringFind(csv, "1.000")        >= 0, "lots_requested written on INTENT row (%.3f)");
    ok &= a.TS_CHECK(StringFind(csv, "\"BUY\"")      >= 0, "side written on INTENT row");
 
 //--- Execution columns must be absent (empty cells between consecutive commas).
@@ -422,9 +401,7 @@ bool Test_TradeLogger_IntentFieldSeparation(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| CHG-15: EXECUTION row contains execution cols; intent cols empty. |
-//+------------------------------------------------------------------+
+/** \brief CHG-15: Verify EXECUTION row contains execution columns and leaves intent columns empty. */
 bool Test_TradeLogger_ExecutionFieldSeparation(CAssert &a)
   {
    bool ok = true;
@@ -453,6 +430,7 @@ bool Test_TradeLogger_ExecutionFieldSeparation(CAssert &a)
    ok &= a.TS_CHECK(StringFind(csv, "10009")           >= 0, "retcode written on EXECUTION row");
    ok &= a.TS_CHECK(StringFind(csv, "123456789012345") >= 0, "ticket written as ulong on EXECUTION row");
    ok &= a.TS_CHECK(StringFind(csv, "130001.00000")    >= 0, "fill_price written on EXECUTION row");
+   ok &= a.TS_CHECK(StringFind(csv, ",1.000,")         >= 0, "lots_submitted written on EXECUTION row (%.3f)");
    ok &= a.TS_CHECK(StringFind(csv, "\"BUY\"")         >= 0, "side written on EXECUTION row");
 
 //--- Intent-only price columns must be absent.
@@ -462,11 +440,7 @@ bool Test_TradeLogger_ExecutionFieldSeparation(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| Out-of-domain ENUM_TRADE_SIDE must be rejected; no row written.  |
-//| Regression for H1 finding: invalid side values were silently     |
-//| coerced to BUY, misrepresenting trade direction in evidence CSV. |
-//+------------------------------------------------------------------+
+/** \brief Verify out-of-domain ENUM_TRADE_SIDE values are rejected with no CSV row written. */
 bool Test_TradeLogger_InvalidSide(CAssert &a)
   {
    bool ok = true;
@@ -506,7 +480,7 @@ bool Test_TradeLogger_InvalidSide(CAssert &a)
 //| TDD/BDD trace-alias entry points called by RunAllTests.          |
 //+------------------------------------------------------------------+
 
-//--- TDD.05.04.229f: canonical integration contract for TradeLogger.
+/** \brief TDD.05.04.229f — canonical integration contract for TradeLogger. */
 bool test_persistence_and_audit_evidence_integration_contract(CAssert &a)
   {
    bool ok = true;
@@ -522,25 +496,25 @@ bool test_persistence_and_audit_evidence_integration_contract(CAssert &a)
    return(ok);
   }
 
-//--- BDD.01.03.0073: guarded order writes both evidence rows.
+/** \brief BDD.01.03.0073 — guarded order writes both intent and execution evidence rows. */
 bool test_persistence_and_audit_evidence_0073_integration(CAssert &a)
   {
    return(Test_TradeLogger_Pairing(a));
   }
 
-//--- BDD.01.03.d6ae: rows paired and separate from diagnostics.
+/** \brief BDD.01.03.d6ae — rows are paired and separate from diagnostics. */
 bool test_persistence_and_audit_evidence_d6ae_integration(CAssert &a)
   {
    return(Test_TradeLogger_SeparateDiagnostics(a));
   }
 
-//--- BDD.01.03.e16a: write failure does not corrupt broker outcome.
+/** \brief BDD.01.03.e16a — write failure does not corrupt broker outcome. */
 bool test_persistence_and_audit_evidence_e16a_integration(CAssert &a)
   {
    return(Test_TradeLogger_WriteFailure(a));
   }
 
-//--- BDD.01.03.b37d: write ops bounded (≤2 per trade).
+/** \brief BDD.01.03.b37d — write operations bounded (≤2 per trade). */
 bool test_persistence_and_audit_evidence_b37d_integration(CAssert &a)
   {
    return(Test_TradeLogger_WriteCount(a));

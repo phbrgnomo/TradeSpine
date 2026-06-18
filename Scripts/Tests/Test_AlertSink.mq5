@@ -27,9 +27,7 @@
 #include "../../Include/Persistence/AlertSink.mqh"
 #include "Support/FakeLogSink.mqh"
 
-//+------------------------------------------------------------------+
-//| FakeAlertSink - captures Halt/Warn calls without UI side-effects.|
-//+------------------------------------------------------------------+
+/** \brief Stub IAlertSink that records Halt/Warn calls without triggering UI side-effects. */
 class FakeAlertSink : public IAlertSink
   {
   public:
@@ -46,9 +44,7 @@ class FakeAlertSink : public IAlertSink
      { warn_count++; last_warn_category = category; }
   };
 
-//+------------------------------------------------------------------+
-//| FakeStateStore - captures SetHalt/IsHalted without real GVs.   |
-//+------------------------------------------------------------------+
+/** \brief Stub IStateStore that records SetHalt/IsHalted calls without writing to GlobalVariables. */
 class FakeStateStore : public IStateStore
   {
   public:
@@ -77,9 +73,12 @@ class FakeStateStore : public IStateStore
    bool         Verify()                                  override { return(true); }
   };
 
-//+------------------------------------------------------------------+
-//| Build a test HaltEvidence struct.                                |
-//+------------------------------------------------------------------+
+/**
+ * \brief Build a test HaltEvidence struct.
+ * \param reason  Halt reason string (default: "Test HALT").
+ * \param action  Operator action string (default: "Check positions").
+ * \return Populated HaltEvidence ready for use in tests.
+ */
 HaltEvidence MakeHalt(string reason = "Test HALT", string action = "Check positions")
   {
    HaltEvidence ev;
@@ -93,9 +92,7 @@ HaltEvidence MakeHalt(string reason = "Test HALT", string action = "Check positi
 //--- Logger tests                                                    |
 //--- ----------------------------------------------------------------+
 
-//+------------------------------------------------------------------+
-//| Logger gates Debug/Info/Warn on AllowsDiagnostics.               |
-//+------------------------------------------------------------------+
+/** \brief Verify Logger gates Debug/Info/Warn output on AllowsDiagnostics. */
 bool Test_Logger_Gating(CAssert &a)
   {
    bool ok = true;
@@ -131,9 +128,7 @@ bool Test_Logger_Gating(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| Logger.Error always emits (outside optimization).                |
-//+------------------------------------------------------------------+
+/** \brief Verify Logger.Error always emits outside optimization mode. */
 bool Test_Logger_ErrorAlwaysEmits(CAssert &a)
   {
    bool ok = true;
@@ -164,9 +159,7 @@ bool Test_Logger_ErrorAlwaysEmits(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| Logger.Error is silent in optimization mode.                     |
-//+------------------------------------------------------------------+
+/** \brief Verify Logger.Error is silent in optimization mode. */
 bool Test_Logger_ErrorSilentInOptimization(CAssert &a)
   {
    bool ok = true;
@@ -188,9 +181,7 @@ bool Test_Logger_ErrorSilentInOptimization(CAssert &a)
 //--- CAlertSink tests                                                |
 //--- ----------------------------------------------------------------+
 
-//+------------------------------------------------------------------+
-//| Non-visual tester: Halt routes only to logger, no Alert() call.  |
-//+------------------------------------------------------------------+
+/** \brief Verify Halt() routes to logger only (no Alert() call) in non-visual tester mode. */
 bool Test_AlertSink_NonVisualTester_Halt(CAssert &a)
   {
    bool ok = true;
@@ -219,9 +210,7 @@ bool Test_AlertSink_NonVisualTester_Halt(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| Optimization mode: Halt is fully silent.                         |
-//+------------------------------------------------------------------+
+/** \brief Verify Halt() and Warn() are fully silent in optimization mode. */
 bool Test_AlertSink_Optimization_Silent(CAssert &a)
   {
    bool ok = true;
@@ -246,9 +235,7 @@ bool Test_AlertSink_Optimization_Silent(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| Non-visual tester: Warn routes to logger.                        |
-//+------------------------------------------------------------------+
+/** \brief Verify Warn() routes to logger in non-visual tester mode. */
 bool Test_AlertSink_NonVisualTester_Warn(CAssert &a)
   {
    bool ok = true;
@@ -271,12 +258,10 @@ bool Test_AlertSink_NonVisualTester_Warn(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| Halt logger-first contract: logger.Error() is captured before    |
-//| Alert() could block. Non-visual-tester context used to call     |
-//| Halt() safely; Alert() modal path is untestable in automated    |
-//| runs — the ordering guarantee is structural (code-level).       |
-//+------------------------------------------------------------------+
+/**
+ * \brief Verify Halt() calls logger.Error() before Alert() (logger-first contract).
+ *        Non-visual-tester context is used; the Alert() modal path is structural-only.
+ */
 bool Test_AlertSink_Halt_LoggerFirstContract(CAssert &a)
   {
    bool ok = true;
@@ -306,10 +291,10 @@ bool Test_AlertSink_Halt_LoggerFirstContract(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| Halt circuit-breaker: IStateStore.SetHalt() called with correct  |
-//| HaltEvidence when IStateStore is wired into CAlertSink.Init().  |
-//+------------------------------------------------------------------+
+/**
+ * \brief Verify Halt() calls IStateStore.SetHalt() with correct HaltEvidence
+ *        when a state store is wired into CAlertSink.Init().
+ */
 bool Test_AlertSink_Halt_FlagPersisted(CAssert &a)
   {
    bool ok = true;
@@ -339,9 +324,7 @@ bool Test_AlertSink_Halt_FlagPersisted(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| SetHalt() failure: secondary Error emitted when GV write fails. |
-//+------------------------------------------------------------------+
+/** \brief Verify a persistence-failure diagnostic is emitted when IStateStore.SetHalt() fails. */
 bool Test_AlertSink_Halt_PersistenceFailureDiagnostic(CAssert &a)
   {
    bool ok = true;
@@ -372,9 +355,7 @@ bool Test_AlertSink_Halt_PersistenceFailureDiagnostic(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| FakeAlertSink E2E: complete pipeline through injected fake sink. |
-//+------------------------------------------------------------------+
+/** \brief E2E smoke: verify the complete Halt/Warn pipeline through FakeAlertSink. */
 bool Test_AlertSink_FakeSink_E2E(CAssert &a)
   {
    bool ok = true;
@@ -406,10 +387,10 @@ bool Test_AlertSink_FakeSink_E2E(CAssert &a)
    return(ok);
   }
 
-//+------------------------------------------------------------------+
-//| b37d: Optimization mode adds zero overhead — all calls return    |
-//| immediately without touching logger or Alert().                  |
-//+------------------------------------------------------------------+
+/**
+ * \brief Verify Halt() returns immediately in optimization mode with zero overhead
+ *        (no logger or Alert() calls across 100 invocations).
+ */
 bool Test_AlertSink_Optimization_ZeroOverhead(CAssert &a)
   {
    bool ok = true;
@@ -437,7 +418,7 @@ bool Test_AlertSink_Optimization_ZeroOverhead(CAssert &a)
 //| TDD/BDD trace-alias entry points called by RunAllTests.          |
 //+------------------------------------------------------------------+
 
-//--- TDD.05.04.ed21: canonical E2E acceptance contract.
+/** \brief TDD.05.04.ed21 — canonical E2E acceptance contract for Logger and AlertSink. */
 bool test_persistence_and_audit_evidence_e2e_acceptance(CAssert &a)
   {
    bool ok = true;
@@ -455,25 +436,25 @@ bool test_persistence_and_audit_evidence_e2e_acceptance(CAssert &a)
    return(ok);
   }
 
-//--- BDD.01.03.0073: HALT route works end-to-end (guarded order scenario).
+/** \brief BDD.01.03.0073 — HALT route works end-to-end (guarded order scenario). */
 bool test_persistence_and_audit_evidence_0073_e2e(CAssert &a)
   {
    return(Test_AlertSink_FakeSink_E2E(a));
   }
 
-//--- BDD.01.03.d6ae: no spurious HALT when evidence pair is complete.
+/** \brief BDD.01.03.d6ae — no spurious HALT when evidence pair is complete. */
 bool test_persistence_and_audit_evidence_d6ae_e2e(CAssert &a)
   {
    return(Test_AlertSink_Optimization_Silent(a));
   }
 
-//--- BDD.01.03.e16a: ambiguous outcome enters HALT via alert sink.
+/** \brief BDD.01.03.e16a — ambiguous outcome enters HALT via alert sink. */
 bool test_persistence_and_audit_evidence_e16a_e2e(CAssert &a)
   {
    return(Test_AlertSink_NonVisualTester_Halt(a));
   }
 
-//--- BDD.01.03.b37d: alert sink adds zero overhead in optimization.
+/** \brief BDD.01.03.b37d — alert sink adds zero overhead in optimization. */
 bool test_persistence_and_audit_evidence_b37d_e2e(CAssert &a)
   {
    return(Test_AlertSink_Optimization_ZeroOverhead(a));

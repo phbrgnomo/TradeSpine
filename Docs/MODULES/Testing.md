@@ -1,6 +1,6 @@
 # Module: Testing Support
 
-**Owning plan:** IPLAN-11 (Testing Support and Harnesses) · **Spec:** SPEC-11 ·
+**Owning plan:** @iplan:IPLAN-11 (Testing Support and Harnesses) · **Spec:** @spec:SPEC-11 ·
 **Sources:** [`Include/Testing/`](../../Include/Testing),
 [`Scripts/Tests/Support/`](../../Scripts/Tests/Support)
 
@@ -38,7 +38,7 @@ Support API: `Reset()`, `SetVerbose(bool)` (silence PASS/FAIL/SKIP lines on isol
 instances), counters (`TestsRun/Passed/Skipped`, `FailureCount`, `FailureMessage(i)`), and
 `Snapshot()`/`Restore(snapshot)` for rolling back controlled-failure sub-tests.
 
-The xfail scope is the key primitive (CHG-11): it lets a test provoke and verify error paths
+The xfail scope is the key primitive (@chg:CHG-11): it lets a test provoke and verify error paths
 without those provoked failures printing as real `FAIL:` lines.
 
 ### Evidence/data-model types (in `Assert.mqh`)
@@ -74,7 +74,7 @@ non-owned pointers, null-checked at construction).
   fixture setup/teardown without touching the base class.
 
 Broker/position/symbol/store fakes are **not** in the base harness — they are added by the
-owning IPLANs (CHG-06), e.g. an in-memory GV store fake for IPLAN-05.
+owning IPLANs (@chg:CHG-06), e.g. an in-memory GV store fake for @iplan:IPLAN-05.
 
 ---
 

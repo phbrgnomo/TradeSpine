@@ -37,7 +37,7 @@ The seams in [`Include/Core/Interfaces.mqh`](../Include/Core/Interfaces.mqh) (`I
 `ILogSink`) are the inversion points that let tests inject deterministic doubles without
 pulling in production execution paths.
 
-```
+```text
 Strategies / Ports            (IPLAN-01, 12, 13)   — planned
 Coordination / Execution      (IPLAN-02, 03)       — planned
 Position / Indicators / Optional (IPLAN-04, 07, 10) — planned
