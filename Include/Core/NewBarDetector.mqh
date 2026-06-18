@@ -15,7 +15,9 @@
 #define TRADESPINE_NEW_BAR_DETECTOR_MQH
 
 //+------------------------------------------------------------------+
-//| CNewBarDetector                                                  |
+//| \brief CNewBarDetector - detects bar transitions by comparing    |
+//|        the current bar open time against the stored last-bar      |
+//|        time (gap-safe; not a tick counter).                      |
 //+------------------------------------------------------------------+
 class CNewBarDetector
   {
@@ -34,7 +36,9 @@ public:
       m_last_bar_time = 0;
     }
 
-   //--- Bind the detector to a symbol/timeframe and re-arm it.
+   //--- \brief Bind the detector to a symbol/timeframe and re-arm it.
+   //--- \param symbol_     Symbol to track.
+   //--- \param timeframe_  Timeframe to track.
   void SetSymbolAndTimeframe(const string symbol_, const ENUM_TIMEFRAMES timeframe_)
     {
       m_symbol        = symbol_;
@@ -42,12 +46,12 @@ public:
       m_last_bar_time = 0;
     }
 
-   //--- Injectable overload: pure state machine, no system calls.
-   //--- t=0          → unavailable context     → false (state unchanged).
-   //--- t backwards  → sync anomaly            → false (state unchanged).
-   //--- t new        → bar transition          → true  (m_last_bar_time updated).
-   //--- t same       → within same bar         → false.
-   //--- Used directly by Tier-1 tests for deterministic coverage.
+   //--- \brief Injectable overload: pure state machine, no system calls.
+   //---        Used directly by Tier-1 tests for deterministic coverage.
+   //--- \param t  Candidate bar-open time.
+   //--- \return true on a bar transition (and updates state); false when
+   //---         t=0 (unavailable), t goes backwards (sync anomaly), or t
+   //---         equals the last seen bar time.
   bool IsNewBar(datetime t)
     {
       if(t == 0)
@@ -62,12 +66,14 @@ public:
       return(false);
     }
 
-   //--- Production overload: reads SERIES_LASTBAR_DATE from terminal
-   //--- metadata (no bar-buffer copy), then delegates to the injectable
-   //--- overload. SeriesInfoInteger is preferred over iTime(s,tf,0) for
-   //--- hot-path use: it reads a single metadata field rather than
-   //--- accessing the timeseries buffer (pattern from CisNewBar/IsNewBar
-   //--- community reference implementations).
+   //--- \brief Production overload: reads SERIES_LASTBAR_DATE from terminal
+   //---        metadata (no bar-buffer copy), then delegates to the injectable
+   //---        overload.
+   //--- \return true on a confirmed bar transition; false when history/time
+   //---         context is unavailable.
+   //--- SeriesInfoInteger is preferred over iTime(s,tf,0) for hot-path use:
+   //--- it reads a single metadata field rather than accessing the timeseries
+   //--- buffer (pattern from CisNewBar/IsNewBar community references).
    //---
    //--- NOTE: When SeriesInfoInteger returns false (terminal not yet synced,
    //--- history not loaded), state is unchanged and false is returned.
@@ -84,9 +90,10 @@ public:
       return(IsNewBar(t));
     }
 
+  //--- \brief Last bar-open time recorded. \return Stored last-bar time (0 if unarmed).
   datetime GetLastBarTime(void) const { return(m_last_bar_time); }
 
-  //--- Re-arm so the next valid bar is reported as new.
+  //--- \brief Re-arm so the next valid bar is reported as new.
   void Reset(void) { m_last_bar_time = 0; }
   };
 

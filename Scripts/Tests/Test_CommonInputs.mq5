@@ -225,7 +225,8 @@ bool Test_DefaultConstructorIsInvalid(CAssert &asserts)
   }
 
 //+------------------------------------------------------------------+
-//| TDD trace aliases.                                               |
+//| \brief TDD/BDD trace-alias entry points called by RunAllTests;   |
+//|        each maps a BDD scenario id + test type to its helpers.    |
 //| unit_contract: absent — TDD-09 maps it to Test_SafeMathAndNewBar |
 //| .mq5; duplicate definition risks aggregate-compilation clash.   |
 //| b37d_unit: absent — "Performance budgets are evidenced" has no   |
@@ -251,6 +252,20 @@ bool test_core_runtime_and_configuration_aa68_unit(CAssert &asserts)
    ok &= Test_DayTradeMode(asserts);
    ok &= Test_SignalTimeframe(asserts);
    ok &= Test_DefaultConstructorIsInvalid(asserts);
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
+//| \brief TDD.09.04.bb66 e2e alias for unsupported-placeholder      |
+//|        rejection in CommonInputs.                                |
+//| \param asserts Shared assertion recorder.                        |
+//| \return true when the delegated CommonInputs rejection checks pass.|
+//+------------------------------------------------------------------+
+bool test_core_runtime_and_configuration_e2e_acceptance(CAssert &asserts)
+  {
+   bool ok = true;
+   ok &= Test_SizingPlaceholderRejected(asserts);
+   ok &= Test_UnknownEnumRejected(asserts);
    return(ok);
   }
 

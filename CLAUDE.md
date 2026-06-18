@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 TradeSpine is a modular **MQL5 / MetaTrader 5 trading framework** that separates strategy logic from execution infrastructure (sizing, stops, trailing, risk guards, reconciliation, audit). Primary v1 market scope is **B3 futures**.
 
-**The repository is in a planning/architecture phase: there is no MQL5 source code yet.** Everything under `docs/` is a Spec-Driven Development (SDD) corpus authored with the `aidoc-flow` plugin. The documentation *is* the implementation reference and decision record; source files (`.mq5`/`.mqh`) will be generated from the IPLAN layer in phased deliveries (see Roadmap in [README.md](README.md)).
+Everything under `docs/` is a Spec-Driven Development (SDD) corpus authored with the `aidoc-flow` plugin. The documentation *is* the implementation reference and decision record; source files (`.mq5`/`.mqh`) are being generated from the IPLAN layer in phased deliveries — **IPLAN-05, IPLAN-09, and IPLAN-11 are complete** (see [README.md](README.md)).
 
 This project also inherits the terminal-wide MQL5 conventions in `../../../AGENTS.md` (the parent `MQL5/CLAUDE.md` includes it).
 
 ## The SDD Corpus (`docs/`)
 
-Work in this repo means authoring/auditing SDD artifacts, not writing code (yet). The 8-layer chain — each folder is one layer:
+Work in this repo spans both authoring/auditing SDD artifacts **and** writing code — implemented IPLAN tiers have living source under `Include/` and `Scripts/Tests/`. The 8-layer chain — each folder is one layer:
 
 ```
 BRD → PRD → EARS → BDD → ADR → SPEC → TDD → IPLAN → Code
@@ -45,6 +45,7 @@ The corpus is created and maintained through `aidoc-flow:*` skills, **not** by e
 - Validate whole corpus / traceability: `aidoc-flow:doc-validator`.
 - IDs and naming authority: `aidoc-flow:doc-naming` (run before creating/renaming any artifact).
 - **Changing an existing artifact**: go through Change Management — `aidoc-flow:doc-chg` then `aidoc-flow:gate-check`. Cross-layer edits cascade; the CHG process picks the right approval gate. Do not silently edit an accepted artifact.
+- **Team-mode audits and subagents**: `.aidoc/profile.yaml` sets `review_mode: team`, but Codex can only spawn subagents when the user explicitly asks for subagents or parallel agent work. If an `aidoc-flow:*audit` skill expects team-mode lens fan-out and the prompt does not explicitly authorize subagents, ask the user, using the proper ask tool, for that authorization before falling back to `single_pass`. A sufficient user instruction is: "Use subagents for this audit; spawn one agent per required lens, wait for all results, then synthesize the report."
 
 ## Planned Code Layout (Layer 8 → Code)
 
@@ -60,6 +61,32 @@ Key architecture rules baked into the ADRs/SPECs — honor them in any generated
 - Single trade-submission chokepoint with layered defensive risk guards; bypass is guarded policy (ADR-04, SPEC-03).
 - Both **netting and hedging** account models supported, **hedging-first** ownership (ADR-07, SPEC-04).
 - Deterministic position state machine + reconciliation (ADR-08, SPEC-04); GV state + CSV audit evidence (ADR-02, SPEC-05).
+
+## Documentation at IPLAN Completion
+
+Documentation is written **incrementally as each IPLAN is implemented**, not deferred to a
+single end-of-project batch. The final session of every code-deliverable IPLAN MUST, before
+the plan is marked complete:
+
+1. **In-code documentation.** Give every new or changed public interface (class, struct,
+   enum, free function, macro) a Doxygen-style header — `\brief`, and `\param`/`\return`
+   where applicable — per the parent [AGENTS.md](../../../AGENTS.md) "Functions
+   documentation" convention. Keep the existing `@code:`/`@spec:`/`@tdd:`/`@iplan:`
+   traceability tags; the backslash Doxygen directives are distinct from those `@tag:`
+   cross-references. Do not edit vendored `Include/StdLib/*` beyond the exceptions recorded
+   in [Include/StdLib/VERSION.md](Include/StdLib/VERSION.md).
+2. **Reference documentation.** Create or update the module's page under `Docs/MODULES/`
+   (and any affected `Docs/` page such as `ARCHITECTURE.md` or `README.md`) to describe the
+   delivered public interfaces and file paths — never planned placeholders. A `Docs/MODULES/`
+   stub graduates to a full page when its owning IPLAN lands.
+3. **Code inventory.** Update the IPLAN's `code_inventory`, `file_manifest` status, and
+   `session_handoff`, and the IPLAN-00 registry status, per the normal completion process.
+
+The Tier-9 `documentation_closeout` in [docs/08_IPLAN/IPLAN-00_index.yaml](docs/08_IPLAN/IPLAN-00_index.yaml)
+remains the final **release-documentation reconciliation** (AUTHORING/RECIPES/INPUTS_REFERENCE/
+TESTING and the strategy template README), but per-module reference docs are now produced
+along the way rather than only at the end. Changes to that governance model go through the
+Change Management process (see below).
 
 ## Build / Test / CI
 

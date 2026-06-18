@@ -1,0 +1,116 @@
+id: CHG-17
+title: "CAlertSink: emit diagnostic when SetHalt() fails"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-15"
+
+  change_level:
+    value: C2
+
+  change_source:
+    value: feedback  # Code review: SetHalt() bool return was ignored; silent failure leaves EA without a persistent circuit breaker.
+
+change_control:
+  chg_id: "CHG-17"
+  status: Approved
+  change_level: C2
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null
+  author: "phbr"
+  date_proposed: "2026-06-15T00:00:00Z"
+  date_approved: "2026-06-15T00:00:00Z"
+  date_implemented: null
+  supersedes: []
+
+change_description:
+  what: |
+    Check the bool returned by IStateStore.SetHalt() inside CAlertSink.Halt(). If the call
+    returns false (GV write or file-write failure), emit a secondary logger.Error() message
+    so the operator is informed that the persistent circuit breaker may not have been set.
+    Fall back to Print() when m_logger is NULL.
+
+    Before (CHG-16): SetHalt() return value discarded. Silent failure meant the operator
+    saw the Alert() dialog but had no way to know the GV HALT flag might not be written.
+
+    After (CHG-17): if SetHalt() returns false, a second Error is emitted:
+      "HALT persistence failed; persistent circuit breaker may not be set"
+    The Alert() dialog still fires and the primary HALT log is already written at this point,
+    so the operator receives maximum available information even in the degraded path.
+
+  why: |
+    CStateStore.SetHalt() documents failure on GV write or file-write errors. Ignoring that
+    return means a GV quota exhaustion, terminal-side error, or file lock could silently
+    prevent the circuit breaker from being written. The EA would then resume trading after
+    the operator dismisses the Alert() dialog, defeating the purpose of CHG-16.
+
+  trigger: |
+    Code review finding (2026-06-15): AlertSink.mqh line 89 discards the bool from SetHalt().
+    Reviewer noted the return is meaningful per StateStore.mqh documentation.
+
+impact_assessment:
+  affected_layers:
+    - artifact: "Include/Persistence/AlertSink.mqh"
+      what_changes: |
+        Halt() wraps the SetHalt() call in an if(!...) block. On failure, emits
+        logger.Error("HALT", "HALT persistence failed; persistent circuit breaker may not
+        be set") or Print() if logger is NULL. File-level comment updated.
+      cascade_direction: downstream
+    - artifact: "Scripts/Tests/Test_AlertSink.mq5"
+      what_changes: |
+        FakeStateStore gains should_fail_halt bool member. New test
+        Test_AlertSink_Halt_PersistenceFailureDiagnostic: asserts (a) SetHalt() not recorded
+        on store, (b) "HALT persistence failed" present in logger output. Wired into E2E
+        acceptance and OnStart(). Total tests: 11 (was 10).
+      cascade_direction: downstream
+    - artifact: "SPEC-05"
+      what_changes: |
+        behavior.error_handling HALT response: add note that SetHalt() failure is diagnosed
+        as a secondary Error. interfaces.CAlertSink description updated. CHG-17 added to
+        chg_references.
+      cascade_direction: downstream
+    - artifact: "IPLAN-05"
+      what_changes: "Session 7 entry added; CHG-17 added to chg_references."
+      cascade_direction: downstream
+    - artifact: "Docs/MODULES/Persistence.md"
+      what_changes: "CAlertSink routing table: note SetHalt() failure fallback to diagnostic."
+      cascade_direction: downstream
+  cascade_direction: downstream
+  risk: low  # Logic change is additive (new if-branch); existing behavior unchanged on success path.
+
+implementation:
+  files_changed:
+    - "Include/Persistence/AlertSink.mqh"
+    - "Scripts/Tests/Test_AlertSink.mq5"
+    - "docs/06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
+    - "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+    - "Docs/MODULES/Persistence.md"
+    - "docs/governance/chg/CHG-00_index.md"
+
+rollback_plan:
+  strategy: revert-commit
+  steps:
+    - "Replace the if(!m_store.SetHalt(ev)) block with the bare m_store.SetHalt(ev) call."
+    - "Revert FakeStateStore.should_fail_halt addition and Test_AlertSink_Halt_PersistenceFailureDiagnostic."
+    - "Revert SPEC-05, IPLAN-05, and Docs/MODULES/Persistence.md."
+  estimated_effort: "15 minutes"
+  risk_note: |
+    Rollback restores the CHG-16 behavior: SetHalt() return discarded. Acceptable only if
+    an alternative failure-notification mechanism is designed for the degraded path.
+
+gate_approval:
+  gate: null  # C2 — GATE-CODE self-approved; no formal gate required.
+  approver: null
+  approval_date: null
+  conditions: []
+
+verification:
+  steps:
+    - step: "Compile Include/Persistence/AlertSink.mqh in MetaEditor — expect 0 errors."
+      status: Pending
+    - step: "Compile and run Scripts/Tests/Test_AlertSink.mq5 — all 11 tests green including new Test_AlertSink_Halt_PersistenceFailureDiagnostic."
+      status: Pending
+    - step: "Run doc-spec-audit SPEC-05 and doc-iplan-audit IPLAN-05 — both PASS."
+      status: Pending

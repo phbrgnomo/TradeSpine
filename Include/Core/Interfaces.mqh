@@ -22,7 +22,7 @@
 #define TRADESPINE_INTERFACES_MQH
 
 //+------------------------------------------------------------------+
-//| Log levels for the diagnostics sink.                             |
+//| \brief Log levels for the diagnostics sink.                      |
 //+------------------------------------------------------------------+
 enum ENUM_LOG_LEVEL
   {
@@ -33,35 +33,52 @@ enum ENUM_LOG_LEVEL
   };
 
 //+------------------------------------------------------------------+
-//| IClock - time-source seam. Lets tests inject deterministic time  |
-//| without depending on TimeCurrent() directly.                     |
+//| \brief IClock - time-source seam. Lets tests inject              |
+//|        deterministic time without depending on TimeCurrent().    |
 //+------------------------------------------------------------------+
 interface IClock
   {
+   //--- \brief  Current time. \return Now per the implementation's source.
    datetime Now(void);
   };
 
 //+------------------------------------------------------------------+
-//| ILogSink - diagnostics seam (primitive params only). Concrete    |
-//| CSV/journal sinks arrive with the evidence IPLANs (IPLAN-10+).   |
+//| \brief ILogSink - diagnostics seam (primitive params only).      |
+//|        Concrete CSV/journal sinks arrive with the evidence       |
+//|        IPLANs (IPLAN-10+).                                       |
 //+------------------------------------------------------------------+
 interface ILogSink
   {
+   //--- \brief  Emit one diagnostic line.
+   //--- \param  level     Severity (LOG_DEBUG..LOG_ERROR).
+   //--- \param  category  Short routing/topic tag.
+   //--- \param  message   Human-readable message text.
    void Write(const ENUM_LOG_LEVEL level, const string category, const string message);
   };
 
 //+------------------------------------------------------------------+
-//| RuntimeMode - injectable runtime-mode snapshot (SPEC-09 model).  |
+//| \brief RuntimeMode - injectable runtime-mode snapshot            |
+//|        (SPEC-09 model).                                          |
 //+------------------------------------------------------------------+
 struct RuntimeMode
   {
-   bool is_tester;          // inside Strategy Tester
-   bool is_optimization;    // optimization pass
-   bool diagnostics_enabled;// detailed diagnostics allowed for this mode
+   bool is_tester;              // inside Strategy Tester
+   bool is_optimization;        // optimization pass
+   bool diagnostics_enabled;    // detailed diagnostics allowed for this mode
+   bool is_visual;              // visual tester mode
+
+   //--- \brief Default constructor: deterministic false values for every flag.
+   RuntimeMode(void)
+     {
+      is_tester           = false;
+      is_optimization     = false;
+      diagnostics_enabled = false;
+      is_visual           = false;
+     }
   };
 
 //+------------------------------------------------------------------+
-//| ProfileSample - one timing measurement (SPEC-09 model).          |
+//| \brief ProfileSample - one timing measurement (SPEC-09 model).   |
 //+------------------------------------------------------------------+
 struct ProfileSample
   {
@@ -71,7 +88,8 @@ struct ProfileSample
   };
 
 //+------------------------------------------------------------------+
-//| BenchmarkBaseline - memory baseline-and-delta evidence record.   |
+//| \brief BenchmarkBaseline - memory baseline-and-delta evidence    |
+//|        record.                                                  |
 //+------------------------------------------------------------------+
 struct BenchmarkBaseline
   {

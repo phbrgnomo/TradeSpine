@@ -223,7 +223,8 @@ bool Test_NewBarDetector_Deterministic(CAssert &asserts)
   }
 
 //+------------------------------------------------------------------+
-//| TDD trace aliases.                                               |
+//| \brief TDD/BDD trace-alias entry points called by RunAllTests;   |
+//|        each maps a BDD scenario id + test type to its helpers.    |
 //+------------------------------------------------------------------+
 bool test_core_runtime_and_configuration_unit_contract(CAssert &asserts)
   {

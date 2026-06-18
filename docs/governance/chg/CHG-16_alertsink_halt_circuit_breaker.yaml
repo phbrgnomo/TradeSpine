@@ -1,0 +1,136 @@
+id: CHG-16
+title: "CAlertSink HALT circuit-breaker: persistent GV flag via IStateStore"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-15"
+
+  change_level:
+    value: C2
+
+  change_source:
+    value: feedback  # Design review revealed that dismissing Alert() implicitly resumes the EA.
+
+change_control:
+  chg_id: "CHG-16"
+  status: Approved
+  change_level: C2
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null
+  author: "phbr"
+  date_proposed: "2026-06-15T00:00:00Z"
+  date_approved: "2026-06-15T00:00:00Z"
+  date_implemented: null
+  supersedes: []
+
+change_description:
+  what: |
+    Wire a persistent GV HALT flag into CAlertSink.Halt() via IStateStore.
+
+    Before: Halt() writes logger.Error() then calls Alert(). Dismissing the dialog
+    implicitly resumes the EA — there is no circuit breaker that keeps it halted
+    after the operator clicks OK.
+
+    After: CAlertSink.Init() accepts an optional IStateStore* parameter. Halt() writes
+    the GV HALT flag via IStateStore before calling Alert(), so the EA remains halted
+    regardless of dialog dismissal. Alert() stays as the operator notification mechanism;
+    the GV flag is the actual circuit breaker.
+
+    The IAlertSink interface itself does NOT change — only the concrete CAlertSink gains
+    the IStateStore dependency. FakeAlertSink and other test doubles are unaffected.
+
+    Resume requires explicit operator action: remove and re-attach the EA, or run a
+    recovery script that clears the flag. The Coordinator (not yet implemented) must
+    check the GV HALT flag as the first action in OnTick() and return immediately if set.
+
+  why: |
+    A HALT condition means the EA cannot safely reason about its own state. Dismissing
+    a modal dialog does not resolve that condition — the market has kept moving and the
+    state ambiguity is still present. Without a persistent circuit breaker the EA resumes
+    trading in a potentially corrupt state the moment the operator clicks OK, which is
+    more dangerous than the HALT itself.
+
+  trigger: |
+    Design review discussion: user noted that "just closing the alert to resume probably
+    isn't the correct flow" for a live EA. The Alert() dialog is a valid notification
+    primitive; the missing piece is the persistent state that keeps the EA stopped after
+    dismissal.
+
+impact_assessment:
+  affected_layers:
+    - artifact: "Include/Persistence/AlertSink.mqh"
+      what_changes: |
+        CAlertSink.Init() gains optional IStateStore* parameter (default NULL for backward
+        compat with test harnesses that do not need the flag). Halt() writes the GV HALT
+        flag via m_store before calling Alert(). IAlertSink interface unchanged.
+      cascade_direction: downstream
+    - artifact: "Scripts/Tests/Test_AlertSink.mq5"
+      what_changes: |
+        Init() call sites updated where IStateStore is needed. New test assertion: after
+        Halt() the GV HALT flag is set. Existing Test_AlertSink_Halt_LoggerFirstContract
+        and Test_AlertSink_NonVisualTester_Halt retain their logger assertions unchanged.
+      cascade_direction: downstream
+    - artifact: "SPEC-05"
+      what_changes: |
+        behavior.error_handling: HALT response refined — "set persistent GV HALT flag via
+        IStateStore; notify operator via Alert() or SendNotification(); EA remains halted
+        until operator explicitly resets the flag." interfaces.CAlertSink: Init() signature
+        updated to document optional IStateStore* parameter.
+      cascade_direction: downstream
+    - artifact: "IPLAN-05"
+      what_changes: "Session handoff updated with CHG-16 entry; CHG-16 added to chg_references."
+      cascade_direction: downstream
+    - artifact: "Docs/MODULES/Persistence.md"
+      what_changes: |
+        CAlertSink section: Init() signature updated; HALT flag behavior and resume
+        semantics described.
+      cascade_direction: downstream
+    - artifact: "Coordinator IPLAN (future)"
+      what_changes: |
+        Downstream constraint: OnTick() entry point MUST check the GV HALT flag as its
+        first action and return immediately if set. This constraint is recorded here so
+        the Coordinator IPLAN author picks it up without re-deriving it from CAlertSink.
+      cascade_direction: downstream
+  cascade_direction: downstream
+  risk: medium  # CAlertSink.Init() signature changes; all callers must be updated.
+
+implementation:
+  files_changed:
+    - "Include/Persistence/AlertSink.mqh"
+    - "Scripts/Tests/Test_AlertSink.mq5"
+    - "docs/06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
+    - "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+    - "Docs/MODULES/Persistence.md"
+    - "docs/governance/chg/CHG-00_index.md"
+
+rollback_plan:
+  strategy: revert-commit
+  steps:
+    - "Revert CAlertSink.Init() to the 2-parameter form (COptContext*, Logger*)."
+    - "Remove the m_store member and GV HALT flag write from Halt()."
+    - "Revert Test_AlertSink.mq5 Init() call sites."
+    - "Revert SPEC-05 behavior.error_handling and interfaces entries."
+  estimated_effort: "30 minutes"
+  risk_note: |
+    Rollback restores the pre-CHG-16 behavior: Alert() as the sole HALT mechanism,
+    no persistent circuit breaker. The EA would resume trading on dialog dismissal.
+    Acceptable if an alternative circuit-breaker design is chosen instead.
+
+gate_approval:
+  gate: null  # C2 — GATE-CODE self-approved; no formal gate required.
+  approver: null
+  approval_date: null
+  conditions: []
+
+verification:
+  steps:
+    - step: "Compile Include/Persistence/AlertSink.mqh in MetaEditor — expect 0 errors."
+      status: Pending
+    - step: "Compile and run Scripts/Tests/Test_AlertSink.mq5 — all tests green; new HALT flag assertion passes."
+      status: Pending
+    - step: "Verify GV HALT flag is set in MT5 terminal Global Variables panel after running Halt() in a test script."
+      status: Pending
+    - step: "Run doc-spec-audit SPEC-05 and doc-iplan-audit IPLAN-05 — both PASS."
+      status: Pending

@@ -12,7 +12,8 @@
 #include "../../../Include/Core/Interfaces.mqh"
 
 //+------------------------------------------------------------------+
-//| FakeClock                                                        |
+//| \brief FakeClock - deterministic IClock for tests; time advances |
+//|        only via Set()/Advance(), never from TimeCurrent().       |
 //+------------------------------------------------------------------+
 class FakeClock : public IClock
   {
@@ -20,20 +21,27 @@ private:
    datetime m_now;
 
 public:
-   // Starts at epoch 0 so tests begin from a known, unambiguous baseline.
+   //+------------------------------------------------------------------+
+   //| \brief Construct a fake clock at epoch 0.                         |
+   //+------------------------------------------------------------------+
    FakeClock(void)
      {
       m_now = 0;
      }
 
-   // Jumps the clock to an absolute timestamp, replacing any prior state.
+   //+------------------------------------------------------------------+
+   //| \brief Set the fake clock to an absolute timestamp.               |
+   //| \param t Timestamp to return from subsequent Now() calls.         |
+   //+------------------------------------------------------------------+
    void Set(const datetime t)
      {
       m_now = t;
      }
 
-   // Moves the clock forward by N seconds; negative values are rejected — backward movement is
-   // unsupported and likely a test authoring error.
+   //+------------------------------------------------------------------+
+   //| \brief Advance the fake clock by a non-negative number of seconds.|
+   //| \param seconds Seconds to add; negative values are rejected.      |
+   //+------------------------------------------------------------------+
    void Advance(const int seconds)
      {
       if(seconds < 0)
@@ -44,7 +52,10 @@ public:
       m_now += seconds;
      }
 
-   // Returns the last value set via Set() or accumulated via Advance(); never calls TimeCurrent().
+   //+------------------------------------------------------------------+
+   //| \brief Return the deterministic fake-clock value.                 |
+   //| \return Last value set by Set() or accumulated by Advance().      |
+   //+------------------------------------------------------------------+
    datetime Now(void) override
      {
       return(m_now);

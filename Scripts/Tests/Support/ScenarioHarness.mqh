@@ -17,7 +17,11 @@
 #include "../../../Include/Testing/Assert.mqh"
 
 //+------------------------------------------------------------------+
-//| ScenarioHarness                                                  |
+//| \brief ScenarioHarness - minimal component assembly for          |
+//|        integration tests: wires FakeClock + FakeLogSink +         |
+//|        COptContext + CAssert, with owner-extension hooks and      |
+//|        evidence assertions. Broker/position/symbol/store fakes    |
+//|        are added by the owning IPLANs (CHG-06).                  |
 //+------------------------------------------------------------------+
 class ScenarioHarness
   {
@@ -43,7 +47,13 @@ private:
      }
 
 public:
-   // Accepts four non-owned pointers; validates each with CheckPointer and prints [ERROR] for any null.
+   //+------------------------------------------------------------------+
+   //| \brief Construct a scenario harness from non-owned test fixtures. |
+   //| \param clk Fake clock pointer; must be valid for a ready harness. |
+   //| \param sink Fake log sink pointer; must be valid for readiness.   |
+   //| \param ctx Runtime context pointer; must be valid for readiness.  |
+   //| \param asserts Assertion recorder pointer; must be valid.         |
+   //+------------------------------------------------------------------+
    ScenarioHarness(FakeClock *clk, FakeLogSink *sink, COptContext *ctx, CAssert *asserts)
      {
       m_clock   = (CheckPointer(clk)     != POINTER_INVALID) ? clk     : NULL;
@@ -56,21 +66,29 @@ public:
       if(m_asserts == NULL) Print("[ERROR] ScenarioHarness: null asserts pointer");
      }
 
-   // Returns true only when all four pointers are non-null; subclasses can gate setup on this.
+   //+------------------------------------------------------------------+
+   //| \brief Report whether all required non-owned pointers are valid.  |
+   //| \return true when clock, sink, context, and asserts are non-null. |
+   //+------------------------------------------------------------------+
    bool IsReady(void) const
      {
       return(m_clock != NULL && m_sink != NULL && m_ctx != NULL && m_asserts != NULL);
      }
 
-   // Clears the sink and resets the clock to 0 so each test scenario starts from a blank slate.
+   //+------------------------------------------------------------------+
+   //| \brief Reset fake sink and clock state for a new scenario.        |
+   //+------------------------------------------------------------------+
    void Reset(void)
      {
       if(m_sink  != NULL) m_sink.Clear();
       if(m_clock != NULL) m_clock.Set(0);
      }
 
-   // Verifies that the sink holds a message matching ev.expected_kind (category) and ev.expected_trace
-   // (substring); FAILs for required or malformed assertions, SKIPs for optional missing evidence.
+   //+------------------------------------------------------------------+
+   //| \brief Assert that the sink contains the expected evidence trace. |
+   //| \param ev Expected evidence kind, trace text, and required flag.  |
+   //| \return true when evidence is present or optional evidence skips. |
+   //+------------------------------------------------------------------+
    bool AssertEvidence(const EvidenceAssertion &ev)
      {
       if(m_asserts == NULL)
@@ -103,8 +121,14 @@ public:
       return(true);
      }
 
-   // Downstream IPLANs override these to inject fixture setup and teardown without touching the base class.
+   //+------------------------------------------------------------------+
+   //| \brief Owner-plan setup hook for downstream harness extensions.   |
+   //+------------------------------------------------------------------+
    virtual void OnOwnerSetup(void) {}
+
+   //+------------------------------------------------------------------+
+   //| \brief Owner-plan teardown hook for downstream harness extensions.|
+   //+------------------------------------------------------------------+
    virtual void OnOwnerTeardown(void) {}
   };
 

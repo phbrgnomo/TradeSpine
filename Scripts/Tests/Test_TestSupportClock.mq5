@@ -171,8 +171,8 @@ bool Test_AssertInvalidToleranceRejected(CAssert &asserts)
   }
 
 //+------------------------------------------------------------------+
-//| TDD.11.04.6805 — FakeClock + Assert helpers unit contract.       |
-//| Aggregator: runs every decomposed helper in this file.           |
+//| \brief TDD.11.04.6805 — FakeClock + Assert helpers unit contract.|
+//|        Aggregator: runs every decomposed helper in this file.     |
 //+------------------------------------------------------------------+
 bool test_testing_support_and_harnesses_unit_contract(CAssert &asserts)
   {

@@ -20,7 +20,9 @@
 #define PROFILER_MAX_SCOPES 64
 
 //+------------------------------------------------------------------+
-//| CProfiler                                                        |
+//| \brief CProfiler - low-overhead scope timing and memory-budget   |
+//|        evidence, gated by an injected COptContext policy. All    |
+//|        public calls are no-ops when profiling is inactive.       |
 //+------------------------------------------------------------------+
 class CProfiler
   {
@@ -82,6 +84,9 @@ private:
      }
 
 public:
+   //--- \brief Construct over a runtime-mode policy and optional sink.
+   //--- \param ctx   Runtime-mode policy that gates profiling (not owned).
+   //--- \param sink  Optional diagnostics sink for results (not owned).
    CProfiler(COptContext *ctx, ILogSink *sink = NULL)
      {
       m_ctx      = ctx;
@@ -91,10 +96,13 @@ public:
       m_overflow = false;
      }
 
+   //--- \brief Master enable switch (still subject to runtime policy). \param v New enabled state.
    void SetEnabled(const bool v) { m_enabled = v; }
+   //--- \brief Whether profiling is currently collecting. \return true when enabled and policy allows it.
    bool IsActive(void) const     { return(Active()); }
 
-   //--- Begin a measurement block. No-op when inactive.
+   //--- \brief Begin a measurement block. No-op when inactive.
+   //--- \param scope  Scope name (paired with the matching Stop()).
    void              Start(const string scope)
      {
       if(!Active())
@@ -105,9 +113,10 @@ public:
       m_start_us[idx] = GetMicrosecondCount();
      }
 
-   //--- End a measurement block; record the sample. No-op when inactive.
+   //--- \brief End a measurement block; record the sample. No-op when inactive.
+   //--- \param scope  Scope name matching a prior Start().
    //--- Clears m_start_us after recording so a duplicate Stop() sees the
-   //--- zero-guard on line 116 and exits without inflating the sample.
+   //--- zero-guard and exits without inflating the sample.
    void Stop(const string scope)
      {
       if(!Active())
@@ -123,8 +132,10 @@ public:
       m_start_us[idx]   = 0; // prevent duplicate Stop() from overwriting the sample
      }
 
-   //--- Retrieve a recorded sample. When inactive or unknown, the
-   //--- returned sample carries enabled=false and elapsed_us=0.
+   //--- \brief Retrieve a recorded sample.
+   //--- \param scope  Scope name to look up.
+   //--- \return The sample; when inactive or unknown, carries enabled=false
+   //---         and elapsed_us=0.
    ProfileSample GetSample(const string scope) const
      {
       ProfileSample s;
@@ -140,7 +151,8 @@ public:
       return(s);
      }
 
-   //--- Human-readable dump of recorded samples.
+   //--- \brief Human-readable dump of recorded samples.
+   //--- \return A "scope=Nus " space-separated summary string.
    string GetResults(void) const
      {
       string out = "";
@@ -150,7 +162,7 @@ public:
       return(out);
      }
 
-   //--- Print results. No persistent write when inactive.
+   //--- \brief Print results to the sink (or Print()). No persistent write when inactive.
    void PrintResults(void)
      {
       if(!Active())
@@ -162,6 +174,8 @@ public:
          Print("profiler: ", r);
      }
 
+   //--- \brief Capture the current per-program memory baseline (MB).
+   //--- \return MQL_MEMORY_USED, or 0 when inactive.
    //--- Memory evidence (baseline-and-delta harness, in MB).
    //--- Uses MQLInfoInteger(MQL_MEMORY_USED) for per-program attribution;
    //--- TerminalInfoInteger(TERMINAL_MEMORY_USED) tracks the whole agent and
@@ -178,6 +192,9 @@ public:
       return((long)MQLInfoInteger(MQL_MEMORY_USED));
      }
 
+   //--- \brief Memory growth since a baseline (MB).
+   //--- \param baseline  Value from CaptureBaselineMemory().
+   //--- \return now - baseline (0 when inactive); delta<=0 means no growth, not savings.
    long RecordMemoryDelta(const long baseline)
      {
       if(!Active())
@@ -186,6 +203,10 @@ public:
       return(now - baseline);
      }
 
+   //--- \brief Assemble a BenchmarkBaseline evidence record for a scenario.
+   //--- \param scenario  Benchmark scenario name.
+   //--- \param baseline  Value from CaptureBaselineMemory().
+   //--- \return Populated BenchmarkBaseline (scenario, baseline, delta, timing source).
    BenchmarkBaseline GetBenchmarkData(const string scenario, const long baseline)
      {
       BenchmarkBaseline b;

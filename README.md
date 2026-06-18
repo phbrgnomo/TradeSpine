@@ -6,28 +6,6 @@
 ![Scope](https://img.shields.io/badge/scope-B3%20futures%20v1-2b8a3e)
 ![Architecture](https://img.shields.io/badge/architecture-docs--driven-f08c00)
 
-TradeSpine is a modular MQL5 trading framework for MetaTrader 5. It separates strategy logic from execution infrastructure: sizing, runtime gates, stops, trailing, risk controls, reconciliation, audit evidence, and test harnesses.
-
-> [!IMPORTANT]
-> TradeSpine is no longer docs-only. The SDD corpus under [docs](docs) remains the authoritative implementation reference, and the first implementation tiers now exist under [Include](Include) and [Scripts/Tests](Scripts/Tests).
-
-## Current State
-
-Completed implementation tiers:
-
-- **IPLAN-09: Core Runtime and Configuration**: common input validation, runtime-mode context, shared interfaces, safe math helpers, profiler/memory evidence support, and deterministic new-bar detection.
-- **IPLAN-11: Testing Support and Harnesses**: canonical `CAssert`, deterministic clock/log fakes, scenario harness support, shared mock aliases, release evidence harness, and the aggregate test runner.
-
-Current governance and testing-support work also includes the `CAssert` expected-failure primitive from CHG-11, so controlled negative tests no longer print as real `FAIL:` lines in normal test output.
-
-Not started yet:
-
-- persistence and market foundations (`IPLAN-05`, `IPLAN-06`)
-- position state, indicators/stops/sizing/trailing, and optional visualization (`IPLAN-04`, `IPLAN-07`, `IPLAN-10`)
-- trade coordination and guarded execution (`IPLAN-02`, `IPLAN-03`)
-- strategy authoring surface and strategy ports (`IPLAN-01`, `IPLAN-12`, `IPLAN-13`)
-
-## What TradeSpine Is
 
 TradeSpine provides reusable framework layers for production-oriented MT5 Expert Advisors:
 
@@ -41,14 +19,36 @@ TradeSpine provides reusable framework layers for production-oriented MT5 Expert
 
 Primary v1 market scope is **B3 futures**. Future scope includes broader strategy tooling and equities-oriented sizing semantics.
 
+> [!IMPORTANT]
+> The SDD corpus under [docs](docs) remains the authoritative implementation reference and decision record.
+
+## Current State
+
+Completed implementation tiers:
+
+- **IPLAN-09: Core Runtime and Configuration**: common input validation, runtime-mode context, shared interfaces, safe math helpers, profiler/memory evidence support, and deterministic new-bar detection.
+- **IPLAN-11: Testing Support and Harnesses**: canonical `CAssert`, deterministic clock/log fakes, scenario harness support, shared mock aliases, release evidence harness, and the aggregate test runner.
+- **IPLAN-05: Persistence and Audit Evidence**: GV-backed state store with deterministic hashed keys, lossless ulong ticket split, HALT circuit-breaker with evidence file, paired CSV trade evidence, leveled diagnostic logger, and mode-aware alert sink.
+
+Current governance and testing-support work also includes the `CAssert` expected-failure primitive from CHG-11, so controlled negative tests no longer print as real `FAIL:` lines in normal test output.
+
+Not started yet:
+
+- market foundations (`IPLAN-06`)
+- position state, indicators/stops/sizing/trailing, and optional visualization (`IPLAN-04`, `IPLAN-07`, `IPLAN-10`)
+- trade coordination and guarded execution (`IPLAN-02`, `IPLAN-03`)
+- strategy authoring surface and strategy ports (`IPLAN-01`, `IPLAN-12`, `IPLAN-13`)
+
 ## Repository Layout
 
 - [Include/Core](Include/Core): implemented core runtime modules from `IPLAN-09`.
+- [Include/Persistence](Include/Persistence): implemented persistence and audit evidence modules from `IPLAN-05`.
 - [Include/Testing](Include/Testing): shared testing helpers, currently the canonical `CAssert`.
 - [Include/StdLib](Include/StdLib): vendored MQL5 standard-library subset required by the self-contained project policy.
 - [Scripts/Tests](Scripts/Tests): executable MQL5 test scripts and the aggregate runner.
 - [Scripts/Tests/Support](Scripts/Tests/Support): shared deterministic fakes and harness support.
 - [docs](docs): SDD corpus and governance records.
+- [Docs](Docs): Code Documentation.
 
 ## Implemented Modules
 
@@ -67,7 +67,16 @@ Testing support:
 - `FakeClock.mqh` and `FakeLogSink.mqh`: deterministic seams for time and diagnostics.
 - `ScenarioHarness.mqh`: minimal reusable harness assembly and evidence assertion support.
 - `Mocks.mqh`: shared aliases/helpers for reusable test support.
-- `RunAllTests.mq5`: aggregate runner for the current IPLAN-09 and IPLAN-11 test surface.
+- `RunAllTests.mq5`: aggregate runner covering IPLAN-09, IPLAN-11, and IPLAN-05 test surface.
+
+Persistence and audit evidence:
+
+- `PersistenceTypes.mqh`: shared enums (`ENUM_TRADE_RECORD_TYPE`) used across Persistence modules.
+- `KeyBuilder.mqh`: `CKeyBuilder` — deterministic 19-char GV key builder using FNV-1a hashing; raw identity never in GV names.
+- `StateStore.mqh`: `IStateStore` / `CStateStore` — GV-backed state store: scalars, duplicate markers, HALT circuit-breaker, lossless ulong ticket split, identity fingerprint.
+- `TradeLogger.mqh`: `TradeLogger` — paired CSV intent/execution evidence writer; one daily file, gated in optimization, invalid side rejected.
+- `Logger.mqh`: `Logger` — thin leveled diagnostic wrapper over `ILogSink`; gated per mode.
+- `AlertSink.mqh`: `IAlertSink` / `CAlertSink` — mode-aware HALT and warn routing (live/visual: `Alert()`; tester: log-only; optimization: silent).
 
 ## Validation
 
@@ -88,15 +97,10 @@ Scripts/Tests/Test_SafeMathAndNewBar.mq5
 Scripts/Tests/Test_TestSupportClock.mq5
 Scripts/Tests/Test_TestSupportScenarioHarness.mq5
 Scripts/Tests/Test_ReleaseEvidenceHarness.mq5
+Scripts/Tests/Test_StateStore.mq5
+Scripts/Tests/Test_TradeLogger.mq5
+Scripts/Tests/Test_AlertSink.mq5
 ```
-
-The supplementary headless compile helper can be used from this directory:
-
-```bash
-../../../Scripts/compile_mql.sh Scripts/Tests/RunAllTests.mq5
-```
-
-Treat headless output as supporting evidence only; MetaEditor / MT5 remains the source of truth for MQL5 compile and script execution.
 
 ## Documentation
 

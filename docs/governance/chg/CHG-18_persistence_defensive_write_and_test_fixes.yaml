@@ -1,0 +1,186 @@
+id: CHG-18
+title: "Persistence layer: defensive-write checks, side enum, and test-determinism fixes"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-16"
+
+  change_level:
+    value: C2
+
+  change_source:
+    value: feedback  # Code review (three rounds, 2026-06-16): TradeLogger header-write result ignored, TradeEvidenceRecord.side was an unconstrained string, CStateStore._setGV() discarded GetLastError() detail, Test_AlertSink.mq5 could not independently prove SetHalt() was attempted, and Test_TradeLogger.mq5 wrote/read mismatched file paths.
+
+change_control:
+  chg_id: "CHG-18"
+  status: Approved
+  change_level: C2
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null
+  author: "phbr"
+  date_proposed: "2026-06-16T00:00:00Z"
+  date_approved: "2026-06-16T00:00:00Z"
+  date_implemented: "2026-06-16T00:00:00Z"
+  supersedes: []
+
+change_description:
+  what: |
+    Five code-review-driven fixes to the persistence layer, all additive or
+    corrective with no public-behavior regressions on the success path:
+
+    1. TradeLogger::_EnsureFile() now checks the FileWriteString() result when
+       writing the CSV header on a newly created file. On failure it closes and
+       resets the file handle and returns false, so WriteIntent()/WriteExecution()
+       emit the existing LogFailure diagnostic instead of silently proceeding with
+       a possibly headerless evidence file.
+    2. TradeEvidenceRecord.side changed from a free-form string to
+       ENUM_TRADE_SIDE (TRADE_SIDE_BUY=0, TRADE_SIDE_SELL=1). TradeLogger gained
+       a private _SideToString() formatter so the CSV column text is unchanged
+       ("BUY"/"SELL"); only the struct field type and the two test call sites
+       changed.
+    3. CStateStore::_setGV() now logs the GlobalVariableSet() error code via
+       PrintFormat() (key, value, GetLastError()) when the write fails, instead
+       of discarding the diagnostic detail. The method's bool return contract
+       is unchanged.
+    4. Test_AlertSink.mq5's FakeStateStore gained a halt_call_count counter,
+       incremented unconditionally at the top of SetHalt() before the
+       should_fail_halt branch. Test_AlertSink_Halt_FlagPersisted and
+       Test_AlertSink_Halt_PersistenceFailureDiagnostic now assert
+       halt_call_count == 1, independently proving CAlertSink.Halt() attempts
+       SetHalt() in both the success and failure paths (strengthens the CHG-17
+       regression guard, which previously only inferred the call from its
+       side effects).
+    5. Test_TradeLogger.mq5 test prefixes included a "TradeSpine/" segment that
+       TradeLogger::_EnsureFile() also prepends, so tests wrote to
+       TradeSpine/TradeSpine/Test/... but read/deleted TradeSpine/Test/...  —
+       a different file than the one the logger wrote. Added a
+       TradeLoggerPath() helper and made all eight test prefixes relative to
+       the TradeSpine/ root. Also replaced the non-deterministic
+       Test_TradeLogger_WriteFailure (which assumed an "/invalid/path/..."
+       prefix would make FileOpen() fail, falling back to TS_SKIP when the
+       sandbox accepted it) with a deterministic version that occupies the
+       exact target file path with a folder via FolderCreate(), forcing
+       FileOpen() to fail in any environment.
+
+  why: |
+    (1) and (3) close diagnostic gaps that would leave operators without
+    actionable detail on a write failure for trade evidence and the GV-backed
+    HALT flag respectively. (2) removes a free-form-string domain from a field
+    that feeds the audit-evidence CSV, eliminating a class of casing/typo/
+    localisation defects at the type level. (4) closes a test gap flagged by
+    code review: the existing assertions proved the diagnostic message and
+    flag state but not that SetHalt() was independently attempted, which is
+    the actual CHG-17 regression this test exists to guard. (5) is a
+    correctness bug in the test harness itself: every CSV-content assertion in
+    Test_TradeLogger.mq5 was silently passing/failing against an empty string
+    (the wrong file) rather than the file TradeLogger actually wrote, and the
+    write-failure test could silently skip its only assertion depending on
+    sandbox behavior.
+
+  trigger: |
+    Three rounds of code review findings against the IPLAN-05 persistence
+    module (2026-06-16), surfaced while reviewing Test_TradeLogger.mq5,
+    Test_AlertSink.mq5, TradeLogger.mqh, and StateStore.mqh.
+
+impact_assessment:
+  affected_layers:
+    - artifact: "Include/Persistence/TradeLogger.mqh"
+      what_changes: |
+        ENUM_TRADE_SIDE added; TradeEvidenceRecord.side type changed from
+        string to ENUM_TRADE_SIDE; new private _SideToString() helper;
+        _EnsureFile() checks the header FileWriteString() result and fails
+        closed (closes/resets m_fh, returns false) instead of ignoring it.
+      cascade_direction: downstream
+    - artifact: "Include/Persistence/StateStore.mqh"
+      what_changes: |
+        _setGV() logs GetLastError() via PrintFormat() on GlobalVariableSet()
+        failure (key, value, error code). No signature or return-value change.
+      cascade_direction: downstream
+    - artifact: "Scripts/Tests/Test_TradeLogger.mq5"
+      what_changes: |
+        Added TradeLoggerPath() helper; all eight test prefixes changed from
+        "TradeSpine/Test/TL_*" to "Test/TL_*" (relative to the TradeSpine/
+        root TradeLogger itself prepends); DeleteTestFile()/ReadFileContent()/
+        FileIsExist() call sites route through the helper.
+        Test_TradeLogger_WriteFailure rewritten to force FileOpen() failure
+        deterministically (FolderCreate() at the target path) instead of
+        relying on sandbox path-rejection behavior. Two MakeRecord() call
+        sites updated from string literals to TRADE_SIDE_BUY/TRADE_SIDE_SELL.
+      cascade_direction: downstream
+    - artifact: "Scripts/Tests/Test_AlertSink.mq5"
+      what_changes: |
+        FakeStateStore gained halt_call_count (incremented unconditionally in
+        SetHalt(), before the should_fail_halt branch) and now records
+        last_halt_ev on both the success and failure paths.
+        Test_AlertSink_Halt_FlagPersisted and
+        Test_AlertSink_Halt_PersistenceFailureDiagnostic both assert
+        halt_call_count == 1.
+      cascade_direction: downstream
+    - artifact: "SPEC-05"
+      what_changes: |
+        data_models.TradeEvidenceRecord.side type updated to ENUM_TRADE_SIDE;
+        interfaces.TradeLogger and interfaces.CStateStore descriptions note
+        the header-write check and _setGV diagnostic logging respectively;
+        behavior.error_handling "Trade evidence write fails" condition
+        extended to cover header-write failure; implementation_notes.patterns
+        gained three CHG-18 bullets. chg_references updated; version 1.5→1.6.
+      cascade_direction: downstream
+    - artifact: "IPLAN-05"
+      what_changes: |
+        Session 8 entry (already recorded ahead of this CHG, 2026-06-16) is
+        now formally attributed to CHG-18; chg_references updated;
+        version 1.5→1.6.
+      cascade_direction: downstream
+    - artifact: "Docs/MODULES/Persistence.md"
+      what_changes: |
+        TradeEvidenceRecord.side row updated to ENUM_TRADE_SIDE with a new
+        enum-values note; TradeLogger I/O-failure bullet extended to cover
+        header-write failure; CStateStore section gained a GV-write
+        diagnostic-logging bullet.
+      cascade_direction: downstream
+  cascade_direction: downstream
+  risk: low  # All five changes are additive on the success path; the side string->enum change has zero current external callers (only this IPLAN's own test file), so the breaking-type-change blast radius today is zero.
+
+implementation:
+  files_changed:
+    - "Include/Persistence/TradeLogger.mqh"
+    - "Include/Persistence/StateStore.mqh"
+    - "Scripts/Tests/Test_TradeLogger.mq5"
+    - "Scripts/Tests/Test_AlertSink.mq5"
+    - "docs/06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
+    - "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+    - "docs/08_IPLAN/IPLAN-00_index.yaml"
+    - "Docs/MODULES/Persistence.md"
+    - "docs/governance/chg/CHG-00_index.md"
+
+rollback_plan:
+  strategy: revert-commit
+  steps:
+    - "Revert TradeLogger.mqh: remove ENUM_TRADE_SIDE, restore TradeEvidenceRecord.side to string, remove _SideToString(), restore _EnsureFile() to ignore the header FileWriteString() result."
+    - "Revert StateStore.mqh: restore _setGV() to a bare GlobalVariableSet(key, value) != 0 return."
+    - "Revert Test_TradeLogger.mq5 and Test_AlertSink.mq5 to their pre-CHG-18 state (path-prefix bug and halt_call_count both reintroduced — not recommended; see why)."
+    - "Revert SPEC-05, IPLAN-05, IPLAN-00 index, and Docs/MODULES/Persistence.md edits."
+  estimated_effort: "20 minutes"
+  risk_note: |
+    Reverting Test_TradeLogger.mq5 reintroduces a confirmed test-harness bug
+    (tests silently validate the wrong file). Reverting Test_AlertSink.mq5
+    weakens the CHG-17 regression guard back to an indirect inference. Revert
+    only if the enum/diagnostic-logging changes themselves are the problem;
+    prefer a narrower revert of just files 1-2 if so.
+
+gate_approval:
+  gate: null  # C2 — GATE-CODE self-approved; no formal gate required.
+  approver: null
+  approval_date: null
+  conditions: []
+
+verification:
+  steps:
+    - step: "Compile Include/Persistence/TradeLogger.mqh, Include/Persistence/StateStore.mqh, Scripts/Tests/Test_TradeLogger.mq5, Scripts/Tests/Test_AlertSink.mq5, and Scripts/Tests/RunAllTests.mq5 via compile_mql.sh — 0 errors (confirmed this session)."
+      status: Completed
+    - step: "Run Test_TradeLogger.mq5 and Test_AlertSink.mq5 in the MT5 IDE (not just headless compile) — all assertions green, including the corrected CSV-content checks and the new halt_call_count assertions."
+      status: Pending
+    - step: "Run doc-iplan-audit IPLAN-05 — PASS (confirmed: v008, 95/100)."
+      status: Completed
