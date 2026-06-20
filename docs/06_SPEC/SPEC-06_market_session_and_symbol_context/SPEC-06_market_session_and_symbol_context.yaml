@@ -7,14 +7,14 @@ id: SPEC-06
 title: Market Session and Symbol Context
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-06-19T00:00:00-03:00"
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-06-19T00:00:00-03:00"
   author: "Codex"
   component: "CSymbolContext, CSessionContext, CMarketContext"
   tdd_ready_score: "92/100"
@@ -57,9 +57,21 @@ interfaces:
     - name: "CSessionContext"
       type: "class"
       signature: "class CSessionContext"
-      description: "Evaluates broker market session, user trading-hours session, and day-trade close buffer."
+      description: "Evaluates broker market session, user trading-hours session, and day-trade close buffer. Evaluate() accepts the broker market-session end-of-day (market_session_end_tod) so the day-trade close trigger can be measured from the market session end when CommonInputs.close_reference selects it."
       errors:
         - "SessionBlocked: new entries are refused while entry sessions are closed."
+    - name: "IContractInfoProvider"
+      type: "interface"
+      signature: "interface IContractInfoProvider"
+      description: "Contract expiry seam used by CMarketContext for expiration-warning checks: ExpirationTime() returns the contract expiry timestamp (0 = no expiry / non-futures sentinel). Production implementation reads SYMBOL_EXPIRATION_TIME; test doubles return a configured fixture via SetExpirationTime(). IsExpirationWarning() compares TimeCurrent() against ExpirationTime() to emit the fixed-duration expiry alert."
+      errors:
+        - "ExpirationTime() == 0: treated as no-expiry / non-futures; IsExpirationWarning() returns false."
+    - name: "IMarketSessionProvider"
+      type: "interface"
+      signature: "interface IMarketSessionProvider"
+      description: "Broker market-session schedule seam (distinct from SYMBOL_TRADE_MODE): IsMarketSessionOpen(when) reports schedule membership for the market_open gate; MarketSessionEndTod(when) supplies the session end-of-day for the close-reference trigger. Live adapter reads SymbolInfoSessionTrade; test doubles implement it directly."
+      errors:
+        - "IsMarketSessionOpen returns false (conservative closed) when no session schedule is defined or available."
     - name: "CMarketContext"
       type: "class"
       signature: "class CMarketContext"
@@ -105,7 +117,7 @@ data_models:
         - name: "market_open"
           type: "bool"
           required: true
-          description: "Broker market session allows trading."
+          description: "Broker market-session schedule membership: true only when IMarketSessionProvider.IsMarketSessionOpen reports that the current time is inside a broker trade session; false when no session schedule is available. Directional symbol trade-mode permission is evaluated later by ValidateOrderDefinition for the concrete BUY or SELL intent."
         - name: "user_trading_hours_open"
           type: "bool"
           required: true
@@ -124,6 +136,14 @@ behavior:
       source: "@ears: EARS.01.03.ec72"
     - rule: "Entries SHALL require both market trade session and user-defined strategy trading-hours window."
       source: "@ears: EARS.01.03.1a3e"
+    - id: "VR-CLOSE-REF-06"
+      rule: |
+        WHEN day_trade_mode is true THE day-trade forced-close trigger SHALL be measured
+        from the reference selected by CommonInputs.close_reference: entry_window_end for
+        CLOSE_REF_USER_WINDOW_END, or the broker market-session end (market_session_end_tod)
+        for CLOSE_REF_MARKET_SESSION_END, falling back to entry_window_end when the market
+        session end is unavailable.
+      source: "@chg: CHG-19"
     - rule: "Expiration warning SHALL fire at session open when a supported futures contract expires in one broker day."
       source: "@ears: EARS.01.03.db97"
   state_transitions:

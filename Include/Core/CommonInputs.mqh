@@ -34,6 +34,22 @@ enum ENUM_SIZING_MODE
   };
 
 //+------------------------------------------------------------------+
+//| \brief Reference point the day-trade close trigger is measured    |
+//|        against. close_mins_before is subtracted from whichever    |
+//|        reference is selected.                                     |
+//|        USER_WINDOW_END   — operator-configured entry_window_end.  |
+//|        MARKET_SESSION_END — broker trade session end (queried via |
+//|                            SymbolInfoSessionTrade by the Market   |
+//|                            layer; falls back to the user window   |
+//|                            when unavailable).                     |
+//+------------------------------------------------------------------+
+enum ENUM_SESSION_CLOSE_REF
+  {
+   CLOSE_REF_USER_WINDOW_END   = 0, // Close relative to entry_window_end (default)
+   CLOSE_REF_MARKET_SESSION_END = 1 // Close relative to broker market session end
+  };
+
+//+------------------------------------------------------------------+
 //| \brief Result of a CommonInputs validation pass.                 |
 //+------------------------------------------------------------------+
 struct InputValidation
@@ -56,9 +72,10 @@ struct CommonInputs
    // When true the strategy closes all open positions before session end
    // and rejects new entries outside the entry window.
    bool             day_trade_mode;
-   int              close_mins_before;   // [day_trade] minutes before session end to close (>= 0)
+   int              close_mins_before;   // [day_trade] minutes before close reference to close (>= 0)
    datetime         entry_window_start;  // [day_trade] entries allowed from this time (broker time; date ignored)
    datetime         entry_window_end;    // [day_trade] no new entries after this time (broker time; date ignored)
+   ENUM_SESSION_CLOSE_REF close_reference; // [day_trade] reference the close trigger is measured from
 
    // --- Sizing ---
    ENUM_SIZING_MODE sizing_mode;
@@ -82,6 +99,7 @@ struct CommonInputs
       close_mins_before  = 0;
       entry_window_start = 0;
       entry_window_end   = 0;
+      close_reference    = CLOSE_REF_USER_WINDOW_END; // valid default; preserves v1 behavior
       sizing_mode        = (ENUM_SIZING_MODE) - 1;
       signal_timeframe   = (ENUM_TIMEFRAMES) - 1;
      }
@@ -121,6 +139,15 @@ struct CommonInputs
                         "after entry_window_start time (HH:MM comparison; date ignored). "
                         "Note: windows crossing midnight (e.g., 22:00-02:00) are not "
                         "supported in day_trade_mode v1.";
+            return(r);
+           }
+         // Whitelist the close reference; reject unknown casts explicitly.
+         if(close_reference != CLOSE_REF_USER_WINDOW_END &&
+            close_reference != CLOSE_REF_MARKET_SESSION_END)
+           {
+            r.message = StringFormat("Invalid close_reference value %d: select "
+                                     "CLOSE_REF_USER_WINDOW_END or CLOSE_REF_MARKET_SESSION_END.",
+                                     (int)close_reference);
             return(r);
            }
         }

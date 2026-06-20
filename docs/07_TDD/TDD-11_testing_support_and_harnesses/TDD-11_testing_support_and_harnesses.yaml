@@ -7,7 +7,7 @@ id: TDD-11
 title: "Testing Support and Harnesses Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-06-09T00:00:00-03:00"
+last_updated: "2026-06-20T00:00:00-03:00"
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -23,9 +23,9 @@ metadata:
 
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-06-09T00:00:00-03:00"
+  last_updated: "2026-06-20T00:00:00-03:00"
   author: "Codex"
   component: "Shared test doubles, clocks, log sinks, assertions, and harness primitives"
   spec_reference: "@spec: SPEC-11"
@@ -220,7 +220,7 @@ owner_extension_scope:
     - owner: "IPLAN-05"
       scope: "State-store and persistence/evidence fakes, write/read failure injection, audit ledger assertions."
     - owner: "IPLAN-06"
-      scope: "Symbol context and market-session fakes for sizing, stops, spread, fill mode, and session gates."
+      scope: "FakeMarketContext/FakeSymbolContext surfaces for symbol metadata, broker-session open/end state, contract expiration, sizing/stops metadata consumers, and session gates; spread, fill-mode, margin, broker retcode, and private CTrade outcome fixtures remain IPLAN-03-owned."
   security_tests:
     cases: []
 

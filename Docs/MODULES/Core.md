@@ -44,9 +44,19 @@ Data models: `RuntimeMode{is_tester, is_optimization, diagnostics_enabled, is_vi
 `enum ENUM_SIZING_MODE` — v1-executable: `SIZING_FIXED_LOT`, `SIZING_RISK_PCT_EQUITY`;
 v2 placeholders (rejected in v1): `SIZING_FIXED_CASH`, `SIZING_VALUE_PCT_EQUITY`.
 
+`enum ENUM_SESSION_CLOSE_REF` — reference point the day-trade close trigger is measured from
+(validated by `Validate()` only when `day_trade_mode` is true):
+- `CLOSE_REF_USER_WINDOW_END` (0, default) — close relative to `entry_window_end`.
+- `CLOSE_REF_MARKET_SESSION_END` (1) — close relative to broker trade session end (queried
+  via `SymbolInfoSessionTrade` by the Market layer; falls back to the user window when
+  unavailable).
+  Unknown/cast values are rejected with a diagnostic that names the offending field.
+
 `struct CommonInputs` — the input binding shared by all strategies:
 - `ulong magic` (must be > 0), `bool day_trade_mode`, `int close_mins_before`,
   `datetime entry_window_start/end` (broker time; **date ignored**, only HH:MM consumed),
+  `ENUM_SESSION_CLOSE_REF close_reference` (whitelist-validated when `day_trade_mode` is
+  true; default `CLOSE_REF_USER_WINDOW_END` preserves v1 behavior without operator action),
   `ENUM_SIZING_MODE sizing_mode`, `ENUM_TIMEFRAMES signal_timeframe`.
 - `InputValidation Validate() const` → `{bool ok, string message}`. Rejects v2 placeholders
   *visibly* (no silent fallback); the message names the offending field.

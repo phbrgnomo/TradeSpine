@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-07"
   source_tdd: "@tdd: TDD.07.04.a6d8"
   total_sections: 6
-  last_updated: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-20T00:00:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
@@ -15,9 +15,9 @@ document_control:
   source_spec: "@spec: SPEC-07"
   source_tdd: "@tdd: TDD.07.04.a6d8"
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-20T00:00:00-03:00"
   author: "Codex"
   component: "IIndicator, stop, sizing, and trailing policy modules"
   complexity: 5
@@ -86,6 +86,7 @@ execution_commands:
   setup:
     - "mkdir -p Include/Indicators Include/Strategy/Stops Include/Strategy/Sizing Include/Strategy/Trailing Scripts/Tests"
   implementation:
+    - "# Pre-flight: reuse @iplan: IPLAN-06 FakeMarketContext/CSymbolContext metadata for sizing and stop-policy tests; create a local FakeSymbolContext facade only if a consumer interface cannot use the @iplan: IPLAN-06 fixture directly."
     - "# Write TDD-07 tests first, then implement indicator wrappers, stop policies, sizers, and trailing policies."
     - "# Keep indicator readiness strategy-owned and make v2 equity sizing placeholders visibly reject in v1."
   validation:
@@ -116,8 +117,8 @@ session_handoff:
       agent: "Codex IPLAN autopilot"
       files_touched: []
       partial_work: "No implementation started; this seed session only created the execution plan."
-      blockers: "Requires market symbol metadata, runtime helpers, and test support."
-      next_session_directive: "Start with Scripts/Tests/Test_Indicators.mq5 and implement IndicatorBase readiness semantics."
+      blockers: "Requires @iplan: IPLAN-06 market symbol metadata, runtime helpers, and test support; use existing FakeMarketContext/CSymbolContext metadata before adding any local symbol facade."
+      next_session_directive: "Start with Scripts/Tests/Test_Indicators.mq5 and implement IndicatorBase readiness semantics; for sizing/stops, bind to @iplan: IPLAN-06 metadata fixtures and add a local FakeSymbolContext only if the interface boundary requires it."
       validation_results:
         tests_passing: null
         coverage: null

@@ -533,7 +533,6 @@ bool COrderInfo::SelectByIndex(const int index)
    return(true);
   }
 //+------------------------------------------------------------------+
-#endif // TRADESPINE_VENDOR_ORDER_INFO_MQH
 //| Stored order's current state                                     |
 //+------------------------------------------------------------------+
 void COrderInfo::StoreState(void)
@@ -563,3 +562,4 @@ bool COrderInfo::CheckState(void)
    return(true);
   }
 //+------------------------------------------------------------------+
+#endif   // TRADESPINE_VENDOR_ORDER_INFO_MQH

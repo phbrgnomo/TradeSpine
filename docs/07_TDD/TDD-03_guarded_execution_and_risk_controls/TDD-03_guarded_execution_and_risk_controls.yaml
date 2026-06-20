@@ -7,7 +7,7 @@ id: TDD-03
 title: "Guarded Execution and Risk Controls Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-06-02T00:00:00-03:00"
+last_updated: "2026-06-20T00:00:00-03:00"
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -23,9 +23,9 @@ metadata:
 
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-06-02T00:00:00-03:00"
+  last_updated: "2026-06-20T00:00:00-03:00"
   author: "Codex"
   component: "CGuardedTrade and CRiskManager"
   spec_reference: "@spec: SPEC-03"
@@ -152,6 +152,7 @@ test_cases:
         test_function: "test_guarded_execution_and_risk_controls_integration_contract"
         setup:
           - "Assemble component with deterministic fakes for broker, clock, store, symbol, and logs where required."
+          - "Configure execution-owned fixtures for spread, fill mode, OrderCheck/margin results, broker retcodes, and private CTrade call counts; do not rely on FakeMarketContext for these fields."
           - "Load SPEC-defined configuration and BDD trace tags."
         action:
           description: "Submit TradeIntent with side-inverted stop"

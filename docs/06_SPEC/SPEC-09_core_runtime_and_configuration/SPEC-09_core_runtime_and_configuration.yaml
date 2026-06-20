@@ -66,6 +66,12 @@ interfaces:
       description: "Log severity levels used by ILogSink: LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR."
       errors:
         - "None."
+    - name: "ENUM_SESSION_CLOSE_REF"
+      type: "enum"
+      signature: "enum ENUM_SESSION_CLOSE_REF"
+      description: "Reference point the day-trade forced-close trigger is measured from: CLOSE_REF_USER_WINDOW_END (default, relative to entry_window_end) or CLOSE_REF_MARKET_SESSION_END (relative to the broker market-session end). Consumed by the Market-layer session evaluation (SPEC-06)."
+      errors:
+        - "None."
     - name: "CommonInputs"
       type: "struct"
       signature: "struct CommonInputs"
@@ -123,6 +129,10 @@ data_models:
           type: "datetime"
           required: true
           description: "[day_trade_mode] No new entries after this broker time. Must be after start."
+        - name: "close_reference"
+          type: "ENUM_SESSION_CLOSE_REF"
+          required: true
+          description: "[day_trade_mode] Reference the forced-close trigger is measured from. Default CLOSE_REF_USER_WINDOW_END preserves v1 behavior (relative to entry_window_end); CLOSE_REF_MARKET_SESSION_END measures from the broker market-session end (Market layer supplies it; falls back to entry_window_end when unavailable). Validated against the two-value whitelist when day_trade_mode=true."
         - name: "sizing_mode"
           type: "ENUM_SIZING_MODE"
           required: true
@@ -182,6 +192,14 @@ behavior:
   validation_rules:
     - rule: "CommonInputs SHALL expose the documented v1 strategy authoring settings and reject unsupported v2 placeholder selections visibly."
       source: "@ears: EARS.01.03.0c0a"
+    - id: "VR-CLOSE-REF-01"
+      rule: |
+        WHEN day_trade_mode is true THE framework SHALL accept close_reference only
+        when it is CLOSE_REF_USER_WINDOW_END or CLOSE_REF_MARKET_SESSION_END, rejecting
+        any other (cast) value with a diagnostic. The default CLOSE_REF_USER_WINDOW_END
+        preserves v1 behavior. The Market layer (SPEC-06) consumes close_reference to
+        select the forced-close trigger reference.
+      source: "@chg: CHG-19"
     - rule: "Optimization-mode logging and profiling SHALL avoid high-I/O work unconditionally; no audit override is provided during optimization."
       source: "@ears: EARS.01.03.c5b7"
     - rule: "SafeMath SHALL centralize finite-number, price-grid, lot-grid, and tolerance checks used by sizing, stops, and execution guards."

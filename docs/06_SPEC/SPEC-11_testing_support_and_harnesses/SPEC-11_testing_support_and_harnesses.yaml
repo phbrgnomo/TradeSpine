@@ -7,14 +7,14 @@ id: SPEC-11
 title: Testing Support and Harnesses
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-05T00:00:00-03:00"
+last_updated: "2026-06-20T00:00:00-03:00"
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-05T00:00:00-03:00"
+  last_updated: "2026-06-20T00:00:00-03:00"
   author: "Codex"
   component: "Shared test doubles, clocks, log sinks, assertions, and harness primitives"
   tdd_ready_score: "94/100"
@@ -133,6 +133,7 @@ implementation_notes:
     - "Test support modules MUST remain outside production execution paths."
     - "IPLAN-11 fakes MUST implement only IPLAN-09 contracts: IClock, ILogSink, runtime context, and profiling data models."
     - "Broker, position/account, symbol, and persistence fakes MUST be implemented by the owner plans that publish their production interfaces: IPLAN-03, IPLAN-04, IPLAN-06, and IPLAN-05 respectively."
+    - "Market-owned fakes cover symbol metadata, broker-session state, session-close references, and contract expiration only; spread, fill-mode, margin, OrderCheck, broker-retcode, and submission-outcome fixtures belong to @iplan: IPLAN-03."
     - "Manual evidence pack contracts MUST remain visible to release governance and must not be represented as Strategy Tester automation."
   patterns:
     - "Use owner-extension hooks so later plans can attach broker outcomes, position views, symbol context, and state stores without changing shared assertion helpers."

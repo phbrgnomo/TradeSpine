@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-11"
   source_tdd: "@tdd: TDD.11.04.6805"
   total_sections: 6
-  last_updated: "2026-06-08T00:00:00-03:00"
+  last_updated: "2026-06-20T00:00:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
@@ -15,9 +15,9 @@ document_control:
   source_spec: "@spec: SPEC-11"
   source_tdd: "@tdd: TDD.11.04.6805"
   status: Completed
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-06-08T00:00:00-03:00"
+  last_updated: "2026-06-20T00:00:00-03:00"
   author: "Codex"
   component: "Shared test doubles, clocks, log sinks, assertions, and harness primitives"
   complexity: 4
@@ -137,8 +137,8 @@ deferred_scope:
       files: ["Scripts/Tests/Support/FakeStateStore.mqh"]
       reason: "Requires IStateStore and persistence/evidence contracts."
     - owner: "IPLAN-06"
-      files: ["Scripts/Tests/Support/FakeSymbolContext.mqh"]
-      reason: "Requires symbol metadata and market-session contracts."
+      files: ["Scripts/Tests/Support/FakeMarketContext.mqh", "Scripts/Tests/Support/FakeSymbolContext.mqh"]
+      reason: "Requires symbol metadata and market-session contracts; FakeMarketContext is the implemented IPLAN-06 fixture, while FakeSymbolContext is only added if a later owner preflight needs a narrower facade."
 
 session_handoff:
   sessions:

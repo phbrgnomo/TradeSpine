@@ -7,7 +7,7 @@ id: TDD-06
 title: "Market Session and Symbol Context Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-06-02T00:00:00-03:00"
+last_updated: "2026-06-19T00:00:00-03:00"
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -23,9 +23,9 @@ metadata:
 
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-06-02T00:00:00-03:00"
+  last_updated: "2026-06-19T00:00:00-03:00"
   author: "Codex"
   component: "CSymbolContext, CSessionContext, CMarketContext"
   spec_reference: "@spec: SPEC-06"
@@ -53,96 +53,100 @@ test_pyramid:
 
 test_mapping:
   scenarios:
+    # Each scenario's three tier wrappers are co-located with that scenario's
+    # assertion bodies so every Test_*.mq5 also compiles standalone (the
+    # aggregate RunAllTests.mq5 includes all three). Wrappers that reuse the
+    # owning tier's assertions delegate to it for traceability.
     - bdd_scenario: "@bdd: BDD.01.03.edae"
       description: "Missing symbol metadata fails initialization"
       tests:
         - type: unit
           file: "Scripts/Tests/Test_SymbolContext.mq5"
           function: "test_market_session_and_symbol_context_edae_unit"
-          status: pending
+          status: completed
         - type: integration
-          file: "Scripts/Tests/Test_SessionContext.mq5"
+          file: "Scripts/Tests/Test_SymbolContext.mq5"
           function: "test_market_session_and_symbol_context_edae_integration"
-          status: pending
+          status: completed
         - type: e2e
-          file: "Scripts/Tests/Test_ContractLifecycle.mq5"
+          file: "Scripts/Tests/Test_SymbolContext.mq5"
           function: "test_market_session_and_symbol_context_edae_e2e"
-          status: pending
+          status: completed
     - bdd_scenario: "@bdd: BDD.01.03.a399"
       description: "Trading session gates entries"
       tests:
         - type: unit
-          file: "Scripts/Tests/Test_SymbolContext.mq5"
+          file: "Scripts/Tests/Test_SessionContext.mq5"
           function: "test_market_session_and_symbol_context_a399_unit"
-          status: pending
+          status: completed
         - type: integration
           file: "Scripts/Tests/Test_SessionContext.mq5"
           function: "test_market_session_and_symbol_context_a399_integration"
-          status: pending
+          status: completed
         - type: e2e
-          file: "Scripts/Tests/Test_ContractLifecycle.mq5"
+          file: "Scripts/Tests/Test_SessionContext.mq5"
           function: "test_market_session_and_symbol_context_a399_e2e"
-          status: pending
+          status: completed
     - bdd_scenario: "@bdd: BDD.01.03.d4a5"
       description: "Day trade session closes exposure"
       tests:
         - type: unit
-          file: "Scripts/Tests/Test_SymbolContext.mq5"
+          file: "Scripts/Tests/Test_SessionContext.mq5"
           function: "test_market_session_and_symbol_context_d4a5_unit"
-          status: pending
+          status: completed
         - type: integration
           file: "Scripts/Tests/Test_SessionContext.mq5"
           function: "test_market_session_and_symbol_context_d4a5_integration"
-          status: pending
+          status: completed
         - type: e2e
-          file: "Scripts/Tests/Test_ContractLifecycle.mq5"
+          file: "Scripts/Tests/Test_SessionContext.mq5"
           function: "test_market_session_and_symbol_context_d4a5_e2e"
-          status: pending
+          status: completed
     - bdd_scenario: "@bdd: BDD.01.03.4dcb"
       description: "Unsupported futures symbol blocks validation"
       tests:
         - type: unit
           file: "Scripts/Tests/Test_SymbolContext.mq5"
           function: "test_market_session_and_symbol_context_4dcb_unit"
-          status: pending
+          status: completed
         - type: integration
-          file: "Scripts/Tests/Test_SessionContext.mq5"
+          file: "Scripts/Tests/Test_SymbolContext.mq5"
           function: "test_market_session_and_symbol_context_4dcb_integration"
-          status: pending
+          status: completed
         - type: e2e
-          file: "Scripts/Tests/Test_ContractLifecycle.mq5"
+          file: "Scripts/Tests/Test_SymbolContext.mq5"
           function: "test_market_session_and_symbol_context_4dcb_e2e"
-          status: pending
+          status: completed
     - bdd_scenario: "@bdd: BDD.01.03.4a71"
       description: "Contract expiration warnings fire on session open"
       tests:
         - type: unit
-          file: "Scripts/Tests/Test_SymbolContext.mq5"
+          file: "Scripts/Tests/Test_ContractLifecycle.mq5"
           function: "test_market_session_and_symbol_context_4a71_unit"
-          status: pending
+          status: completed
         - type: integration
-          file: "Scripts/Tests/Test_SessionContext.mq5"
+          file: "Scripts/Tests/Test_ContractLifecycle.mq5"
           function: "test_market_session_and_symbol_context_4a71_integration"
-          status: pending
+          status: completed
         - type: e2e
           file: "Scripts/Tests/Test_ContractLifecycle.mq5"
           function: "test_market_session_and_symbol_context_4a71_e2e"
-          status: pending
+          status: completed
     - bdd_scenario: "@bdd: BDD.01.03.e593"
       description: "Sizing modes use initialized symbol data"
       tests:
         - type: unit
           file: "Scripts/Tests/Test_SymbolContext.mq5"
           function: "test_market_session_and_symbol_context_e593_unit"
-          status: pending
+          status: completed
         - type: integration
-          file: "Scripts/Tests/Test_SessionContext.mq5"
+          file: "Scripts/Tests/Test_SymbolContext.mq5"
           function: "test_market_session_and_symbol_context_e593_integration"
-          status: pending
+          status: completed
         - type: e2e
-          file: "Scripts/Tests/Test_ContractLifecycle.mq5"
+          file: "Scripts/Tests/Test_SymbolContext.mq5"
           function: "test_market_session_and_symbol_context_e593_e2e"
-          status: pending
+          status: completed
   coverage_table:
     columns: [BDD Scenario, Unit, Integration, E2E, Total]
     rows:
@@ -177,18 +181,20 @@ test_cases:
     cases:
       - id: "TDD.06.04.4796"
         type: integration
-        name: "Session context blocks entries but allows exposure management"
+        name: "Session context exposes broker schedule state while order validation enforces direction"
         spec_ref: "@spec: SPEC-06"
-        contract: "CSessionContext plus fake broker clock"
-        test_file: "Scripts/Tests/Test_SessionContext.mq5"
-        test_function: "test_market_session_and_symbol_context_integration_contract"
+        contract: "CMarketContext session facade with fake clock and market-session provider"
+        test_file: "Scripts/Tests/Test_ContractLifecycle.mq5"
+        test_function: "Test_MarketContext_SessionGate"
         setup:
           - "Assemble component with deterministic fakes for broker, clock, store, symbol, and logs where required."
           - "Load SPEC-defined configuration and BDD trace tags."
         action:
-          description: "Market open, user trading hours closed"
+          description: "Broker session open with user trading hours closed; separately, broker session open with SYMBOL_TRADE_MODE_DISABLED"
         expected_state:
-          - "Entry gate is blocked and close-management path remains available"
+          - "market_open reflects broker session schedule membership only."
+          - "user_trading_hours_open independently blocks entry outside the configured window."
+          - "A disabled or side-restricted symbol remains subject to ValidateOrderDefinition for the concrete BUY or SELL intent."
         error_paths:
           - condition: "Close buffer sets day_trade_close_required"
             expected_error: "SPEC-defined rejection or HALT path."
@@ -267,7 +273,7 @@ tdd_order:
 
 traceability:
   tags:
-    - "@tdd: TDD.06.04.8f4d"
+    - "@tdd: TDD-06"
     - "@spec: SPEC-06"
     - "@brd: BRD.01.07.69ef"
     - "@prd: PRD.01.09.fada"

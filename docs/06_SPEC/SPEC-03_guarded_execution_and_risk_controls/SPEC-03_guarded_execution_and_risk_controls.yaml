@@ -7,14 +7,14 @@ id: SPEC-03
 title: Guarded Execution and Risk Controls
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-02T00:40:00-03:00"
+last_updated: "2026-06-20T00:00:00-03:00"
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.1"
+  version: "1.2"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-02T00:40:00-03:00"
+  last_updated: "2026-06-20T00:00:00-03:00"
   author: "Codex"
   component: "CGuardedTrade and CRiskManager"
   tdd_ready_score: "94/100"
@@ -192,6 +192,7 @@ implementation_notes:
     - "OrderCheck and explicit margin validation are separate guard stages."
     - "CGuardedTrade MUST NOT become the owner of daily-loss, max-open-lots, max-trades-per-day, or panic-stop policy; it consumes CRiskManager state as an environmental gate only."
     - "CRiskManager MUST NOT submit broker orders directly; emergency close requests route back through strategy/coordinator/guarded execution paths."
+    - "Execution-owned test fixtures MUST supply spread, fill-mode, OrderCheck, margin, broker-retcode, and private CTrade outcome scenarios; do not add those fields to FakeMarketContext."
   patterns:
     - "Use composition around vendored CTrade because convenience methods are not virtual."
     - "Classify retcodes into success, pending, retryable, terminal failure, and unknown-failsafe groups."

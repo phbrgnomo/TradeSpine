@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-04"
   source_tdd: "@tdd: TDD.04.04.8b79"
   total_sections: 6
-  last_updated: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-20T00:00:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
@@ -15,13 +15,13 @@ document_control:
   source_spec: "@spec: SPEC-04"
   source_tdd: "@tdd: TDD.04.04.8b79"
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-20T00:00:00-03:00"
   author: "Codex"
   component: "CPositionContext, adapters, router, and state machine"
   complexity: 5
-  estimated_files: 9
+  estimated_files: 10
   session_count: 0
   readiness_gate: "TDD-04 audit PASS 96/100"
   source_inputs:
@@ -32,56 +32,62 @@ document_control:
 
 file_manifest:
   files:
-    - path: "Scripts/Tests/Test_PositionStateMachine.mq5"
+    - path: "Scripts/Tests/Support/FakePositionView.mqh"
       order: 1
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Position/account-owned fake view for hedging ticket ownership, account-mode diagnostics, exposure queries, and state-machine transition evidence."
+    - path: "Scripts/Tests/Test_PositionStateMachine.mq5"
+      order: 2
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "State transitions, cancel-origin disambiguation, HALT persistence, and safe auto-clear tests."
     - path: "Scripts/Tests/Test_AccountModeAdapters.mq5"
-      order: 2
+      order: 3
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "Hedging ticket ownership and deferred mode initialization tests."
     - path: "Scripts/Tests/Test_AccountModeDeferred.mq5"
-      order: 3
+      order: 4
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "Netting and exchange no-side-effect deferred-mode release evidence tests."
     - path: "Include/Position/PositionStateMachine.mqh"
-      order: 4
+      order: 5
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "Strategy position lifecycle and HALT behavior."
     - path: "Include/Position/AccountModeAdapter.mqh"
-      order: 5
+      order: 6
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "IAccountModeAdapter interface and deferred account-mode declarations."
     - path: "Include/Position/HedgingAdapter.mqh"
-      order: 6
+      order: 7
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "Magic-filtered hedging ticket and order ownership implementation."
     - path: "Include/Position/NettingAdapter.mqh"
-      order: 7
+      order: 8
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "v2 placeholder adapter that fails initialization in v1."
     - path: "Include/Position/PositionContext.mqh"
-      order: 8
+      order: 9
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "Adapter selection, strategy-owned exposure queries, duplicate identity, and deferred mode diagnostics."
     - path: "Include/Position/TradeTxRouter.mqh"
-      order: 9
+      order: 10
       status: NOT_STARTED
       session: null
       verified: false
@@ -92,6 +98,7 @@ execution_commands:
   setup:
     - "mkdir -p Include/Position Scripts/Tests"
   implementation:
+    - "# Pre-flight: define the position/account-owned fixture surface before writing tests: FakePositionView account mode, ticket ownership, manual/non-TradeSpine exposure, duplicate identity, and state-transition evidence."
     - "# Write TDD-04 tests first, then implement state machine, adapter interface, hedging adapter, deferred adapter, context, and router."
     - "# Keep netting/exchange execution unreachable in v1 and preserve manual/non-TradeSpine exposure boundaries."
   validation:
@@ -110,6 +117,10 @@ implementation_contracts:
         type: "State Machine"
         files: ["Include/Position/PositionStateMachine.mqh", "Include/Position/TradeTxRouter.mqh"]
         summary: "FLAT, PENDING_ENTRY, ACTIVE, and HALT transitions are sourced from broker, GV, and reconciliation evidence."
+      - name: "Position/account fixture contract"
+        type: "Test Fixture"
+        files: ["Scripts/Tests/Support/FakePositionView.mqh", "Scripts/Tests/Test_PositionStateMachine.mq5", "Scripts/Tests/Test_AccountModeAdapters.mq5"]
+        summary: "Position/account tests model strategy-owned exposure, hedging tickets, account-mode diagnostics, duplicate identity, and state-transition evidence through the position owner boundary."
   consumed:
     dependencies:
       - "@iplan: IPLAN-05"
@@ -121,8 +132,8 @@ session_handoff:
       agent: "Codex IPLAN autopilot"
       files_touched: []
       partial_work: "No implementation started; this seed session only created the execution plan."
-      blockers: "Requires persistence and testing support for duplicate markers, HALT state, and deterministic state tests."
-      next_session_directive: "Start with Scripts/Tests/Test_PositionStateMachine.mq5, then implement Include/Position/PositionStateMachine.mqh."
+      blockers: "Requires persistence and testing support for duplicate markers, HALT state, deterministic state tests, and the position/account-owned FakePositionView fixture."
+      next_session_directive: "Start by defining Scripts/Tests/Support/FakePositionView.mqh, then write Scripts/Tests/Test_PositionStateMachine.mq5 and implement Include/Position/PositionStateMachine.mqh."
       validation_results:
         tests_passing: null
         coverage: null
@@ -139,6 +150,6 @@ traceability:
     adr_references: ["@adr: ADR.02.03.c7dd", "@adr: ADR.07.03.6df1", "@adr: ADR.08.03.0a8f"]
   downstream:
     code_paths: ["@code: Include/Position/PositionStateMachine.mqh", "@code: Include/Position/AccountModeAdapter.mqh", "@code: Include/Position/HedgingAdapter.mqh", "@code: Include/Position/NettingAdapter.mqh", "@code: Include/Position/PositionContext.mqh", "@code: Include/Position/TradeTxRouter.mqh"]
-    test_paths: ["@tests: Scripts/Tests/Test_PositionStateMachine.mq5", "@tests: Scripts/Tests/Test_AccountModeAdapters.mq5", "@tests: Scripts/Tests/Test_AccountModeDeferred.mq5"]
+    test_paths: ["@tests: Scripts/Tests/Support/FakePositionView.mqh", "@tests: Scripts/Tests/Test_PositionStateMachine.mq5", "@tests: Scripts/Tests/Test_AccountModeAdapters.mq5", "@tests: Scripts/Tests/Test_AccountModeDeferred.mq5"]
   code_inventory:
     files: []

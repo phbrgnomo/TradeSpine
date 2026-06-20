@@ -54,6 +54,7 @@ flowchart LR
 - Test support modules MUST remain outside production execution paths.
 - IPLAN-11 fakes MUST implement only IPLAN-09 contracts: IClock, ILogSink, runtime context, and profiling data models.
 - Broker, position/account, symbol, and persistence fakes MUST be implemented by the owner plans that publish their production interfaces: IPLAN-03, IPLAN-04, IPLAN-06, and IPLAN-05 respectively.
+- Market-owned fakes cover symbol metadata, broker-session state, session-close references, and contract expiration only; spread, fill-mode, margin, OrderCheck, broker-retcode, and submission-outcome fixtures belong to IPLAN-03.
 - Manual evidence pack contracts MUST remain visible to release governance and must not be represented as Strategy Tester automation.
 - Use owner-extension hooks so later plans can attach broker outcomes, position views, symbol context, and state stores without changing shared assertion helpers.
 - Keep component construction explicit so TDD can map each BDD scenario to a harness.

@@ -7,7 +7,7 @@ id: TDD-09
 title: "Core Runtime and Configuration Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-06-04T00:00:00-03:00"
+last_updated: "2026-06-19T00:00:00-03:00"
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -25,12 +25,12 @@ document_control:
   status: Draft
   version: "1.1"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-06-04T00:00:00-03:00"
+  last_updated: "2026-06-19T00:00:00-03:00"
   author: "Codex"
   component: "COptContext, SafeMath, CProfiler, CommonInputs, CNewBarDetector"
   spec_reference: "@spec: SPEC-09"
   source_spec: "../../06_SPEC/SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.yaml"
-  iplan_ready_score: "94/100"
+  iplan_ready_score: "97/100"
   mode: generated
   source_inputs:
     - "../../archive/PRD.md"
@@ -125,6 +125,24 @@ test_cases:
         edge_cases:
           - condition: "Lot-grid clamp respects min, max, and step"
             expected: "Case remains deterministic and broker-safe."
+      - id: "TDD.09.04.c1f3"
+        type: unit
+        name: "CommonInputs validates close_reference whitelist"
+        spec_ref: "@spec: SPEC-09"
+        target: "CommonInputs.Validate (close_reference)"
+        test_file: "Scripts/Tests/Test_CommonInputs.mq5"
+        test_function: "test_core_runtime_and_configuration_c1f3_unit"
+        chg_ref: "@chg: CHG-19"
+        inputs:
+          - name: fixture
+            type: string
+            value: "day_trade_mode=true with close_reference in {default, USER_WINDOW_END, MARKET_SESSION_END, invalid cast}"
+        expected_output:
+          type: contract-result
+          value: "default and both valid enum values accepted; unknown/cast value rejected with a diagnostic"
+        edge_cases:
+          - condition: "Default close_reference (CLOSE_REF_USER_WINDOW_END) preserves v1 behavior"
+            expected: "Validation passes without requiring the operator to set close_reference."
   integration_tests:
     cases:
       - id: "TDD.09.04.8050"
@@ -217,6 +235,7 @@ tdd_order:
 traceability:
   tags:
     - "@tdd: TDD.09.04.f745"
+    - "@tdd: TDD.09.04.c1f3"
     - "@spec: SPEC-09"
     - "@brd: BRD.01.07.88a6"
     - "@brd: BRD.01.08.0ce5"
@@ -226,6 +245,7 @@ traceability:
     - "@ears: EARS.01.03.c5b7"
     - "@bdd: BDD.01.03.aa68"
     - "@bdd: BDD.01.03.b37d"
+    - "@bdd: BDD.01.03.cb03"
     - "@adr: ADR.03.03.4124"
     - "@adr: ADR.09.03.84b9"
   upstream:
@@ -258,5 +278,5 @@ traceability:
       target: "IPLAN-09"
       description: "Implementation plan must generate tests before component code."
   health_score:
-    iplan_ready: "94%"
+    iplan_ready: "97%"
     target_score: ">=90/100"

@@ -50,11 +50,11 @@ flowchart TD
 | IPLAN-11 | Testing Support and Harnesses Implementation | @spec: SPEC-11 | Completed | 4 | 9 | IPLAN-09 |
 | IPLAN-05 | Persistence and Audit Evidence Implementation | @spec: SPEC-05 | Completed | 4 | 8 | IPLAN-09, IPLAN-11 |
 | IPLAN-06 | Market Session and Symbol Context Implementation | @spec: SPEC-06 | Draft | 4 | 6 | IPLAN-09, IPLAN-11 |
-| IPLAN-04 | Position Account Mode and State Implementation | @spec: SPEC-04 | Draft | 5 | 9 | IPLAN-05, IPLAN-11 |
+| IPLAN-04 | Position Account Mode and State Implementation | @spec: SPEC-04 | Draft | 5 | 10 | IPLAN-05, IPLAN-11 |
 | IPLAN-07 | Indicators Stops Sizing and Trailing Implementation | @spec: SPEC-07 | Draft | 5 | 8 | IPLAN-06, IPLAN-09, IPLAN-11 |
 | IPLAN-10 | Visualization Optional Services Implementation | @spec: SPEC-10 | Draft | 3 | 5 | IPLAN-09, IPLAN-11 |
 | IPLAN-02 | Trade Coordination Pipeline Implementation | @spec: SPEC-02 | Draft | 5 | 7 | IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-09, IPLAN-11 |
-| IPLAN-03 | Guarded Execution and Risk Controls Implementation | @spec: SPEC-03 | Draft | 5 | 8 | IPLAN-02, IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-09, IPLAN-11 |
+| IPLAN-03 | Guarded Execution and Risk Controls Implementation | @spec: SPEC-03 | Draft | 5 | 9 | IPLAN-02, IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-09, IPLAN-11 |
 | IPLAN-01 | Strategy Authoring Surface Implementation | @spec: SPEC-01 | Draft | 5 | 8 | IPLAN-02, IPLAN-04, IPLAN-07, IPLAN-09, IPLAN-10 |
 | IPLAN-12 | 1minscalpv3 Hedging Port Implementation | @spec: SPEC-01 | Draft | 4 | 2 | IPLAN-01, IPLAN-02, IPLAN-03, IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-09, IPLAN-11 |
 | IPLAN-13 | BullishBearish Engulfing v7 Hedging Port Implementation | @spec: SPEC-01 | Draft | 4 | 2 | IPLAN-01, IPLAN-02, IPLAN-03, IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-09, IPLAN-11 |

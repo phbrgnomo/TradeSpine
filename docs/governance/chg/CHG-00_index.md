@@ -38,6 +38,8 @@ custom_fields:
 | CHG-16 | CAlertSink HALT circuit-breaker: persistent GV flag via IStateStore | C2 | feedback | Approved | GATE-CODE self-approved |
 | CHG-17 | CAlertSink: emit diagnostic when SetHalt() fails | C2 | feedback | Approved | GATE-CODE self-approved |
 | CHG-18 | Persistence layer: defensive-write checks, side enum, and test-determinism fixes | C2 | feedback | Approved | GATE-CODE self-approved |
+| CHG-19 | Session close reference input and broker market-session gate reconciliation | C3 | feedback | Proposed | GATE-CODE pending |
+| CHG-20 | Fixture ownership and FakeMarketContext scope clarification | C3 | design | Approved | GATE-06/GATE-08 approved |
 
 ## Planned
 

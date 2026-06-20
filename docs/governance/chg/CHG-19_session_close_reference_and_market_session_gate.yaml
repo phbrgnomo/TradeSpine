@@ -1,0 +1,272 @@
+id: CHG-19
+title: "Session close reference input and broker market-session gate reconciliation"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-19"
+  change_level:
+    value: C3
+  change_source:
+    value: feedback
+
+change_control:
+  chg_id: "CHG-19"
+  status: Proposed
+  change_level: C3
+  change_source: feedback
+  entry_gate: GATE-CODE
+  semver_impact: null
+  author: "phbr"
+  date_proposed: "2026-06-19T00:00:00-03:00"
+  date_approved: null
+  date_implemented: null
+  supersedes: []
+
+change_description:
+  what: |
+    Reconcile two code-first changes made on the IPLAN-06 branch with their
+    upstream SDD artifacts.
+
+    (1) NEW INPUT — session close reference. A new enum
+    `ENUM_SESSION_CLOSE_REF { CLOSE_REF_USER_WINDOW_END=0,
+    CLOSE_REF_MARKET_SESSION_END=1 }` and a new `CommonInputs.close_reference`
+    field (default `CLOSE_REF_USER_WINDOW_END`) were added to
+    `Include/Core/CommonInputs.mqh`, validated in `CommonInputs::Validate()`
+    when `day_trade_mode=true`. `CSessionContext::Evaluate` gained a
+    `market_session_end_tod` parameter, and a new `IMarketSessionProvider`
+    seam (`Include/Market/Interfaces.mqh`) with a live adapter
+    (`CLiveMarketSessionProvider`, reading `SymbolInfoSessionTrade`) supplies
+    it. When `close_reference=CLOSE_REF_MARKET_SESSION_END` the day-trade close
+    trigger is measured from the broker session end rather than the user entry
+    window end (falling back to the window end when the session end is
+    unavailable). This adds a new input to the IPLAN-09 `CommonInputs` contract
+    (SPEC-09) and a new behavioral refinement to the session model (SPEC-06),
+    plus the test coverage owed in TDD-09.
+
+    (2) CORRECTNESS — broker market-session gate. `IMarketSessionProvider`
+    gained `IsMarketSessionOpen(when)`, and `CMarketContext::EvaluateSession`
+    now sets `SessionWindow.market_open` from broker-session membership only
+    (conservative closed when no session provider is wired). Directional
+    `SYMBOL_TRADE_MODE` permission is evaluated later by
+    `ValidateOrderDefinition` through `CSymbolContext::IsEntryAllowedLive` once
+    a concrete BUY or SELL intent exists. Previously `market_open` combined
+    schedule membership with a direction-agnostic trade-mode query, conflating
+    session state with order authorization. SPEC-06 is amended to define the
+    schedule-only field contract.
+  why: |
+    The IPLAN-06 branch review (IPLAN-06_branch_review_report_v001, finding H4)
+    flagged that the `close_reference` field is live in a completed IPLAN-09
+    file (`CommonInputs`) but absent from SPEC-09, SPEC-06, and TDD-09, breaking
+    the SDD rule that the canonical YAML remains the implementation reference
+    and risking input/template documentation drift. IPLAN-06 itself records the
+    code-first spike and the owed CHG cascade. The same review (H1) flagged that
+    the `market_open` contract was ambiguous before IPLAN-02/03/04 consume
+    `SessionWindow`; the correction separates schedule state from directional
+    order authorization and surfaces the `market_session_end_tod` parameter
+    that SPEC-06 must mention for item 1.
+  trigger: |
+    User-approved code-first spike during IPLAN-06 (Session 3, 2026-06-18) plus
+    the IPLAN-06 branch review remediation (2026-06-19) directing that all nine
+    review findings — including the H4 upstream reconciliation and the H1
+    market-session correctness fix — be brought to merge-ready, with the CHG
+    cascade run in-session.
+
+impact_assessment:
+  affected_layers:
+    - layer: SPEC
+      artifacts: ["SPEC-09"]
+      impact: |
+        Add `close_reference` to the `CommonInputs` data model: type
+        `ENUM_SESSION_CLOSE_REF`, required, `[day_trade_mode]`, default
+        `CLOSE_REF_USER_WINDOW_END`, with the validation rule (whitelist the two
+        enum values when day_trade_mode=true; reject unknown casts). Document
+        the `ENUM_SESSION_CLOSE_REF` enum in SPEC-09's exported types.
+      cascade_direction: bubble-up
+    - layer: SPEC
+      artifacts: ["SPEC-06"]
+      impact: |
+        Document that the day-trade close trigger is measured from a configurable
+        reference (user entry-window end vs broker market-session end per
+        `close_reference`), and that session evaluation accepts a
+        `market_session_end_tod` input supplied by the new
+        `IMarketSessionProvider` seam. Amend `SessionWindow.market_open` to
+        describe broker-session membership only; directional symbol trade-mode
+        permission belongs to ValidateOrderDefinition for a concrete intent.
+      cascade_direction: bubble-up
+    - layer: TDD
+      artifacts: ["TDD-09"]
+      impact: |
+        Add a `close_reference` validation test case mapped to a new
+        `Test_CommonInputs.mq5` test: default accepted; both valid enum values
+        accepted under day_trade_mode=true; unknown/cast value rejected with a
+        diagnostic.
+      cascade_direction: bubble-up
+    - layer: TDD
+      artifacts: ["TDD-06"]
+      impact: |
+        Refine the session integration contract so market_open is asserted as
+        broker schedule membership, while a separate facade assertion proves
+        directional SYMBOL_TRADE_MODE permission is enforced by
+        ValidateOrderDefinition for a concrete intent.
+      cascade_direction: bubble-up
+    - layer: Code
+      artifacts:
+        - "Include/Core/CommonInputs.mqh"
+        - "Include/Market/Interfaces.mqh"
+        - "Include/Market/MarketContext.mqh"
+        - "Include/Market/SessionContext.mqh"
+        - "Include/Market/SymbolContext.mqh"
+        - "Scripts/Tests/Support/FakeMarketContext.mqh"
+        - "Scripts/Tests/Test_CommonInputs.mq5"
+        - "Scripts/Tests/Test_SymbolContext.mq5"
+        - "Scripts/Tests/Test_SessionContext.mq5"
+        - "Scripts/Tests/Test_ContractLifecycle.mq5"
+      impact: |
+        close_reference enum/field/validation (CommonInputs.mqh); Evaluate
+        market_session_end_tod parameter and close-reference branch
+        (SessionContext.mqh); IMarketSessionProvider seam with
+        IsMarketSessionOpen + MarketSessionEndTod and the schedule-only
+        EvaluateSession gate
+        (Interfaces.mqh, MarketContext.mqh); fake session-open/end wiring
+        (FakeMarketContext.mqh); close_reference unit coverage
+        (Test_CommonInputs.mq5); session close-reference + market-session-gate
+        tests (Test_SessionContext.mq5, Test_ContractLifecycle.mq5); live,
+        side-aware trade-mode permission (SymbolContext.mqh and
+        Test_SymbolContext.mq5). All code in this layer is already implemented
+        on the branch.
+      cascade_direction: source
+  cascade_direction: bubble-up
+  risk_level: Medium
+  risk_justification: |
+    The change extends a shipped Core input contract (`CommonInputs`, IPLAN-09)
+    with one new optional-by-default field and refines the day-trade close
+    semantics, so downstream sizing/session/execution IPLANs (02/03/04/07) will
+    consume it. Risk is bounded because the default (`CLOSE_REF_USER_WINDOW_END`)
+    preserves v1 behavior, the field is validated, and the code is already test-
+    covered at the unit (CommonInputs) and integration (SessionContext) levels.
+    The `market_open` item separates broker schedule state from directional
+    entry authorization; downstream code must use ValidateOrderDefinition (and
+    later CGuardedTrade) before submitting an order. EARS/BDD: assessed — no
+    new top-level requirement; the day-trade
+    close behavior already exists in the corpus and `close_reference` is a
+    configuration refinement within it, so no EARS/BDD amendment is required.
+
+implementation:
+  steps:
+    - step: 1
+      action: "Add ENUM_SESSION_CLOSE_REF + CommonInputs.close_reference field, default, and Validate() whitelist."
+      artifact: "Include/Core/CommonInputs.mqh"
+      status: Completed
+    - step: 2
+      action: "Add market_session_end_tod parameter and close-reference branch to CSessionContext::Evaluate."
+      artifact: "Include/Market/SessionContext.mqh"
+      status: Completed
+    - step: 3
+      action: "Add IMarketSessionProvider seam (IsMarketSessionOpen + MarketSessionEndTod); live adapter; schedule-only EvaluateSession gate and directional order validation."
+      artifact: "Include/Market/Interfaces.mqh, Include/Market/MarketContext.mqh"
+      status: Completed
+    - step: 4
+      action: "Wire FakeMarketContext IsMarketSessionOpen / MarketSessionEnd for tests."
+      artifact: "Scripts/Tests/Support/FakeMarketContext.mqh"
+      status: Completed
+    - step: 5
+      action: "Amend SPEC-09 CommonInputs data model with close_reference + ENUM_SESSION_CLOSE_REF; regenerate readable view."
+      artifact: "docs/06_SPEC/SPEC-09_core_runtime_and_configuration"
+      status: Pending
+    - step: 6
+      action: "Amend SPEC-06 session model: add IContractInfoProvider to exported interfaces (ExpirationTime(), 0=no-expiry sentinel, IsExpirationWarning() use); document configurable close reference + market_session_end_tod input; define market_open as broker-session membership only; regenerate readable view."
+      artifact: "docs/06_SPEC/SPEC-06_market_session_and_symbol_context"
+      status: Pending
+    - step: 7
+      action: "Add TDD-09 close_reference validation case mapped to Test_CommonInputs.mq5; regenerate readable view."
+      artifact: "docs/07_TDD/TDD-09_core_runtime_and_configuration"
+      status: Pending
+    - step: 8
+      action: "Add Test_CloseReferenceValidation to Test_CommonInputs.mq5 (default / valid enums / invalid cast)."
+      artifact: "Scripts/Tests/Test_CommonInputs.mq5"
+      status: Pending
+    - step: 9
+      action: "Register CHG-19 in the CHG index and run GATE-CODE via gate-check."
+      artifact: "docs/governance/chg/CHG-00_index.md"
+      status: Pending
+    - step: 10
+      action: "Amend TDD-06 to map schedule-only market_open and directional order validation to their focused tests; regenerate readable view."
+      artifact: "docs/07_TDD/TDD-06_market_session_and_symbol_context"
+      status: Pending
+
+  artifacts_modified:
+    - id: "SPEC-09"
+      file: "docs/06_SPEC/SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.yaml"
+      change_type: "modified"
+    - id: "SPEC-06"
+      file: "docs/06_SPEC/SPEC-06_market_session_and_symbol_context/SPEC-06_market_session_and_symbol_context.yaml"
+      change_type: "modified"
+    - id: "TDD-09"
+      file: "docs/07_TDD/TDD-09_core_runtime_and_configuration/TDD-09_core_runtime_and_configuration.yaml"
+      change_type: "modified"
+    - id: "TDD-06"
+      file: "docs/07_TDD/TDD-06_market_session_and_symbol_context/TDD-06_market_session_and_symbol_context.yaml"
+      change_type: "modified"
+    - id: "CommonInputs"
+      file: "Include/Core/CommonInputs.mqh"
+      change_type: "modified"
+    - id: "Market Context"
+      file: "Include/Market/MarketContext.mqh"
+      change_type: "modified"
+    - id: "Session Context"
+      file: "Include/Market/SessionContext.mqh"
+      change_type: "modified"
+    - id: "Symbol Context"
+      file: "Include/Market/SymbolContext.mqh"
+      change_type: "modified"
+
+verification:
+  checks:
+    - check: "Aggregate runner and changed test scripts compile."
+      result: Pass
+      method: "Headless ../../../Scripts/compile_mql.sh on RunAllTests.mq5 and each changed Test_*.mq5 — MetaEditor success, no compile log generated (clean)."
+    - check: "SPEC-09 / SPEC-06 / TDD-09 amended to include close_reference and the session-end input; readable views regenerated."
+      result: Pending
+      method: "Cross-check the three YAML artifacts and Test_CommonInputs.mq5 against CommonInputs.mqh."
+    - check: "close_reference validation covered: default, both valid enums, invalid cast rejected."
+      result: Pending
+      method: "Test_CommonInputs.mq5 Test_CloseReferenceValidation executed in MT5 IDE."
+    - check: "Corpus traceability clean after amendments."
+      result: Pending
+      method: "aidoc-flow:doc-validator traceability + prose pass."
+    - check: "Runtime execution of RunAllTests inside MT5 IDE."
+      result: Pending
+      method: "Execute RunAllTests.mq5 from the MT5 Navigator and record pass/skip counts."
+
+gate_approval:
+  gate: GATE-CODE
+  approver: null
+  approval_date: null
+  conditions: []
+
+rollback_plan:
+  strategy: revert-commit
+  steps:
+    - "Revert the CHG-19 commit: removes the SPEC-09/SPEC-06/TDD-09 amendments and the CHG record/index entry."
+    - "If the code must also be reverted, restore the previous combined trade-mode and schedule market_open gate, then restore the corresponding SPEC-06 contract."
+  estimated_effort: "Low — confined to one Core input field, the session seam, and three SDD artifacts; default preserves v1 behavior."
+
+traceability:
+  tags:
+    - "@spec: SPEC-09"
+    - "@spec: SPEC-06"
+    - "@tdd: TDD-09"
+    - "@iplan: IPLAN-06"
+    - "@chg: CHG-19"
+  upstream:
+    spec_references: ["@spec: SPEC-09", "@spec: SPEC-06"]
+    tdd_references: ["@tdd: TDD-09"]
+    iplan_references: ["@iplan: IPLAN-06"]
+  downstream:
+    code_references:
+      - "@code: Include/Core/CommonInputs.mqh"
+      - "@code: Include/Market/Interfaces.mqh"
+      - "@code: Include/Market/MarketContext.mqh"
+      - "@code: Include/Market/SessionContext.mqh"
+      - "@code: Scripts/Tests/Test_CommonInputs.mq5"

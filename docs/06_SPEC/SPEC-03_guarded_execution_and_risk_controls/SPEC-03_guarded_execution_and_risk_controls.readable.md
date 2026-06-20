@@ -66,6 +66,7 @@ flowchart LR
 - `CRiskManager` does not submit broker orders directly; emergency close requests route back through strategy/coordinator/guarded execution paths.
 - Panic close behavior must preserve strategy ownership boundaries in both netting and hedging modes.
 - `GuardResult` preserves normalized submitted price/lots and broker retcodes so execution logs can compare intended versus actual outcome.
+- Execution-owned test fixtures supply spread, fill-mode, OrderCheck, margin, broker-retcode, and private `CTrade` outcome scenarios; those fields do not belong in `FakeMarketContext`.
 - Bypass scans are part of release governance and evidence.
 
 ## TDD Contract

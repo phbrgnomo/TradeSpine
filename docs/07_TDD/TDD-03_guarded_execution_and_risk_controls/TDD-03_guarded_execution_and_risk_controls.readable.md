@@ -52,7 +52,7 @@
 
 | ID | Name | Contract | File | Expected State | Error Paths |
 | --- | --- | --- | --- | --- | --- |
-| TDD.03.04.b003 | Catastrophic guard blocks private CTrade submission | CGuardedTrade plus fake private CTrade | `Scripts/Tests/Test_RiskManager.mq5` | Rejected GuardResult and zero private CTrade calls | OrderCheck failure stores preflight reason -> SPEC-defined rejection or HALT path. |
+| TDD.03.04.b003 | Catastrophic guard blocks private CTrade submission | CGuardedTrade plus fake private CTrade | `Scripts/Tests/Test_RiskManager.mq5` | Rejected GuardResult and zero private CTrade calls | Setup uses execution-owned spread, fill-mode, OrderCheck/margin, retcode, and private CTrade call-count fixtures; OrderCheck failure stores preflight reason -> SPEC-defined rejection or HALT path. |
 
 ### E2E Tests
 

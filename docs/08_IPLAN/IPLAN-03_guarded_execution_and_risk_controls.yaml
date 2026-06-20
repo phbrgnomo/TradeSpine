@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-03"
   source_tdd: "@tdd: TDD.03.04.1f65"
   total_sections: 6
-  last_updated: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-20T00:00:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
@@ -15,13 +15,13 @@ document_control:
   source_spec: "@spec: SPEC-03"
   source_tdd: "@tdd: TDD.03.04.1f65"
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-20T00:00:00-03:00"
   author: "Codex"
   component: "CGuardedTrade and CRiskManager"
   complexity: 5
-  estimated_files: 8
+  estimated_files: 9
   session_count: 0
   readiness_gate: "TDD-03 audit PASS 95/100"
   source_inputs:
@@ -32,50 +32,56 @@ document_control:
 
 file_manifest:
   files:
-    - path: "Scripts/Tests/Test_GuardedTrade.mq5"
+    - path: "Scripts/Tests/Support/FakeTradePort.mqh"
       order: 1
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Execution-owned fake trade port/private broker fixture for spread, fill-mode, OrderCheck/margin, retcode, submission outcome, and call-count scenarios."
+    - path: "Scripts/Tests/Test_GuardedTrade.mq5"
+      order: 2
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "TradeIntent consistency, catastrophic caps, preflight, fill-mode, and retcode classification tests."
     - path: "Scripts/Tests/Test_RiskManager.mq5"
-      order: 2
+      order: 3
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "Daily loss, open lots, trade count, and panic-stop tests."
     - path: "Scripts/Tests/Test_BrokerBypassScan.mq5"
-      order: 3
+      order: 4
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "Release scan for raw broker bypass and terminal-global Trade includes."
     - path: "Include/Execution/GuardResult.mqh"
-      order: 4
+      order: 5
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "Guard outcome, retcode, retryable, ambiguous, and ticket data model."
     - path: "Include/Execution/GuardedTrade.mqh"
-      order: 5
+      order: 6
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "Private vendored CTrade boundary and guarded submission implementation."
     - path: "Include/Execution/FillingPolicy.mqh"
-      order: 6
+      order: 7
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "Broker-supported fill-mode selection and validation."
     - path: "Include/Execution/SpreadGuard.mqh"
-      order: 7
+      order: 8
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "Symbol-aware spread and price-grid guard."
     - path: "Include/Risk/RiskManager.mqh"
-      order: 8
+      order: 9
       status: NOT_STARTED
       session: null
       verified: false
@@ -86,6 +92,7 @@ execution_commands:
   setup:
     - "mkdir -p Include/Execution Include/Risk Scripts/Tests"
   implementation:
+    - "# Pre-flight: decide the execution-owned fixture surface before writing tests: FakeTradePort/private CTrade outcomes, spread, fill mode, OrderCheck/margin, retcodes, and call counters; do not extend FakeMarketContext for execution data."
     - "# Write TDD-03 tests first, then implement GuardResult, CGuardedTrade, guard helpers, and CRiskManager."
     - "# Verify private vendored CTrade composition and reject unknown retcodes as failsafe ambiguity."
   validation:
@@ -105,6 +112,10 @@ implementation_contracts:
         type: "State Machine"
         files: ["Include/Risk/RiskManager.mqh", "Scripts/Tests/Test_RiskManager.mq5"]
         summary: "Risk trips refuse new entries and request strategy-scoped close behavior without submitting orders directly."
+      - name: "Execution fixture contract"
+        type: "Test Fixture"
+        files: ["Scripts/Tests/Support/FakeTradePort.mqh", "Scripts/Tests/Test_GuardedTrade.mq5", "Scripts/Tests/Test_RiskManager.mq5"]
+        summary: "Execution-owned tests model spread, fill-mode, OrderCheck/margin, broker retcodes, private CTrade outcomes, and call counts without adding those fields to FakeMarketContext."
   consumed:
     dependencies:
       - "@iplan: IPLAN-02"
@@ -120,8 +131,8 @@ session_handoff:
       agent: "Codex IPLAN autopilot"
       files_touched: []
       partial_work: "No implementation started; this seed session only created the execution plan."
-      blockers: "Requires TradeIntent, position context, persistence, market, runtime, and test support contracts."
-      next_session_directive: "Start with Scripts/Tests/Test_GuardedTrade.mq5 and GuardResult before implementing GuardedTrade."
+      blockers: "Requires TradeIntent, position context, persistence, market metadata, runtime, and test support contracts; execution-specific spread/fill/margin/broker outcomes are owned by FakeTradePort in this plan."
+      next_session_directive: "Start by defining Scripts/Tests/Support/FakeTradePort.mqh, then write Scripts/Tests/Test_GuardedTrade.mq5 and GuardResult before implementing GuardedTrade."
       validation_results:
         tests_passing: null
         coverage: null
@@ -138,6 +149,6 @@ traceability:
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.09.03.84b9"]
   downstream:
     code_paths: ["@code: Include/Execution/GuardResult.mqh", "@code: Include/Execution/GuardedTrade.mqh", "@code: Include/Execution/FillingPolicy.mqh", "@code: Include/Execution/SpreadGuard.mqh", "@code: Include/Risk/RiskManager.mqh"]
-    test_paths: ["@tests: Scripts/Tests/Test_GuardedTrade.mq5", "@tests: Scripts/Tests/Test_RiskManager.mq5", "@tests: Scripts/Tests/Test_BrokerBypassScan.mq5"]
+    test_paths: ["@tests: Scripts/Tests/Support/FakeTradePort.mqh", "@tests: Scripts/Tests/Test_GuardedTrade.mq5", "@tests: Scripts/Tests/Test_RiskManager.mq5", "@tests: Scripts/Tests/Test_BrokerBypassScan.mq5"]
   code_inventory:
     files: []
