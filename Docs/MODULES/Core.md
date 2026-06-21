@@ -11,6 +11,7 @@ unit-testable without a live terminal.
 | File | Purpose |
 |---|---|
 | [`Interfaces.mqh`](../../Include/Core/Interfaces.mqh) | Stable seams (`IClock`, `ILogSink`) and runtime/profiling data models. |
+| [`TradeTypes.mqh`](../../Include/Core/TradeTypes.mqh) | Canonical `TradeIntent` struct shared by Market, Coordination, and Execution (CHG-21). |
 | [`CommonInputs.mqh`](../../Include/Core/CommonInputs.mqh) | Canonical framework input binding and v1/v2 validation. |
 | [`OptContext.mqh`](../../Include/Core/OptContext.mqh) | Tester/optimization/live detection and the evidence/diagnostics policy. |
 | [`SafeMath.mqh`](../../Include/Core/SafeMath.mqh) | Finite checks, price/lot-grid normalization, tolerance comparison. |
@@ -38,6 +39,30 @@ Data models: `RuntimeMode{is_tester, is_optimization, diagnostics_enabled, is_vi
 > Trade/position/state seams (`ITradePort`, `IPositionView`, `IStateStore`) are intentionally
 > **deferred** to their owning SPECs (SPEC-03/04/05) because their payload types do not exist
 > yet. Do not add them here.
+
+## TradeTypes.mqh — shared trade-domain types (CHG-21)
+
+`struct TradeIntent` — canonical minimal order-definition intent. Hoisted from
+`Include/Market/MarketContext.mqh` to `Include/Core/TradeTypes.mqh` by CHG-21 so that Market
+(`CMarketContext::ValidateOrderDefinition`), Coordination (SPEC-02), and Execution (SPEC-03)
+share one include-guarded definition rather than each declaring their own.
+
+```mql5
+struct TradeIntent {
+    double          price;       // intended entry price
+    double          sl;          // stop-loss price; 0.0 = no SL
+    double          tp;          // take-profit price; 0.0 = no TP
+    double          lots;        // requested volume
+    ENUM_ORDER_TYPE order_type;  // ORDER_TYPE_BUY or ORDER_TYPE_SELL
+    TradeIntent();               // zeroes default
+};
+```
+
+Dependency-free: uses only the built-in `ENUM_ORDER_TYPE`, so any layer can include this header
+without pulling in other framework modules. SPEC-02 will *extend* this struct; downstream
+IPLANs must NOT redefine `TradeIntent`.
+
+---
 
 ## CommonInputs.mqh — configuration and validation
 

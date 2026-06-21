@@ -61,6 +61,8 @@ detection. Full reference: [MODULES/Core.md](MODULES/Core.md).
 
 Key boundary: **no broker execution APIs** live in Core — it is pure configuration, math,
 and runtime-policy logic, which is what makes it unit-testable without a live terminal.
+`Include/Core/TradeTypes.mqh` (CHG-21) holds the shared `TradeIntent` struct consumed by
+Market, Coordination, and Execution without creating coupling between those layers.
 
 ### Testing Support — `Include/Testing/` + `Scripts/Tests/Support/` (IPLAN-11)
 Test-time only. The canonical assertion helper `CAssert`, deterministic `FakeClock` /
