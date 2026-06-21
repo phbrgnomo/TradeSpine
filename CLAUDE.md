@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 TradeSpine is a modular **MQL5 / MetaTrader 5 trading framework** that separates strategy logic from execution infrastructure (sizing, stops, trailing, risk guards, reconciliation, audit). Primary v1 market scope is **B3 futures**.
 
-Everything under `docs/` is a Spec-Driven Development (SDD) corpus authored with the `aidoc-flow` plugin. The documentation *is* the implementation reference and decision record; source files (`.mq5`/`.mqh`) are being generated from the IPLAN layer in phased deliveries — **IPLAN-05, IPLAN-09, and IPLAN-11 are complete** (see [README.md](README.md)).
+Everything under `docs/` is a Spec-Driven Development (SDD) corpus authored with the `aidoc-flow` plugin. The documentation *is* the implementation reference and decision record; source files (`.mq5`/`.mqh`) are being generated from the IPLAN layer in phased deliveries — **IPLAN-09, IPLAN-11, IPLAN-05, and IPLAN-06 are complete; IPLAN-04 is in progress** (see [README.md](README.md)).
 
 This project also inherits the terminal-wide MQL5 conventions in `../../../AGENTS.md` (the parent `MQL5/CLAUDE.md` includes it).
 

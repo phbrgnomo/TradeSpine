@@ -81,8 +81,12 @@ Types used by more than one Persistence module live here to avoid spurious cross
 
 | Enum | Values |
 |---|---|
-| `ENUM_POSITION_STATE` | `UNKNOWN=0`, `IDLE=1`, `ACTIVE=2`, `PENDING_EXIT=3`, `HALT=4` |
+| `ENUM_POSITION_STATE` | `UNKNOWN=0`, `IDLE=1`, `ACTIVE=2`, `PENDING_EXIT=3`, `HALT=4`, `PENDING_ENTRY=5` |
 | `ENUM_GV_VALUE_ENCODING` | `FLAG`, `TIMESTAMP`, `VOLUME`, `HASH_FRAG`, `SPLIT_ID_HI`, `SPLIT_ID_LO` |
+
+> `PENDING_ENTRY=5` was added by IPLAN-04. Lifecycle order: IDLE (flat) → PENDING_ENTRY (entry
+> order placed, awaiting fill) → ACTIVE (position open) → PENDING_EXIT (exit order placed) →
+> IDLE or HALT. All existing numeric values (0–4) are stable.
 
 ### `TradeLogger` — `Include/Persistence/TradeLogger.mqh`
 
