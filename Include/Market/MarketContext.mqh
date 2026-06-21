@@ -8,11 +8,11 @@
 //| Facade coordinating CSymbolContext and CSessionContext. Exports: |
 //|   CLiveContractInfoProvider  — live IContractInfoProvider adapter|
 //|   CLiveMarketSessionProvider — live IMarketSessionProvider adapter|
-//|   TradeIntent           — minimal order-definition struct (v1;   |
-//|                           forward-compatible with IPLAN-03)      |
 //|   CMarketContext        — facade with two init paths (broker and |
 //|                           fixture) and ValidateOrderDefinition.  |
 //| The injectable seams themselves live in Market/Interfaces.mqh.   |
+//| The TradeIntent consumed by ValidateOrderDefinition is the       |
+//| canonical type in Include/Core/TradeTypes.mqh (CHG-21).          |
 //+------------------------------------------------------------------+
 #ifndef TRADESPINE_MARKET_MARKET_CONTEXT_MQH
 #define TRADESPINE_MARKET_MARKET_CONTEXT_MQH
@@ -23,6 +23,7 @@
 #include "../Core/Interfaces.mqh"
 #include "../Core/OptContext.mqh"
 #include "../Core/CommonInputs.mqh"
+#include "../Core/TradeTypes.mqh"
 
 //+------------------------------------------------------------------+
 //| \brief Thin production adapter: reads SYMBOL_EXPIRATION_TIME     |
@@ -99,10 +100,22 @@ public:
      }
 
    //+----------------------------------------------------------------+
-   //| \brief End of the last broker trade session for when's weekday.|
+   //| \brief End of the REGULAR (first) broker trade session for     |
+   //|        when's weekday. Session index 0 is the regular daytime  |
+   //|        session; later indices (after-hours / electronic) are   |
+   //|        intentionally ignored so the day-trade close references |
+   //|        normal trading hours, not after-hours (@chg: CHG-21).   |
    //| \param when  Broker time selecting the weekday session table.  |
-   //| \return Seconds-from-midnight of the last session end, or -1.  |
-   //|         Midnight-crossing sessions are out of scope for v1.     |
+   //| \return Seconds-from-midnight of the regular session end, or   |
+   //|         -1 when (a) no trade session is defined for the weekday |
+   //|         or (b) the broker reports a full-day sentinel window    |
+   //|         (to >= 86400, i.e. 00:00-24:00 — common on B3 brokers   |
+   //|         that do not configure real session hours), which is     |
+   //|         useless as a close reference. -1 makes the caller fall  |
+   //|         back to entry_window_end. Midnight-crossing sessions    |
+   //|         are out of scope for v1; a broker that splits the       |
+   //|         regular session across indices before after-hours would |
+   //|         need refinement (@chg: CHG-21).                         |
    //+----------------------------------------------------------------+
    int MarketSessionEndTod(const datetime when) const override
      {
@@ -110,36 +123,17 @@ public:
       TimeToStruct(when, dt);
       ENUM_DAY_OF_WEEK dow = (ENUM_DAY_OF_WEEK)dt.day_of_week;
       datetime from = 0, to = 0;
-      int      last_to = -1;
-      for(uint idx = 0; SymbolInfoSessionTrade(m_symbol, dow, idx, from, to); idx++)
-        {
-         int end_tod = (int)to; // SymbolInfoSessionTrade returns seconds-from-midnight
-         if(end_tod > last_to)
-            last_to = end_tod;
-        }
-      return(last_to);
-     }
-  };
-
-//+------------------------------------------------------------------+
-//| \brief Minimal order-definition struct for v1 validation.        |
-//|        Forward-compatible with the TradeIntent defined by        |
-//|        IPLAN-03 (SPEC-03), which will replace or extend this.    |
-//| \param N/A  Struct — no parameters.                              |
-//| \return N/A Struct — no return value.                            |
-//+------------------------------------------------------------------+
-struct TradeIntent
-  {
-   double          price;       // intended entry price
-   double          sl;          // stop-loss price; 0.0 = no SL
-   double          tp;          // take-profit price; 0.0 = no TP
-   double          lots;        // requested volume
-   ENUM_ORDER_TYPE order_type;  // ORDER_TYPE_BUY or ORDER_TYPE_SELL
-
-   //--- \brief Default constructor: zeroes.
-   TradeIntent(void) : price(0.0), sl(0.0), tp(0.0), lots(0.0),
-                       order_type(ORDER_TYPE_BUY)
-     {
+      // Index 0 = regular trade session. Deliberately do not scan later
+      // indices: their later `to` would pull the close into after-hours.
+      if(!SymbolInfoSessionTrade(m_symbol, dow, 0, from, to))
+         return(-1);
+      // A broker that has not configured meaningful session windows returns a
+      // full-day sentinel (to == 86400, i.e. 24:00). That value is useless as
+      // a day-trade close reference; treat it as unavailable so the caller
+      // falls back to entry_window_end instead of referencing midnight.
+      if((int)to >= 86400)
+         return(-1);
+      return((int)to); // SymbolInfoSessionTrade returns seconds-from-midnight
      }
   };
 
@@ -366,8 +360,9 @@ public:
    //|        is wired the gate resolves to the conservative closed      |
    //|        default. Directional trade-mode permission is evaluated by |
    //|        ValidateOrderDefinition once an order intent exists. The   |
-   //|        broker market-session end is also supplied so a             |
-   //|        MARKET_SESSION_END close reference can be honored.         |
+   //|        broker REGULAR (first) market-session end is also supplied  |
+   //|        so a MARKET_SESSION_END close reference can be honored      |
+   //|        against normal trading hours (after-hours excluded).        |
    //| \return SessionWindow with three gate flags for the current tick.|
    //+------------------------------------------------------------------+
    SessionWindow EvaluateSession(void)

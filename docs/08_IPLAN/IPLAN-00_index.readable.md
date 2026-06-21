@@ -26,7 +26,7 @@ flowchart TD
   T1["Tier 1: Core Runtime<br>COMPLETED<br>IPLAN-09"]
   T2["Tier 2: Testing Foundation<br>COMPLETED<br>IPLAN-11"]
   T1 --> T2
-  T3["Tier 3: Persistence and Market Foundations<br>NOT_STARTED<br>IPLAN-05, IPLAN-06"]
+  T3["Tier 3: Persistence and Market Foundations<br>COMLPETED<br>IPLAN-05, IPLAN-06"]
   T2 --> T3
   T4["Tier 4: State, Behavior, and Optional Services<br>NOT_STARTED<br>IPLAN-04, IPLAN-07, IPLAN-10"]
   T3 --> T4

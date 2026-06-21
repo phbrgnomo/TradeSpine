@@ -43,10 +43,15 @@ interface IMarketSessionProvider
    //---         the conservative "do not enter" default.
    bool IsMarketSessionOpen(const datetime when) const;
 
-   //--- \brief End of the last broker trade session for when's weekday.
+   //--- \brief End of the REGULAR (first) broker trade session for when's
+   //---        weekday. After-hours sessions (later indices) are excluded so
+   //---        the day-trade close references normal trading hours (CHG-21).
    //--- \param when  Broker time whose weekday selects the session table.
-   //--- \return Seconds-from-midnight of the day's last trade-session end,
-   //---         or -1 when no session is defined / the query is unavailable.
+   //--- \return Seconds-from-midnight of the regular trade-session end, or -1
+   //---         when no session is defined, the query is unavailable, or the
+   //---         broker reports a full-day sentinel (00:00-24:00) that is unusable
+   //---         as a close reference; -1 makes the caller fall back to the user
+   //---         entry window (CHG-21).
    int MarketSessionEndTod(const datetime when) const;
   };
 

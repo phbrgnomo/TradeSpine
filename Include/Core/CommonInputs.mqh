@@ -38,10 +38,13 @@ enum ENUM_SIZING_MODE
 //|        against. close_mins_before is subtracted from whichever    |
 //|        reference is selected.                                     |
 //|        USER_WINDOW_END   — operator-configured entry_window_end.  |
-//|        MARKET_SESSION_END — broker trade session end (queried via |
-//|                            SymbolInfoSessionTrade by the Market   |
-//|                            layer; falls back to the user window   |
-//|                            when unavailable).                     |
+//|        MARKET_SESSION_END — broker REGULAR (first) trade session  |
+//|                            end (queried via SymbolInfoSessionTrade |
+//|                            index 0 by the Market layer; after-    |
+//|                            hours excluded — CHG-21; falls back to  |
+//|                            the user window when unavailable or     |
+//|                            when the broker reports a full-day      |
+//|                            00:00-24:00 sentinel, common on B3).    |
 //| \param N/A  Enum — no parameters.                                 |
 //| \return N/A Enum — no return value.                               |
 //+------------------------------------------------------------------+

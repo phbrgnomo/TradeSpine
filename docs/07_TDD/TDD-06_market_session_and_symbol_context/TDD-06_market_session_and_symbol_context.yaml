@@ -7,7 +7,7 @@ id: TDD-06
 title: "Market Session and Symbol Context Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-06-19T00:00:00-03:00"
+last_updated: "2026-06-21T00:00:00-03:00"
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -23,9 +23,9 @@ metadata:
 
 document_control:
   status: Draft
-  version: "1.1"
+  version: "1.2"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-06-19T00:00:00-03:00"
+  last_updated: "2026-06-21T00:00:00-03:00"
   author: "Codex"
   component: "CSymbolContext, CSessionContext, CMarketContext"
   spec_reference: "@spec: SPEC-06"
@@ -198,6 +198,9 @@ test_cases:
         error_paths:
           - condition: "Close buffer sets day_trade_close_required"
             expected_error: "SPEC-defined rejection or HALT path."
+        notes:
+          - "TradeIntent fixtures resolve to the canonical type in Include/Core/TradeTypes.mqh (@chg: CHG-21); existing order-definition cases are unaffected by the relocation."
+          - "MarketSessionEndTod regular-session-end (index-0) selection is a thin live-adapter behavior verified manually on the live/demo B3 feed; FakeMarketSessionProvider returns a single configured end-tod, so the close-reference cases here remain valid and after-hours exclusion is not fake-exercised (@chg: CHG-21)."
   e2e_tests:
     cases:
       - id: "TDD.06.04.cd48"
@@ -275,6 +278,7 @@ traceability:
   tags:
     - "@tdd: TDD.06.04.8f4d"
     - "@spec: SPEC-06"
+    - "@chg: CHG-21"
     - "@brd: BRD.01.07.69ef"
     - "@prd: PRD.01.09.fada"
     - "@prd: PRD.01.09.60ad"

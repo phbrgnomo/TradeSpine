@@ -12,9 +12,9 @@ last_updated: "2026-06-19T00:00:00-03:00"
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.1"
+  version: "1.2"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-19T00:00:00-03:00"
+  last_updated: "2026-06-21T00:00:00-03:00"
   author: "Codex"
   component: "CSymbolContext, CSessionContext, CMarketContext"
   tdd_ready_score: "92/100"
@@ -69,9 +69,10 @@ interfaces:
     - name: "IMarketSessionProvider"
       type: "interface"
       signature: "interface IMarketSessionProvider"
-      description: "Broker market-session schedule seam (distinct from SYMBOL_TRADE_MODE): IsMarketSessionOpen(when) reports schedule membership for the market_open gate; MarketSessionEndTod(when) supplies the session end-of-day for the close-reference trigger. Live adapter reads SymbolInfoSessionTrade; test doubles implement it directly."
+      description: "Broker market-session schedule seam (distinct from SYMBOL_TRADE_MODE): IsMarketSessionOpen(when) reports schedule membership for the market_open gate; MarketSessionEndTod(when) supplies the REGULAR (first / index-0) trade-session end-of-day for the close-reference trigger. After-hours sessions (later session indices) are intentionally excluded so the day-trade close references normal trading hours (@chg: CHG-21). Live adapter reads SymbolInfoSessionTrade session index 0; test doubles implement it directly."
       errors:
         - "IsMarketSessionOpen returns false (conservative closed) when no session schedule is defined or available."
+        - "MarketSessionEndTod returns -1 when no trade session is defined for the weekday, or when the broker reports a full-day sentinel window (to >= 86400, i.e. 00:00-24:00) that is unusable as a close reference; the close trigger then falls back to entry_window_end (@chg: CHG-21)."
     - name: "CMarketContext"
       type: "class"
       signature: "class CMarketContext"
@@ -81,7 +82,7 @@ interfaces:
     - name: "ValidateOrderDefinition"
       type: "method"
       signature: "bool ValidateOrderDefinition(const TradeIntent &intent, string &reason)"
-      description: "Validates lots, stop prices, and price grid against initialized symbol metadata."
+      description: "Validates lots, stop prices, and price grid against initialized symbol metadata. Consumes the canonical TradeIntent declared in Include/Core/TradeTypes.mqh (the single shared definition; SPEC-02 extends it, SPEC-03 consumes it) rather than a market-local struct (@chg: CHG-21)."
       errors:
         - "false: symbol, lots, stop, price grid, or trade mode is invalid."
 
@@ -140,10 +141,12 @@ behavior:
       rule: |
         WHEN day_trade_mode is true THE day-trade forced-close trigger SHALL be measured
         from the reference selected by CommonInputs.close_reference: entry_window_end for
-        CLOSE_REF_USER_WINDOW_END, or the broker market-session end (market_session_end_tod)
-        for CLOSE_REF_MARKET_SESSION_END, falling back to entry_window_end when the market
-        session end is unavailable.
-      source: "@chg: CHG-19"
+        CLOSE_REF_USER_WINDOW_END, or the broker REGULAR (first / index-0) market-session
+        end (market_session_end_tod) for CLOSE_REF_MARKET_SESSION_END, falling back to
+        entry_window_end when the market session end is unavailable. After-hours sessions
+        SHALL NOT be used as the close reference so the close aligns with normal trading
+        hours.
+      source: "@chg: CHG-19, @chg: CHG-21"
     - rule: "Expiration warning SHALL fire at session open when a supported futures contract expires in one broker day."
       source: "@ears: EARS.01.03.db97"
   state_transitions:
@@ -169,6 +172,8 @@ implementation_notes:
     - "Broker/server time is authoritative; no v1 timezone offset input exists."
     - "Futures v1 is validated for B3 futures scope; unsupported symbols block release validation."
     - "Contract-expiration warning threshold is fixed via @fixed-threshold: PRD.01.market.expiration_warning_one_broker_day."
+    - "v1 simplification (@chg: CHG-21): MarketSessionEndTod uses the regular (first / index-0) trade session only; after-hours sessions are excluded. Brokers that split the regular session across multiple indices before after-hours would need refinement. Consistent with the existing midnight-crossing-out-of-scope simplification."
+    - "v1 limitation (@chg: CHG-21, verified on B3 WINQ26 2026-06-21): some B3 brokers do not configure real session hours and report a full-day window (00:00-24:00) for index 0. MarketSessionEndTod treats to >= 86400 as a sentinel and returns -1 (close trigger falls back to entry_window_end). A side effect is that IsMarketSessionOpen always returns true for such symbols (the [0,86400) window covers all times), effectively disabling the market_open gate; this is a broker-configuration limitation, not a framework defect. For B3, CLOSE_REF_USER_WINDOW_END is the recommended close reference."
   patterns:
     - "Load symbol metadata once during init and expose immutable reads to sizing and guard components."
     - "Keep session entry gates separate from forced exit and emergency close paths."
@@ -188,7 +193,7 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
-  tags: ["@spec: SPEC-06", "@brd: BRD.01.07.69ef", "@prd: PRD.01.09.fada", "@ears: EARS.01.03.03b2", "@bdd: BDD.01.03.edae", "@adr: ADR.10.03.51ea"]
+  tags: ["@spec: SPEC-06", "@brd: BRD.01.07.69ef", "@prd: PRD.01.09.fada", "@ears: EARS.01.03.03b2", "@bdd: BDD.01.03.edae", "@adr: ADR.10.03.51ea", "@chg: CHG-19", "@chg: CHG-21"]
   upstream:
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.10.03.51ea"]
     bdd_references: ["@bdd: BDD.01.03.edae", "@bdd: BDD.01.03.a399", "@bdd: BDD.01.03.d4a5", "@bdd: BDD.01.03.4dcb", "@bdd: BDD.01.03.4a71", "@bdd: BDD.01.03.e593"]

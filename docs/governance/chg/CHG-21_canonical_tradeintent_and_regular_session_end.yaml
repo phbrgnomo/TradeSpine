@@ -1,0 +1,297 @@
+id: CHG-21
+title: "Canonical TradeIntent type extraction and regular-session-end close reference"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-21"
+  change_level:
+    value: C3
+  change_source:
+    value: design
+
+change_control:
+  chg_id: "CHG-21"
+  status: Approved
+  change_level: C3
+  change_source: design
+  entry_gate: GATE-06
+  semver_impact: null
+  author: "phbr"
+  date_proposed: "2026-06-21T00:00:00-03:00"
+  date_approved: "2026-06-21T00:00:00-03:00"
+  date_implemented: "2026-06-21T00:00:00-03:00"
+  supersedes: []
+
+change_description:
+  what: |
+    Two design refinements raised by the IPLAN-06 codebase review, implemented
+    doc-first (SPEC/TDD/IPLAN amended ahead of code).
+
+    (1) CANONICAL TradeIntent (M1). The `struct TradeIntent` currently defined
+    locally in `Include/Market/MarketContext.mqh` is hoisted into a new shared,
+    include-guarded Core header `Include/Core/TradeTypes.mqh`. The Market layer
+    and the future Coordination (SPEC-02) and Execution (SPEC-03) layers then
+    share one definition. This removes the latent redefinition compile collision
+    that would occur once IPLAN-02/03 land their own `TradeIntent`. The v1 field
+    set is unchanged (`price`, `sl`, `tp`, `lots`, `order_type` + zeroing default
+    constructor). SPEC-02's composite `TradeIntent` data model is reconciled to
+    EXTEND this canonical struct (adding `signal`, `stops`, `symbol`, `ts`,
+    `risk_percent`, …) rather than redefine it; SPEC-03 is annotated that
+    `ITradePort`/`CGuardedTrade` consume the Core `TradeIntent`.
+
+    (2) REGULAR-SESSION-END close reference (L2). `CLiveMarketSessionProvider::
+    MarketSessionEndTod` currently returns the maximum `to` across all weekday
+    trade sessions, which on B3 picks up the after-hours session end. It is
+    changed to return the regular (first / index-0) trade-session end so the
+    day-trade close trigger references normal trading hours, not after-hours.
+    The `ENUM_SESSION_CLOSE_REF` enum and the `CommonInputs.close_reference`
+    field are UNCHANGED; SPEC-09 receives only a doc clarification. SPEC-06's
+    market-session model is amended to define `MarketSessionEndTod` as the
+    regular/first session end and to record the after-hours exclusion as a
+    documented v1 simplification (alongside the existing midnight-crossing
+    out-of-scope note).
+
+    The manual B3 verification (WINQ26, 2026-06-21) surfaced a related broker
+    limitation folded into this change: some B3 brokers do not configure real
+    session hours and report a full-day window (00:00-24:00) for index 0.
+    `MarketSessionEndTod` therefore treats `to >= 86400` as a sentinel and
+    returns -1 (close trigger falls back to `entry_window_end`), rather than
+    referencing midnight. Recorded as a v1 limitation in SPEC-06; for B3,
+    `CLOSE_REF_USER_WINDOW_END` is the recommended close reference.
+  why: |
+    The IPLAN-06 codebase review flagged (M1) that the locally-defined
+    `TradeIntent` will collide with the canonical SPEC-02 `TradeIntent` once
+    IPLAN-02/03 are implemented, because both headers can be pulled into the same
+    translation unit and the two definitions differ. Establishing a single
+    include-guarded Core definition now, with SPEC-02/03 consuming/extending it,
+    removes that downstream-integration hazard at its root. The review also
+    flagged (L2) that referencing the broker market-session end for the day-trade
+    close can select the after-hours session on B3, contradicting the intended
+    "close relative to normal trading hours" behavior; returning the regular
+    (first) session end aligns the close trigger with operator expectations.
+  trigger: |
+    IPLAN-06 codebase review (2026-06-21) findings M1 (TradeIntent collision)
+    and L2 (after-hours session end in the day-trade close reference), with the
+    user directing the full CHG path: amend SPEC/TDD/IPLAN, then implement code.
+
+impact_assessment:
+  affected_layers:
+    - layer: SPEC
+      artifacts: ["SPEC-06"]
+      impact: |
+        (M1) Add `Include/Core/TradeTypes.mqh` to the file manifest / component
+        exports; note `ValidateOrderDefinition` consumes the Core `TradeIntent`
+        rather than a market-local struct. (L2) Amend the market-session model so
+        `MarketSessionEndTod` (the `market_session_end_tod` input to
+        `CSessionContext::Evaluate`) is defined as the regular (first) trade
+        session end; record after-hours exclusion as a v1 simplification next to
+        the midnight-crossing out-of-scope note.
+      cascade_direction: downstream
+    - layer: SPEC
+      artifacts: ["SPEC-02"]
+      impact: |
+        (M1) Reconcile the `TradeIntent` data model: it EXTENDS the canonical Core
+        `TradeIntent` (Include/Core/TradeTypes.mqh) — adding `signal`, `stops`,
+        `symbol`, `ts`, `risk_percent`, identity/comment fields — rather than
+        declaring an independent struct. IPLAN-02 must include and build on the
+        Core header. No new behavior; ownership/derivation note only.
+      cascade_direction: downstream
+    - layer: SPEC
+      artifacts: ["SPEC-03"]
+      impact: |
+        (M1) Annotate that `ITradePort::Submit` and `CGuardedTrade` consume the
+        canonical Core `TradeIntent` (Include/Core/TradeTypes.mqh). No interface
+        signature change.
+      cascade_direction: downstream
+    - layer: SPEC
+      artifacts: ["SPEC-09"]
+      impact: |
+        (L2) Doc-only clarification of `CLOSE_REF_MARKET_SESSION_END`: the
+        referenced session end is the broker REGULAR (first) trade-session end;
+        after-hours excluded. The `ENUM_SESSION_CLOSE_REF` enum and the
+        `CommonInputs.close_reference` field are unchanged.
+      cascade_direction: downstream
+    - layer: TDD
+      artifacts: ["TDD-06"]
+      impact: |
+        (M1) Note that `TradeIntent` fixtures resolve to the Core canonical type;
+        existing Test_ContractLifecycle order-definition cases are unaffected.
+        (L2) Record that `MarketSessionEndTod` regular-session-end selection is a
+        thin live-adapter behavior verified on the live/demo B3 feed (no
+        fake-based unit coverage); FakeMarketSessionProvider returns a single
+        configured end-tod, so existing close-reference cases remain valid.
+      cascade_direction: downstream
+    - layer: IPLAN
+      artifacts: ["IPLAN-06"]
+      impact: |
+        Update `file_manifest` and `code_inventory` to add
+        `Include/Core/TradeTypes.mqh` and reflect the MarketContext.mqh edit
+        (TradeIntent moved out; new include) and the MarketSessionEndTod
+        regular-session-end change. Update `session_handoff`.
+      cascade_direction: downstream
+    - layer: IPLAN
+      artifacts: ["IPLAN-00"]
+      impact: |
+        Registry note that IPLAN-06 carries the CHG-21 amendments (canonical
+        TradeIntent header + regular-session-end close reference).
+      cascade_direction: downstream
+    - layer: Code
+      artifacts:
+        - "Include/Core/TradeTypes.mqh"
+        - "Include/Market/MarketContext.mqh"
+        - "Include/Core/Interfaces.mqh"
+        - "Include/Market/Interfaces.mqh"
+        - "Include/Market/SessionContext.mqh"
+        - "Include/Core/CommonInputs.mqh"
+      impact: |
+        (M1) New Core/TradeTypes.mqh holding the canonical TradeIntent;
+        MarketContext.mqh removes its local struct and includes the Core header;
+        Core/Interfaces.mqh deferred-seam note updated (TradeIntent now canonical
+        in Core; only ITradePort/GuardResult remain deferred to SPEC-03).
+        (L2) MarketContext.mqh CLiveMarketSessionProvider::MarketSessionEndTod
+        returns the index-0 session end; doc-comment alignment in
+        Market/Interfaces.mqh, SessionContext.mqh, CommonInputs.mqh, and the
+        MarketContext.mqh EvaluateSession block. No enum/field/signature changes.
+      cascade_direction: downstream
+  cascade_direction: downstream
+  risk_level: Medium
+  risk_justification: |
+    M1 is a pure type-relocation with no field or signature change; the only
+    runtime-visible effect is the include path, and the single existing consumer
+    test (Test_ContractLifecycle) reaches the type transitively. The durability
+    of M1 depends on IPLAN-02/03 EXTENDING the Core struct rather than redefining
+    it — captured as a SPEC-02/03 amendment so the constraint is recorded, not
+    implicit. L2 changes which broker session end is selected for the day-trade
+    close; it is bounded because the default close reference remains
+    CLOSE_REF_USER_WINDOW_END (unaffected), and the change only narrows the
+    optional MARKET_SESSION_END path from "last session" to "regular session."
+    The L2 live-adapter behavior has no fake-based unit coverage (thin adapter,
+    consistent with the other live providers) and is verified manually on the B3
+    feed. EARS/BDD: assessed — no new top-level requirement; both items are
+    refinements within behavior already in the corpus, so no EARS/BDD amendment
+    is required.
+
+implementation:
+  steps:
+    - step: 1
+      action: "Amend SPEC-06: add Include/Core/TradeTypes.mqh to file manifest/exports; define MarketSessionEndTod as regular (first) session end with after-hours-excluded v1-simplification note; regenerate readable view."
+      artifact: "docs/06_SPEC/SPEC-06_market_session_and_symbol_context"
+      status: Completed
+    - step: 2
+      action: "Amend SPEC-02: TradeIntent data model EXTENDS the canonical Core TradeIntent (Include/Core/TradeTypes.mqh); regenerate readable view."
+      artifact: "docs/06_SPEC/SPEC-02_trade_coordination_pipeline"
+      status: Completed
+    - step: 3
+      action: "Annotate SPEC-03: ITradePort/CGuardedTrade consume the canonical Core TradeIntent; regenerate readable view."
+      artifact: "docs/06_SPEC/SPEC-03_guarded_execution_and_risk_controls"
+      status: Completed
+    - step: 4
+      action: "Clarify SPEC-09 CLOSE_REF_MARKET_SESSION_END doc (regular session end; after-hours excluded); enum/field unchanged; regenerate readable view."
+      artifact: "docs/06_SPEC/SPEC-09_core_runtime_and_configuration"
+      status: Completed
+    - step: 5
+      action: "Amend TDD-06 notes for canonical TradeIntent fixtures and regular-session-end live-adapter verification; regenerate readable view."
+      artifact: "docs/07_TDD/TDD-06_market_session_and_symbol_context"
+      status: Completed
+    - step: 6
+      action: "Create Include/Core/TradeTypes.mqh (canonical TradeIntent, include-guarded)."
+      artifact: "Include/Core/TradeTypes.mqh"
+      status: Completed
+    - step: 7
+      action: "Edit MarketContext.mqh: remove local TradeIntent, include Core/TradeTypes.mqh; change MarketSessionEndTod to index-0 session end; align EvaluateSession doc block."
+      artifact: "Include/Market/MarketContext.mqh"
+      status: Completed
+    - step: 8
+      action: "Update Core/Interfaces.mqh deferred-seam note; align doc comments in Market/Interfaces.mqh, SessionContext.mqh, CommonInputs.mqh."
+      artifact: "Include/Core/Interfaces.mqh, Include/Market/Interfaces.mqh, Include/Market/SessionContext.mqh, Include/Core/CommonInputs.mqh"
+      status: Completed
+    - step: 9
+      action: "Update IPLAN-06 file_manifest/code_inventory/session_handoff and IPLAN-00 registry note."
+      artifact: "docs/08_IPLAN/IPLAN-06_market_session_and_symbol_context.yaml, docs/08_IPLAN/IPLAN-00_index.yaml"
+      status: Completed
+    - step: 10
+      action: "Register CHG-21 in the CHG index and run GATE-06 (design/test) via gate-check; GATE-08 if the IPLAN manifest gate is required."
+      artifact: "docs/governance/chg/CHG-00_index.md"
+      status: Completed
+
+  artifacts_modified:
+    - id: "SPEC-06"
+      file: "docs/06_SPEC/SPEC-06_market_session_and_symbol_context/SPEC-06_market_session_and_symbol_context.yaml"
+      change_type: "modified"
+    - id: "SPEC-02"
+      file: "docs/06_SPEC/SPEC-02_trade_coordination_pipeline/SPEC-02_trade_coordination_pipeline.yaml"
+      change_type: "modified"
+    - id: "SPEC-03"
+      file: "docs/06_SPEC/SPEC-03_guarded_execution_and_risk_controls/SPEC-03_guarded_execution_and_risk_controls.yaml"
+      change_type: "modified"
+    - id: "SPEC-09"
+      file: "docs/06_SPEC/SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.yaml"
+      change_type: "modified"
+    - id: "TDD-06"
+      file: "docs/07_TDD/TDD-06_market_session_and_symbol_context/TDD-06_market_session_and_symbol_context.yaml"
+      change_type: "modified"
+    - id: "IPLAN-06"
+      file: "docs/08_IPLAN/IPLAN-06_market_session_and_symbol_context.yaml"
+      change_type: "modified"
+    - id: "IPLAN-00"
+      file: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      change_type: "modified"
+    - id: "TradeTypes"
+      file: "Include/Core/TradeTypes.mqh"
+      change_type: "created"
+    - id: "Market Context"
+      file: "Include/Market/MarketContext.mqh"
+      change_type: "modified"
+    - id: "Core Interfaces"
+      file: "Include/Core/Interfaces.mqh"
+      change_type: "modified"
+
+verification:
+  checks:
+    - check: "Aggregate runner compiles with the canonical TradeIntent header (no redefinition)."
+      result: Pass
+      method: "Headless ../../../Scripts/compile_mql.sh on RunAllTests.mq5 — MetaEditor success, no compile log generated (clean)."
+    - check: "IPLAN-06 suite passes (Test_SymbolContext, Test_SessionContext, Test_ContractLifecycle)."
+      result: Pending
+      method: "Execute RunAllTests.mq5 from the MT5 Navigator; record pass/skip counts."
+    - check: "MarketSessionEndTod returns the regular daytime close, not the after-hours end, on a B3 symbol."
+      result: Pass
+      method: "Manual check on WINQ26 (2026-06-21): broker reports a full-day 00:00-24:00 window for index 0; MarketSessionEndTod now treats to >= 86400 as a sentinel and returns -1 (falls back to entry_window_end). Sentinel handling added and documented; for B3 CLOSE_REF_USER_WINDOW_END is recommended."
+    - check: "SPEC-02/03/06/09, TDD-06, IPLAN-06/00 amended; readable views regenerated; traceability clean."
+      result: Pending
+      method: "aidoc-flow:doc-validator traceability + prose pass."
+
+gate_approval:
+  gate: GATE-06
+  approver: "phbr (Technical Lead + Architect, C3)"
+  approval_date: "2026-06-21"
+  conditions:
+    - "Run GATE-08 in addition if the IPLAN-06 manifest change requires the implementation-plan gate (per CHG-20 precedent)."
+    - "GATE-08 run alongside GATE-06 (IPLAN-06/00 manifest amended); both PASS — see CHG-21_GATE-06_08_report.md."
+
+rollback_plan:
+  strategy: revert-commit
+  steps:
+    - "Revert the CHG-21 commit: removes the SPEC-02/03/06/09, TDD-06, IPLAN-06/00 amendments and the CHG record/index entry."
+    - "If code must also be reverted: restore the local TradeIntent struct in MarketContext.mqh, delete Include/Core/TradeTypes.mqh, and restore MarketSessionEndTod's max-across-sessions loop."
+  estimated_effort: "Low — type relocation plus one live-adapter method and documentation amendments; default close reference preserves v1 behavior."
+
+traceability:
+  tags:
+    - "@spec: SPEC-06"
+    - "@spec: SPEC-02"
+    - "@spec: SPEC-03"
+    - "@spec: SPEC-09"
+    - "@tdd: TDD-06"
+    - "@iplan: IPLAN-06"
+    - "@chg: CHG-21"
+  upstream:
+    spec_references: ["@spec: SPEC-06", "@spec: SPEC-02", "@spec: SPEC-03", "@spec: SPEC-09"]
+    tdd_references: ["@tdd: TDD-06"]
+    iplan_references: ["@iplan: IPLAN-06"]
+  downstream:
+    code_references:
+      - "@code: Include/Core/TradeTypes.mqh"
+      - "@code: Include/Market/MarketContext.mqh"
+      - "@code: Include/Core/Interfaces.mqh"

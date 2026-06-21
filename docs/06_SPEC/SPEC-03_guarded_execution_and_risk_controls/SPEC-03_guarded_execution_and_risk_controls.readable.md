@@ -1,11 +1,13 @@
 # SPEC-03: Guarded Execution and Risk Controls
 
+> Human-readable rendering generated from `SPEC-03_guarded_execution_and_risk_controls.yaml`. The YAML file remains the canonical aidoc artifact.
+
 ## Document Control
 
 | Field | Value |
 | --- | --- |
 | Status | Draft |
-| Version | 1.1 |
+| Version | 1.4 |
 | Component | CGuardedTrade and CRiskManager |
 | TDD-ready Score | 94/100 |
 | Architecture Decision | ADR-04 |
@@ -29,7 +31,7 @@ flowchart LR
 
 | Export | Type | Purpose |
 | --- | --- | --- |
-| ITradePort | interface | Broker-bound execution boundary for coordinator and adapters. |
+| ITradePort | interface | Broker-bound execution boundary for coordinator and adapters. Accepts the canonical `TradeIntent` from `Include/Core/TradeTypes.mqh` (SPEC-02 extends it); `CGuardedTrade` consumes that shared definition — not a private struct (@chg: CHG-21). |
 | CGuardedTrade | class | Performs TradeIntent consistency validation, catastrophic guards, broker preflight, and private `CTrade` submission. |
 | CRiskManager | class | Tracks daily-loss, max-open-lots, max-trades-per-day, and panic-stop state separately from per-order guarded execution. |
 | FillingPolicy | class | Selects broker-supported fill mode from initialized symbol metadata. |
@@ -79,4 +81,4 @@ flowchart LR
 
 ## Traceability
 
-`@spec: SPEC-03`, `@brd: BRD.01.07.a94e`, `@prd: PRD.01.09.d74e`, `@ears: EARS.01.03.222f`, `@bdd: BDD.01.03.9a8b`, `@adr: ADR.04.03.7277`
+`@spec: SPEC-03`, `@brd: BRD.01.07.a94e`, `@prd: PRD.01.09.d74e`, `@ears: EARS.01.03.222f`, `@bdd: BDD.01.03.9a8b`, `@adr: ADR.04.03.7277`, `@chg: CHG-21`

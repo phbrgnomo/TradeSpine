@@ -97,18 +97,19 @@ registry:
       source_spec: "@spec: SPEC-06"
       scope: "Implement symbol metadata, session gates, market context, order-definition validation, and expiration warnings."
       status: "Completed"
-      status_date: "2026-06-19"
+      status_date: "2026-06-21"
       complexity: 4
       session_count: 4
       sessions_completed: 4
-      files_declared: 9
-      files_done: 9
+      files_declared: 10
+      files_done: 10
       skipped: []
       skip_reasons: {}
       depends_on: ["IPLAN-05", "IPLAN-09", "IPLAN-11"]
       blocks: ["IPLAN-02", "IPLAN-03", "IPLAN-07"]
       parallel_with: []
       file_path: "IPLAN-06_market_session_and_symbol_context.yaml"
+      note: "CHG-21 (2026-06-21): canonical TradeIntent hoisted to Include/Core/TradeTypes.mqh (SPEC-02 extends, SPEC-03 consumes); MarketSessionEndTod returns the regular (first/index-0) session end; B3 full-day sentinel handled. GATE-06/GATE-08 APPROVED 2026-06-21 (phbr)."
     - id: "IPLAN-07"
       title: "Indicators Stops Sizing and Trailing Implementation"
       source_spec: "@spec: SPEC-07"

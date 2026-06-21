@@ -7,14 +7,14 @@ id: SPEC-09
 title: Core Runtime and Configuration
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-04T00:00:00-03:00"
+last_updated: "2026-06-21T00:00:00-03:00"
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.1"
+  version: "1.2"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-04T00:00:00-03:00"
+  last_updated: "2026-06-21T00:00:00-03:00"
   author: "Codex"
   component: "COptContext, SafeMath, CProfiler, CommonInputs, CNewBarDetector"
   tdd_ready_score: "93/100"
@@ -69,7 +69,7 @@ interfaces:
     - name: "ENUM_SESSION_CLOSE_REF"
       type: "enum"
       signature: "enum ENUM_SESSION_CLOSE_REF"
-      description: "Reference point the day-trade forced-close trigger is measured from: CLOSE_REF_USER_WINDOW_END (default, relative to entry_window_end) or CLOSE_REF_MARKET_SESSION_END (relative to the broker market-session end). Consumed by the Market-layer session evaluation (SPEC-06)."
+      description: "Reference point the day-trade forced-close trigger is measured from: CLOSE_REF_USER_WINDOW_END (default, relative to entry_window_end) or CLOSE_REF_MARKET_SESSION_END (relative to the broker REGULAR (first) market-session end; after-hours sessions excluded — @chg: CHG-21). Consumed by the Market-layer session evaluation (SPEC-06)."
       errors:
         - "None."
     - name: "CommonInputs"
@@ -132,7 +132,7 @@ data_models:
         - name: "close_reference"
           type: "ENUM_SESSION_CLOSE_REF"
           required: true
-          description: "[day_trade_mode] Reference the forced-close trigger is measured from. Default CLOSE_REF_USER_WINDOW_END preserves v1 behavior (relative to entry_window_end); CLOSE_REF_MARKET_SESSION_END measures from the broker market-session end (Market layer supplies it; falls back to entry_window_end when unavailable). Validated against the two-value whitelist when day_trade_mode=true."
+          description: "[day_trade_mode] Reference the forced-close trigger is measured from. Default CLOSE_REF_USER_WINDOW_END preserves v1 behavior (relative to entry_window_end); CLOSE_REF_MARKET_SESSION_END measures from the broker REGULAR (first) market-session end (Market layer supplies it; after-hours sessions excluded — @chg: CHG-21; falls back to entry_window_end when unavailable). Validated against the two-value whitelist when day_trade_mode=true."
         - name: "sizing_mode"
           type: "ENUM_SIZING_MODE"
           required: true
@@ -255,7 +255,7 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
-  tags: ["@spec: SPEC-09", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.841a", "@ears: EARS.01.03.0c0a", "@bdd: BDD.01.03.aa68", "@adr: ADR.10.03.51ea"]
+  tags: ["@spec: SPEC-09", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.841a", "@ears: EARS.01.03.0c0a", "@bdd: BDD.01.03.aa68", "@adr: ADR.10.03.51ea", "@chg: CHG-19", "@chg: CHG-21"]
   upstream:
     adr_references: ["@adr: ADR.03.03.4124", "@adr: ADR.09.03.84b9", "@adr: ADR.10.03.51ea"]
     bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.b37d", "@bdd: BDD.01.03.cb03"]

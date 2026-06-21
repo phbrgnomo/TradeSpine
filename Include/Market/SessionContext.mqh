@@ -83,9 +83,12 @@ public:
    //| \brief Compute the three session gates for the current tick.    |
    //| \param market_session_open  True when the current time is inside |
    //|         the broker market-session schedule.                      |
-   //| \param market_session_end_tod End of the broker market session   |
-   //|         in seconds-from-midnight, or -1 when unavailable. Only    |
-   //|         consulted when close_reference == MARKET_SESSION_END.     |
+   //| \param market_session_end_tod End of the broker REGULAR (first)   |
+   //|         market session in seconds-from-midnight, or -1 when        |
+   //|         unavailable (after-hours excluded; a full-day 00:00-24:00 |
+   //|         broker sentinel also maps to -1 — CHG-21). -1 falls back  |
+   //|         to entry_window_end. Only consulted when close_reference  |
+   //|         == MARKET_SESSION_END.                                    |
    //| \return SessionWindow struct with the three gate flags set.     |
    //+------------------------------------------------------------------+
    SessionWindow Evaluate(const bool market_session_open,

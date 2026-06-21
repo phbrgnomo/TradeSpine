@@ -40,6 +40,7 @@ custom_fields:
 | CHG-18 | Persistence layer: defensive-write checks, side enum, and test-determinism fixes | C2 | feedback | Approved | GATE-CODE self-approved |
 | CHG-19 | Session close reference input and broker market-session gate reconciliation | C3 | feedback | Proposed | GATE-CODE pending |
 | CHG-20 | Fixture ownership and FakeMarketContext scope clarification | C3 | design | Approved | GATE-06/GATE-08 approved |
+| CHG-21 | Canonical TradeIntent type extraction and regular-session-end close reference | C3 | design | Approved | GATE-06 + GATE-08 PASS (2026-06-21) |
 
 ## Planned
 

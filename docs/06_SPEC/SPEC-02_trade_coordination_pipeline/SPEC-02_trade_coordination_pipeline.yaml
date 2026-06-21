@@ -7,14 +7,14 @@ id: SPEC-02
 title: Trade Coordination Pipeline
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-02T00:40:00-03:00"
+last_updated: "2026-06-21T00:00:00-03:00"
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.1"
+  version: "1.2"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-02T00:40:00-03:00"
+  last_updated: "2026-06-21T00:00:00-03:00"
   author: "Codex"
   component: "CTradeCoordinator, Signal, TradeIntent"
   tdd_ready_score: "94/100"
@@ -79,7 +79,7 @@ interfaces:
     - name: "TradeIntent"
       type: "struct"
       signature: "struct TradeIntent"
-      description: "Serializable pre-submission intent with entry, stops, risk, lots, identity, comment, and metadata."
+      description: "Serializable pre-submission intent with entry, stops, risk, lots, identity, comment, and metadata. EXTENDS the canonical TradeIntent declared in Include/Core/TradeTypes.mqh (price/sl/tp/lots/order_type) — IPLAN-02 includes that Core header and adds the coordination fields below; it MUST NOT redefine the struct (@chg: CHG-21)."
       errors:
         - "Not emitted when entry resolution fails before intent construction."
 
@@ -119,6 +119,7 @@ data_models:
           description: "Compact serialized strategy metadata for diagnostics and paired evidence."
     - name: "TradeIntent"
       type: "struct"
+      base: "Include/Core/TradeTypes.mqh::TradeIntent (canonical; price/sl/tp/lots/order_type) — extended here, never redefined (@chg: CHG-21)."
       fields:
         - name: "signal"
           type: "Signal"
@@ -228,7 +229,7 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
-  tags: ["@spec: SPEC-02", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.eaf3", "@ears: EARS.01.03.b784", "@bdd: BDD.01.03.0073", "@adr: ADR.09.03.84b9"]
+  tags: ["@spec: SPEC-02", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.eaf3", "@ears: EARS.01.03.b784", "@bdd: BDD.01.03.0073", "@adr: ADR.09.03.84b9", "@chg: CHG-21"]
   upstream:
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.08.03.0a8f", "@adr: ADR.09.03.84b9"]
     bdd_references: ["@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.c0f6", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.9a8b"]
