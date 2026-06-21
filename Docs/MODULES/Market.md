@@ -186,21 +186,13 @@ interface IMarketSessionProvider {
 
 ---
 
-## TradeIntent (`Include/Market/MarketContext.mqh`)
+## TradeIntent — `Include/Core/TradeTypes.mqh` (CHG-21)
 
-Minimal v1 order-definition struct. Forward-compatible with the `TradeIntent` to be defined
-by IPLAN-03 (SPEC-03), which will replace or extend this.
-
-```mql5
-struct TradeIntent {
-    double          price;       // intended entry price
-    double          sl;          // stop-loss price; 0.0 = no SL
-    double          tp;          // take-profit price; 0.0 = no TP
-    double          lots;        // requested volume
-    ENUM_ORDER_TYPE order_type;  // ORDER_TYPE_BUY or ORDER_TYPE_SELL
-    TradeIntent(void);           // zeroes default
-};
-```
+`TradeIntent` was hoisted from `Include/Market/MarketContext.mqh` to `Include/Core/TradeTypes.mqh`
+by CHG-21 so that Market, Coordination (SPEC-02), and Execution (SPEC-03) share one canonical
+definition. `CMarketContext::ValidateOrderDefinition()` consumes it via the shared Core header.
+See [Core.md — TradeTypes.mqh](Core.md#tradetypesmqh--shared-trade-domain-types-chg-21) for
+the full struct definition and extension policy.
 
 ---
 

@@ -28,16 +28,19 @@
 //+------------------------------------------------------------------+
 
 //+------------------------------------------------------------------+
-//| \brief ENUM_POSITION_STATE - minimal v1 position lifecycle states.|
-//|        Forward-compatible: IPLAN-04 reuses this enum as-is.     |
+//| \brief ENUM_POSITION_STATE - v1 position lifecycle states.       |
+//|        Values 0-4 (UNKNOWN..HALT) defined by IPLAN-05.          |
+//|        PENDING_ENTRY=5 added during IPLAN-04 implementation;    |
+//|        all values 0-4 remain stable.                            |
 //+------------------------------------------------------------------+
 enum ENUM_POSITION_STATE
   {
-   POSITION_STATE_UNKNOWN      = 0, //!< State not yet determined.
-   POSITION_STATE_IDLE         = 1, //!< No active position; waiting for signal.
-   POSITION_STATE_ACTIVE       = 2, //!< Position open and managed.
-   POSITION_STATE_PENDING_EXIT = 3, //!< Exit order submitted; awaiting fill.
-   POSITION_STATE_HALT         = 4  //!< HALT: operator action required.
+   POSITION_STATE_UNKNOWN       = 0, //!< State not yet determined.
+   POSITION_STATE_IDLE          = 1, //!< No active position; waiting for signal (FLAT).
+   POSITION_STATE_ACTIVE        = 2, //!< Position open and managed.
+   POSITION_STATE_PENDING_EXIT  = 3, //!< Exit order submitted; awaiting fill.
+   POSITION_STATE_HALT          = 4, //!< HALT: operator action required.
+   POSITION_STATE_PENDING_ENTRY = 5  //!< Entry order submitted; awaiting fill. @iplan: IPLAN-04
   };
 
 //+------------------------------------------------------------------+
