@@ -191,7 +191,7 @@ interface IMarketSessionProvider {
 `TradeIntent` was hoisted from `Include/Market/MarketContext.mqh` to `Include/Core/TradeTypes.mqh`
 by CHG-21 so that Market, Coordination (SPEC-02), and Execution (SPEC-03) share one canonical
 definition. `CMarketContext::ValidateOrderDefinition()` consumes it via the shared Core header.
-See [Core.md — TradeTypes.mqh](Core.md#tradeTypesmqh--shared-trade-domain-types-chg-21) for
+See [Core.md — TradeTypes.mqh](Core.md#tradetypesmqh--shared-trade-domain-types-chg-21) for
 the full struct definition and extension policy.
 
 ---

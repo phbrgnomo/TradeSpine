@@ -29,8 +29,9 @@
 
 //+------------------------------------------------------------------+
 //| \brief ENUM_POSITION_STATE - v1 position lifecycle states.       |
-//|        Defined here (IPLAN-05) and extended by IPLAN-04 with     |
-//|        PENDING_ENTRY. Existing numeric values 0-4 are stable.   |
+//|        Values 0-4 (UNKNOWN..HALT) defined by IPLAN-05.          |
+//|        PENDING_ENTRY=5 added during IPLAN-04 implementation;    |
+//|        all values 0-4 remain stable.                            |
 //+------------------------------------------------------------------+
 enum ENUM_POSITION_STATE
   {
@@ -39,7 +40,7 @@ enum ENUM_POSITION_STATE
    POSITION_STATE_ACTIVE        = 2, //!< Position open and managed.
    POSITION_STATE_PENDING_EXIT  = 3, //!< Exit order submitted; awaiting fill.
    POSITION_STATE_HALT          = 4, //!< HALT: operator action required.
-   POSITION_STATE_PENDING_ENTRY = 5  //!< Entry order submitted; awaiting fill. (@iplan: IPLAN-04)
+   POSITION_STATE_PENDING_ENTRY = 5  //!< Entry order submitted; awaiting fill. @iplan: IPLAN-04
   };
 
 //+------------------------------------------------------------------+

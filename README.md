@@ -33,7 +33,7 @@ Completed implementation tiers:
 
 In progress:
 
-- **IPLAN-04: Position Account Mode and State** — `ENUM_POSITION_STATE` enum extended with `POSITION_STATE_PENDING_ENTRY`; implementation of `Include/Position/` and position test suite starting now.
+- **IPLAN-04: Position Account Mode and State** — pre-flight complete: `ENUM_POSITION_STATE` extended with `POSITION_STATE_PENDING_ENTRY=5` (values 0–4 stable); `Include/Position/` implementation and position test suite in progress.
 
 Not started yet:
 
