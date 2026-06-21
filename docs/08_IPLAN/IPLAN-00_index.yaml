@@ -3,7 +3,7 @@ metadata:
   document_type: "iplan-registry"
   layer: 8
   total_plans: 12
-  last_updated: "2026-06-08"
+  last_updated: "2026-06-21"
 
 registry:
   plans:
@@ -16,7 +16,7 @@ registry:
       complexity: 5
       session_count: 0
       sessions_completed: 0
-      files_declared: 8
+      files_declared: 9
       files_done: 0
       skipped: []
       skip_reasons: {}
@@ -67,7 +67,7 @@ registry:
       complexity: 5
       session_count: 0
       sessions_completed: 0
-      files_declared: 9
+      files_declared: 10
       files_done: 0
       skipped: []
       skip_reasons: {}
@@ -89,26 +89,27 @@ registry:
       skipped: []
       skip_reasons: {}
       depends_on: ["IPLAN-09", "IPLAN-11"]
-      blocks: ["IPLAN-02", "IPLAN-03", "IPLAN-04"]
-      parallel_with: ["IPLAN-06"]
+      blocks: ["IPLAN-02", "IPLAN-03", "IPLAN-04", "IPLAN-06"]
+      parallel_with: []
       file_path: "IPLAN-05_persistence_and_audit_evidence.yaml"
     - id: "IPLAN-06"
       title: "Market Session and Symbol Context Implementation"
       source_spec: "@spec: SPEC-06"
       scope: "Implement symbol metadata, session gates, market context, order-definition validation, and expiration warnings."
-      status: "Draft"
-      status_date: "2026-06-03"
+      status: "Completed"
+      status_date: "2026-06-21"
       complexity: 4
-      session_count: 0
-      sessions_completed: 0
-      files_declared: 6
-      files_done: 0
+      session_count: 4
+      sessions_completed: 4
+      files_declared: 10
+      files_done: 10
       skipped: []
       skip_reasons: {}
-      depends_on: ["IPLAN-09", "IPLAN-11"]
+      depends_on: ["IPLAN-05", "IPLAN-09", "IPLAN-11"]
       blocks: ["IPLAN-02", "IPLAN-03", "IPLAN-07"]
-      parallel_with: ["IPLAN-05"]
+      parallel_with: []
       file_path: "IPLAN-06_market_session_and_symbol_context.yaml"
+      note: "CHG-21 (2026-06-21): canonical TradeIntent hoisted to Include/Core/TradeTypes.mqh (SPEC-02 extends, SPEC-03 consumes); MarketSessionEndTod returns the regular (first/index-0) session end; B3 full-day sentinel handled. GATE-06/GATE-08 APPROVED 2026-06-21 (phbr)."
     - id: "IPLAN-07"
       title: "Indicators Stops Sizing and Trailing Implementation"
       source_spec: "@spec: SPEC-07"
@@ -230,7 +231,7 @@ execution_path:
       plans: ["IPLAN-11"]
     - tier: 3
       label: "Persistence and Market Foundations"
-      status: "NOT_STARTED"
+      status: "COMPLETED"
       plans: ["IPLAN-05", "IPLAN-06"]
     - tier: 4
       label: "State, Behavior, and Optional Services"

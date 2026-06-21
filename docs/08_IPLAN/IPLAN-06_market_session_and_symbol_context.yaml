@@ -7,26 +7,29 @@ metadata:
   source_spec: "@spec: SPEC-06"
   source_tdd: "@tdd: TDD.06.04.8f4d"
   total_sections: 6
-  last_updated: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-19T00:00:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
   iplan_id: "IPLAN-06"
+  subtype: "code_build"
   source_spec: "@spec: SPEC-06"
   source_tdd: "@tdd: TDD.06.04.8f4d"
-  status: Draft
-  version: "1.0"
+  status: Complete
+  version: "1.4"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-06-21T00:00:00-03:00"
   author: "Codex"
   component: "CSymbolContext, CSessionContext, CMarketContext"
   complexity: 4
-  estimated_files: 6
-  session_count: 0
+  estimated_files: 10
+  session_count: 4
   readiness_gate: "TDD-06 audit PASS 93/100"
   source_inputs:
     - "../07_TDD/TDD-06_market_session_and_symbol_context/TDD-06_market_session_and_symbol_context.yaml"
     - "../06_SPEC/SPEC-06_market_session_and_symbol_context/SPEC-06_market_session_and_symbol_context.yaml"
+    - "../07_TDD/TDD-11_testing_support_and_harnesses/TDD-11_testing_support_and_harnesses.yaml"
+    - "../06_SPEC/SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.yaml"
     - "../archive/PRD.md"
     - "../archive/architecture-diagram.html"
 
@@ -34,52 +37,79 @@ file_manifest:
   files:
     - path: "Scripts/Tests/Test_SymbolContext.mq5"
       order: 1
-      status: NOT_STARTED
-      session: null
-      verified: false
+      status: DONE
+      session: 1
+      verified: true
       purpose: "Required metadata loading, invalid metadata failure, and lot/price-grid validation tests."
     - path: "Scripts/Tests/Test_SessionContext.mq5"
       order: 2
-      status: NOT_STARTED
-      session: null
-      verified: false
+      status: DONE
+      session: 1
+      verified: true
       purpose: "Market session, user trading-hours gate, and day-trade close trigger tests."
     - path: "Scripts/Tests/Test_ContractLifecycle.mq5"
       order: 3
-      status: NOT_STARTED
-      session: null
-      verified: false
+      status: DONE
+      session: 1
+      verified: true
       purpose: "One-broker-day expiration warning tests."
-    - path: "Include/Market/SymbolContext.mqh"
+    - path: "Scripts/Tests/Support/FakeMarketContext.mqh"
       order: 4
-      status: NOT_STARTED
-      session: null
-      verified: false
+      status: DONE
+      session: 1
+      verified: true
+      purpose: "Reusable IPLAN-06 owner-extension fake surface for deterministic symbol metadata, session windows, and contract lifecycle fixtures. Implements IContractInfoProvider."
+    - path: "Include/Market/SymbolContext.mqh"
+      order: 5
+      status: DONE
+      session: 1
+      verified: true
       purpose: "Vendored CSymbolInfo wrapper and immutable symbol metadata reads."
     - path: "Include/Market/SessionContext.mqh"
-      order: 5
-      status: NOT_STARTED
-      session: null
-      verified: false
+      order: 6
+      status: DONE
+      session: 1
+      verified: true
       purpose: "Broker-session, user-hours, and day-trade close window evaluation."
     - path: "Include/Market/MarketContext.mqh"
-      order: 6
-      status: NOT_STARTED
-      session: null
-      verified: false
-      purpose: "Symbol, account, session, and contract lifecycle context facade."
+      order: 7
+      status: DONE
+      session: 1
+      verified: true
+      purpose: "Symbol, session, and contract lifecycle context facade. Defines live provider adapters and CMarketContext with two init paths. CHG-21: TradeIntent moved out to Include/Core/TradeTypes.mqh (now included); CLiveMarketSessionProvider::MarketSessionEndTod returns the regular (first/index-0) session end (after-hours excluded)."
+    - path: "Include/Core/TradeTypes.mqh"
+      order: 7
+      status: DONE
+      session: 4
+      verified: true
+      purpose: "Canonical shared TradeIntent struct (price/sl/tp/lots/order_type), hoisted from MarketContext.mqh so Market and the future Coordination/Execution layers share one include-guarded definition (@chg: CHG-21). SPEC-02 extends it; SPEC-03 consumes it."
+    - path: "Include/Market/Interfaces.mqh"
+      order: 8
+      status: DONE
+      session: 2
+      verified: true
+      purpose: "Injectable Market-layer seams (IContractInfoProvider, IMarketSessionProvider), extracted from MarketContext.mqh to mirror the Core/Interfaces.mqh convention. Added in the session-2 review-fix spike."
+    - path: "Scripts/Tests/Test_CommonInputs.mq5"
+      order: 9
+      status: DONE
+      session: 3
+      verified: true
+      purpose: "CommonInputs close_reference field validation tests (Test_CloseReferenceValidation); added during CHG-19 branch-review remediation to cover the ENUM_SESSION_CLOSE_REF input introduced for the market-session-close-reference feature."
 
 execution_commands:
   cwd: "MQL5/Experts/Main/TradeSpine"
   setup:
-    - "mkdir -p Include/Market Scripts/Tests"
+    - "mkdir -p Include/Market Scripts/Tests Scripts/Tests/Support"
   implementation:
+    - "# Pre-flight: decide and create Scripts/Tests/Support/FakeMarketContext.mqh before writing IPLAN-06 tests."
+    - "# FakeMarketContext is the IPLAN-06 owner-extension fake surface deferred by SPEC-11/TDD-11 for symbol metadata, broker session window state and end-of-session reference, and contract lifecycle fixtures."
     - "# Write TDD-06 tests first, then implement symbol, session, and market context."
     - "# Use broker/server time as authoritative and keep session gates separate from emergency close paths."
   validation:
     - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_SymbolContext.mq5"
     - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_SessionContext.mq5"
     - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_ContractLifecycle.mq5"
+    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/RunAllTests.mq5"
 
 implementation_contracts:
   provided:
@@ -92,8 +122,13 @@ implementation_contracts:
         type: "Data Model"
         files: ["Include/Market/SessionContext.mqh", "Scripts/Tests/Test_SessionContext.mq5"]
         summary: "Market session, user trading-hours gate, and day-trade close trigger are explicit and testable."
+      - name: "Market fake surface contract"
+        type: "Test Helper"
+        files: ["Scripts/Tests/Support/FakeMarketContext.mqh", "Scripts/Tests/Test_SymbolContext.mq5", "Scripts/Tests/Test_SessionContext.mq5", "Scripts/Tests/Test_ContractLifecycle.mq5"]
+        summary: "Owner-plan fake surface supplies deterministic symbol metadata, broker session window state and end-of-session reference, and contract expiration fixtures without calling live broker APIs from unit tests."
   consumed:
     dependencies:
+      - "@iplan: IPLAN-05"
       - "@iplan: IPLAN-09"
       - "@iplan: IPLAN-11"
 
@@ -103,24 +138,176 @@ session_handoff:
       agent: "Codex IPLAN autopilot"
       files_touched: []
       partial_work: "No implementation started; this seed session only created the execution plan."
-      blockers: "Requires runtime helpers and test support for deterministic clock/symbol metadata fakes."
-      next_session_directive: "Start with Scripts/Tests/Test_SymbolContext.mq5 and implement SymbolContext metadata validation."
+      blockers: "None. IPLAN-05, IPLAN-09, and IPLAN-11 are complete; IPLAN-06 owns the remaining symbol/session fake surface through Scripts/Tests/Support/FakeMarketContext.mqh."
+      next_session_directive: "Start with Scripts/Tests/Support/FakeMarketContext.mqh and Scripts/Tests/Test_SymbolContext.mq5, then implement SymbolContext metadata validation."
       validation_results:
         tests_passing: null
         coverage: null
         lint_clean: null
+    - date: "2026-06-18"
+      agent: "Claude Sonnet 4.6 (claude-code)"
+      files_touched:
+        - "Include/Market/SymbolContext.mqh"
+        - "Include/Market/SessionContext.mqh"
+        - "Include/Market/MarketContext.mqh"
+        - "Scripts/Tests/Support/FakeMarketContext.mqh"
+        - "Scripts/Tests/Test_SymbolContext.mq5"
+        - "Scripts/Tests/Test_SessionContext.mq5"
+        - "Scripts/Tests/Test_ContractLifecycle.mq5"
+        - "Scripts/Tests/RunAllTests.mq5"
+        - "Docs/MODULES/Market.md"
+        - "Docs/ARCHITECTURE.md"
+      partial_work: "All 7 IPLAN-06 deliverables implemented and compiled clean. RunAllTests.mq5 updated with IPLAN-06 block. Docs/MODULES/Market.md graduated from stub to full module page. ARCHITECTURE.md updated. Key design note: ValidatePrice() uses cached m_meta.tick_size/digits rather than live _Symbol so fixture tests are deterministic. IContractInfoProvider seam added to MarketContext.mqh; FakeMarketContext implements it for Test_ContractLifecycle."
+      blockers: "None."
+      next_session_directive: "IPLAN-06 is complete. Next planned IPLAN is IPLAN-04 (Position Account Mode and State) or IPLAN-07 (Indicators Stops Sizing Trailing); both depend on IPLAN-06 being complete."
+      validation_results:
+        tests_passing: "All 7 files compiled clean (no MetaEditor log = success). Test_SymbolContext, Test_SessionContext, Test_ContractLifecycle, and RunAllTests all compiled without errors."
+        coverage: "Unit (TDD.06.04.8f4d): 7 test helpers. Integration (TDD.06.04.4796): 10 test helpers. E2E (TDD.06.04.cd48): 6 test helpers including 1 TS_SKIP deferral to IPLAN-04/03."
+        lint_clean: true
+    - date: "2026-06-18"
+      agent: "Claude Opus 4.8 (claude-code)"
+      files_touched:
+        - "Include/Core/CommonInputs.mqh"
+        - "Include/Market/Interfaces.mqh"
+        - "Include/Market/SymbolContext.mqh"
+        - "Include/Market/SessionContext.mqh"
+        - "Include/Market/MarketContext.mqh"
+        - "Scripts/Tests/Support/FakeMarketContext.mqh"
+        - "Scripts/Tests/Test_SessionContext.mq5"
+        - "Docs/MODULES/Market.md"
+        - "Docs/ARCHITECTURE.md"
+      partial_work: >
+        Review-fix spike addressing six design-review findings. (1) Market-session-as-close-reference
+        feature: new ENUM_SESSION_CLOSE_REF + CommonInputs.close_reference; CSessionContext.Evaluate gains
+        a market_session_end_tod param; new IMarketSessionProvider seam + CLiveMarketSessionProvider
+        (SymbolInfoSessionTrade); FakeMarketContext implements it; 3 new integration tests.
+        (2) Renamed CMarketContext::Symbol() -> SymbolCtx() (was shadowing the global Symbol()).
+        (3) Extracted Include/Market/Interfaces.mqh (IContractInfoProvider + IMarketSessionProvider).
+        (4) Added field-level diagnostics to previously-silent failures (CSymbolContext Init/InitFromMetadata,
+        CMarketContext::InitFromFixtures, CLiveContractInfoProvider). (5+6) Removed the facade's mode-by-string
+        branch and duplicated trade-mode logic; entry permission now flows through new
+        CSymbolContext::IsAnyEntryAllowedLive() + static ModeAllowsAnyEntry helper, keeping CSymbolInfo for the
+        one-time Init load and a single direct SymbolInfoInteger read for the per-tick live mode.
+      blockers: >
+        Code-first spike per user decision: SPEC-06 (session/close-reference model), SPEC-09
+        (CommonInputs.close_reference input), and the upstream EARS/BDD "close before market session end"
+        requirement are NOT yet amended. Owed follow-up: aidoc-flow:doc-chg -> gate-check to reconcile.
+        Items 2-6 are internal refactors with no behavioral-contract change.
+      next_session_directive: >
+        Open the owed CHG cascade for the market-session feature (SPEC-06/SPEC-09 + EARS/BDD), then
+        proceed to IPLAN-04 or IPLAN-07.
+      validation_results:
+        tests_passing: "All affected test scripts (Test_SymbolContext, Test_SessionContext, Test_ContractLifecycle, RunAllTests) compiled clean via compile_mql.sh (no MetaEditor log = success). Execution still requires the MT5 Navigator."
+        coverage: "Integration (TDD.06.04.4796): +3 market-session close-reference helpers (13 total)."
+        lint_clean: true
+    - date: "2026-06-19"
+      agent: "Claude Opus 4.8 (claude-code)"
+      files_touched:
+        - "Include/Market/Interfaces.mqh"
+        - "Include/Market/MarketContext.mqh"
+        - "Include/Market/SymbolContext.mqh"
+        - "Scripts/Tests/Support/FakeMarketContext.mqh"
+        - "Scripts/Tests/Test_SymbolContext.mq5"
+        - "Scripts/Tests/Test_SessionContext.mq5"
+        - "Scripts/Tests/Test_ContractLifecycle.mq5"
+        - "Scripts/Tests/Test_CommonInputs.mq5"
+        - "Docs/MODULES/Market.md"
+        - "docs/06_SPEC/SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.yaml"
+        - "docs/06_SPEC/SPEC-06_market_session_and_symbol_context/SPEC-06_market_session_and_symbol_context.yaml"
+        - "docs/07_TDD/TDD-09_core_runtime_and_configuration/TDD-09_core_runtime_and_configuration.yaml"
+        - "docs/07_TDD/TDD-06_market_session_and_symbol_context/TDD-06_market_session_and_symbol_context.yaml"
+        - "docs/governance/chg/CHG-19_session_close_reference_and_market_session_gate.yaml"
+      partial_work: >
+        Branch-review remediation (IPLAN-06_branch_review_report_v001, findings H1-H9).
+        (H1) market_open now requires broker market-session membership: new
+        IMarketSessionProvider.IsMarketSessionOpen; CMarketContext.EvaluateSession gates on
+        trade_mode AND session_open (conservative closed without a provider). (H2) ValidateMetadata
+        rejects tick_value<=0, lot_min<=0, lot_max<lot_min, digits<0, stops_level<0, unknown
+        trade_mode. (H3) ValidateOrderDefinition requires entry price when SL/TP set, enforces
+        side-aware stop ordering and SL/TP grid. (H6) Init/InitFromFixtures fail on a null clock.
+        (H5) all 18 TDD-06 BDD wrappers implemented (12 added, co-located with assertions);
+        TDD-06 mapping reconciled to completed. (H7) facade ValidateOrderDefinition + session-gate
+        + null-clock tests added. (H8) FakeMarketContext.IsMarketSessionOpen wired. (H4) owed CHG
+        cascade opened as CHG-19 (C3, GATE-CODE): SPEC-09 close_reference field + ENUM, SPEC-06
+        close-reference rule + IMarketSessionProvider seam + market_open clarification, TDD-09
+        close_reference case + Test_CommonInputs::Test_CloseReferenceValidation; gate report prepared
+        (CHG-19_GATE-CODE_report.md). (H9) Docs/MODULES/Market.md updated to implemented behavior.
+      blockers: >
+        Owed CHG cascade from the 2026-06-18 spike is now RESOLVED (CHG-19 authored, registered,
+        SPEC-09/SPEC-06/TDD-09 amended, GATE-CODE report prepared). Remaining gate conditions are
+        human/runtime, not code: (a) execute RunAllTests.mq5 in the MT5 IDE for executable evidence
+        (clears GATE-CODE-E003); (b) C3 sign-off by TL + Architect (clears GATE-CODE-E004);
+        (c) recommended re-audit of amended SPEC/TDD via doc-spec-audit/doc-tdd-audit and regeneration
+        of the four *.readable.md views.
+      next_session_directive: >
+        Obtain CHG-19 GATE-CODE human sign-off and MT5 runtime test evidence, then proceed to
+        IPLAN-04 or IPLAN-07.
+      validation_results:
+        tests_passing: "All changed scripts (Test_SymbolContext, Test_SessionContext, Test_ContractLifecycle, Test_CommonInputs, RunAllTests) compiled clean via compile_mql.sh (no MetaEditor log = success). MT5 Navigator execution owed."
+        coverage: "Unit (TDD.06.04.8f4d): +Test_SymbolContext_InvalidMetadataFields. Integration: unchanged 13. E2E (TDD.06.04.cd48): +SessionGate, +OrderDefinitionValidation, +NullClockRejected. TDD-06: 18/18 BDD wrappers implemented. TDD-09: +close_reference case."
+        lint_clean: true
+    - date: "2026-06-21"
+      agent: "Claude Opus 4.8 (claude-code)"
+      files_touched:
+        - "Include/Core/TradeTypes.mqh"
+        - "Include/Market/MarketContext.mqh"
+        - "Include/Core/Interfaces.mqh"
+        - "Include/Market/Interfaces.mqh"
+        - "Include/Market/SessionContext.mqh"
+        - "Include/Core/CommonInputs.mqh"
+        - "docs/06_SPEC/SPEC-02_trade_coordination_pipeline/SPEC-02_trade_coordination_pipeline.yaml"
+        - "docs/06_SPEC/SPEC-03_guarded_execution_and_risk_controls/SPEC-03_guarded_execution_and_risk_controls.yaml"
+        - "docs/06_SPEC/SPEC-06_market_session_and_symbol_context/SPEC-06_market_session_and_symbol_context.yaml"
+        - "docs/06_SPEC/SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.yaml"
+        - "docs/07_TDD/TDD-06_market_session_and_symbol_context/TDD-06_market_session_and_symbol_context.yaml"
+        - "docs/governance/chg/CHG-21_canonical_tradeintent_and_regular_session_end.yaml"
+      partial_work: >
+        IPLAN-06 codebase-review remediation (findings M1, L2) via CHG-21 (C3, design, GATE-06).
+        (M1) Hoisted the canonical TradeIntent struct from MarketContext.mqh into a new
+        include-guarded Include/Core/TradeTypes.mqh; MarketContext.mqh now includes it;
+        Core/Interfaces.mqh deferred-seam note updated (TradeIntent canonical in Core). SPEC-02
+        TradeIntent annotated to EXTEND the Core struct; SPEC-03 ITradePort annotated to consume it.
+        (L2) CLiveMarketSessionProvider::MarketSessionEndTod now returns the regular (first/index-0)
+        trade-session end so the day-trade close references normal trading hours, not after-hours;
+        doc comments aligned in Market/Interfaces.mqh, SessionContext.mqh, CommonInputs.mqh, and the
+        MarketContext.mqh EvaluateSession block. SPEC-06/SPEC-09 amended accordingly; TDD-06 noted.
+      blockers: >
+        Code complete and compiled clean via compile_mql.sh (no MetaEditor log = success).
+        Remaining gate items are human/runtime: (a) execute RunAllTests.mq5 in the MT5 IDE for
+        executable evidence; (b) manual B3 (WIN/WDO) check that MarketSessionEndTod returns the
+        regular daytime close, not after-hours; (c) CHG-21 GATE-06 (and GATE-08 for the manifest)
+        human sign-off; (d) recommended re-audit of amended SPEC/TDD via doc-spec-audit/doc-tdd-audit
+        and regeneration of the affected *.readable.md views.
+      next_session_directive: >
+        Obtain CHG-21 GATE-06/GATE-08 human sign-off and MT5 runtime + B3 evidence, then proceed to
+        IPLAN-04 or IPLAN-07.
+      validation_results:
+        tests_passing: "RunAllTests.mq5 compiled clean via compile_mql.sh after the TradeIntent relocation (no redefinition); MT5 Navigator execution owed."
+        coverage: "No new test cases (M1 is a type relocation; L2 live-adapter change has no fake-based coverage and is verified manually on B3). Existing IPLAN-06 suite unchanged."
+        lint_clean: true
 
 traceability:
   upstream:
-    spec_references: ["@spec: SPEC-06"]
-    tdd_references: ["@tdd: TDD.06.04.8f4d"]
+    spec_references: ["@spec: SPEC-06", "@spec: SPEC-11"]
+    tdd_references: ["@tdd: TDD.06.04.8f4d", "@tdd: TDD.11.04.6805"]
     brd_references: ["@brd: BRD.01.07.69ef"]
     prd_references: ["@prd: PRD.01.09.fada", "@prd: PRD.01.09.60ad", "@prd: PRD.01.09.efcd", "@prd: PRD.01.09.d722", "@prd: PRD.01.09.42eb"]
     ears_references: ["@ears: EARS.01.03.03b2", "@ears: EARS.01.03.ec72", "@ears: EARS.01.03.1a3e", "@ears: EARS.01.03.7669", "@ears: EARS.01.03.db97", "@ears: EARS.01.03.e152", "@ears: EARS.01.03.368c"]
     bdd_references: ["@bdd: BDD.01.03.edae", "@bdd: BDD.01.03.a399", "@bdd: BDD.01.03.d4a5", "@bdd: BDD.01.03.4dcb", "@bdd: BDD.01.03.4a71", "@bdd: BDD.01.03.e593"]
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.10.03.51ea"]
+    chg_references: ["@chg: CHG-19", "@chg: CHG-20", "@chg: CHG-21"]
   downstream:
-    code_paths: ["@code: Include/Market/SymbolContext.mqh", "@code: Include/Market/SessionContext.mqh", "@code: Include/Market/MarketContext.mqh"]
-    test_paths: ["@tests: Scripts/Tests/Test_SymbolContext.mq5", "@tests: Scripts/Tests/Test_SessionContext.mq5", "@tests: Scripts/Tests/Test_ContractLifecycle.mq5"]
+    code_paths: ["@code: Include/Core/TradeTypes.mqh", "@code: Include/Market/SymbolContext.mqh", "@code: Include/Market/SessionContext.mqh", "@code: Include/Market/MarketContext.mqh", "@code: Include/Market/Interfaces.mqh"]
+    test_paths: ["@tests: Scripts/Tests/Support/FakeMarketContext.mqh", "@tests: Scripts/Tests/Test_SymbolContext.mq5", "@tests: Scripts/Tests/Test_SessionContext.mq5", "@tests: Scripts/Tests/Test_ContractLifecycle.mq5", "@tests: Scripts/Tests/Test_CommonInputs.mq5"]
   code_inventory:
-    files: []
+    files:
+      - "Include/Core/TradeTypes.mqh"
+      - "Include/Market/Interfaces.mqh"
+      - "Include/Market/SymbolContext.mqh"
+      - "Include/Market/SessionContext.mqh"
+      - "Include/Market/MarketContext.mqh"
+      - "Scripts/Tests/Support/FakeMarketContext.mqh"
+      - "Scripts/Tests/Test_SymbolContext.mq5"
+      - "Scripts/Tests/Test_SessionContext.mq5"
+      - "Scripts/Tests/Test_ContractLifecycle.mq5"
+      - "Scripts/Tests/Test_CommonInputs.mq5"

@@ -1,0 +1,207 @@
+id: CHG-20
+title: "Fixture ownership and FakeMarketContext scope clarification"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-06-20"
+  change_level:
+    value: C3
+  change_source:
+    value: design
+
+change_control:
+  chg_id: "CHG-20"
+  status: Approved
+  change_level: C3
+  change_source: design
+  entry_gate: GATE-06
+  semver_impact: null
+  author: "Codex"
+  date_proposed: "2026-06-20T00:00:00-03:00"
+  date_approved: "2026-06-20T00:00:00-03:00"
+  date_implemented: "2026-06-20T00:00:00-03:00"
+  supersedes: []
+
+change_description:
+  what: |
+    Clarify the SDD fixture ownership boundary around FakeMarketContext.
+
+    FakeMarketContext is the IPLAN-06 market fixture. It covers symbol metadata,
+    broker-session open/end state, close-reference test data, and contract
+    expiration scenarios needed by session and symbol context tests.
+
+    Execution-only market inputs such as spread, fill mode, OrderCheck/margin
+    outcomes, broker retcodes, and private CTrade submission outcomes do not
+    belong in FakeMarketContext. Those are owned by SPEC-03/TDD-03/IPLAN-03 and
+    are planned through FakeTradePort. Position/account ownership remains
+    IPLAN-04 through FakePositionView.
+  why: |
+    Review of Scripts/Tests/Support/FakeMarketContext.mqh showed that the
+    implementation already models the market-session and symbol-context surface
+    needed by IPLAN-06, including session-end reference data. However, TDD-11
+    still described IPLAN-06 as owning spread and fill-mode fake data, which
+    overlaps the guarded execution plan. Leaving that wording in place would
+    push execution fixtures into the wrong owner plan and make future test
+    expansion unclear.
+  trigger: |
+    User requested implementation of the plan to update implementation
+    documentation, expand FakeMarketContext only when needed, create new
+    fixtures under their owner plans when needed, and run the proper SDD/aidoc
+    documentation flow for both IPLAN and upstream documentation.
+
+impact_assessment:
+  affected_layers:
+    - layer: SPEC
+      artifacts: ["SPEC-03", "SPEC-11"]
+      impact: |
+        SPEC-03 now explicitly owns execution fixture inputs: spread, fill
+        mode, OrderCheck, margin, broker-retcode, and private CTrade outcome
+        scenarios. SPEC-11 now states that market-owned fakes stop at symbol
+        metadata, broker-session state, session-close references, and contract
+        expiration.
+      cascade_direction: design
+    - layer: TDD
+      artifacts: ["TDD-03", "TDD-11"]
+      impact: |
+        TDD-03 integration setup now requires execution-owned fixtures for
+        spread/fill/OrderCheck/margin/retcode/private CTrade call counts.
+        TDD-11 owner-extension scope no longer assigns spread/fill-mode to
+        IPLAN-06.
+      cascade_direction: design
+    - layer: IPLAN
+      artifacts: ["IPLAN-03", "IPLAN-04", "IPLAN-07", "IPLAN-11", "IPLAN-00"]
+      impact: |
+        IPLAN-03 declares FakeTradePort as the execution-owned fixture file.
+        IPLAN-04 declares FakePositionView as the position/account-owned
+        fixture file. IPLAN-07 instructs sizing/stops work to reuse IPLAN-06
+        market metadata before adding any local symbol facade. IPLAN-11 records
+        FakeMarketContext as the implemented IPLAN-06 fixture and keeps
+        FakeSymbolContext as optional future owner-extension work.
+      cascade_direction: design
+    - layer: Code
+      artifacts: ["Scripts/Tests/Support/FakeMarketContext.mqh"]
+      impact: |
+        No code change is required in this CHG. Existing FakeMarketContext
+        behavior is documented as the market-owned scope; future execution and
+        position/account fixtures are planned in their owner IPLANs.
+      cascade_direction: none
+  cascade_direction: bubble-down
+  risk_level: Low
+  risk_justification: |
+    The change is documentation and planning only. It reduces implementation
+    risk by assigning future fixture expansion to the owner plans that publish
+    the corresponding production interfaces.
+
+implementation:
+  steps:
+    - step: 1
+      action: "Amend SPEC-11 to bound market-owned fake scope and keep execution fake data in IPLAN-03."
+      artifact: "docs/06_SPEC/SPEC-11_testing_support_and_harnesses"
+      status: Completed
+    - step: 2
+      action: "Amend SPEC-03 to declare execution-owned fixture inputs."
+      artifact: "docs/06_SPEC/SPEC-03_guarded_execution_and_risk_controls"
+      status: Completed
+    - step: 3
+      action: "Amend TDD-11 owner-extension scope for IPLAN-06."
+      artifact: "docs/07_TDD/TDD-11_testing_support_and_harnesses"
+      status: Completed
+    - step: 4
+      action: "Amend TDD-03 integration setup to require execution-owned fixtures."
+      artifact: "docs/07_TDD/TDD-03_guarded_execution_and_risk_controls"
+      status: Completed
+    - step: 5
+      action: "Add FakeTradePort fixture responsibility to IPLAN-03."
+      artifact: "docs/08_IPLAN/IPLAN-03_guarded_execution_and_risk_controls.yaml"
+      status: Completed
+    - step: 6
+      action: "Add FakePositionView fixture responsibility to IPLAN-04."
+      artifact: "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.yaml"
+      status: Completed
+    - step: 7
+      action: "Clarify IPLAN-07 reuse of IPLAN-06 market metadata fixtures."
+      artifact: "docs/08_IPLAN/IPLAN-07_indicators_stops_sizing_trailing.yaml"
+      status: Completed
+    - step: 8
+      action: "Clarify IPLAN-11 deferred owner-extension list for FakeMarketContext and optional FakeSymbolContext."
+      artifact: "docs/08_IPLAN/IPLAN-11_testing_support_and_harnesses.yaml"
+      status: Completed
+    - step: 9
+      action: "Update IPLAN-00 declared file counts and CHG-00 index."
+      artifact: "docs/08_IPLAN/IPLAN-00_index.yaml, docs/governance/chg/CHG-00_index.md"
+      status: Completed
+
+  artifacts_modified:
+    - id: "SPEC-03"
+      file: "docs/06_SPEC/SPEC-03_guarded_execution_and_risk_controls/SPEC-03_guarded_execution_and_risk_controls.yaml"
+      change_type: "modified"
+    - id: "SPEC-11"
+      file: "docs/06_SPEC/SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.yaml"
+      change_type: "modified"
+    - id: "TDD-03"
+      file: "docs/07_TDD/TDD-03_guarded_execution_and_risk_controls/TDD-03_guarded_execution_and_risk_controls.yaml"
+      change_type: "modified"
+    - id: "TDD-11"
+      file: "docs/07_TDD/TDD-11_testing_support_and_harnesses/TDD-11_testing_support_and_harnesses.yaml"
+      change_type: "modified"
+    - id: "IPLAN-03"
+      file: "docs/08_IPLAN/IPLAN-03_guarded_execution_and_risk_controls.yaml"
+      change_type: "modified"
+    - id: "IPLAN-04"
+      file: "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.yaml"
+      change_type: "modified"
+    - id: "IPLAN-07"
+      file: "docs/08_IPLAN/IPLAN-07_indicators_stops_sizing_trailing.yaml"
+      change_type: "modified"
+    - id: "IPLAN-11"
+      file: "docs/08_IPLAN/IPLAN-11_testing_support_and_harnesses.yaml"
+      change_type: "modified"
+    - id: "IPLAN-00"
+      file: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      change_type: "modified"
+
+verification:
+  evidence:
+    - type: "search"
+      command: "rg -n \"Symbol context and market-session fakes for sizing, stops, spread, fill mode\" docs/06_SPEC docs/07_TDD docs/08_IPLAN"
+      expected: "No canonical/readable hits after this CHG except historical audit text."
+      status: Completed
+      result: "PASS: no current canonical/readable owner-scope wording remains; the remaining hit is historical IPLAN-06 audit text."
+    - type: "schema"
+      command: "python3 -c \"import yaml, pathlib; [yaml.safe_load(p.read_text()) for p in pathlib.Path('docs').glob('**/*.yaml')]\""
+      expected: "All YAML parses."
+      status: Completed
+      result: "PASS: yaml ok."
+    - type: "diff"
+      command: "git diff --check"
+      expected: "No whitespace errors."
+      status: Completed
+      result: "PASS: no whitespace errors."
+    - type: "consistency"
+      command: "python3 -c \"check IPLAN file_manifest counts against document_control.estimated_files\""
+      expected: "IPLAN-03, IPLAN-04, IPLAN-07, and IPLAN-11 manifest counts match declared totals."
+      status: Completed
+      result: "PASS: IPLAN-03 9/9, IPLAN-04 10/10, IPLAN-07 8/8, IPLAN-11 9/9."
+
+gate_approval:
+  status: Approved
+  gate_approval: "Approved"
+  approval_source: "User message: ok, approved."
+  approved_by: "phbr"
+  approved_at: "2026-06-20T00:00:00-03:00"
+  conditions: []
+
+rollback:
+  strategy: |
+    Revert the documentation and CHG-20 edits only. No runtime code is changed
+    by this CHG, so rollback has no executable migration impact.
+  affected_artifacts:
+    - "docs/06_SPEC/SPEC-03_guarded_execution_and_risk_controls"
+    - "docs/06_SPEC/SPEC-11_testing_support_and_harnesses"
+    - "docs/07_TDD/TDD-03_guarded_execution_and_risk_controls"
+    - "docs/07_TDD/TDD-11_testing_support_and_harnesses"
+    - "docs/08_IPLAN/IPLAN-03_guarded_execution_and_risk_controls.yaml"
+    - "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.yaml"
+    - "docs/08_IPLAN/IPLAN-07_indicators_stops_sizing_trailing.yaml"
+    - "docs/08_IPLAN/IPLAN-11_testing_support_and_harnesses.yaml"

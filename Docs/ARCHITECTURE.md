@@ -41,7 +41,7 @@ pulling in production execution paths.
 Strategies / Ports            (IPLAN-01, 12, 13)   — planned
 Coordination / Execution      (IPLAN-02, 03)       — planned
 Position / Indicators / Optional (IPLAN-04, 07, 10) — planned
-Market                        (IPLAN-06)            — planned (next)
+Market                        (IPLAN-06)            — IMPLEMENTED
         │
         ▼
 Persistence                   (IPLAN-05)            — IMPLEMENTED
@@ -83,6 +83,31 @@ Three separated streams: GV-backed state, CSV trade evidence, and leveled diagno
 
 Full reference: [MODULES/Persistence.md](MODULES/Persistence.md).
 
+### Market Session and Symbol Context — `Include/Market/` (IPLAN-06)
+
+Sits directly above Persistence and below Position/Coordination. Loads immutable symbol
+metadata once at init via the vendored `CSymbolInfo` wrapper; evaluates broker session,
+user trading-hours, and day-trade close gates per-tick; validates order definitions before
+submission; and detects futures contract-expiration warnings.
+
+- `CSymbolContext` — loads `SymbolMetadata` from the broker (production) or from a fixture
+  struct (tests). All lot/price/stop validators use the cached snapshot — no live broker calls on tick.
+  `ValidatePrice()` uses cached `tick_size`/`digits` so tests are deterministic without a live symbol.
+- `CSessionContext` — pure time-gate over `IClock` + `CommonInputs`. Produces a `SessionWindow`
+  with three boolean flags: `market_open`, `user_trading_hours_open`, `day_trade_close_required`.
+  The day-trade close trigger is measured from either the user window end or the broker market
+  session end, selected by `CommonInputs.close_reference`.
+- `CMarketContext` — facade coordinating the two contexts plus injectable seams for contract-expiry
+  and broker market-session queries. Two init paths: `Init()` (broker) and `InitFromFixtures()`
+  (test injection). Owns the live provider adapters when using `Init()`. `EvaluateSession()`
+  resolves broker schedule membership only; `ValidateOrderDefinition()` resolves directional
+  entry permission through `CSymbolContext` at the point an order intent exists.
+- Injectable seams live in `Include/Market/Interfaces.mqh`: `IContractInfoProvider` (wraps
+  `CSymbolInfo::ExpirationTime()`) and `IMarketSessionProvider` (wraps `SymbolInfoSessionTrade`).
+  `FakeMarketContext` (`Scripts/Tests/Support/`) implements both for deterministic test doubles.
+
+Full reference: [MODULES/Market.md](MODULES/Market.md).
+
 ## Runtime-mode policy (cross-cutting)
 
 `COptContext` ([`Include/Core/OptContext.mqh`](../Include/Core/OptContext.mqh)) is the single
@@ -99,7 +124,7 @@ through a `COptContext` rather than checking `MQLInfoInteger` directly.
 | Core | `Include/Core/` | IPLAN-09 | Implemented |
 | Testing | `Include/Testing/`, `Scripts/Tests/Support/` | IPLAN-11 | Implemented |
 | Persistence | `Include/Persistence/` | IPLAN-05 | Implemented — see [Persistence.md](MODULES/Persistence.md) |
-| Market | `Include/Market/` | IPLAN-06 | Planned (next) |
+| Market | `Include/Market/` | IPLAN-06 | Implemented — see [Market.md](MODULES/Market.md) |
 | Position | `Include/Position/` | IPLAN-04 | Planned |
 | Indicators | `Include/Indicators/` | IPLAN-07 | Planned |
 | Coordination | `Include/Coordination/` | IPLAN-02 | Planned |

@@ -9,13 +9,13 @@
 | Document ID | TDD-06 |
 | Title | Market Session and Symbol Context Test-Driven Development Guide |
 | Status | Draft |
-| Version | 1.0 |
+| Version | 1.2 |
 | Component | CSymbolContext, CSessionContext, CMarketContext |
 | SPEC Reference | @spec: SPEC-06 |
 | Source SPEC | `../../06_SPEC/SPEC-06_market_session_and_symbol_context/SPEC-06_market_session_and_symbol_context.yaml` |
 | IPLAN-ready Score | 93/100 |
 | Created | 2026-06-02T00:00:00-03:00 |
-| Updated | 2026-06-02T00:00:00-03:00 |
+| Updated | 2026-06-21T00:00:00-03:00 |
 
 ## Test Pyramid
 
@@ -35,12 +35,12 @@
 
 | BDD Scenario | Description | Unit Test | Integration Test | E2E Test |
 | --- | --- | --- | --- | --- |
-| @bdd: BDD.01.03.edae | Missing symbol metadata fails initialization | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_edae_unit` | `Scripts/Tests/Test_SessionContext.mq5` / `test_market_session_and_symbol_context_edae_integration` | `Scripts/Tests/Test_ContractLifecycle.mq5` / `test_market_session_and_symbol_context_edae_e2e` |
-| @bdd: BDD.01.03.a399 | Trading session gates entries | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_a399_unit` | `Scripts/Tests/Test_SessionContext.mq5` / `test_market_session_and_symbol_context_a399_integration` | `Scripts/Tests/Test_ContractLifecycle.mq5` / `test_market_session_and_symbol_context_a399_e2e` |
-| @bdd: BDD.01.03.d4a5 | Day trade session closes exposure | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_d4a5_unit` | `Scripts/Tests/Test_SessionContext.mq5` / `test_market_session_and_symbol_context_d4a5_integration` | `Scripts/Tests/Test_ContractLifecycle.mq5` / `test_market_session_and_symbol_context_d4a5_e2e` |
-| @bdd: BDD.01.03.4dcb | Unsupported futures symbol blocks validation | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_4dcb_unit` | `Scripts/Tests/Test_SessionContext.mq5` / `test_market_session_and_symbol_context_4dcb_integration` | `Scripts/Tests/Test_ContractLifecycle.mq5` / `test_market_session_and_symbol_context_4dcb_e2e` |
-| @bdd: BDD.01.03.4a71 | Contract expiration warnings fire on session open | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_4a71_unit` | `Scripts/Tests/Test_SessionContext.mq5` / `test_market_session_and_symbol_context_4a71_integration` | `Scripts/Tests/Test_ContractLifecycle.mq5` / `test_market_session_and_symbol_context_4a71_e2e` |
-| @bdd: BDD.01.03.e593 | Sizing modes use initialized symbol data | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_e593_unit` | `Scripts/Tests/Test_SessionContext.mq5` / `test_market_session_and_symbol_context_e593_integration` | `Scripts/Tests/Test_ContractLifecycle.mq5` / `test_market_session_and_symbol_context_e593_e2e` |
+| @bdd: BDD.01.03.edae | Missing symbol metadata fails initialization | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_edae_unit` | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_edae_integration` | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_edae_e2e` |
+| @bdd: BDD.01.03.a399 | Trading session gates entries | `Scripts/Tests/Test_SessionContext.mq5` / `test_market_session_and_symbol_context_a399_unit` | `Scripts/Tests/Test_SessionContext.mq5` / `test_market_session_and_symbol_context_a399_integration` | `Scripts/Tests/Test_SessionContext.mq5` / `test_market_session_and_symbol_context_a399_e2e` |
+| @bdd: BDD.01.03.d4a5 | Day trade session closes exposure | `Scripts/Tests/Test_SessionContext.mq5` / `test_market_session_and_symbol_context_d4a5_unit` | `Scripts/Tests/Test_SessionContext.mq5` / `test_market_session_and_symbol_context_d4a5_integration` | `Scripts/Tests/Test_SessionContext.mq5` / `test_market_session_and_symbol_context_d4a5_e2e` |
+| @bdd: BDD.01.03.4dcb | Unsupported futures symbol blocks validation | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_4dcb_unit` | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_4dcb_integration` | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_4dcb_e2e` |
+| @bdd: BDD.01.03.4a71 | Contract expiration warnings fire on session open | `Scripts/Tests/Test_ContractLifecycle.mq5` / `test_market_session_and_symbol_context_4a71_unit` | `Scripts/Tests/Test_ContractLifecycle.mq5` / `test_market_session_and_symbol_context_4a71_integration` | `Scripts/Tests/Test_ContractLifecycle.mq5` / `test_market_session_and_symbol_context_4a71_e2e` |
+| @bdd: BDD.01.03.e593 | Sizing modes use initialized symbol data | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_e593_unit` | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_e593_integration` | `Scripts/Tests/Test_SymbolContext.mq5` / `test_market_session_and_symbol_context_e593_e2e` |
 
 ## Test Cases
 
@@ -48,27 +48,27 @@
 
 | ID | Name | Target | File | Function | Expected Output | Edge Cases |
 | --- | --- | --- | --- | --- | --- | --- |
-| TDD.06.04.8f4d | Symbol context rejects missing required metadata | CSymbolContext.Init | `Scripts/Tests/Test_SymbolContext.mq5` | `test_market_session_and_symbol_context_unit_contract` | INIT_FAILED with missing metadata reason | Valid B3 futures metadata is immutable after init -> Case remains deterministic and broker-safe. |
+| TDD.06.04.8f4d | Symbol context rejects missing required metadata | CSymbolContext.Init | `Scripts/Tests/Test_SymbolContext.mq5` | `test_market_session_and_symbol_context_unit_contract` | INIT_FAILED with missing metadata reason | Valid B3 futures metadata is immutable after init → Case remains deterministic and broker-safe. |
 
 ### Integration Tests
 
-| ID | Name | Contract | File | Expected State | Error Paths |
-| --- | --- | --- | --- | --- | --- |
-| TDD.06.04.4796 | Session context blocks entries but allows exposure management | CSessionContext plus fake broker clock | `Scripts/Tests/Test_SessionContext.mq5` | Entry gate is blocked and close-management path remains available | Close buffer sets day_trade_close_required -> SPEC-defined rejection or HALT path. |
+| ID | Name | Contract | File | Function | Expected State | Error Paths |
+| --- | --- | --- | --- | --- | --- | --- |
+| TDD.06.04.4796 | Session context exposes broker schedule state while order validation enforces direction | CMarketContext session facade with fake clock and market-session provider | `Scripts/Tests/Test_ContractLifecycle.mq5` | `Test_MarketContext_SessionGate` | market_open reflects broker session schedule membership only. user_trading_hours_open independently blocks entry outside the configured window. A disabled or side-restricted symbol remains subject to ValidateOrderDefinition for the concrete BUY or SELL intent. **Note (@chg: CHG-21):** TradeIntent fixtures resolve to the canonical type in `Include/Core/TradeTypes.mqh`; existing order-definition cases are unaffected by the relocation. `MarketSessionEndTod` regular-session-end (index-0) selection is a thin live-adapter behavior verified manually on the live/demo B3 feed (WINQ26 2026-06-21); FakeMarketSessionProvider returns a single configured end-tod, so the close-reference cases remain valid and after-hours exclusion is not fake-exercised. | Close buffer sets day_trade_close_required → SPEC-defined rejection or HALT path. |
 
 ### E2E Tests
 
-| ID | Name | BDD Ref | File | Workflow | Timeout Seconds |
-| --- | --- | --- | --- | --- | --- |
-| TDD.06.04.cd48 | Day-trade mode closes exposure before market close | @bdd: BDD.01.03.d4a5 | `Scripts/Tests/Test_ContractLifecycle.mq5` | 1. Create owned positions and pending orders -> Owned exposure is closed or cancelled<br>2. Advance broker time into close buffer -> Failure enters HALT with evidence<br>3. Run close sequence -> No rollover is accepted for day-trade mode | 300 |
+| ID | Name | BDD Ref | File | Function | Workflow | Timeout Seconds |
+| --- | --- | --- | --- | --- | --- | --- |
+| TDD.06.04.cd48 | Day-trade mode closes exposure before market close | @bdd: BDD.01.03.d4a5 | `Scripts/Tests/Test_ContractLifecycle.mq5` | `test_market_session_and_symbol_context_e2e_acceptance` | 1. Create owned positions and pending orders → Owned exposure is closed or cancelled. 2. Advance broker time into close buffer → Failure enters HALT with evidence. 3. Run close sequence → No rollover is accepted for day-trade mode. | 300 |
 
 ## Thresholds
 
 | Type | Coverage Target | Pass Criteria | Fail Action |
 | --- | --- | --- | --- |
-| unit | >=90% | All declared unit cases pass.<br>No broker API calls occur from unit tests. | Block IPLAN Green phase. |
-| integration | >=85% | All declared integration contracts pass.<br>Fake-boundary assertions prove the expected side effects. | Block IPLAN Green phase. |
-| e2e | >=75% of mapped happy paths; timeout <=300s | Critical BDD workflow passes.<br>Required evidence artifacts are present. | Block release-candidate gate. |
+| unit | >=90% | All declared unit cases pass. No broker API calls occur from unit tests. | Block IPLAN Green phase. |
+| integration | >=85% | All declared integration contracts pass. Fake-boundary assertions prove the expected side effects. | Block IPLAN Green phase. |
+| e2e | >=75% of mapped happy paths; timeout <=300s | Critical BDD workflow passes. Required evidence artifacts are present. | Block release-candidate gate. |
 | security | Not mandated by parent SPEC. | No security cases are required for this component. | Add cases if a later ADR or SPEC mandates security coverage. |
 
 ## TDD Execution Order
@@ -91,6 +91,7 @@
 | EARS | @ears: EARS.01.03.03b2, @ears: EARS.01.03.ec72, @ears: EARS.01.03.1a3e, @ears: EARS.01.03.7669, @ears: EARS.01.03.db97, @ears: EARS.01.03.e152, @ears: EARS.01.03.368c |
 | PRD | @prd: PRD.01.09.fada, @prd: PRD.01.09.60ad, @prd: PRD.01.09.efcd, @prd: PRD.01.09.d722, @prd: PRD.01.09.42eb |
 | BRD | @brd: BRD.01.07.69ef |
+| CHG | @chg: CHG-21 |
 | Downstream | IPLAN-06 |
 
 ## Downstream Use

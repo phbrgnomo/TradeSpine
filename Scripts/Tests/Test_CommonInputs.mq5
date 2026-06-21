@@ -3,7 +3,8 @@
 //|              Copyright 2026, phbr                                |
 //|                                                                  |
 //| @tests: Scripts/Tests/Test_CommonInputs.mq5                      |
-//| @tdd: TDD.09.04.bb66  @spec: SPEC-09  @iplan: IPLAN-09           |
+//| @tdd: TDD.09.04.bb66, TDD.09.04.c1f3                             |  
+//| @spec: SPEC-09  @iplan: IPLAN-09                                 |
 //|                                                                  |
 //| Tier-1 unit/e2e tests for CommonInputs: input validation and     |
 //| visible v1/v2 boundary rejection. No broker execution APIs.      |
@@ -125,6 +126,38 @@ bool Test_DayTradeMode(CAssert &asserts)
   }
 
 //+------------------------------------------------------------------+
+//| \brief Validates close_reference whitelist in CommonInputs.      |
+//|        (TDD.09.04.c1f3, CHG-19)                                  |
+//| \param asserts  Test assertion collector.                        |
+//| \return true when all assertions in this test pass.             |
+//+------------------------------------------------------------------+
+bool Test_CloseReferenceValidation(CAssert &asserts)
+  {
+   bool ok = true;
+   CommonInputs ci = MakeValid();
+   ci.day_trade_mode = true;
+
+   // Default (set by the constructor) must be accepted without operator action.
+   ok &= asserts.TS_CHECK(ci.close_reference == CLOSE_REF_USER_WINDOW_END,
+                          "Default close_reference is CLOSE_REF_USER_WINDOW_END");
+   ok &= asserts.TS_CHECK(ci.Validate().ok,
+                          "Default close_reference is accepted under day_trade_mode");
+
+   ci.close_reference = CLOSE_REF_USER_WINDOW_END;
+   ok &= asserts.TS_CHECK(ci.Validate().ok, "CLOSE_REF_USER_WINDOW_END accepted");
+
+   ci.close_reference = CLOSE_REF_MARKET_SESSION_END;
+   ok &= asserts.TS_CHECK(ci.Validate().ok, "CLOSE_REF_MARKET_SESSION_END accepted");
+
+   ci.close_reference = (ENUM_SESSION_CLOSE_REF)99;
+   InputValidation r = ci.Validate();
+   ok &= asserts.TS_CHECK(!r.ok, "Cast close_reference value 99 is rejected");
+   ok &= asserts.TS_CHECK(StringFind(r.message, "close_reference") >= 0,
+                          "Diagnostic names the close_reference problem");
+   return(ok);
+  }
+
+//+------------------------------------------------------------------+
 //| v2 sizing placeholders are rejected visibly. (TDD.09.04.bb66)   |
 //+------------------------------------------------------------------+
 bool Test_SizingPlaceholderRejected(CAssert &asserts)
@@ -242,6 +275,15 @@ bool test_core_runtime_and_configuration_cb03_unit(CAssert &asserts)
    return(ok);
   }
 //+------------------------------------------------------------------+
+//| \brief TDD.09.04.c1f3 unit wrapper — close_reference whitelist.  |
+//| \param asserts Shared assertion recorder.                        |
+//| \return true when close_reference validation passes.             |
+//+------------------------------------------------------------------+
+bool test_core_runtime_and_configuration_c1f3_unit(CAssert &asserts)
+  {
+   return(Test_CloseReferenceValidation(asserts));
+  }
+//+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 bool test_core_runtime_and_configuration_aa68_unit(CAssert &asserts)
@@ -282,6 +324,7 @@ int OnStart()
    Test_ValidCombos(asserts);
    Test_MagicGuard(asserts);
    Test_DayTradeMode(asserts);
+   Test_CloseReferenceValidation(asserts);
    Test_SizingPlaceholderRejected(asserts);
    Test_UnknownEnumRejected(asserts);
    Test_SignalTimeframe(asserts);

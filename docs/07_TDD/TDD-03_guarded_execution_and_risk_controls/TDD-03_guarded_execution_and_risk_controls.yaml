@@ -7,7 +7,7 @@ id: TDD-03
 title: "Guarded Execution and Risk Controls Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-06-02T00:00:00-03:00"
+last_updated: "2026-06-20T00:00:00-03:00"
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -23,9 +23,9 @@ metadata:
 
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.2"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-06-02T00:00:00-03:00"
+  last_updated: "2026-06-20T12:00:00-03:00"
   author: "Codex"
   component: "CGuardedTrade and CRiskManager"
   spec_reference: "@spec: SPEC-03"
@@ -141,6 +141,26 @@ test_cases:
         edge_cases:
           - condition: "Known success, pending, retryable, and terminal retcodes classify distinctly"
             expected: "Case remains deterministic and broker-safe."
+      - id: "TDD.03.04.d74f"
+        type: unit
+        name: "GuardResult captures filled_lots on partial fill"
+        spec_ref: "@spec: SPEC-03"
+        ears_ref: "@ears: EARS.01.03.ec72"
+        target: "CGuardedTrade.Submit"
+        test_file: "Scripts/Tests/Test_GuardedTrade.mq5"
+        test_function: "test_guarded_execution_partial_fill_evidence"
+        inputs:
+          - name: fixture
+            type: string
+            value: "retcode=TRADE_RETCODE_DONE_PARTIAL, submitted_lots=2.0, broker_filled_lots=1.0"
+        expected_output:
+          type: contract-result
+          value: "status=partial, filled_lots=1.0, submitted_lots=2.0, ambiguous=false, retryable=false"
+        edge_cases:
+          - condition: "filled_lots equals submitted_lots"
+            expected: "status=filled, not partial."
+          - condition: "filled_lots is 0.0 on TRADE_RETCODE_DONE_PARTIAL"
+            expected: "status=partial with filled_lots=0.0; not treated as ambiguous."
   integration_tests:
     cases:
       - id: "TDD.03.04.b003"
@@ -152,6 +172,7 @@ test_cases:
         test_function: "test_guarded_execution_and_risk_controls_integration_contract"
         setup:
           - "Assemble component with deterministic fakes for broker, clock, store, symbol, and logs where required."
+          - "Configure execution-owned fixtures for spread, fill mode, OrderCheck/margin results, broker retcodes, and private CTrade call counts; do not rely on FakeMarketContext for these fields."
           - "Load SPEC-defined configuration and BDD trace tags."
         action:
           description: "Submit TradeIntent with side-inverted stop"
@@ -236,6 +257,7 @@ tdd_order:
 traceability:
   tags:
     - "@tdd: TDD.03.04.1f65"
+    - "@tdd: TDD.03.04.d74f"
     - "@spec: SPEC-03"
     - "@brd: BRD.01.07.a94e"
     - "@brd: BRD.01.08.0ce5"
@@ -265,6 +287,8 @@ traceability:
       - "@ears: EARS.01.03.375b"
       - "@ears: EARS.01.03.f562"
       - "@ears: EARS.01.03.e20a"
+      - "@ears: EARS.01.03.ec72"
+      - "@ears: EARS.01.03.588b"
     prd_references:
       - "@prd: PRD.01.09.d74e"
       - "@prd: PRD.01.09.4fb4"

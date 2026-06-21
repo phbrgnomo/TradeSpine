@@ -1,11 +1,13 @@
 # SPEC-09: Core Runtime and Configuration
 
+> Human-readable rendering generated from `SPEC-09_core_runtime_and_configuration.yaml`. The YAML file remains the canonical aidoc artifact.
+
 ## Document Control
 
 | Field | Value |
 | --- | --- |
 | Status | Draft |
-| Version | 1.0 |
+| Version | 1.2 |
 | Component | OptContext, SafeMath, Profiler, CommonInputs, CNewBarDetector |
 | TDD-ready Score | 93/100 |
 | Architecture Decision | ADR-10 |
@@ -42,7 +44,7 @@ flowchart LR
 
 | Model | Purpose |
 | --- | --- |
-| CommonInputs | Unsigned magic number, day-trade mode, session window fields, sizing mode, and v1/v2 placeholder validation. |
+| CommonInputs | Unsigned magic number, day-trade mode, session window fields (`entry_window_start`, `entry_window_end`, `close_mins_before`), `close_reference` enum (`CLOSE_REF_USER_WINDOW_END` or `CLOSE_REF_MARKET_SESSION_END` — broker REGULAR first session end, after-hours excluded, full-day sentinel maps to -1 @chg: CHG-21), sizing mode, and v1/v2 placeholder validation. |
 | RuntimeMode | Tester, optimization, and diagnostics policy flags. |
 | ProfileSample | Profiling sample scope, elapsed microseconds, and enablement flag. |
 | BenchmarkBaseline | Scenario, baseline memory reading, component memory delta, and timing source for release benchmark evidence. |
@@ -60,7 +62,7 @@ flowchart LR
 
 - Core runtime utilities do not call broker execution APIs.
 - `Profiler` and `OptContext` are dependency-injectable for Tier-1 tests.
-- `CommonInputs` is the canonical source for framework-wide input names.
+- `CommonInputs` is the canonical source for framework-wide input names; strategy templates document only their strategy-specific additions.
 - `CNewBarDetector` is used inside strategy hook code, not as a hidden framework signal scheduler.
 - Memory evidence records the benchmark baseline, component delta, terminal/build context, and scenario name.
 - Runtime timing and memory introspection are accessed through `Profiler`, not scattered across components.
@@ -75,4 +77,4 @@ flowchart LR
 
 ## Traceability
 
-`@spec: SPEC-09`, `@brd: BRD.01.07.88a6`, `@prd: PRD.01.09.841a`, `@ears: EARS.01.03.0c0a`, `@bdd: BDD.01.03.aa68`, `@adr: ADR.10.03.51ea`
+`@spec: SPEC-09`, `@brd: BRD.01.07.88a6`, `@prd: PRD.01.09.841a`, `@ears: EARS.01.03.0c0a`, `@bdd: BDD.01.03.aa68`, `@adr: ADR.10.03.51ea`, `@chg: CHG-19`, `@chg: CHG-21`

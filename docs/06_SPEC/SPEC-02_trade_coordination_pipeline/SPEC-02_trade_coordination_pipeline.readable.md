@@ -1,11 +1,13 @@
 # SPEC-02: Trade Coordination Pipeline
 
+> Human-readable rendering generated from `SPEC-02_trade_coordination_pipeline.yaml`. The YAML file remains the canonical aidoc artifact.
+
 ## Document Control
 
 | Field | Value |
 | --- | --- |
 | Status | Draft |
-| Version | 1.1 |
+| Version | 1.2 |
 | Component | CTradeCoordinator, Signal, TradeIntent |
 | TDD-ready Score | 94/100 |
 | Architecture Decision | ADR-09 |
@@ -34,14 +36,14 @@ flowchart LR
 | ProcessSignal | method | Converts canonical strategy signals into validated trade intents. |
 | Update | method | Runs pending-entry, async-fill, timeout, and reconciliation bookkeeping outside normal entry flow. |
 | Signal | struct | Carries internal direction, market-entry mode, optional requested price placeholder, stops, comment, and metadata. |
-| TradeIntent | struct | Carries normalized order definition, risk, timestamp, symbol, magic, comment, and evidence metadata before guarded broker handoff. |
+| TradeIntent | struct | Extends the canonical Core `TradeIntent` from `Include/Core/TradeTypes.mqh` (price/sl/tp/lots/order_type) with coordination fields: resolved entry, risk percent, timestamp, symbol, magic, comment, and audit metadata. IPLAN-02 must include the Core header and add fields — it must not redefine the struct (@chg: CHG-21). |
 
 ## Data Models
 
 | Model | Purpose |
 | --- | --- |
 | Signal | Internal strategy request normalized by the coordinator, including `entry_mode`, optional `entry_price`, SL/TP, comment, and compact metadata. |
-| TradeIntent | Order definition with resolved entry, stops, lots, risk percent, timestamp, symbol, magic, comment, and audit metadata. |
+| TradeIntent | EXTENDS `Include/Core/TradeTypes.mqh::TradeIntent` (canonical base: price/sl/tp/lots/order_type). Adds resolved entry, stops, risk percent, timestamp, symbol, magic, comment, and audit metadata (@chg: CHG-21 — IPLAN-02 must not redefine the canonical base). |
 
 ## Behavior
 
@@ -77,4 +79,4 @@ flowchart LR
 
 ## Traceability
 
-`@spec: SPEC-02`, `@brd: BRD.01.07.88a6`, `@prd: PRD.01.09.eaf3`, `@ears: EARS.01.03.b784`, `@bdd: BDD.01.03.0073`, `@adr: ADR.09.03.84b9`
+`@spec: SPEC-02`, `@brd: BRD.01.07.88a6`, `@prd: PRD.01.09.eaf3`, `@ears: EARS.01.03.b784`, `@bdd: BDD.01.03.0073`, `@adr: ADR.09.03.84b9`, `@chg: CHG-21`

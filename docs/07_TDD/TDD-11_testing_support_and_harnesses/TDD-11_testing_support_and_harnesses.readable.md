@@ -70,7 +70,7 @@
 | IPLAN-03 | FakeTradePort, GuardResult, TradeIntent, broker outcome scripts, pending/ambiguous execution assertions. |
 | IPLAN-04 | Position/account context fakes, IPositionView-backed harness adapters, hedging ownership assertions. |
 | IPLAN-05 | State-store and persistence/evidence fakes, write/read failure injection, audit ledger assertions. |
-| IPLAN-06 | Symbol context and market-session fakes for sizing, stops, spread, fill mode, and session gates. |
+| IPLAN-06 | FakeMarketContext/FakeSymbolContext surfaces for symbol metadata, broker-session open/end state, contract expiration, sizing/stops metadata consumers, and session gates; spread, fill-mode, margin, broker retcode, and private CTrade outcome fixtures remain IPLAN-03-owned. |
 
 ## Thresholds
 
