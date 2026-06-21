@@ -20,6 +20,8 @@
 //| \brief Immutable symbol metadata snapshot loaded at Init.        |
 //|        Default constructor initializes all fields to zero so     |
 //|        any incomplete fixture fails CSymbolContext validation.   |
+//| \param N/A  Struct — no parameters.                              |
+//| \return N/A Struct — no return value.                            |
 //+------------------------------------------------------------------+
 struct SymbolMetadata
   {
@@ -47,6 +49,8 @@ struct SymbolMetadata
 //|        Init; provides immutable accessors and order-definition    |
 //|        validators. Two init paths: broker (production) and       |
 //|        fixture (tests).                                           |
+//| \param N/A  Class — no parameters.                               |
+//| \return N/A Class — no return value.                             |
 //+------------------------------------------------------------------+
 class CSymbolContext
   {

@@ -12,9 +12,9 @@
 |---|---|---|
 | CHG schema sections | PASS | C3 record contains change control, description, impact, implementation, verification, gate approval, and rollback blocks. |
 | Classification and routing | PASS | `C3` feedback change correctly enters through `GATE-CODE`; SPEC/TDD effects cascade to `GATE-06`. |
-| Impact inventory | PASS | SPEC-06, SPEC-09, TDD-06, TDD-09, and affected Core/Market/test code are recorded. |
-| SPEC/TDD alignment | PASS | Fresh SPEC-06 and TDD-06 audits pass the schedule-versus-direction contract. |
-| Traceability references | PASS | Referenced `SPEC-06`, `SPEC-09`, `TDD-06`, `TDD-09`, and `IPLAN-06` artifacts exist. |
+| Impact inventory | PASS | @spec: SPEC-06, @spec: SPEC-09, @tdd: TDD-06, @tdd: TDD-09, and affected Core/Market/test code are recorded. |
+| SPEC/TDD alignment | PASS | Fresh @spec: SPEC-06 and @tdd: TDD-06 audits pass the schedule-versus-direction contract. |
+| Traceability references | PASS | Referenced `@spec: SPEC-06`, `@spec: SPEC-09`, `@tdd: TDD-06`, `@tdd: TDD-09`, and `@iplan: IPLAN-06` artifacts exist. |
 
 ## Blocking Gate Findings
 

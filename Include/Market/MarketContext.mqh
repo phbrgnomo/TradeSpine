@@ -27,6 +27,8 @@
 //+------------------------------------------------------------------+
 //| \brief Thin production adapter: reads SYMBOL_EXPIRATION_TIME     |
 //|        from the broker for a named symbol.                       |
+//| \param N/A  Class — no parameters.                               |
+//| \return N/A Class — no return value.                             |
 //+------------------------------------------------------------------+
 class CLiveContractInfoProvider : public IContractInfoProvider
   {
@@ -59,6 +61,8 @@ public:
 //+------------------------------------------------------------------+
 //| \brief Thin production adapter: reads the broker market trade    |
 //|        session schedule via SymbolInfoSessionTrade.              |
+//| \param N/A  Class — no parameters.                               |
+//| \return N/A Class — no return value.                             |
 //+------------------------------------------------------------------+
 class CLiveMarketSessionProvider : public IMarketSessionProvider
   {
@@ -121,6 +125,8 @@ public:
 //| \brief Minimal order-definition struct for v1 validation.        |
 //|        Forward-compatible with the TradeIntent defined by        |
 //|        IPLAN-03 (SPEC-03), which will replace or extend this.    |
+//| \param N/A  Struct — no parameters.                              |
+//| \return N/A Struct — no return value.                            |
 //+------------------------------------------------------------------+
 struct TradeIntent
   {
@@ -143,6 +149,8 @@ struct TradeIntent
 //|          Init()           — production (broker APIs)             |
 //|          InitFromFixtures()— deterministic fixture injection      |
 //|        Owns CSymbolContext and CSessionContext by value.         |
+//| \param N/A  Class — no parameters.                               |
+//| \return N/A Class — no return value.                             |
 //+------------------------------------------------------------------+
 class CMarketContext
   {
@@ -206,7 +214,7 @@ public:
              COptContext        *ctx)
      {
       m_ready  = false;
-      m_symbol = symbol;
+      m_symbol = (StringLen(symbol) > 0) ? symbol : _Symbol;
       m_clock  = clock;
       m_sink   = sink;
       m_ctx    = ctx;
@@ -241,19 +249,19 @@ public:
          return(false);
         }
 
-      if(!m_sym.Init(symbol))
+      if(!m_sym.Init(m_symbol))
         {
          if(m_sink != NULL)
             m_sink.Write(LOG_ERROR, "market", StringFormat(
-                            "CMarketContext::Init failed: symbol '%s' metadata load failed.", symbol));
+                            "CMarketContext::Init failed: symbol '%s' metadata load failed.", m_symbol));
          return(false);
         }
 
       m_sess.Init(inputs, clock);
 
-      m_live_provider = new CLiveContractInfoProvider(symbol);
+      m_live_provider = new CLiveContractInfoProvider(m_symbol);
       m_contract_info = m_live_provider;
-      m_live_session  = new CLiveMarketSessionProvider(symbol);
+      m_live_session  = new CLiveMarketSessionProvider(m_symbol);
       m_session_info  = m_live_session;
 
       m_ready = true;
@@ -368,12 +376,13 @@ public:
          return(SessionWindow());
 
       bool session_open = false;
-      if(m_session_info != NULL && m_clock != NULL)
-         session_open = m_session_info.IsMarketSessionOpen(m_clock.Now());
-
       int market_session_end_tod = -1;
       if(m_session_info != NULL && m_clock != NULL)
-         market_session_end_tod = m_session_info.MarketSessionEndTod(m_clock.Now());
+        {
+         datetime now = m_clock.Now();
+         session_open           = m_session_info.IsMarketSessionOpen(now);
+         market_session_end_tod = m_session_info.MarketSessionEndTod(now);
+        }
 
       return(m_sess.Evaluate(session_open, market_session_end_tod));
      }
@@ -413,6 +422,8 @@ public:
       // bypass both ValidatePrice and the "price required when SL/TP set" guard.
       if(intent.price != 0.0 && !SafeMath::IsFinite(intent.price))
         { reason = "Entry price is non-finite (NaN or Inf); rejected."; return(false); }
+      if(intent.price < 0.0)
+        { reason = "Entry price is negative; rejected."; return(false); }
       if(intent.sl != 0.0 && !SafeMath::IsFinite(intent.sl))
         { reason = "SL is non-finite (NaN or Inf); rejected."; return(false); }
       if(intent.tp != 0.0 && !SafeMath::IsFinite(intent.tp))

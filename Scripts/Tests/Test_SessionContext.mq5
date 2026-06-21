@@ -28,6 +28,7 @@
  * \param start_seconds  Entry window start: seconds from midnight.
  * \param end_seconds    Entry window end: seconds from midnight.
  * \param close_mins     close_mins_before.
+ * \return Populated CommonInputs with day_trade_mode=true.
  */
 CommonInputs MakeDayTradeInputs(const int start_seconds,
                                 const int end_seconds,
@@ -50,6 +51,7 @@ CommonInputs MakeDayTradeInputs(const int start_seconds,
  * \param end_seconds    Entry window end: seconds from midnight.
  * \param close_mins     close_mins_before.
  * \param ref            Close reference (user window end vs market session end).
+ * \return Populated CommonInputs with day_trade_mode=true and given close_reference.
  */
 CommonInputs MakeDayTradeInputsRef(const int start_seconds,
                                    const int end_seconds,
@@ -61,7 +63,10 @@ CommonInputs MakeDayTradeInputsRef(const int start_seconds,
    return(in);
   }
 
-/** \brief Build a CommonInputs with day_trade_mode = false. */
+/**
+ * \brief Build a CommonInputs with day_trade_mode = false.
+ * \return Populated CommonInputs with day_trade_mode=false.
+ */
 CommonInputs MakeNonDayTradeInputs(void)
   {
    CommonInputs in;
@@ -79,7 +84,11 @@ CommonInputs MakeNonDayTradeInputs(void)
 //--- market_open pass-through tests                                  |
 //--- ----------------------------------------------------------------+
 
-/** \brief market_session_open=true yields market_open=true. */
+/**
+ * \brief market_session_open=true yields market_open=true.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_Session_MarketOpen(CAssert &a)
   {
    bool ok = true;
@@ -99,7 +108,11 @@ bool Test_Session_MarketOpen(CAssert &a)
    return(ok);
   }
 
-/** \brief market_session_open=false yields market_open=false. */
+/**
+ * \brief market_session_open=false yields market_open=false.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_Session_MarketClosed(CAssert &a)
   {
    bool ok = true;
@@ -121,7 +134,11 @@ bool Test_Session_MarketClosed(CAssert &a)
 //--- user_trading_hours_open tests                                   |
 //--- ----------------------------------------------------------------+
 
-/** \brief Clock before entry_window_start → user window closed. */
+/**
+ * \brief Clock before entry_window_start → user window closed.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_Session_UserHoursBlocked_Before(CAssert &a)
   {
    bool ok = true;
@@ -138,7 +155,11 @@ bool Test_Session_UserHoursBlocked_Before(CAssert &a)
    return(ok);
   }
 
-/** \brief Clock exactly at entry_window_start → user window open. */
+/**
+ * \brief Clock exactly at entry_window_start → user window open.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_Session_UserHoursOpen_AtStart(CAssert &a)
   {
    bool ok = true;
@@ -155,7 +176,11 @@ bool Test_Session_UserHoursOpen_AtStart(CAssert &a)
    return(ok);
   }
 
-/** \brief Clock at entry_window_end → user window closed (exclusive end). */
+/**
+ * \brief Clock at entry_window_end → user window closed (exclusive end).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_Session_UserHoursBlocked_After(CAssert &a)
   {
    bool ok = true;
@@ -172,7 +197,11 @@ bool Test_Session_UserHoursBlocked_After(CAssert &a)
    return(ok);
   }
 
-/** \brief Clock inside window → user window open. */
+/**
+ * \brief Clock inside window → user window open.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_Session_UserHoursOpen(CAssert &a)
   {
    bool ok = true;
@@ -193,7 +222,11 @@ bool Test_Session_UserHoursOpen(CAssert &a)
 //--- day_trade_close_required tests                                  |
 //--- ----------------------------------------------------------------+
 
-/** \brief Clock past close trigger → day_trade_close_required=true. */
+/**
+ * \brief Clock past close trigger → day_trade_close_required=true.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_Session_DayTradeCloseRequired(CAssert &a)
   {
    bool ok = true;
@@ -212,7 +245,11 @@ bool Test_Session_DayTradeCloseRequired(CAssert &a)
    return(ok);
   }
 
-/** \brief Clock exactly at close trigger → day_trade_close_required=true. */
+/**
+ * \brief Clock exactly at close trigger → day_trade_close_required=true.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_Session_DayTradeCloseRequired_Boundary(CAssert &a)
   {
    bool ok = true;
@@ -229,7 +266,11 @@ bool Test_Session_DayTradeCloseRequired_Boundary(CAssert &a)
    return(ok);
   }
 
-/** \brief Clock before close trigger → day_trade_close_required=false. */
+/**
+ * \brief Clock before close trigger → day_trade_close_required=false.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_Session_DayTradeNotRequired(CAssert &a)
   {
    bool ok = true;
@@ -246,7 +287,11 @@ bool Test_Session_DayTradeNotRequired(CAssert &a)
    return(ok);
   }
 
-/** \brief Non-day-trade mode: user window always open; close never required. */
+/**
+ * \brief Non-day-trade mode: user window always open; close never required.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_Session_NoDayTradeMode(CAssert &a)
   {
    bool ok = true;
@@ -281,6 +326,8 @@ bool Test_Session_NoDayTradeMode(CAssert &a)
 /**
  * \brief MARKET_SESSION_END reference: close trigger follows the broker
  *        session end, not the user window end.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
  */
 bool Test_Session_MarketCloseReference(CAssert &a)
   {
@@ -313,6 +360,8 @@ bool Test_Session_MarketCloseReference(CAssert &a)
 /**
  * \brief MARKET_SESSION_END selected but the end-tod is unavailable (-1):
  *        falls back to the user-window-end trigger.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
  */
 bool Test_Session_MarketCloseReference_InvalidEndTod(CAssert &a)
   {
@@ -335,6 +384,8 @@ bool Test_Session_MarketCloseReference_InvalidEndTod(CAssert &a)
 
 /**
  * \brief USER_WINDOW_END reference ignores the supplied market session end.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
  */
 bool Test_Session_UserCloseReference_IgnoresMarketEnd(CAssert &a)
   {
@@ -359,9 +410,13 @@ bool Test_Session_UserCloseReference_IgnoresMarketEnd(CAssert &a)
 //| TDD/BDD trace-alias entry points.                               |
 //+------------------------------------------------------------------+
 
-/** \brief CSessionContext integration coverage — session gates, user hours, close reference.
- *         Supplemental to TDD.06.04.4796 (canonical: Test_MarketContext_SessionGate in
- *         Test_ContractLifecycle.mq5, which tests the CMarketContext facade). */
+/**
+ * \brief CSessionContext integration coverage — session gates, user hours, close reference.
+ *        Supplemental to TDD.06.04.4796 (canonical: Test_MarketContext_SessionGate in
+ *        Test_ContractLifecycle.mq5, which tests the CMarketContext facade).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test suite pass.
+ */
 bool test_market_session_and_symbol_context_integration_contract(CAssert &a)
   {
    bool ok = true;
@@ -381,7 +436,11 @@ bool test_market_session_and_symbol_context_integration_contract(CAssert &a)
    return(ok);
   }
 
-/** \brief BDD.01.03.a399 — Trading session gates entries. */
+/**
+ * \brief BDD.01.03.a399 — Trading session gates entries.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_a399_integration(CAssert &a)
   {
    bool ok = true;
@@ -393,19 +452,31 @@ bool test_market_session_and_symbol_context_a399_integration(CAssert &a)
    return(ok);
   }
 
-/** \brief BDD.01.03.a399 — unit view (delegates to session gate assertions). */
+/**
+ * \brief BDD.01.03.a399 — unit view (delegates to session gate assertions).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_a399_unit(CAssert &a)
   {
    return(test_market_session_and_symbol_context_a399_integration(a));
   }
 
-/** \brief BDD.01.03.a399 — e2e view (delegates to session gate assertions). */
+/**
+ * \brief BDD.01.03.a399 — e2e view (delegates to session gate assertions).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_a399_e2e(CAssert &a)
   {
    return(test_market_session_and_symbol_context_a399_integration(a));
   }
 
-/** \brief BDD.01.03.d4a5 — Day trade session closes exposure. */
+/**
+ * \brief BDD.01.03.d4a5 — Day trade session closes exposure.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_d4a5_integration(CAssert &a)
   {
    bool ok = true;
@@ -419,13 +490,21 @@ bool test_market_session_and_symbol_context_d4a5_integration(CAssert &a)
    return(ok);
   }
 
-/** \brief BDD.01.03.d4a5 — unit view (delegates to day-trade close assertions). */
+/**
+ * \brief BDD.01.03.d4a5 — unit view (delegates to day-trade close assertions).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_d4a5_unit(CAssert &a)
   {
    return(test_market_session_and_symbol_context_d4a5_integration(a));
   }
 
-/** \brief BDD.01.03.d4a5 — e2e view (delegates to day-trade close assertions). */
+/**
+ * \brief BDD.01.03.d4a5 — e2e view (delegates to day-trade close assertions).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_d4a5_e2e(CAssert &a)
   {
    return(test_market_session_and_symbol_context_d4a5_integration(a));

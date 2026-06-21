@@ -15,9 +15,9 @@ document_control:
   source_spec: "@spec: SPEC-03"
   source_tdd: "@tdd: TDD.03.04.1f65"
   status: Draft
-  version: "1.1"
+  version: "1.2"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-06-20T00:00:00-03:00"
+  last_updated: "2026-06-20T12:00:00-03:00"
   author: "Codex"
   component: "CGuardedTrade and CRiskManager"
   complexity: 5
@@ -61,7 +61,7 @@ file_manifest:
       status: NOT_STARTED
       session: null
       verified: false
-      purpose: "Guard outcome, retcode, retryable, ambiguous, and ticket data model."
+      purpose: "Guard outcome struct: status (including partial), retcode, retryable, ambiguous, ticket, submitted_lots, submitted_price, and filled_lots for partial-fill evidence."
     - path: "Include/Execution/GuardedTrade.mqh"
       order: 6
       status: NOT_STARTED
@@ -95,6 +95,7 @@ execution_commands:
     - "# Pre-flight: decide the execution-owned fixture surface before writing tests: FakeTradePort/private CTrade outcomes, spread, fill mode, OrderCheck/margin, retcodes, and call counters; do not extend FakeMarketContext for execution data."
     - "# Write TDD-03 tests first, then implement GuardResult, CGuardedTrade, guard helpers, and CRiskManager."
     - "# Verify private vendored CTrade composition and reject unknown retcodes as failsafe ambiguity."
+    - "# On TRADE_RETCODE_DONE_PARTIAL: set status=partial, record filled_lots from broker response, ambiguous=false, retryable=false (TDD.03.04.d74f)."
   validation:
     - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_GuardedTrade.mq5"
     - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_RiskManager.mq5"
@@ -141,10 +142,10 @@ session_handoff:
 traceability:
   upstream:
     spec_references: ["@spec: SPEC-03"]
-    tdd_references: ["@tdd: TDD.03.04.1f65"]
+    tdd_references: ["@tdd: TDD.03.04.1f65", "@tdd: TDD.03.04.d74f"]
     brd_references: ["@brd: BRD.01.07.a94e", "@brd: BRD.01.08.0ce5"]
     prd_references: ["@prd: PRD.01.09.d74e", "@prd: PRD.01.09.4fb4", "@prd: PRD.01.14.8720"]
-    ears_references: ["@ears: EARS.01.03.222f", "@ears: EARS.01.03.7a9c", "@ears: EARS.01.03.375b", "@ears: EARS.01.03.f562", "@ears: EARS.01.03.e20a"]
+    ears_references: ["@ears: EARS.01.03.222f", "@ears: EARS.01.03.7a9c", "@ears: EARS.01.03.375b", "@ears: EARS.01.03.f562", "@ears: EARS.01.03.e20a", "@ears: EARS.01.03.ec72", "@ears: EARS.01.03.588b"]
     bdd_references: ["@bdd: BDD.01.03.9a8b", "@bdd: BDD.01.03.0ad7", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.ef54"]
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.09.03.84b9"]
   downstream:

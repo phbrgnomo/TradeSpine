@@ -395,7 +395,9 @@ bool Test_Contract_CloseSequence_Deferred(CAssert &a)
 //| TDD/BDD trace-alias entry points.                               |
 //+------------------------------------------------------------------+
 
-/** \brief TDD.06.04.cd48 — canonical E2E acceptance for contract lifecycle. */
+/** \brief TDD.06.04.cd48 — canonical E2E acceptance for contract lifecycle.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test suite pass. */
 bool test_market_session_and_symbol_context_e2e_acceptance(CAssert &a)
   {
    bool ok = true;
@@ -413,7 +415,9 @@ bool test_market_session_and_symbol_context_e2e_acceptance(CAssert &a)
    return(ok);
   }
 
-/** \brief BDD.01.03.4a71 — contract expiration warnings fire on session open. */
+/** \brief BDD.01.03.4a71 — contract expiration warnings fire on session open.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass. */
 bool test_market_session_and_symbol_context_4a71_e2e(CAssert &a)
   {
    bool ok = true;
@@ -423,13 +427,17 @@ bool test_market_session_and_symbol_context_4a71_e2e(CAssert &a)
    return(ok);
   }
 
-/** \brief BDD.01.03.4a71 — unit view (delegates to expiration-warning assertions). */
+/** \brief BDD.01.03.4a71 — unit view (delegates to expiration-warning assertions).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass. */
 bool test_market_session_and_symbol_context_4a71_unit(CAssert &a)
   {
    return(test_market_session_and_symbol_context_4a71_e2e(a));
   }
 
-/** \brief BDD.01.03.4a71 — integration view (delegates to expiration-warning assertions). */
+/** \brief BDD.01.03.4a71 — integration view (delegates to expiration-warning assertions).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass. */
 bool test_market_session_and_symbol_context_4a71_integration(CAssert &a)
   {
    return(test_market_session_and_symbol_context_4a71_e2e(a));

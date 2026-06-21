@@ -34,7 +34,11 @@ void SetupB3(void)
 //--- ValidMetadata tests                                             |
 //--- ----------------------------------------------------------------+
 
-/** \brief InitFromMetadata with B3 defaults succeeds. */
+/**
+ * \brief InitFromMetadata with B3 defaults succeeds.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_SymbolContext_ValidMetadata(CAssert &a)
   {
    bool ok = true;
@@ -59,7 +63,11 @@ bool Test_SymbolContext_ValidMetadata(CAssert &a)
 //--- Invalid metadata tests                                          |
 //--- ----------------------------------------------------------------+
 
-/** \brief tick_size == 0.0 rejects InitFromMetadata. */
+/**
+ * \brief tick_size == 0.0 rejects InitFromMetadata.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_SymbolContext_MissingTickSize(CAssert &a)
   {
    bool ok = true;
@@ -70,7 +78,11 @@ bool Test_SymbolContext_MissingTickSize(CAssert &a)
    return(ok);
   }
 
-/** \brief Each individually-required metadata field rejects on invalid value. */
+/**
+ * \brief Each individually-required metadata field rejects on invalid value.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_SymbolContext_InvalidMetadataFields(CAssert &a)
   {
    bool ok = true;
@@ -122,14 +134,22 @@ bool Test_SymbolContext_InvalidMetadataFields(CAssert &a)
 //--- Trade-mode tests                                                |
 //--- ----------------------------------------------------------------+
 
-/** \brief Uninitialized contexts conservatively reject every entry query. */
+/**
+ * \brief Uninitialized contexts conservatively reject every entry query.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_SymbolContext_TradeMode_Uninitialized(CAssert &a)
   {
    CSymbolContext ctx;
    return(a.TS_CHECK(!ctx.IsEntryAllowedLive(ORDER_TYPE_BUY), "uninitialized: BUY rejected"));
   }
 
-/** \brief DISABLED trade mode: metadata structurally valid; entries blocked. */
+/**
+ * \brief DISABLED trade mode: metadata structurally valid; entries blocked.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_SymbolContext_TradeMode_Disabled(CAssert &a)
   {
    bool ok = true;
@@ -144,7 +164,11 @@ bool Test_SymbolContext_TradeMode_Disabled(CAssert &a)
    return(ok);
   }
 
-/** \brief Side-aware trade mode checks across all ENUM_SYMBOL_TRADE_MODE values. */
+/**
+ * \brief Side-aware trade mode checks across all ENUM_SYMBOL_TRADE_MODE values.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_SymbolContext_TradeMode_SideAware(CAssert &a)
   {
    bool ok = true;
@@ -185,7 +209,11 @@ bool Test_SymbolContext_TradeMode_SideAware(CAssert &a)
 //--- Lot validation tests                                            |
 //--- ----------------------------------------------------------------+
 
-/** \brief Lot validation: below min, above max, off-step, on-step. */
+/**
+ * \brief Lot validation: below min, above max, off-step, on-step.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_SymbolContext_LotValidation(CAssert &a)
   {
    bool ok = true;
@@ -234,7 +262,11 @@ bool Test_SymbolContext_LotValidation(CAssert &a)
 //--- Price validation tests                                          |
 //--- ----------------------------------------------------------------+
 
-/** \brief Price validation: zero, off-grid, on-grid. */
+/**
+ * \brief Price validation: zero, off-grid, on-grid.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_SymbolContext_PriceGridValidation(CAssert &a)
   {
    bool ok = true;
@@ -281,7 +313,11 @@ bool Test_SymbolContext_PriceGridValidation(CAssert &a)
 //--- Stop validation tests                                           |
 //--- ----------------------------------------------------------------+
 
-/** \brief Stop validation: too close, valid distance, no-stop (0.0). */
+/**
+ * \brief Stop validation: too close, valid distance, no-stop (0.0).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool Test_SymbolContext_StopValidation(CAssert &a)
   {
    bool ok = true;
@@ -363,7 +399,11 @@ bool Test_SymbolContext_StopValidation(CAssert &a)
 //| TDD/BDD trace-alias entry points.                               |
 //+------------------------------------------------------------------+
 
-/** \brief TDD.06.04.8f4d — canonical unit contract for CSymbolContext. */
+/**
+ * \brief TDD.06.04.8f4d — canonical unit contract for CSymbolContext.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test suite pass.
+ */
 bool test_market_session_and_symbol_context_unit_contract(CAssert &a)
   {
    bool ok = true;
@@ -379,7 +419,11 @@ bool test_market_session_and_symbol_context_unit_contract(CAssert &a)
    return(ok);
   }
 
-/** \brief BDD.01.03.edae — Missing symbol metadata fails initialization. */
+/**
+ * \brief BDD.01.03.edae — Missing symbol metadata fails initialization.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_edae_unit(CAssert &a)
   {
    bool ok = true;
@@ -388,38 +432,62 @@ bool test_market_session_and_symbol_context_edae_unit(CAssert &a)
    return(ok);
   }
 
-/** \brief BDD.01.03.edae — integration view (delegates to unit assertions;
- *         metadata-init failure has no distinct integration surface in v1). */
+/**
+ * \brief BDD.01.03.edae — integration view (delegates to unit assertions;
+ *        metadata-init failure has no distinct integration surface in v1).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_edae_integration(CAssert &a)
   {
    return(test_market_session_and_symbol_context_edae_unit(a));
   }
 
-/** \brief BDD.01.03.edae — e2e view (delegates to unit assertions). */
+/**
+ * \brief BDD.01.03.edae — e2e view (delegates to unit assertions).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_edae_e2e(CAssert &a)
   {
    return(test_market_session_and_symbol_context_edae_unit(a));
   }
 
-/** \brief BDD.01.03.4dcb — Unsupported symbol mode blocks entries. */
+/**
+ * \brief BDD.01.03.4dcb — Unsupported symbol mode blocks entries.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_4dcb_unit(CAssert &a)
   {
    return(Test_SymbolContext_TradeMode_SideAware(a));
   }
 
-/** \brief BDD.01.03.4dcb — integration view (delegates to unit assertions). */
+/**
+ * \brief BDD.01.03.4dcb — integration view (delegates to unit assertions).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_4dcb_integration(CAssert &a)
   {
    return(Test_SymbolContext_TradeMode_SideAware(a));
   }
 
-/** \brief BDD.01.03.4dcb — e2e view (delegates to unit assertions). */
+/**
+ * \brief BDD.01.03.4dcb — e2e view (delegates to unit assertions).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_4dcb_e2e(CAssert &a)
   {
    return(Test_SymbolContext_TradeMode_SideAware(a));
   }
 
-/** \brief BDD.01.03.e593 — Sizing modes use initialized symbol data. */
+/**
+ * \brief BDD.01.03.e593 — Sizing modes use initialized symbol data.
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_e593_unit(CAssert &a)
   {
    bool ok = true;
@@ -428,13 +496,21 @@ bool test_market_session_and_symbol_context_e593_unit(CAssert &a)
    return(ok);
   }
 
-/** \brief BDD.01.03.e593 — integration view (delegates to unit assertions). */
+/**
+ * \brief BDD.01.03.e593 — integration view (delegates to unit assertions).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_e593_integration(CAssert &a)
   {
    return(test_market_session_and_symbol_context_e593_unit(a));
   }
 
-/** \brief BDD.01.03.e593 — e2e view (delegates to unit assertions). */
+/**
+ * \brief BDD.01.03.e593 — e2e view (delegates to unit assertions).
+ * \param a      Test assertion collector.
+ * \return true when all assertions in this test pass.
+ */
 bool test_market_session_and_symbol_context_e593_e2e(CAssert &a)
   {
    return(test_market_session_and_symbol_context_e593_unit(a));

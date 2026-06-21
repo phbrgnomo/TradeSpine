@@ -126,7 +126,10 @@ bool Test_DayTradeMode(CAssert &asserts)
   }
 
 //+------------------------------------------------------------------+
-//| close_reference whitelist validation. (TDD.09.04.c1f3, CHG-19)  |
+//| \brief Validates close_reference whitelist in CommonInputs.      |
+//|        (TDD.09.04.c1f3, CHG-19)                                  |
+//| \param asserts  Test assertion collector.                        |
+//| \return true when all assertions in this test pass.             |
 //+------------------------------------------------------------------+
 bool Test_CloseReferenceValidation(CAssert &asserts)
   {

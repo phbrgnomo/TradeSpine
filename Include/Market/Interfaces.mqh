@@ -21,7 +21,8 @@
 //+------------------------------------------------------------------+
 interface IContractInfoProvider
   {
-   //--- \brief Contract expiry timestamp (0 = no expiry / non-futures).
+   //--- \brief Contract expiry timestamp.
+   //--- \return Expiry timestamp; 0 means no expiry / non-futures.
    datetime ExpirationTime(void) const;
   };
 

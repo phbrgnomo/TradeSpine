@@ -84,6 +84,7 @@ needed a clear ownership boundary between broker-session membership and directio
 ## 4. Prepared GATE_APPROVAL_FORM (signatures left blank for the human approver)
 
 ### Change summary
+
 | Field | Value |
 |-------|-------|
 | CHG ID | CHG-19 |
@@ -96,12 +97,14 @@ needed a clear ownership boundary between broker-session membership and directio
 | Breaking Changes | No (default `CLOSE_REF_USER_WINDOW_END` preserves v1 behavior) |
 
 ### Overall gate status
+
 | Gate | Status |
 |------|--------|
 | GATE-06 | PASS |
 | GATE-CODE | FAIL pending E003 (runtime) + E004 (review) |
 
 ### Required approvers (C3)
+
 | Role | Name | Date | Decision | Signature |
 |------|------|------|----------|-----------|
 | Technical Lead | | | [ ] Approve / [ ] Reject | [ ] |
@@ -109,6 +112,7 @@ needed a clear ownership boundary between broker-session membership and directio
 | Architect (C3) | | | [ ] Approve / [ ] Reject | [ ] |
 
 ### Final decision
+
 | Decision | Date | Notes |
 |----------|------|-------|
 | [ ] APPROVED | | |

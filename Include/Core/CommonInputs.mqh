@@ -42,6 +42,8 @@ enum ENUM_SIZING_MODE
 //|                            SymbolInfoSessionTrade by the Market   |
 //|                            layer; falls back to the user window   |
 //|                            when unavailable).                     |
+//| \param N/A  Enum — no parameters.                                 |
+//| \return N/A Enum — no return value.                               |
 //+------------------------------------------------------------------+
 enum ENUM_SESSION_CLOSE_REF
   {
@@ -148,6 +150,20 @@ struct CommonInputs
             r.message = StringFormat("Invalid close_reference value %d: select "
                                      "CLOSE_REF_USER_WINDOW_END or CLOSE_REF_MARKET_SESSION_END.",
                                      (int)close_reference);
+            return(r);
+           }
+         // For the user-window reference the close trigger must fall strictly
+         // inside the entry window; reject early so a bad config never reaches
+         // CSessionContext::Evaluate(). The MARKET_SESSION_END reference uses a
+         // runtime session end that is unknown here — a defensive clamp in
+         // Evaluate() covers that path.
+         if(close_reference == CLOSE_REF_USER_WINDOW_END &&
+            close_mins_before * 60 >= (end_tod - start_tod))
+           {
+            r.message = StringFormat("Invalid close_mins_before: %d-minute buffer meets or "
+                                     "exceeds the entry window duration; the close trigger "
+                                     "would fall at or before entry_window_start.",
+                                     close_mins_before);
             return(r);
            }
         }

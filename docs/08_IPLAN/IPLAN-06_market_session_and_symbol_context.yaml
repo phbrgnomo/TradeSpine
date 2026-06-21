@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-06"
   source_tdd: "@tdd: TDD.06.04.8f4d"
   total_sections: 6
-  last_updated: "2026-06-18T00:00:00-03:00"
+  last_updated: "2026-06-19T00:00:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
@@ -18,11 +18,11 @@ document_control:
   status: Complete
   version: "1.3"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-06-18T00:00:00-03:00"
+  last_updated: "2026-06-19T00:00:00-03:00"
   author: "Codex"
   component: "CSymbolContext, CSessionContext, CMarketContext"
   complexity: 4
-  estimated_files: 8
+  estimated_files: 9
   session_count: 3
   readiness_gate: "TDD-06 audit PASS 93/100"
   source_inputs:
@@ -83,6 +83,12 @@ file_manifest:
       session: 2
       verified: true
       purpose: "Injectable Market-layer seams (IContractInfoProvider, IMarketSessionProvider), extracted from MarketContext.mqh to mirror the Core/Interfaces.mqh convention. Added in the session-2 review-fix spike."
+    - path: "Scripts/Tests/Test_CommonInputs.mq5"
+      order: 9
+      status: DONE
+      session: 3
+      verified: true
+      purpose: "CommonInputs close_reference field validation tests (Test_CloseReferenceValidation); added during CHG-19 branch-review remediation to cover the ENUM_SESSION_CLOSE_REF input introduced for the market-session-close-reference feature."
 
 execution_commands:
   cwd: "MQL5/Experts/Main/TradeSpine"
@@ -237,16 +243,16 @@ session_handoff:
 
 traceability:
   upstream:
-    spec_references: ["@spec: SPEC-06"]
-    tdd_references: ["@tdd: TDD.06.04.8f4d"]
+    spec_references: ["@spec: SPEC-06", "@spec: SPEC-11"]
+    tdd_references: ["@tdd: TDD.06.04.8f4d", "@tdd: TDD.11.04.6805"]
     brd_references: ["@brd: BRD.01.07.69ef"]
     prd_references: ["@prd: PRD.01.09.fada", "@prd: PRD.01.09.60ad", "@prd: PRD.01.09.efcd", "@prd: PRD.01.09.d722", "@prd: PRD.01.09.42eb"]
     ears_references: ["@ears: EARS.01.03.03b2", "@ears: EARS.01.03.ec72", "@ears: EARS.01.03.1a3e", "@ears: EARS.01.03.7669", "@ears: EARS.01.03.db97", "@ears: EARS.01.03.e152", "@ears: EARS.01.03.368c"]
     bdd_references: ["@bdd: BDD.01.03.edae", "@bdd: BDD.01.03.a399", "@bdd: BDD.01.03.d4a5", "@bdd: BDD.01.03.4dcb", "@bdd: BDD.01.03.4a71", "@bdd: BDD.01.03.e593"]
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.10.03.51ea"]
   downstream:
-    code_paths: ["@code: Include/Market/SymbolContext.mqh", "@code: Include/Market/SessionContext.mqh", "@code: Include/Market/MarketContext.mqh"]
-    test_paths: ["@tests: Scripts/Tests/Support/FakeMarketContext.mqh", "@tests: Scripts/Tests/Test_SymbolContext.mq5", "@tests: Scripts/Tests/Test_SessionContext.mq5", "@tests: Scripts/Tests/Test_ContractLifecycle.mq5"]
+    code_paths: ["@code: Include/Market/SymbolContext.mqh", "@code: Include/Market/SessionContext.mqh", "@code: Include/Market/MarketContext.mqh", "@code: Include/Market/Interfaces.mqh"]
+    test_paths: ["@tests: Scripts/Tests/Support/FakeMarketContext.mqh", "@tests: Scripts/Tests/Test_SymbolContext.mq5", "@tests: Scripts/Tests/Test_SessionContext.mq5", "@tests: Scripts/Tests/Test_ContractLifecycle.mq5", "@tests: Scripts/Tests/Test_CommonInputs.mq5"]
   code_inventory:
     files:
       - "Include/Market/Interfaces.mqh"

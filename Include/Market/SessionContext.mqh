@@ -21,6 +21,8 @@
 //| \brief Snapshot of the three session gate states for one tick.  |
 //|        Default constructor sets every flag false (most           |
 //|        restrictive state).                                       |
+//| \param N/A  Struct — no parameters.                              |
+//| \return N/A Struct — no return value.                            |
 //+------------------------------------------------------------------+
 struct SessionWindow
   {
@@ -42,19 +44,23 @@ struct SessionWindow
 //|        logic: does not call any broker APIs; time source is      |
 //|        injected via IClock. Broker session membership is supplied |
 //|        by the caller each call to Evaluate().                     |
+//| \param N/A  Class — no parameters.                               |
+//| \return N/A Class — no return value.                             |
 //+------------------------------------------------------------------+
 class CSessionContext
   {
 private:
    CommonInputs       m_inputs;
    IClock            *m_clock;              // not owned
-   bool               m_session_end_warned; // true after the first per-init fallback warning
+   bool               m_session_end_warned;    // true after the first per-init fallback warning
+   bool               m_close_trigger_warned;  // true after the first invalid close_trigger_tod warning
 
 public:
    //+------------------------------------------------------------------+
    //| \brief Default constructor: context not ready (clock = NULL).    |
    //+------------------------------------------------------------------+
-   CSessionContext(void) : m_clock(NULL), m_session_end_warned(false)
+   CSessionContext(void) : m_clock(NULL), m_session_end_warned(false),
+                           m_close_trigger_warned(false)
      {
      }
 
@@ -65,8 +71,9 @@ public:
    //+------------------------------------------------------------------+
    void Init(const CommonInputs &inputs, IClock *clock)
      {
-      m_inputs             = inputs;
-      m_session_end_warned = false; // reset so the first missing-end warning fires again
+      m_inputs               = inputs;
+      m_session_end_warned   = false; // reset so the first missing-end warning fires again
+      m_close_trigger_warned = false; // reset so the first invalid-trigger warning fires again
       m_clock  = (CheckPointer(clock) != POINTER_INVALID) ? clock : NULL;
       if(m_clock == NULL)
          Print("[ERROR] CSessionContext::Init — null clock pointer; Evaluate() will return all-closed.");
@@ -119,7 +126,25 @@ public:
               }
            }
          int close_trigger_tod = close_ref_tod - m_inputs.close_mins_before * 60;
-         w.day_trade_close_required = (tod >= close_trigger_tod);
+         // Guard: a close_trigger_tod at or before start_tod would fire for the
+         // entire trading window. This can occur with CLOSE_REF_MARKET_SESSION_END
+         // when the broker session end is earlier than the entry window start.
+         // Treat as not-yet-required and log once to surface the misconfiguration.
+         if(close_trigger_tod <= start_tod)
+           {
+            if(!m_close_trigger_warned)
+              {
+               Print(StringFormat("[WARN] CSessionContext::Evaluate — close_trigger_tod "
+                                  "(%d s) is at or before entry_window_start (%d s); "
+                                  "close_mins_before=%d exceeds the available window; "
+                                  "day_trade_close_required forced false.",
+                                  close_trigger_tod, start_tod, m_inputs.close_mins_before));
+               m_close_trigger_warned = true;
+              }
+            w.day_trade_close_required = false;
+           }
+         else
+            w.day_trade_close_required = (tod >= close_trigger_tod);
         }
       else
         {

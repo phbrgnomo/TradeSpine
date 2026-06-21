@@ -3,7 +3,7 @@ metadata:
   document_type: "iplan-registry"
   layer: 8
   total_plans: 12
-  last_updated: "2026-06-20"
+  last_updated: "2026-06-21"
 
 registry:
   plans:
@@ -230,7 +230,7 @@ execution_path:
       plans: ["IPLAN-11"]
     - tier: 3
       label: "Persistence and Market Foundations"
-      status: "NOT_STARTED"
+      status: "COMPLETED"
       plans: ["IPLAN-05", "IPLAN-06"]
     - tier: 4
       label: "State, Behavior, and Optional Services"
