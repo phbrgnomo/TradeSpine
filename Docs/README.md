@@ -17,25 +17,32 @@ These pages are written and updated **incrementally, as each IPLAN is implemente
 modules from plans that have not been implemented yet are marked *Planned* and carry the
 owning IPLAN id.
 
-Current implemented surface:
+Current source surface (IPLAN-04 and changed IPLAN-05 files are not release-verified):
 
 - **IPLAN-05 — Persistence and Audit Evidence** → [MODULES/Persistence.md](MODULES/Persistence.md)
+- **IPLAN-04 — Position Account Mode and State** → [MODULES/Position.md](MODULES/Position.md)
 - **IPLAN-09 — Core Runtime and Configuration** → [MODULES/Core.md](MODULES/Core.md)
+- **IPLAN-06 — Market Session and Symbol Context** → [MODULES/Market.md](MODULES/Market.md)
 - **IPLAN-11 — Testing Support and Harnesses** → [MODULES/Testing.md](MODULES/Testing.md)
 
 ## Contents
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — component boundaries, dependency direction, and the
   rules every module honors (self-contained project, quoted relative includes, no-bypass).
-- [MODULES/](MODULES/) — one reference page per module. Implemented: `Core`, `Persistence`,
-  `Testing`. The remaining pages are stubs that their owning IPLANs will fill.
+- [MODULES/](MODULES/) — one reference page per module. Implemented: `Core`, `Market`,
+  `Persistence`, `Position`, and `Testing`. The remaining pages are stubs that their owning
+  IPLANs will fill.
+- [OPERATIONS.md](OPERATIONS.md) — restart reconciliation, HALT, marker conflicts, evidence
+  export, rollback, two-chart ownership, and demo-canary procedures for CHG-22.
 
 ## Repository layout (implemented today)
 
 | Path | Contents |
 |---|---|
 | [`Include/Core/`](../Include/Core) | Core runtime modules (IPLAN-09). |
+| [`Include/Market/`](../Include/Market) | Market session and symbol context modules (IPLAN-06). |
 | [`Include/Persistence/`](../Include/Persistence) | State store, trade logger, and alert/log sinks (IPLAN-05). |
+| [`Include/Position/`](../Include/Position) | Position ownership, account-mode adapters, state machine, context, and transaction router (IPLAN-04). |
 | [`Include/Testing/`](../Include/Testing) | Shared testing helper `CAssert` (IPLAN-11). |
 | [`Include/StdLib/`](../Include/StdLib) | Vendored MQL5 standard-library subset (ADR-06); see [`VERSION.md`](../Include/StdLib/VERSION.md). |
 | [`Scripts/Tests/`](../Scripts/Tests) | Executable `Test_*.mq5` scripts and `RunAllTests.mq5`. |

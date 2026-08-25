@@ -7,24 +7,24 @@ metadata:
   source_spec: "@spec: SPEC-05"
   source_tdd: "@tdd: TDD.05.04.e64a"
   total_sections: 6
-  last_updated: "2026-06-16T00:00:00-03:00"
-  chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18"]
+  last_updated: "2026-08-25T00:00:00-03:00"
+  chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18", "CHG-22"]
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
   iplan_id: "IPLAN-05"
   source_spec: "@spec: SPEC-05"
   source_tdd: "@tdd: TDD.05.04.e64a"
-  status: Completed
-  version: "1.5"
+  status: In Progress
+  version: "1.7"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-06-16T00:00:00-03:00"
+  last_updated: "2026-08-25T00:00:00-03:00"
   author: "Codex"
-  component: "PersistenceTypes, CStateStore, CKeyBuilder, TradeLogger, Logger, AlertSink"
+  component: "PersistenceTypes, CMarkerLease, CStateStore, CKeyBuilder, TradeLogger, Logger, AlertSink"
   complexity: 4
-  estimated_files: 9
-  session_count: 8
-  readiness_gate: "TDD-05 audit PASS 95/100"
+  estimated_files: 10
+  session_count: 10
+  readiness_gate: "Reopened by CHG-22; lifecycle snapshot, lease interleaving, and HALT retention require fresh manual F7/runtime evidence"
   source_inputs:
     - "../07_TDD/TDD-05_persistence_and_audit_evidence/TDD-05_persistence_and_audit_evidence.yaml"
     - "../06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
@@ -36,9 +36,9 @@ file_manifest:
     - path: "Scripts/Tests/Test_StateStore.mq5"
       order: 1
       status: DONE
-      session: 1
-      verified: true
-      purpose: "GV key generation, exact identifier storage, duplicate markers, and HALT persistence tests."
+      session: 9
+      verified: false
+      purpose: "Checked snapshot generations, corruption classification, exact IDs, retained HALT evidence, runtime namespaces, and deterministic lease interleavings."
     - path: "Scripts/Tests/Test_TradeLogger.mq5"
       order: 2
       status: DONE
@@ -48,41 +48,47 @@ file_manifest:
     - path: "Scripts/Tests/Test_AlertSink.mq5"
       order: 3
       status: DONE
-      session: 1
-      verified: true
-      purpose: "Live, visual tester, non-visual tester, and optimization alert tests."
+      session: 9
+      verified: false
+      purpose: "Runtime alert routing plus observable durable HALT persistence success/failure."
     - path: "Include/Persistence/KeyBuilder.mqh"
       order: 4
       status: DONE
       session: 1
       verified: true
       purpose: "Canonical identity hashing and terminal Global Variable key builder."
-    - path: "Include/Persistence/StateStore.mqh"
+    - path: "Include/Persistence/MarkerLease.mqh"
       order: 5
       status: DONE
-      session: 1
-      verified: true
-      purpose: "GV-backed scalar state, duplicate marker, and HALT persistence seam."
-    - path: "Include/Persistence/TradeLogger.mqh"
+      session: 10
+      verified: false
+      purpose: "Extracted marker backend and token/heartbeat/lock protocol with ownership-preserving heartbeat failure handling."
+    - path: "Include/Persistence/StateStore.mqh"
       order: 6
+      status: DONE
+      session: 9
+      verified: false
+      purpose: "Double-buffer lifecycle snapshots, runtime namespaces, append-only HALT/recovery evidence, and delegated marker fencing."
+    - path: "Include/Persistence/TradeLogger.mqh"
+      order: 7
       status: DONE
       session: 1
       verified: true
       purpose: "Paired intent and execution CSV evidence writer."
     - path: "Include/Persistence/Logger.mqh"
-      order: 7
+      order: 8
       status: DONE
       session: 1
       verified: true
       purpose: "Leveled diagnostic logger separate from trade evaluation records."
     - path: "Include/Persistence/AlertSink.mqh"
-      order: 8
-      status: DONE
-      session: 1
-      verified: true
-      purpose: "HALT and operator alert sink abstraction."
-    - path: "Include/Persistence/PersistenceTypes.mqh"
       order: 9
+      status: DONE
+      session: 9
+      verified: false
+      purpose: "HALT alert sink that returns durable persistence status while preserving runtime-mode routing."
+    - path: "Include/Persistence/PersistenceTypes.mqh"
+      order: 10
       status: DONE
       session: 2
       verified: true
@@ -93,13 +99,12 @@ execution_commands:
   setup:
     - "mkdir -p Include/Persistence Scripts/Tests"
   implementation:
-    - "# All 9 files delivered (8 in session 1, PersistenceTypes.mqh added by CHG-13 in session 3)."
-    - "# Tests: Test_StateStore.mq5, Test_TradeLogger.mq5, Test_AlertSink.mq5"
-    - "# Implementation: KeyBuilder.mqh, StateStore.mqh, TradeLogger.mqh, Logger.mqh, AlertSink.mqh"
+    - "Write snapshot publication/corruption and deterministic marker interleaving assertions before persistence changes."
+    - "Implement commit-last lifecycle snapshots, explicit namespaces, retained HALT audit evidence, and checked alert persistence."
   validation:
-    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_StateStore.mq5"
-    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_TradeLogger.mq5"
-    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_AlertSink.mq5"
+    - "Parse canonical YAML and run static include/interface consistency checks."
+    - "Compile Test_StateStore, Test_TradeLogger, Test_AlertSink, and RunAllTests with manual MetaEditor F7; require 0 errors and 0 warnings."
+    - "Run MT5 scripts and record exact pass, fail, and skip counts."
 
 implementation_contracts:
   provided:
@@ -107,11 +112,15 @@ implementation_contracts:
       - name: "State persistence contract"
         type: "Protocol Interface"
         files: ["Include/Persistence/KeyBuilder.mqh", "Include/Persistence/StateStore.mqh"]
-        summary: "Scalar GV state uses deterministic keys and exact-safe identifier storage."
+        summary: "Lifecycle state uses two checksum-verified slots with commit-last generation publication; legacy evidence migrates only when unambiguous."
+      - name: "Marker fencing contract"
+        type: "DI Interface"
+        files: ["Include/Persistence/MarkerLease.mqh", "Include/Persistence/StateStore.mqh", "Scripts/Tests/Test_StateStore.mq5"]
+        summary: "CMarkerLease owns the bootstrap/CAS/heartbeat protocol behind IMarkerBackend; production holds an exclusive identity lock, revalidates owner plus heartbeat before success, and never converts a heartbeat verification failure into release."
       - name: "Evidence sink contract"
         type: "Data Model"
         files: ["Include/Persistence/TradeLogger.mqh", "Include/Persistence/Logger.mqh", "Include/Persistence/AlertSink.mqh"]
-        summary: "Trade evaluation, diagnostics, and operator alerts remain separate evidence streams."
+        summary: "Trade evaluation, diagnostics, and operator alerts remain separate; HALT/recovery records append and IAlertSink reports persistence failure."
   consumed:
     dependencies:
       - "@iplan: IPLAN-09"
@@ -246,6 +255,37 @@ session_handoff:
         tests_passing: pending_run
         coverage: "unchanged; existing assertions strengthened (halt_call_count, path-prefix correctness) rather than new test functions added"
         lint_clean: true
+    - date: "2026-08-24"
+      agent: "Codex / CHG-22 persistence recovery"
+      files_touched:
+        - "Include/Persistence/StateStore.mqh"
+        - "Include/Persistence/AlertSink.mqh"
+        - "Scripts/Tests/Test_StateStore.mq5"
+        - "Scripts/Tests/Test_AlertSink.mq5"
+      partial_work: "Implemented commit-last LifecycleSnapshot generations, stable position identifiers, runtime namespace checks, deterministic IMarkerBackend fencing, append-only HALT/recovery evidence, and observable alert persistence failures."
+      blockers: "Manual F7 and MT5 assertion execution remain pending; CHG-22 gates stay failed."
+      next_session_directive: "Compile and run persistence tests in MT5, record exact evidence, then complete CHG-22 review and canary gates."
+      validation_results:
+        tests_passing: null
+        coverage: "Source assertions cover active/inactive generations, checksum corruption, missing heartbeat, double claim, CAS-to-heartbeat theft, late tokens, and HALT persistence failure."
+        lint_clean: null
+    - date: "2026-08-25"
+      agent: "Codex / CHG-22 code-review remediation"
+      files_touched:
+        - "Include/Persistence/PersistenceTypes.mqh"
+        - "Include/Persistence/MarkerLease.mqh"
+        - "Include/Persistence/StateStore.mqh"
+        - "Include/Position/PositionStateMachine.mqh"
+        - "Scripts/Tests/Test_StateStore.mq5"
+        - "Scripts/Tests/Test_PositionStateMachine.mq5"
+        - "Docs/MODULES/Persistence.md"
+      partial_work: "Extracted the marker lease protocol, preserved ownership on transient heartbeat reread mismatch, documented snapshot invariants/commit-last publication, migrated legacy UNKNOWN only from provable evidence, and regression-tested checked HALT persistence control flow."
+      blockers: "User reported the post-fix aggregate passed all tests. Exact post-fix counts, MetaEditor warning summary, and fresh EX5 metadata were not supplied."
+      next_session_directive: "Capture exact post-fix aggregate counts and MetaEditor 0-error/0-warning evidence before changing verification flags."
+      validation_results:
+        tests_passing: "Pass reported by user after the Position HALT fix; exact post-fix pass/skip totals not supplied."
+        coverage: "Added direct assertions for committed UNKNOWN rejection, safe legacy UNKNOWN classification, transient heartbeat mismatch ownership preservation, and durable HALT failure propagation."
+        lint_clean: null
 
 traceability:
   upstream:
@@ -257,7 +297,7 @@ traceability:
     bdd_references: ["@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.b37d"]
     adr_references: ["@adr: ADR.02.03.c7dd", "@adr: ADR.03.03.4124", "@adr: ADR.05.03.2586"]
   downstream:
-    code_paths: ["@code: Include/Persistence/PersistenceTypes.mqh", "@code: Include/Persistence/KeyBuilder.mqh", "@code: Include/Persistence/StateStore.mqh", "@code: Include/Persistence/TradeLogger.mqh", "@code: Include/Persistence/Logger.mqh", "@code: Include/Persistence/AlertSink.mqh"]
+    code_paths: ["@code: Include/Persistence/PersistenceTypes.mqh", "@code: Include/Persistence/KeyBuilder.mqh", "@code: Include/Persistence/MarkerLease.mqh", "@code: Include/Persistence/StateStore.mqh", "@code: Include/Persistence/TradeLogger.mqh", "@code: Include/Persistence/Logger.mqh", "@code: Include/Persistence/AlertSink.mqh"]
     test_paths: ["@tests: Scripts/Tests/Test_StateStore.mq5", "@tests: Scripts/Tests/Test_TradeLogger.mq5", "@tests: Scripts/Tests/Test_AlertSink.mq5"]
   code_inventory:
     files:
@@ -265,11 +305,14 @@ traceability:
         exports: ["CanonicalIdentity", "CKeyBuilder"]
         status: delivered
       - path: "Include/Persistence/PersistenceTypes.mqh"
-        exports: ["ENUM_TRADE_RECORD_TYPE"]
+        exports: ["ENUM_TRADE_RECORD_TYPE", "ENUM_DUPLICATE_MARKER_STATUS"]
         status: delivered
+      - path: "Include/Persistence/MarkerLease.mqh"
+        exports: ["IMarkerBackend", "CTerminalMarkerBackend", "CMarkerLease"]
+        status: in_progress
       - path: "Include/Persistence/StateStore.mqh"
-        exports: ["ENUM_POSITION_STATE", "ENUM_GV_VALUE_ENCODING", "HaltEvidence", "GlobalVariableScalarState", "IStateStore", "CStateStore"]
-        status: delivered
+        exports: ["ENUM_POSITION_STATE", "ENUM_STORE_READ_RESULT", "ENUM_CANCEL_ORIGIN", "PendingOrderEvidence", "LifecycleSnapshot", "HaltEvidence", "IStateStore", "CStateStore"]
+        status: in_progress
       - path: "Include/Persistence/TradeLogger.mqh"
         exports: ["TradeEvidenceRecord", "TradeLogger"]
         status: delivered
@@ -278,7 +321,7 @@ traceability:
         status: delivered
       - path: "Include/Persistence/AlertSink.mqh"
         exports: ["IAlertSink", "CAlertSink"]
-        status: delivered
+        status: in_progress
       - path: "Scripts/Tests/Test_StateStore.mq5"
         exports: ["test_persistence_and_audit_evidence_unit_contract", "test_persistence_and_audit_evidence_0073_unit", "test_persistence_and_audit_evidence_d6ae_unit", "test_persistence_and_audit_evidence_e16a_unit", "test_persistence_and_audit_evidence_b37d_unit"]
         status: delivered

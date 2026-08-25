@@ -7,23 +7,23 @@ id: SPEC-05
 title: Persistence and Audit Evidence
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-16T00:00:00-03:00"
-chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18"]
+last_updated: "2026-08-24T00:00:00-03:00"
+chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18", "CHG-22"]
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.6"
+  version: "1.7"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-16T00:00:00-03:00"
+  last_updated: "2026-08-24T00:00:00-03:00"
   author: "Codex"
-  chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18"]
+  chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18", "CHG-22"]
   component: "PersistenceTypes, CStateStore, CKeyBuilder, TradeLogger, Logger, AlertSink"
   tdd_ready_score: "94/100"
 
 ## Section 2: Component Overview
 component_overview:
-  description: "The persistence and evidence component stores low-I/O strategy state in terminal Global Variables, builds deterministic hashed keys, writes paired trade evidence CSV records, keeps diagnostic logs separate, and raises operator alerts for HALT and unsafe states."
+  description: "The persistence and evidence component stores low-I/O strategy state in terminal Global Variables, builds deterministic hashed keys, writes paired trade evidence CSV records, keeps diagnostic logs separate, and raises operator alerts for unsafe states. CHG-22/IPLAN-04 adds a double-buffered LifecycleSnapshot committed generation-last, classified reads and legacy migration, retained HALT/recovery audit evidence, explicit runtime namespaces, and a mutex-bootstrapped token/heartbeat lease with mandatory ownership fencing."
   architecture_decision: "@adr: ADR.02.03.c7dd"
   diagram:
     tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
@@ -54,7 +54,7 @@ interfaces:
     - name: "IStateStore"
       type: "interface"
       signature: "interface IStateStore"
-      description: "Persistence seam for scalar state, hedging ticket state, identity markers, duplicate markers, deferred-mode diagnostics, and HALT flags. Virtual ledger fragments are v2+ scope."
+      description: "Persistence seam for classified LifecycleSnapshot reads, commit-last snapshot writes, legacy migration, checked HALT/recovery evidence, append-only unfenced audit evidence, explicit runtime isolation, and token-fenced marker claim, heartbeat, ownership validation, and release. Virtual-ledger fragments remain v2+ scope."
       errors:
         - "StateCorruption: identity mismatch or unrecoverable missing active ownership evidence."
     - name: "CKeyBuilder"
@@ -66,7 +66,7 @@ interfaces:
     - name: "CStateStore"
       type: "class"
       signature: "class CStateStore : public IStateStore"
-      description: "Reads and writes GV-backed strategy state with lossless ticket storage. On GlobalVariableSet() failure, the private _setGV() logs the GetLastError() code via PrintFormat() for diagnostics; the public method return contract is unchanged (CHG-18)."
+      description: "Reads and writes lossless GV-backed lifecycle state. It writes an inactive snapshot slot, checksum, and read-back verification before publishing the generation last; failed replacements preserve the prior committed snapshot. Marker bootstrap is serialized by an exclusive identity-and-namespace lock and success requires owner/heartbeat reread validation."
       errors:
         - "StateCorruption: identity mismatch or unrecoverable missing active ownership evidence."
     - name: "TradeLogger"
@@ -90,9 +90,9 @@ interfaces:
     - name: "CAlertSink"
       type: "class"
       signature: "class CAlertSink : public IAlertSink"
-      description: "Production implementation of IAlertSink. Init(ctx, logger, store=NULL) accepts an optional IStateStore* for the persistent HALT flag circuit-breaker (CHG-16). When store is non-NULL, Halt() calls store.SetHalt(ev) before Alert(), so the EA remains halted after dialog dismissal. If SetHalt() returns false, a secondary logger.Error() is emitted to inform the operator that the circuit breaker may not have been written (CHG-17)."
+      description: "Production implementation of IAlertSink. Init(ctx, logger, store=NULL) accepts an optional IStateStore* for the persistent HALT flag circuit-breaker (CHG-16). When wired, Halt() calls store.SetHalt(ev) before UI/log suppression and before Alert(), so the EA remains halted in every runtime mode including optimization (CHG-22). A missing store preserves notification-only success; a false SetHalt result makes Halt return false and emits a secondary diagnostic when logging is available; in-memory HALT remains effective."
       errors:
-        - "None; missing store pointer degrades to log+Alert only (no persistent flag)."
+        - "Missing store pointer: notification-only routing remains available and Halt returns true; no durable circuit breaker is written."
         - "SetHalt() failure: secondary Error emitted; circuit breaker state uncertain — operator must treat as unhalted until confirmed."
 
 ## Section 4: Data Models
@@ -100,6 +100,7 @@ data_models:
   models:
     - name: "CanonicalIdentity"
       type: "struct"
+      purpose: "Defines the canonical account, symbol, magic, and scope tuple used to derive isolated persistence keys."
       fields:
         - name: "account"
           type: "long"
@@ -119,6 +120,7 @@ data_models:
           description: "GV namespace scope."
     - name: "TradeEvidenceRecord"
       type: "struct"
+      purpose: "Carries one correlated intent or execution CSV evidence row for trade audit."
       notes: "One CSV row. Intent-side fields are written as empty on EXECUTION rows; execution-side fields are written as empty on INTENT rows. side is written on both row types. CHG-15. side is ENUM_TRADE_SIDE, not a free-form string (CHG-18)."
       fields:
         - name: "record_type"
@@ -198,6 +200,7 @@ data_models:
           description: "Free-form overflow for rejection messages, retry info, or supplementary evidence not covered by structured fields."
     - name: "HaltEvidence"
       type: "struct"
+      purpose: "Carries operator-facing context retained when lifecycle safety enters HALT."
       fields:
         - name: "reason"
           type: "string"
@@ -211,8 +214,49 @@ data_models:
           type: "string"
           required: true
           description: "Recovery instruction shown to the operator."
+        - name: "symbol"
+          type: "string"
+          required: false
+          description: "Symbol associated with the HALT, if known (CHG-22)."
+        - name: "magic"
+          type: "ulong"
+          required: false
+          description: "Strategy magic associated with the HALT, if known (CHG-22)."
+        - name: "ticket"
+          type: "ulong"
+          required: false
+          description: "Position/order ticket associated with the HALT, if known (CHG-22)."
+    - name: "PendingOrderEvidence"
+      type: "struct"
+      purpose: "Retains a pending order and its cancellation timing/origin across restart and ambiguity."
+      fields:
+        - name: "ticket"
+          type: "ulong"
+          required: true
+          description: "Pending-entry order ticket stored losslessly across GV hi/lo slots (CHG-22)."
+        - name: "submitted_ts"
+          type: "datetime"
+          required: true
+          description: "Pending-entry order submission timestamp used to recompute fill timeout after restart (CHG-22)."
+    - name: "DuplicateMarkerLease"
+      type: "struct"
+      purpose: "Represents the token and heartbeat evidence used to fence duplicate strategy owners."
+      fields:
+        - name: "marker_owner"
+          type: "long"
+          required: true
+          description: "CAS-authoritative owner token/epoch. Positive means owned by that token; non-positive means free while preserving epoch magnitude (CHG-22)."
+        - name: "marker_hb_ts"
+          type: "datetime"
+          required: true
+          description: "Explicit heartbeat timestamp. Used for stale-reclaim decisions; GlobalVariableTime is not used for liveness (CHG-22)."
+        - name: "status"
+          type: "ENUM_DUPLICATE_MARKER_STATUS"
+          required: true
+          description: "One of DUPLICATE_MARKER_ACTIVE, DUPLICATE_MARKER_STALE_RECLAIMED, or DUPLICATE_MARKER_CONFLICT. Claim outcome for duplicate marker lease acquisition (CHG-22)."
     - name: "GlobalVariableScalarState"
       type: "struct"
+      purpose: "Represents one encoded terminal Global Variable value and its deterministic key."
       fields:
         - name: "key"
           type: "string"
@@ -238,6 +282,14 @@ behavior:
       source: "@ears: EARS.01.03.c5b7"
     - rule: "GV-backed state SHALL store only scalar double-compatible values; string payloads and rich evidence SHALL remain in files, logs, or documentation evidence packs."
       source: "@ears: EARS.01.03.c5b7"
+    - rule: "IStateStore SHALL expose LifecycleSnapshot commit/read classification, explicit runtime isolation, checked HALT/recovery evidence, legacy migration, and MarkerClaimOrReclaim/MarkerHeartbeat/MarkerIsOwner/MarkerRelease fencing in lockstep across production, fakes, and tests."
+      source: "@chg: CHG-22"
+    - rule: "Duplicate marker liveness SHALL use explicit marker_hb_ts and SHALL NOT use GlobalVariableTime because reads/checks can refresh access time (CHG-22)."
+      source: "@chg: CHG-22"
+    - rule: "When a store is wired, CAlertSink.Halt SHALL attempt store.SetHalt(ev) before UI/log suppression and return durable persistence success; without a store it SHALL preserve notification-only success. In-memory HALT remains effective on persistence failure; suppressed runtimes require an isolated namespace and never clear live HALT state."
+      source: "@chg: CHG-22"
+    - rule: "A context that has lost MarkerIsOwner SHALL NOT write the shared lifecycle snapshot or HALT flag. It SHALL become HALT in memory and may append evidence through AppendHaltEvidence without changing the current owner's authoritative state."
+      source: "@chg: CHG-22"
   state_transitions:
     - from: "Recoverable evidence"
       to: "Restored state"
@@ -254,11 +306,32 @@ behavior:
     - condition: "Trade evidence write fails."
       response: "Log diagnostic failure and preserve broker safety outcome. Header-write failure on new-file creation is treated as a write failure: the file handle is closed and reset, and the call returns false (CHG-18)."
       source: "@bdd: BDD.01.03.d6ae"
+    - condition: "Marker owner is fresh or token compare-and-swap loses."
+      response: "Return status=DUPLICATE_MARKER_CONFLICT and no token (CHG-22)."
+      source: "@chg: CHG-22"
+    - condition: "Marker owner is stale by explicit marker_hb_ts."
+      response: "Allow MarkerClaimOrReclaim to CAS a strictly larger token and return status=DUPLICATE_MARKER_STALE_RECLAIMED on success (CHG-22)."
+      source: "@chg: CHG-22"
+    - condition: "Stale owner attempts heartbeat or release after ownership moved."
+      response: "Reject the operation because token no longer matches marker_owner (CHG-22)."
+      source: "@chg: CHG-22"
 
 ## Section 6: Implementation Notes
 implementation_notes:
+  one_way_decisions:
+    - id: "SPEC.05.06.7c3a"
+      decision: "The first committed LifecycleSnapshot generation retires compatibility with prior binaries. Old and CHG-22-R1 source interfaces have a zero-width coexistence window; downgrade after this boundary is permitted only while the system is disabled or in HALT, with exclusive ownership, exported evidence, and proven flat/no-matching-order broker state through the rehearsed legacy-IDLE procedure."
+      rationale: "A prior binary cannot interpret the committed generation, checksum, complete cancel evidence, or lease-fencing contract and could mutate broker or durable state from a contradictory view."
+      governed_by: "@chg: CHG-22"
   constraints:
-    - "v1 uses terminal GV state and does not ship a custom file snapshot layer."
+    - "LifecycleSnapshot stores state, broker ticket, stable position identifier, complete pending/cancel evidence, HALT, generation, and checksum as one logical unit."
+    - "CStateStore writes the inactive slot, checksum, and read-back verification before publishing life_commit; failed replacement leaves the prior committed generation active."
+    - "ReadLifecycleSnapshot distinguishes ABSENT, VALID, CORRUPT, and ERROR. Legacy keys migrate only when no committed snapshot exists and their values are unambiguous."
+    - "Marker bootstrap and heartbeat publication hold an identity-and-runtime-namespace hashed exclusive file lock across CAS, heartbeat publication, and owner/heartbeat reread."
+    - "MarkerIsOwner is a mandatory fence immediately before every lifecycle or broker mutation; lease loss disables readiness and enters HALT."
+    - "IAlertSink.Halt returns notification-only success without a configured store and durable persistence success when one is configured. HALT and recovery events append to retained audit evidence; ClearHalt appends recovery first and clears the flag last."
+    - "IMarkerBackend is injectable for deterministic first-use and CAS-to-heartbeat interleaving tests; CTerminalMarkerBackend owns production file/GV primitives."
+    - "Lifecycle snapshots use two terminal-GV slots plus a commit generation; append-only audit files retain HALT and recovery evidence for at least 30 days."
     - "Ticket, deal, and order identifiers MUST be stored losslessly, not packed into imprecise double integers."
     - "Raw account, symbol, and magic identity appears in logs/docs, not GV names."
     - "GV keys MUST use deterministic hashing and respect documented terminal Global Variable key constraints."
@@ -271,11 +344,14 @@ implementation_notes:
     - "CSV string fields MUST be RFC 4180 quoted (double-quote wrap; internal double-quotes doubled). broker_outcome is explicitly free-form evidence and MUST be quoted unconditionally (CHG-14)."
     - "ulong fields (magic, ticket, deal IDs) in serialized CSV output MUST use StringFormat(\"%I64u\", v) — never cast to long before formatting, which corrupts values above LONG_MAX (CHG-14). Consistent with CKeyBuilder's %I64u canonical identity pattern."
     - "TradeEvidenceRecord has 16 CSV columns (CHG-15). Intent-side fields (intended_price, sl_price, tp_price, lots_requested) are written as empty cells on EXECUTION rows; execution-side fields (retcode, ticket, fill_price, lots_submitted) are written as empty cells on INTENT rows. side is written on both row types. broker_outcome is retained as free-form overflow. Single-file design is preserved; strategy performance analysis is out of scope for TradeLogger (MT5 trade history owns that)."
-    - "CAlertSink.Init() accepts optional IStateStore* (default NULL). When wired, Halt() calls store.SetHalt(ev) before Alert(), writing the persistent GV HALT flag. Alert() stays as the operator notification; the flag is the circuit breaker that keeps the EA halted after dialog dismissal. The Coordinator MUST call IStateStore.IsHalted() as the first action in OnTick() and return immediately if true. Resume requires explicit operator action: remove/re-attach the EA or clear the flag via a recovery script. (CHG-16)"
+    - "CAlertSink.Init() accepts optional IStateStore* (default NULL). Without a store, Halt() preserves notification-only success and writes no circuit breaker. When wired, Halt() calls store.SetHalt(ev) before Alert(), writing the persistent GV HALT flag. Alert() stays as the operator notification; the flag is the circuit breaker that keeps the EA halted after dialog dismissal. The Coordinator MUST call IStateStore.IsHalted() as the first action in OnTick() and return immediately if true. Resume requires explicit operator action: remove/re-attach the EA or clear the flag via a recovery script. (CHG-16)"
     - "CAlertSink.Halt() checks the bool returned by SetHalt(). On false, a secondary logger.Error() is emitted: 'HALT persistence failed; persistent circuit breaker may not be set'. Fall-back to Print() when logger is NULL. This gives the operator maximum information in the degraded path while preserving the primary HALT log already written above the SetHalt() call. (CHG-17)"
     - "TradeEvidenceRecord.side uses ENUM_TRADE_SIDE (TRADE_SIDE_BUY/TRADE_SIDE_SELL), not a free-form string; TradeLogger::_SideToString() renders \"BUY\"/\"SELL\" for the CSV column. Closes off casing/typo/localisation variants entering the audit evidence file. (CHG-18)"
     - "CStateStore::_setGV() logs GetLastError() via PrintFormat() on GlobalVariableSet() failure (key, value, error code), distinguishing permission/storage/transient failures for operators; the public method still returns bool per the IStateStore contract. (CHG-18)"
     - "TradeLogger::_EnsureFile() checks the FileWriteString() result when writing the CSV header on a newly created file. On failure, it closes and resets the file handle and returns false so WriteIntent()/WriteExecution() emit the existing LogFailure diagnostic, instead of silently proceeding with a possibly headerless evidence file. (CHG-18)"
+    - "ENUM_DUPLICATE_MARKER_STATUS is defined in Include/Persistence/PersistenceTypes.mqh to avoid a Persistence-to-Position include cycle (CHG-22)."
+    - "CStateStore marker lease uses marker_owner as the only ownership fence and marker_hb_ts as advisory liveness; MarkerRelease stores -token rather than zero to prevent ABA reuse (CHG-22)."
+    - "CAlertSink.Halt routes symbol, magic, and ticket in the HALT payload; existing callers may leave them empty/zero for backward compatibility (CHG-22)."
   performance_considerations:
     - "State writes occur on meaningful transitions, not every tick, and release evidence must cover @threshold: PRD.01.perf.idle_tick."
 
@@ -284,15 +360,15 @@ tdd_contracts:
   tdd_document: "@tdd: TDD.05.04.e64a"
   test_files:
     - path: "Scripts/Tests/Test_StateStore.mq5"
-      covers: "GV key generation, hi/lo identifier storage, duplicate markers, and HALT persistence."
+      covers: "GV key generation, hi/lo identifier storage, duplicate markers, HALT persistence/clear, pending-order evidence, and marker lease fencing."
     - path: "Scripts/Tests/Test_TradeLogger.mq5"
       covers: "Intent/execution pairing, CSV field coverage, and log separation."
     - path: "Scripts/Tests/Test_AlertSink.mq5"
-      covers: "Live, visual tester, non-visual tester, and optimization alert behavior."
+      covers: "Live, visual tester, non-visual tester, optimization alert behavior, HALT persistence before optimization suppression, and SetHalt failure diagnostics."
 
 ## Section 8: Traceability
 traceability:
-  tags: ["@spec: SPEC-05", "@brd: BRD.01.08.cea7", "@prd: PRD.01.14.737b", "@ears: EARS.01.03.a023", "@bdd: BDD.01.03.0073", "@adr: ADR.02.03.c7dd"]
+  tags: ["@spec: SPEC-05", "@brd: BRD.01.08.cea7", "@prd: PRD.01.14.737b", "@ears: EARS.01.03.a023", "@bdd: BDD.01.03.0073", "@adr: ADR.02.03.c7dd", "@chg: CHG-22"]
   upstream:
     adr_references: ["@adr: ADR.02.03.c7dd", "@adr: ADR.03.03.4124", "@adr: ADR.05.03.2586"]
     bdd_references: ["@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.d6ae", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.b37d"]

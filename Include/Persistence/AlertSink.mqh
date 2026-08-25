@@ -7,17 +7,19 @@
 //|                                                                  |
 //| HALT and operator alert routing by runtime mode (SPEC-05 alert  |
 //| sink contract). Degrades gracefully to log-only when no UI is   |
-//| available. Silent in optimization mode to protect run speed.    |
+//| available. UI/log output is silent in optimization mode, but    |
+//| HALT persistence still runs as the safety circuit breaker.      |
 //|                                                                  |
 //| Routing table:                                                   |
-//|   Live / Visual tester  → logger.Error() + SetHalt() + Alert() |
-//|   Non-visual tester     → logger.Error() + SetHalt()           |
-//|   Optimization          → silent                                |
+//|   Live / Visual tester  → SetHalt() + logger.Error() + Alert() |
+//|   Non-visual tester     → SetHalt() + logger.Error()           |
+//|   Optimization          → SetHalt() only                        |
 //|                                                                  |
 //| Circuit-breaker: when Init() is called with a non-NULL          |
 //| IStateStore*, Halt() calls SetHalt(ev) before Alert(). If      |
-//| SetHalt() returns false the failure is logged as a secondary   |
-//| Error — the EA may not stay halted after dismissal (CHG-17).   |
+//| SetHalt() returns false the failure is returned and logged when |
+//| a runtime context permits logs (outside optimization); the      |
+//| state machine still keeps its in-memory HALT absorbing.         |
 //| Resume requires explicit operator action (CHG-16).              |
 //+------------------------------------------------------------------+
 #ifndef TRADESPINE_PERSISTENCE_ALERTSINK_MQH
@@ -34,9 +36,13 @@
 interface IAlertSink
   {
    //--- \brief Raise a HALT alert. Carries the full HaltEvidence payload.
-   void Halt(const HaltEvidence &ev);
+   //--- \param ev HALT evidence payload.
+   //--- \return true when no store is configured or durable HALT evidence was committed.
+   bool Halt(const HaltEvidence &ev);
 
    //--- \brief Raise a non-fatal operator warning.
+   //--- \param category Warning category.
+   //--- \param msg Human-readable warning message.
    void Warn(string category, string msg);
   };
 
@@ -57,15 +63,18 @@ class CAlertSink : public IAlertSink
    //--- \brief Bind the alert sink to the runtime context, diagnostic logger, and optional state store.
    //--- \param ctx     Runtime mode gate (non-null; caller owns lifetime).
    //--- \param logger  Fallback diagnostic channel (non-null; caller owns lifetime).
-   //--- \param store   State store for persistent GV HALT flag (optional; NULL = no flag written).
-   //---                If SetHalt() fails, a secondary Error is emitted so the operator knows
-   //---                the circuit breaker may not have been written (CHG-17).
+   //--- \param store   State store for persistent GV HALT flag (optional; NULL preserves notification-only success).
+   //---                If SetHalt() fails, Halt returns false and emits a secondary Error.
    void           Init(COptContext* ctx, Logger* logger, IStateStore* store = NULL);
 
    //--- \brief Route a HALT alert per the active runtime mode.
-   void           Halt(const HaltEvidence &ev) override;
+   //--- \param ev HALT evidence payload.
+   //--- \return true when no store is configured or durable HALT evidence was committed.
+   bool           Halt(const HaltEvidence &ev) override;
 
    //--- \brief Route an operator warning per the active runtime mode.
+   //--- \param category Warning category.
+   //--- \param msg Human-readable warning message.
    void           Warn(string category, string msg) override;
   };
 
@@ -78,31 +87,36 @@ void CAlertSink::Init(COptContext* ctx, Logger* logger, IStateStore* store)
   }
 
 //+------------------------------------------------------------------+
-void CAlertSink::Halt(const HaltEvidence &ev)
+bool CAlertSink::Halt(const HaltEvidence &ev)
   {
-   if(m_ctx == NULL) return;
-   if(m_ctx.IsOptimizing()) return; // silent in optimization
+   bool persist_failed = false;
+   if(m_store != NULL)
+      persist_failed = !m_store.SetHalt(ev); // persistent circuit breaker
 
    string msg = "TRADESPINE HALT: " + ev.reason
-              + " | Action: " + ev.operator_action;
+              + " | Action: " + ev.operator_action
+              + " | Symbol: " + ev.symbol
+              + " | Magic: " + StringFormat("%I64u", ev.magic)
+              + " | Ticket: " + StringFormat("%I64u", ev.ticket);
+
+   if(m_ctx == NULL) return(!persist_failed);
+   if(m_ctx.IsOptimizing()) return(!persist_failed); // UI/log silent; persistence already attempted above.
 
    if(m_logger != NULL)
       m_logger.Error("HALT", msg + " [state=" + IntegerToString(ev.last_known_state) + "]");
 
-   if(m_store != NULL)
+   if(persist_failed)
      {
-      if(!m_store.SetHalt(ev)) // persistent circuit breaker
-        {
-         string fail_msg = "HALT persistence failed; persistent circuit breaker may not be set";
-         if(m_logger != NULL)
-            m_logger.Error("HALT", fail_msg);
-         else
-            Print("[ERROR][HALT] " + fail_msg);
-        }
+      string fail_msg = "HALT persistence failed; persistent circuit breaker may not be set";
+      if(m_logger != NULL)
+         m_logger.Error("HALT", fail_msg);
+      else
+         Print("[ERROR][HALT] " + fail_msg);
      }
 
    if(m_ctx.IsLive() || m_ctx.IsVisualMode())
       Alert(msg); // blocks until dismissed; log and flag written above
+   return(!persist_failed);
   }
 
 //+------------------------------------------------------------------+

@@ -7,18 +7,20 @@
 //|        TDD.09.04.c1f3,                                           |
 //|        TDD.11.04.6805, TDD.11.04.aadd, TDD.11.04.4f72,          |
 //|        TDD.05.04.e64a, TDD.05.04.229f, TDD.05.04.ed21,          |
+//|        TDD.04.04.8b79, TDD.04.04.b7d2, TDD.04.04.c6e1,          |
 //|        TDD.06.04.8f4d, TDD.06.04.4796, TDD.06.04.cd48           |
-//| @spec: SPEC-09, SPEC-11, SPEC-05, SPEC-06                        |
-//| @iplan: IPLAN-09, IPLAN-11, IPLAN-05, IPLAN-06                  |
+//| @spec: SPEC-09, SPEC-11, SPEC-05, SPEC-04, SPEC-06               |
+//| @iplan: IPLAN-09, IPLAN-11, IPLAN-05, IPLAN-04, IPLAN-06         |
 //|                                                                  |
-//| Global aggregate runner: includes all TDD-09, TDD-11, TDD-05,  |
-//| and TDD-06 test scripts and calls their mapped test functions in |
-//| a single pass. TRADESPINE_RUN_ALL_TESTS suppresses each          |
+//| Global aggregate runner: includes all implemented TDD-09,        |
+//| TDD-11, TDD-05, TDD-04, and TDD-06 test scripts and calls their |
+//| contract entry points in a single pass. TRADESPINE_RUN_ALL_TESTS|
+//| suppresses each                                                   |
 //| individual OnStart() so only this runner's OnStart() is compiled.|
 //+------------------------------------------------------------------+
 #property copyright "phbr"
-#property version   "1.2"
-#property description "TradeSpine - aggregate test runner (IPLAN-09 + IPLAN-11 + IPLAN-05 + IPLAN-06)"
+#property version   "1.3"
+#property description "TradeSpine - aggregate test runner (IPLAN-09 + IPLAN-11 + IPLAN-05 + IPLAN-04 + IPLAN-06)"
 
 #define TRADESPINE_RUN_ALL_TESTS
 
@@ -38,6 +40,12 @@
 #include "Test_StateStore.mq5"
 #include "Test_TradeLogger.mq5"
 #include "Test_AlertSink.mq5"
+
+// IPLAN-04: Position Account Mode and State
+#include "Test_PositionStateMachine.mq5"
+#include "Test_AccountModeAdapters.mq5"
+#include "Test_AccountModeDeferred.mq5"
+#include "Test_PositionLiveProviders.mq5"
 
 // IPLAN-06: Market Session and Symbol Context
 #include "Test_SymbolContext.mq5"
@@ -85,6 +93,12 @@ int OnStart()
    test_persistence_and_audit_evidence_integration_contract(asserts); // TDD.05.04.229f
    // Test_AlertSink.mq5: Logger + CAlertSink E2E acceptance tests
    test_persistence_and_audit_evidence_e2e_acceptance(asserts);  // TDD.05.04.ed21
+
+   Print("=== IPLAN-04: Position Account Mode and State ===");
+   test_position_account_mode_and_state_unit_contract(asserts);        // State machine
+   test_position_account_mode_and_state_integration_contract(asserts); // Account-mode adapters
+   test_position_account_mode_and_state_e2e_acceptance(asserts);       // TDD.04.04.b7d2: deferred modes + lease maintenance
+   test_position_live_providers_contract(asserts);                     // TDD.04.04.c6e1: read-only terminal provider parity
 
    Print("=== IPLAN-06: Market Session and Symbol Context ===");
    // Test_SymbolContext.mq5: metadata loading + lot/price/stop grid validation (unit)

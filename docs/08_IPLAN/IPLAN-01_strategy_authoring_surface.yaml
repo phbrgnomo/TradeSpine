@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-01"
   source_tdd: "@tdd: TDD.01.04.c4a3"
   total_sections: 6
-  last_updated: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-08-24T00:00:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
@@ -15,9 +15,9 @@ document_control:
   source_spec: "@spec: SPEC-01"
   source_tdd: "@tdd: TDD.01.04.c4a3"
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-06-03T00:00:00-03:00"
+  last_updated: "2026-08-24T00:00:00-03:00"
   author: "Codex"
   component: "CStrategyBase and strategy template surface"
   complexity: 5
@@ -37,7 +37,7 @@ file_manifest:
       status: NOT_STARTED
       session: null
       verified: false
-      purpose: "Lifecycle phase, helper routing, exit hook, and indicator registration tests from TDD-01."
+      purpose: "Lifecycle phase, provider lifetime/injection, runtime namespace, fixed maintenance cadence, transaction routing, helper routing, and indicator registration tests."
     - path: "Scripts/Tests/Test_StrategyTemplateCompile.mq5"
       order: 2
       status: NOT_STARTED
@@ -55,7 +55,7 @@ file_manifest:
       status: NOT_STARTED
       session: null
       verified: false
-      purpose: "Base lifecycle, helper methods, hooks, and registered indicator gate."
+      purpose: "Base lifecycle and ownership of read-only live providers, StateStore namespace, PositionContext assembly, timer/transaction delegation, helpers, hooks, and indicator gate."
     - path: "Experts/_Template/StrategyTemplate.mq5"
       order: 5
       status: NOT_STARTED
@@ -88,6 +88,8 @@ execution_commands:
   implementation:
     - "# Write TDD-01 tests first, then implement StrategyBase and strategy artifacts in file_manifest order."
     - "# Keep strategy files broker-API-free; entries and exits route through CStrategyBase helpers."
+    - "# Assemble CLiveAccountModeProvider, CLiveBrokerPositionView, and CLiveTradeTransactionEvidence with StrategyBase lifetime; inject them before PositionContext readiness."
+    - "# Select canonical live or explicit isolated tester namespace before StateStore and PositionContext initialization; route OnTradeTransaction through PositionContext."
   validation:
     - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_StrategyBase.mq5"
     - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_StrategyTemplateCompile.mq5"
@@ -105,6 +107,10 @@ implementation_contracts:
         type: "Protocol Interface"
         files: ["Experts/_Template/StrategyTemplate.mq5", "Experts/DonchianBreakout.mq5", "Experts/MovingAverageCross.mq5"]
         summary: "Strategies include TradeSpine through quoted relative paths and expose strategy plus indicator inputs."
+      - name: "Runtime provider assembly contract"
+        type: "DI Interface"
+        files: ["Include/Strategy/StrategyBase.mqh", "Scripts/Tests/Test_StrategyBase.mq5"]
+        summary: "StrategyBase owns provider lifetime, selects the persistence namespace, initializes PositionContext in safety order, and delegates timer plus transaction events."
   consumed:
     dependencies:
       - "@iplan: IPLAN-02"
@@ -119,7 +125,7 @@ session_handoff:
       agent: "Codex IPLAN autopilot"
       files_touched: []
       partial_work: "No implementation started; this seed session only created the execution plan."
-      blockers: "Begin only after IPLAN-02, IPLAN-04, IPLAN-07, IPLAN-09, and IPLAN-10 have stable public contracts."
+      blockers: "Begin only after IPLAN-02, IPLAN-04, IPLAN-07, IPLAN-09, and IPLAN-10 have stable public contracts. Production readiness remains blocked until provider assembly, namespace isolation, and event delegation tests pass."
       next_session_directive: "Start with Scripts/Tests/Test_StrategyBase.mq5, then implement Include/Strategy/StrategyBase.mqh against TDD-01."
       validation_results:
         tests_passing: null

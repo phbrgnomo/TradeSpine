@@ -7,21 +7,23 @@ id: SPEC-04
 title: Position Account Mode and State
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-08-24T00:00:00-03:00"
+chg_references: ["CHG-22"]
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-08-24T00:00:00-03:00"
   author: "Codex"
+  chg_references: ["CHG-22"]
   component: "CPositionContext, adapters, router, and state machine"
   tdd_ready_score: "95/100"
 
 ## Section 2: Component Overview
 component_overview:
-  description: "The position component owns account-mode selection, strategy-scoped ownership queries and operations, transaction routing, and the per-strategy position state machine used by coordinator and recovery paths."
+  description: "The position component owns account-mode selection, strategy-scoped ownership, canonical lifecycle reconciliation, untrusted transaction-hint routing, and the per-strategy state machine. CHG-22/IPLAN-04 makes HALT absorbing, persists complete cancel evidence before broker submission, fences every mutation with current lease ownership, and permits recovery only through CPositionContext.Recover after a fresh claim and full broker/store reconciliation. Read-only live evidence providers expose terminal account, position, order, deal, and bounded-history facts without submitting trades."
   architecture_decision: "@adr: ADR.07.03.6df1"
   diagram:
     tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
@@ -37,11 +39,11 @@ component_overview:
   language: "MQL5"
   dependencies:
     - name: "CStateStore"
-      version: "v1"
-      purpose: "Persists hedging ticket state, duplicate markers, deferred-mode diagnostics, and HALT state."
+      version: "CHG-22-R1"
+      purpose: "Persists the commit-last lifecycle snapshot, token-fenced marker lease, deferred-mode diagnostics, and retained HALT/recovery evidence."
     - name: "CGuardedTrade"
-      version: "v1"
-      purpose: "Submits v1 hedging adapter close/modify operations through guarded execution; pending-exit operations are v2+ netting scope."
+      version: "CHG-22-R1 consumer; implementation owned by IPLAN-03"
+      purpose: "Submits hedging adapter close/modify operations only after immediate readiness, HALT, lease, mode, and provider fences; pending-exit operations are v2+ netting scope."
     - name: "Vendored CPositionInfo and history classes"
       version: "frozen StdLib VERSION.md"
       purpose: "Read broker tickets, deals, orders, and position diagnostics."
@@ -58,7 +60,7 @@ interfaces:
     - name: "CPositionContext"
       type: "class"
       signature: "class CPositionContext : public IPositionView"
-      description: "Selects the active adapter and exposes strategy-owned position queries."
+      description: "Owns initialization ordering, live or isolated runtime namespace, lease claim and fencing, startup/timer/hint reconciliation, explicit HALT recovery, and strategy-owned position queries. Init becomes ready only after safe ownership and reconciliation; Recover is the only context path that may resume an absorbing HALT."
       errors:
         - "INIT_FAILED: account mode or duplicate identity cannot be initialized safely."
     - name: "CNettingAdapter"
@@ -76,9 +78,39 @@ interfaces:
     - name: "CPositionStateMachine"
       type: "class"
       signature: "class CPositionStateMachine"
-      description: "Owns strategy position lifecycle transitions and HALT behavior."
+      description: "Owns guarded lifecycle transitions, complete-snapshot commit-before-mutation, timeout cancellation evidence, canonical restart/timer/hint reconciliation, stable position identity, and absorbing HALT behavior. It accepts an optional IClock; in-memory HALT remains effective even if durable alert evidence fails."
       errors:
         - "HALT: async, cancel, or reconciliation outcome is ambiguous."
+    - name: "IPositionView"
+      type: "interface"
+      signature: "interface IPositionView"
+      description: "Read-only strategy-owned position facade consumed by downstream coordination layers (CHG-22)."
+      errors:
+        - "UNKNOWN: position state is not yet initialized."
+    - name: "IBrokerPositionView"
+      type: "interface"
+      signature: "interface IBrokerPositionView"
+      description: "Selected-position broker evidence seam exposing ticket, exact symbol and magic, volume, and stable POSITION_IDENTIFIER. Selection failure invalidates prior selection and returns safe empty evidence."
+      errors:
+        - "false: selected position or ticket is unavailable."
+    - name: "ITradeTransactionEvidence"
+      type: "interface"
+      signature: "interface ITradeTransactionEvidence"
+      description: "Explicit bounded-history selection, deal-to-order/position correlation, active-order iteration, and residual-position evidence seam used by canonical reconciliation. Every usable fact requires nonzero identity plus exact symbol and magic."
+      errors:
+        - "false/zero/empty evidence: transaction hint cannot be proven and must be reconciled later."
+    - name: "ITradeExecutor"
+      type: "interface"
+      signature: "interface ITradeExecutor { CloseTicket(ticket,lots); ModifyTicket(ticket,sl,tp); CancelOrder(order_ticket); }"
+      description: "Guarded write seam consumed by the position state machine and adapters; CGuardedTrade implements it in IPLAN-03 (CHG-22)."
+      errors:
+        - "false: guarded close, modify, or cancel was rejected or unavailable."
+    - name: "CLiveAccountModeProvider, CLiveBrokerPositionView, CLiveTradeTransactionEvidence"
+      type: "classes"
+      signature: "read-only terminal evidence providers"
+      description: "Separate composition-based production providers over the vendored account, position, order, history-order, and deal readers. They never instantiate CTrade or submit broker operations."
+      errors:
+        - "false/empty evidence: native selection or bounded history selection failed; previous selection is invalidated."
 
 ## Section 4: Data Models
 data_models:
@@ -132,6 +164,21 @@ data_models:
           type: "ENUM_STATE_TRIGGER"
           required: true
           description: "Broker event, timeout, reconciliation, panic, or day-trade trigger."
+    - name: "PendingEntry"
+      type: "struct"
+      fields:
+        - name: "order_ticket"
+          type: "ulong"
+          required: true
+          description: "Pending-entry order ticket persisted so timeout/cancel behavior survives restart (CHG-22)."
+        - name: "submitted_ts"
+          type: "datetime"
+          required: true
+          description: "Submission timestamp used to recompute the fill-timeout deadline after restart (CHG-22)."
+        - name: "fill_timeout_secs"
+          type: "int"
+          required: true
+          description: "Non-input timeout constant; default is POSITION_FILL_TIMEOUT_SECS_DEFAULT=5 (CHG-22)."
     - name: "DuplicateMarker"
       type: "struct"
       fields:
@@ -146,7 +193,7 @@ data_models:
         - name: "status"
           type: "ENUM_DUPLICATE_MARKER_STATUS"
           required: true
-          description: "Active, stale-recoverable, or conflict."
+          description: "One of DUPLICATE_MARKER_ACTIVE, DUPLICATE_MARKER_STALE_RECLAIMED, or DUPLICATE_MARKER_CONFLICT. Ownership is fenced by IStateStore marker lease token, not by GlobalVariableTime (CHG-22)."
     - name: "ExecutionMutex"
       type: "struct"
       fields:
@@ -183,7 +230,7 @@ behavior:
       source: "@ears: EARS.01.03.fb67"
     - rule: "Duplicate same-terminal account-symbol-magic identity SHALL fail or safely recover initialization."
       source: "@ears: EARS.01.03.7d34"
-    - rule: "HALT SHALL block non-emergency helpers and preserve last-known state."
+    - rule: "HALT SHALL be absorbing, block entry, modification, trailing, and ordinary exits, and preserve last-known state and cancel evidence. Only explicitly classified emergency cleanup with proven ownership is permitted while halted."
       source: "@ears: EARS.01.03.6bda"
     - rule: "Strategy-scoped v1 position state SHALL be sourced from hedging ticket evidence, GV-backed state, and broker reconciliation, not from broker aggregate position alone."
       source: "@ears: EARS.01.03.5d1b"
@@ -191,15 +238,49 @@ behavior:
       source: "@prd: PRD.01.09.5cce"
     - rule: "External intervention detection SHALL reconcile strategy-owned state and preserve manual/non-TradeSpine exposure boundaries."
       source: "@ears: EARS.01.03.4f9d"
+    - rule: "CPositionContext SHALL validate dependencies, establish runtime namespace and account mode, claim or deliberately suppress the lease, initialize the state machine and router, reconcile, and only then become ready. OnMaintenance(now) SHALL evaluate local timeouts every callback and run broker reconciliation plus heartbeat at a fixed 30-second cadence with a minimum 60-second live lease; OnTick SHALL NOT persist maintenance state."
+      source: "@chg: CHG-22"
+    - rule: "Account-mode adapters SHALL delegate close, modify, and cancel writes only through ITradeExecutor; production guard implementation is owned by IPLAN-03 (CHG-22)."
+      source: "@chg: CHG-22"
+    - rule: "CPositionStateMachine SHALL commit order ticket, submission time, cancel-request time, and cancellation origin before CancelOrder; wait five seconds for confirmation; reconcile once; and retain the evidence in HALT when the outcome remains unavailable."
+      source: "@chg: CHG-22"
+    - rule: "Every state-changing lifecycle operation SHALL validate MarkerIsOwner immediately before snapshot commit; every context-owned broker mutation SHALL revalidate ownership immediately before submission. Lease loss SHALL disable readiness and routing, enter HALT once, and require a fresh claim plus full reconciliation."
+      source: "@chg: CHG-22"
+    - rule: "Optimization and nonvisual tester suppression SHALL use an explicit isolated namespace and SHALL NOT claim, clear, or mutate the live namespace."
+      source: "@chg: CHG-22"
+    - rule: "CPositionContext.Recover(now) SHALL be the only normal path out of HALT and SHALL report ready only after current lease ownership and canonical reconciliation prove either flat state with no matching live order/position or one unambiguously owned position."
+      source: "@chg: CHG-22"
+    - rule: "After a competing owner is removed and all required broker/history evidence is available, a live context SHALL establish a fresh lease and complete safe reconciliation within at most one 60-second lease expiry plus one 30-second maintenance interval (90 seconds total)."
+      source: "@chg: CHG-22"
+    - rule: "Broker fills, rejects, cancellations, partial exits, and external closes SHALL have no public direct lifecycle mutator. Exact broker/history correlation and observed residual volume SHALL flow through canonical Reconcile; close reasons remain audit evidence, not transition authority."
+      source: "@chg: CHG-22"
+    - rule: "CPositionContext.RepairExternalStops(ticket, expected_sl, expected_tp) SHALL repair externally drifted hedging-ticket SL/TP only through ITradeExecutor-backed adapter modification; invalid stop topology or failed repair SHALL enter HALT with symbol, magic, and ticket evidence (CHG-22)."
+      source: "@chg: CHG-22"
   state_transitions:
     - from: "FLAT"
       to: "PENDING_ENTRY"
       trigger: "Accepted pending entry submission."
       source: "@bdd: BDD.01.03.0073"
     - from: "PENDING_ENTRY"
+      to: "PENDING_CANCEL"
+      trigger: "Fill timeout expires and guarded CancelOrder succeeds."
+      source: "@chg: CHG-22"
+    - from: "PENDING_CANCEL"
+      to: "ACTIVE"
+      trigger: "Fill race is proven during cancel reconciliation."
+      source: "@chg: CHG-22"
+    - from: "PENDING_CANCEL"
+      to: "FLAT"
+      trigger: "Cancel is confirmed for the pending entry."
+      source: "@chg: CHG-22"
+    - from: "PENDING_ENTRY"
       to: "HALT"
       trigger: "Async fill, cancel, or reconciliation outcome cannot be disambiguated."
       source: "@bdd: BDD.01.03.e16a"
+    - from: "ACTIVE"
+      to: "FLAT"
+      trigger: "Canonical reconciliation proves zero residual position and a correlated exit for the stable position identity."
+      source: "@chg: CHG-22"
     - from: "ACTIVE"
       to: "HALT"
       trigger: "Day-trade close sequence cannot close or cancel all strategy-owned exposure."
@@ -214,19 +295,41 @@ behavior:
     - condition: "Hedging ticket state, partial fill, or cancel origin cannot be reconstructed."
       response: "Persist last-known state and enter HALT rather than guessing ownership."
       source: "@ears: EARS.01.03.588b"
+    - condition: "Pending-entry fill timeout occurs and CancelOrder fails or cannot be proven."
+      response: "Route HALT through IAlertSink with symbol, magic, ticket, and last-known state; do not write HALT directly from the state machine (CHG-22)."
+      source: "@chg: CHG-22"
+    - condition: "OnTradeTransaction has zero/missing IDs, unavailable selected history, replay, ordering drift, partial exit, or mismatched correlation."
+      response: "Treat it as an untrusted wake-up hint. Unrelated or replayed evidence is an idempotent no-op; ambiguous correlated evidence is preserved and enters HALT through canonical reconciliation."
+      source: "@chg: CHG-22"
+    - condition: "External broker-side SL/TP drift is detected but the expected topology is invalid or guarded repair fails."
+      response: "Route HALT through IAlertSink with symbol, magic, ticket, and last-known state; do not guess a safe repaired state (CHG-22)."
+      source: "@chg: CHG-22"
 
 ## Section 6: Implementation Notes
 implementation_notes:
   constraints:
+    - "Startup order is dependency validation, explicit runtime namespace and account-mode establishment, lease claim or deliberate suppression, checked state-machine/router initialization, canonical reconciliation, then readiness."
+    - "Startup, transaction hints, and fixed 30-second timer maintenance invoke one reconciliation routine; local timeout evaluation runs on every timer callback and the lease threshold is at least 60 seconds."
+    - "Transaction payloads are untrusted hints. A transition requires nonzero IDs, explicit bounded history selection, exact symbol/magic, order-to-position correlation, and observed residual volume."
+    - "HALT is absorbing. Only Reconcile with explicit recovery permission may clear it after proving flat broker state or one unambiguously owned position."
+    - "Cancellation evidence includes order ticket, submission timestamp, request timestamp, and ENUM_CANCEL_ORIGIN; it commits before CancelOrder and remains durable through the 5-second confirmation window."
+    - "CLiveAccountModeProvider, CLiveBrokerPositionView, and CLiveTradeTransactionEvidence are read-only terminal adapters; selection failure invalidates prior selection and returns empty evidence."
     - "CStrategyBase owns one CPositionStateMachine; adapters, router, and coordinator receive references only."
     - "Netting/exchange modes MUST NOT reach live trading in v1."
     - "Manual or non-TradeSpine exposure without this strategy magic MUST NOT perturb strategy state."
+    - "CPositionContext.OnMaintenance is driven by framework OnTimer wiring from SPEC-01; OnTick must not perform marker heartbeat writes (CHG-22)."
+    - "CPositionStateMachine keeps in-memory HALT effective even when IAlertSink.Halt reports durable evidence failure (CHG-22)."
   patterns:
     - "Use adapter selection from ACCOUNT_MARGIN_MODE during framework init."
     - "Use deferred-mode diagnostics for netting/exchange in v1; virtual ledger identity account, symbol, magic, and virtual position id are v2+ only."
     - "Use magic and symbol ticket filtering for hedging ownership."
     - "Treat OCO links as deferred v2+ strategy-owned ledger records; v1 hedging uses broker-native ticket SL/TP."
+    - "Repair external SL/TP drift through CPositionContext.RepairExternalStops and the ITradeExecutor-backed adapter path only; freeze/stop clamping remains guarded-execution scope for IPLAN-03."
     - "Write duplicate marker heartbeat through the persistence boundary, not ad hoc terminal globals in strategy code."
+    - "Use IStateStore.MarkerClaimOrReclaim/MarkerHeartbeat/MarkerIsOwner/MarkerRelease for duplicate identity ownership; bootstrap creation is mutex-protected and claim success is reread-validated."
+    - "Use ITradeTransactionEvidence history surfaces only after HistorySelect from pending submission minus 60 seconds or HistorySelectByPosition for the stable position identifier (CHG-22)."
+    - "Runtime namespaces are explicit: live uses the canonical namespace; optimization and nonvisual tester contexts require an isolated namespace and never clear or claim the live lease."
+    - "CPositionContext.Recover performs an explicit fresh claim when ownership was lost, rebinds the fence, and invokes Reconcile with HALT-clear permission; ordinary maintenance and transaction hints never carry that permission."
   performance_considerations:
     - "Reconciliation requiring broker scans runs on init, trade transaction, explicit timer maintenance, or intervention detection, not on idle ticks."
 
@@ -235,15 +338,17 @@ tdd_contracts:
   tdd_document: "@tdd: TDD.04.04.8b79"
   test_files:
     - path: "Scripts/Tests/Test_PositionStateMachine.mq5"
-      covers: "State transitions, cancel-origin disambiguation, HALT persistence, and safe auto-clear."
+      covers: "State transitions, complete cancel evidence, both cancellation origins, restart matrix, canonical hint/timer reconciliation, stable position identity, absorbing HALT, lease fencing, and explicit recovery guards."
     - path: "Scripts/Tests/Test_AccountModeAdapters.mq5"
       covers: "Hedging ticket ownership and netting/exchange deferred-mode init failure."
     - path: "Scripts/Tests/Test_AccountModeDeferred.mq5"
-      covers: "RETAIL_NETTING and EXCHANGE init failure, no side effects, no trade path activation, and release evidence."
+      covers: "RETAIL_NETTING and EXCHANGE init failure, startup ordering, lease fencing/loss, 30-second maintenance, isolated tester namespaces, and guarded external stop repair."
+    - path: "Scripts/Tests/Test_PositionLiveProviders.mq5"
+      covers: "Read-only production provider parity with native account, position, order, and bounded-history APIs."
 
 ## Section 8: Traceability
 traceability:
-  tags: ["@spec: SPEC-04", "@brd: BRD.01.07.b44d", "@prd: PRD.01.09.5cce", "@ears: EARS.01.03.5d1b", "@bdd: BDD.01.03.8180", "@adr: ADR.07.03.6df1"]
+  tags: ["@spec: SPEC-04", "@brd: BRD.01.07.b44d", "@prd: PRD.01.09.5cce", "@ears: EARS.01.03.5d1b", "@bdd: BDD.01.03.8180", "@adr: ADR.07.03.6df1", "@chg: CHG-22"]
   upstream:
     adr_references: ["@adr: ADR.02.03.c7dd", "@adr: ADR.07.03.6df1", "@adr: ADR.08.03.0a8f"]
     bdd_references: ["@bdd: BDD.01.03.8180", "@bdd: BDD.01.03.f11f", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.9a7d", "@bdd: BDD.01.03.a31d", "@bdd: BDD.01.03.f415"]

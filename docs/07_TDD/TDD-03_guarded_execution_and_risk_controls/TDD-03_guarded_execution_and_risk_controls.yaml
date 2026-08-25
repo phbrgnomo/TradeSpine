@@ -7,7 +7,8 @@ id: TDD-03
 title: "Guarded Execution and Risk Controls Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-06-20T00:00:00-03:00"
+last_updated: "2026-08-24T00:00:00-03:00"
+chg_references: ["CHG-22"]
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -23,10 +24,11 @@ metadata:
 
 document_control:
   status: Draft
-  version: "1.2"
+  version: "1.3"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-06-20T12:00:00-03:00"
+  last_updated: "2026-08-24T00:00:00-03:00"
   author: "Codex"
+  chg_references: ["CHG-22"]
   component: "CGuardedTrade and CRiskManager"
   spec_reference: "@spec: SPEC-03"
   source_spec: "../../06_SPEC/SPEC-03_guarded_execution_and_risk_controls/SPEC-03_guarded_execution_and_risk_controls.yaml"
@@ -126,9 +128,9 @@ test_cases:
     cases:
       - id: "TDD.03.04.1f65"
         type: unit
-        name: "GuardResult classifies unknown retcodes as ambiguous"
+        name: "GuardResult classifies unknown retcodes and ITradeExecutor close/modify/cancel delegates safely"
         spec_ref: "@spec: SPEC-03"
-        target: "CGuardedTrade.ClassifyRetcode"
+        target: "CGuardedTrade.ClassifyRetcode, CloseTicket, ModifyTicket, and CancelOrder"
         test_file: "Scripts/Tests/Test_GuardedTrade.mq5"
         test_function: "test_guarded_execution_and_risk_controls_unit_contract"
         inputs:
@@ -141,6 +143,12 @@ test_cases:
         edge_cases:
           - condition: "Known success, pending, retryable, and terminal retcodes classify distinctly"
             expected: "Case remains deterministic and broker-safe."
+          - condition: "CloseTicket, ModifyTicket, or CancelOrder is rejected by guard/preflight"
+            expected: "ITradeExecutor method returns false and Position owns HALT/reconcile follow-up (CHG-22)."
+          - condition: "HALT, lease loss, deferred account mode, context non-readiness, or required provider evidence failure immediately before broker submission"
+            expected: "The state-changing operation is rejected even when an earlier preflight passed."
+          - condition: "Emergency cleanup requested while halted"
+            expected: "Only an explicitly classified cleanup with current ticket ownership may pass; ordinary entry, trailing, modify, close, and cancel paths remain blocked."
       - id: "TDD.03.04.d74f"
         type: unit
         name: "GuardResult captures filled_lots on partial fill"
@@ -173,6 +181,7 @@ test_cases:
         setup:
           - "Assemble component with deterministic fakes for broker, clock, store, symbol, and logs where required."
           - "Configure execution-owned fixtures for spread, fill mode, OrderCheck/margin results, broker retcodes, and private CTrade call counts; do not rely on FakeMarketContext for these fields."
+          - "Configure guarded close/modify/cancel fixture paths for the ITradeExecutor contract consumed by IPLAN-04."
           - "Load SPEC-defined configuration and BDD trace tags."
         action:
           description: "Submit TradeIntent with side-inverted stop"
@@ -269,6 +278,7 @@ traceability:
     - "@bdd: BDD.01.03.0ad7"
     - "@adr: ADR.04.03.7277"
     - "@adr: ADR.06.03.b277"
+    - "@chg: CHG-22"
   upstream:
     spec_references:
       - "@spec: SPEC-03"

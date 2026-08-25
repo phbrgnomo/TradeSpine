@@ -10,13 +10,14 @@
 //| profiling data models consumed by production and test modules.   |
 //|                                                                  |
 //| SPEC-09 faithful, minimal scope. Trade/position/state seams      |
-//| (ITradePort, IPositionView, IStateStore) are intentionally       |
+//| (ITradePort, IPositionView, IStateStore) were intentionally      |
 //| DEFERRED to their owning SPECs because their payload types       |
 //| (GuardResult, ledger snapshots) are not built yet:               |
 //|   - ITradePort / GuardResult               -> @spec: SPEC-03     |
 //|   - IPositionView                          -> @spec: SPEC-04     |
+//|     Added in Include/Position/Interfaces.mqh by IPLAN-04.        |
 //|   - IStateStore                            -> @spec: SPEC-05     |
-//| They will be added by those SPECs' IPLANs to avoid churn here.   |
+//|     Added in Include/Persistence/StateStore.mqh by IPLAN-05.     |
 //| The shared TradeIntent payload itself is now canonical in        |
 //| Include/Core/TradeTypes.mqh (CHG-21); SPEC-02 extends it and     |
 //| SPEC-03's ITradePort consumes it.                                |

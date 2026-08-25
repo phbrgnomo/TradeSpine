@@ -7,15 +7,17 @@ id: SPEC-01
 title: Strategy Authoring Surface
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-02T00:40:00-03:00"
+last_updated: "2026-08-24T00:00:00-03:00"
+chg_references: ["CHG-22"]
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.1"
+  version: "1.2"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-02T00:40:00-03:00"
+  last_updated: "2026-08-24T00:00:00-03:00"
   author: "Codex"
+  chg_references: ["CHG-22"]
   component: "CStrategyBase and strategy template surface"
   tdd_ready_score: "93/100"
 
@@ -94,12 +96,19 @@ interfaces:
       description: "Registers an indicator for readiness-gate enforcement."
       errors:
         - "false: indicator reference is invalid or strategy init phase has passed."
+    - name: "OnTimer"
+      type: "framework event method"
+      signature: "void OnTimer()"
+      description: "Framework timer event that delegates maintenance to CPositionContext.OnMaintenance(now). Strategy-authored sub-maintenance-cadence trade logic remains in OnTickEvent (CHG-22)."
+      errors:
+        - "None; maintenance failures are routed through owned components."
 
 ## Section 4: Data Models
 data_models:
   models:
     - name: "StrategyLifecyclePhase"
       type: "enum"
+      purpose: "Defines the permitted framework lifecycle stages that gate strategy initialization and broker-facing helpers."
       fields:
         - name: "phase"
           type: "ENUM_STRATEGY_PHASE"
@@ -107,6 +116,7 @@ data_models:
           description: "Construct, framework-init, strategy-init, or live."
     - name: "StrategyIdentity"
       type: "struct"
+      purpose: "Carries the account, symbol, and magic tuple that scopes one strategy instance's ownership and evidence."
       fields:
         - name: "account"
           type: "long"
@@ -122,6 +132,7 @@ data_models:
           description: "Strategy magic number used for ownership and evidence."
     - name: "CommonInputSet"
       type: "include contract"
+      purpose: "Defines the shared operator-visible MT5 input groups supplied by the framework."
       fields:
         - name: "input_groups"
           type: "ordered group labels"
@@ -129,6 +140,7 @@ data_models:
           description: "Identity, lot caps, kill-switch, execution, session, sizing, symbol lifecycle, visualization, and logging groups."
     - name: "StrategyInputSet"
       type: "include contract"
+      purpose: "Defines strategy- and indicator-specific optimizer-visible MT5 inputs owned by the strategy artifact."
       fields:
         - name: "strategy_inputs"
           type: "MT5 input declarations"
@@ -152,6 +164,8 @@ behavior:
       source: "@prd: PRD.01.09.eaf3"
     - rule: "Exit management SHALL be strategy-owned: entry-time SL/TP, signal exits, trailing stops, partial closes, and CloseAll are distinct mechanisms that may coexist but MUST route through TradeSpine helpers or position-context operations."
       source: "@prd: PRD.01.09.5963"
+    - rule: "CStrategyBase SHALL register a timer during framework initialization, kill it on deinitialization, and call CPositionContext.OnMaintenance(now) from OnTimer for framework maintenance, lease heartbeat, and reconciliation work (CHG-22)."
+      source: "@chg: CHG-22"
   state_transitions:
     - from: "Strategy-init"
       to: "Live"
@@ -165,8 +179,12 @@ behavior:
 ## Section 6: Implementation Notes
 implementation_notes:
   constraints:
+    - "CStrategyBase owns the lifetime of the three read-only live broker providers and injects them into CPositionContext; provider classes alone do not establish production readiness."
+    - "Framework OnTimer calls position maintenance at least once per second; broker reconciliation and lease heartbeat are fixed at 30 seconds with no idle OnTick persistence."
+    - "StateStore initialization selects the live canonical namespace or an explicit isolated tester/pass namespace before PositionContext initialization."
+    - "OnTradeTransaction routes through CPositionContext.RouteTradeTransaction rather than calling CTradeTxRouter or lifecycle mutators directly."
     - "Strategy authors MUST NOT override or process OnTradeTransaction beyond the framework shim delegation."
-    - "Sub-maintenance-cadence periodic trade logic belongs in OnTickEvent, not OnTimerEvent."
+    - "Sub-maintenance-cadence strategy-authored trade logic belongs in OnTickEvent, not OnTimerEvent; framework maintenance, lease heartbeat, and reconciliation work is timer-driven through OnTimer and CPositionContext.OnMaintenance (CHG-22)."
     - "Signal is framework-internal and MUST NOT become a strategy-authored API."
     - "CStrategyBase exposes lifecycle hooks and helper methods; the concrete strategy class owns signal decisions, strategy-specific inputs, indicator inputs, and post-entry exit-management decisions."
   patterns:
@@ -181,7 +199,7 @@ tdd_contracts:
   tdd_document: "@tdd: TDD.01.04.c4a3"
   test_files:
     - path: "Scripts/Tests/Test_StrategyBase.mq5"
-      covers: "Lifecycle phase gating, helper routing, required override failures, exit-management hook routing, and indicator registration."
+      covers: "Lifecycle phase gating, helper routing, required override failures, exit-management hook routing, indicator registration, timer registration/teardown, and OnMaintenance delegation."
     - path: "Scripts/Tests/Test_StrategyTemplateCompile.mq5"
       covers: "Simple sample and hedging port packaging plus include-path contract."
     - path: "Scripts/Tests/Test_AuthoringDocsChecklist.mq5"
@@ -189,7 +207,7 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
-  tags: ["@spec: SPEC-01", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.eaf3", "@ears: EARS.01.03.b784", "@bdd: BDD.01.03.aa68", "@adr: ADR.09.03.84b9"]
+  tags: ["@spec: SPEC-01", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.eaf3", "@ears: EARS.01.03.b784", "@bdd: BDD.01.03.aa68", "@adr: ADR.09.03.84b9", "@chg: CHG-22"]
   upstream:
     adr_references: ["@adr: ADR.01.03.42e3", "@adr: ADR.09.03.84b9", "@adr: ADR.10.03.51ea"]
     bdd_references: ["@bdd: BDD.01.03.aa68", "@bdd: BDD.01.03.c0f6", "@bdd: BDD.01.03.7b02"]
