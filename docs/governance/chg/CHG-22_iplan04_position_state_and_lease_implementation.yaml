@@ -119,8 +119,10 @@ impact_assessment:
         - "Include/Position/LiveBrokerPositionView.mqh"
         - "Include/Position/LiveTradeTransactionEvidence.mqh"
         - "Include/Persistence/StateStore.mqh"
+        - "Include/Persistence/MarkerLease.mqh"
         - "Include/Persistence/PersistenceTypes.mqh"
         - "Include/Persistence/AlertSink.mqh"
+        - "Include/Core/Interfaces.mqh"
         - "Scripts/Tests/Test_StateStore.mq5"
         - "Scripts/Tests/Test_AlertSink.mq5"
         - "Scripts/Tests/RunAllTests.mq5"
@@ -167,13 +169,13 @@ implementation:
       artifact: "docs/08_IPLAN, Docs/MODULES"
       status: Completed
     - step: 7
-      action: "Update canonical SPEC/TDD cascade and regenerate affected readable SPEC/TDD/IPLAN views."
+      action: "Update canonical SPEC/TDD cascade; readable SPEC/TDD/IPLAN regeneration remains required through the documentation generator."
       artifact: "docs/06_SPEC, docs/07_TDD, docs/08_IPLAN"
-      status: Completed
+      status: Partial
     - step: 8
-      action: "Run authoritative MT5 IDE compile and execute RunAllTests from the Navigator."
+      action: "RunAllTests execution was reported complete; authoritative compile evidence remains partial until the MetaEditor warning summary and fresh EX5 metadata are recorded."
       artifact: "Scripts/Tests/RunAllTests.mq5"
-      status: Completed
+      status: Partial
     - step: 9
       action: "Run two-chart ownership, full-session demo canary, and post-runtime review-team acceptance."
       artifact: "Docs/OPERATIONS.md and .aidoc/review"
@@ -286,8 +288,10 @@ rollback_plan:
     - "Scripts/Tests/Test_AccountModeDeferred.mq5"
     - "Scripts/Tests/Test_PositionLiveProviders.mq5"
     - "Include/Persistence/StateStore.mqh"
+    - "Include/Persistence/MarkerLease.mqh"
     - "Include/Persistence/PersistenceTypes.mqh"
     - "Include/Persistence/AlertSink.mqh"
+    - "Include/Core/Interfaces.mqh"
     - "Scripts/Tests/Test_StateStore.mq5"
     - "Scripts/Tests/Test_AlertSink.mq5"
     - "Scripts/Tests/RunAllTests.mq5"

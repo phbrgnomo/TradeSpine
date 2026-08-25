@@ -14,7 +14,9 @@
 #include "../../Include/Position/NettingAdapter.mqh"
 #include "Support/FakePositionView.mqh"
 
-/** \brief Verify hedging adapter filters ownership by symbol and magic. */
+/** \brief Verify hedging adapter filters ownership by symbol and magic.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
 bool Test_HedgingAdapter_OwnershipFilter(CAssert &a)
   {
    bool ok = true;
@@ -35,7 +37,9 @@ bool Test_HedgingAdapter_OwnershipFilter(CAssert &a)
    return(ok);
   }
 
-/** \brief Verify close/modify/cancel delegate to the guarded executor. */
+/** \brief Verify close/modify/cancel delegate to the guarded executor.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
 bool Test_HedgingAdapter_ExecutorDelegation(CAssert &a)
   {
    bool ok = true;
@@ -67,7 +71,9 @@ bool Test_HedgingAdapter_ExecutorDelegation(CAssert &a)
    return(ok);
   }
 
-/** \brief Verify TrailSL is tighten-only. */
+/** \brief Verify TrailSL is tighten-only.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
 bool Test_HedgingAdapter_TrailSL(CAssert &a)
   {
    bool ok = true;
@@ -91,7 +97,9 @@ bool Test_HedgingAdapter_TrailSL(CAssert &a)
    return(ok);
   }
 
-/** \brief Verify deferred netting adapter fails initialization and never writes. */
+/** \brief Verify deferred netting adapter fails initialization and never writes.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
 bool Test_NettingAdapter_DeferredNoWrites(CAssert &a)
   {
    bool ok = true;
@@ -108,6 +116,9 @@ bool Test_NettingAdapter_DeferredNoWrites(CAssert &a)
    return(ok);
   }
 
+/** \brief Aggregate account-mode adapter integration assertions.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
 bool test_position_account_mode_and_state_integration_contract(CAssert &a)
   {
    bool ok = true;

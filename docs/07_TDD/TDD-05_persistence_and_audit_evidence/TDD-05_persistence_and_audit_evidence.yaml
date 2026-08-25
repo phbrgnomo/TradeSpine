@@ -69,7 +69,7 @@ test_mapping:
         - type: e2e
           file: "Scripts/Tests/Test_AlertSink.mq5"
           function: "test_persistence_and_audit_evidence_0073_e2e"
-          status: pending
+          status: delivered
     - bdd_scenario: "@bdd: BDD.01.03.d6ae"
       description: "Evidence records remain paired and separated"
       tests:
@@ -84,7 +84,7 @@ test_mapping:
         - type: e2e
           file: "Scripts/Tests/Test_AlertSink.mq5"
           function: "test_persistence_and_audit_evidence_d6ae_e2e"
-          status: pending
+          status: delivered
     - bdd_scenario: "@bdd: BDD.01.03.e16a"
       description: "Ambiguous async outcome enters halt"
       tests:
@@ -99,7 +99,7 @@ test_mapping:
         - type: e2e
           file: "Scripts/Tests/Test_AlertSink.mq5"
           function: "test_persistence_and_audit_evidence_e16a_e2e"
-          status: pending
+          status: delivered
     - bdd_scenario: "@bdd: BDD.01.03.b37d"
       description: "Performance budgets are evidenced"
       tests:
@@ -114,7 +114,7 @@ test_mapping:
         - type: e2e
           file: "Scripts/Tests/Test_AlertSink.mq5"
           function: "test_persistence_and_audit_evidence_b37d_e2e"
-          status: pending
+          status: delivered
   coverage_table:
     columns: [BDD Scenario, Unit, Integration, E2E, Total]
     rows:

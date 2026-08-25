@@ -7,14 +7,15 @@
 //|        TDD.09.04.c1f3,                                           |
 //|        TDD.11.04.6805, TDD.11.04.aadd, TDD.11.04.4f72,          |
 //|        TDD.05.04.e64a, TDD.05.04.229f, TDD.05.04.ed21,          |
-//|        TDD.04.04.8b79,                                          |
+//|        TDD.04.04.8b79, TDD.04.04.b7d2, TDD.04.04.c6e1,          |
 //|        TDD.06.04.8f4d, TDD.06.04.4796, TDD.06.04.cd48           |
 //| @spec: SPEC-09, SPEC-11, SPEC-05, SPEC-04, SPEC-06               |
 //| @iplan: IPLAN-09, IPLAN-11, IPLAN-05, IPLAN-04, IPLAN-06         |
 //|                                                                  |
 //| Global aggregate runner: includes all implemented TDD-09,        |
 //| TDD-11, TDD-05, TDD-04, and TDD-06 test scripts and calls their |
-//| a single pass. TRADESPINE_RUN_ALL_TESTS suppresses each          |
+//| contract entry points in a single pass. TRADESPINE_RUN_ALL_TESTS|
+//| suppresses each                                                   |
 //| individual OnStart() so only this runner's OnStart() is compiled.|
 //+------------------------------------------------------------------+
 #property copyright "phbr"

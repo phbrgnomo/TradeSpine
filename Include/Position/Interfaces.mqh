@@ -113,10 +113,16 @@ interface ITradeTransactionEvidence
    //--- \return MT5 deal entry value.
    ENUM_DEAL_ENTRY HistoryDealEntry(ulong ticket);
    //--- \brief Return originating order for a history deal.
+   //--- \param ticket History deal ticket.
+   //--- \return Originating order ticket, or zero when unavailable.
    ulong HistoryDealOrder(ulong ticket);
    //--- \brief Return broker position identifier for a history deal.
+   //--- \param ticket History deal ticket.
+   //--- \return Stable position identifier, or zero when unavailable.
    ulong HistoryDealPositionId(ulong ticket);
    //--- \brief Return actual deal volume.
+   //--- \param ticket History deal ticket.
+   //--- \return Deal volume in lots, or zero when unavailable.
    double HistoryDealVolume(ulong ticket);
    //--- \brief Return final state for a history order.
    //--- \param ticket History order ticket.

@@ -243,8 +243,15 @@ class CMarkerLease
             preserved = m_backend.CompareExchange(m_owner_key,
                                                    (double)token,
                                                    (double)next_token);
-         PrintFormat("[TS_LEASE_HEARTBEAT_VERIFY_FAIL] token=%I64d owner=%.0f heartbeat=%.0f preserved=%d",
-                     token, observed_owner, observed_heartbeat, (preserved ? 1 : 0));
+         // Backend reads expose no error status. Non-finite values are therefore
+         // classified explicitly; every other failed verification is a reread
+         // mismatch and includes both identity-derived slot keys for correlation.
+         string reason = (!MathIsValidNumber(observed_owner)
+                          || !MathIsValidNumber(observed_heartbeat)
+                          ? "invalid_backend_value" : "reread_mismatch");
+         PrintFormat("[TS_LEASE_HEARTBEAT_VERIFY_FAIL] reason=%s owner_key=%s heartbeat_key=%s token=%I64d owner=%.0f heartbeat=%.0f preserved=%d",
+                     reason, m_owner_key, m_heartbeat_key, token,
+                     observed_owner, observed_heartbeat, (preserved ? 1 : 0));
          m_backend.ReleaseExclusive(lock_handle);
          return(false);
         }

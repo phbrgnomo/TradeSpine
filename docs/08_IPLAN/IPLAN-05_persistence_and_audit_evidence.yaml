@@ -311,7 +311,7 @@ traceability:
         exports: ["IMarkerBackend", "CTerminalMarkerBackend", "CMarkerLease"]
         status: in_progress
       - path: "Include/Persistence/StateStore.mqh"
-        exports: ["ENUM_POSITION_STATE", "ENUM_STORE_READ_RESULT", "ENUM_CANCEL_ORIGIN", "PendingOrderEvidence", "LifecycleSnapshot", "IStateStore", "CStateStore"]
+        exports: ["ENUM_POSITION_STATE", "ENUM_STORE_READ_RESULT", "ENUM_CANCEL_ORIGIN", "PendingOrderEvidence", "LifecycleSnapshot", "HaltEvidence", "IStateStore", "CStateStore"]
         status: in_progress
       - path: "Include/Persistence/TradeLogger.mqh"
         exports: ["TradeEvidenceRecord", "TradeLogger"]

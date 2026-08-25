@@ -69,27 +69,39 @@ class FakeStateStore : public IStateStore
                   FakeStateStore(void) { Reset(); }
 
    //--- \brief Reset all fake state and counters.
+   //--- \return void.
    void           Reset();
    //--- \brief Commit an in-memory lifecycle aggregate.
+   //--- \param snapshot Lifecycle aggregate to commit.
+   //--- \return true when the injected snapshot write succeeds.
    bool           WriteLifecycleSnapshot(const LifecycleSnapshot &snapshot) override;
    //--- \brief Read the in-memory lifecycle aggregate with detailed status.
+   //--- \param snapshot [out] Stored aggregate when present and valid.
+   //--- \return Detailed snapshot read result.
    ENUM_STORE_READ_RESULT ReadLifecycleSnapshot(LifecycleSnapshot &snapshot) override;
    //--- \brief Return the injected runtime-isolation flag.
    //--- \return true when runtime_isolated is set.
    bool           IsRuntimeIsolated() override { return(runtime_isolated); }
    //--- \brief Store an in-memory scalar and increment write counter.
+   //--- \param scope Logical scalar scope.
+   //--- \param value Scalar value to store.
    //--- \return true.
    bool           WriteScalar(string scope, double value) override;
    //--- \brief Read an in-memory scalar and increment read counter.
+   //--- \param scope Logical scalar scope.
+   //--- \param value [out] Stored value when present.
    //--- \return true when the scope exists.
    bool           ReadScalar(string scope, double &value) override;
    //--- \brief Mark an intent as duplicate in scalar state.
+   //--- \param intent_id_hash Intent identifier hash.
    //--- \return true.
    bool           SetDuplicate(string intent_id_hash) override { return(WriteScalar("dup_" + intent_id_hash, 1.0)); }
    //--- \brief Return whether a duplicate scalar exists.
+   //--- \param intent_id_hash Intent identifier hash.
    //--- \return true when marked duplicate.
    bool           IsDuplicate(string intent_id_hash) override;
    //--- \brief Capture HALT evidence and optionally fail the write.
+   //--- \param ev HALT evidence payload.
    //--- \return false only when fail_set_halt is true.
    bool           SetHalt(const HaltEvidence &ev) override;
    //--- \brief Capture appended HALT evidence without changing the HALT flag.
@@ -104,21 +116,31 @@ class FakeStateStore : public IStateStore
    //--- \return true.
    bool           ClearHalt() override;
    //--- \brief Store fake filled ticket.
+   //--- \param ticket Ticket to store.
    //--- \return true.
    bool           WriteTicket(ulong ticket) override { ticket_value = ticket; ticket_set = true; return(true); }
    //--- \brief Read fake filled ticket.
+   //--- \param ticket [out] Stored ticket when present.
    //--- \return true when a ticket is set.
    bool           ReadTicket(ulong &ticket) override { if(!ticket_set) return(false); ticket = ticket_value; return(true); }
    //--- \brief Store fake pending-order evidence.
+   //--- \param ticket Pending order ticket.
+   //--- \param submitted_ts Pending submission timestamp.
    //--- \return true.
    bool           WritePendingOrder(ulong ticket, datetime submitted_ts) override;
    //--- \brief Read fake pending-order evidence.
+   //--- \param ticket [out] Pending order ticket.
+   //--- \param submitted_ts [out] Pending submission timestamp.
    //--- \return true when pending evidence is set.
    bool           ReadPendingOrder(ulong &ticket, datetime &submitted_ts) override;
    //--- \brief Clear fake pending-order evidence.
    //--- \return true.
    bool           ClearPendingOrder() override;
    //--- \brief Claim, conflict, or stale-reclaim fake marker lease.
+   //--- \param now Claim time.
+   //--- \param lease_secs Lease duration in seconds.
+   //--- \param out_token [out] Claimed owner token, or zero on conflict.
+   //--- \param status [out] Marker claim status.
    //--- \return true for handled claim/conflict; false for invalid lease_secs.
    bool           MarkerClaimOrReclaim(datetime now,
                                        int lease_secs,
@@ -130,8 +152,11 @@ class FakeStateStore : public IStateStore
    //--- \return true when token advances.
    bool           MarkerHeartbeat(long &token, datetime now) override;
    //--- \brief Check fake marker ownership.
+   //--- \param token Marker token to inspect.
+   //--- \return true when token is the current fake owner.
    bool           MarkerIsOwner(long token) override { return(token > 0 && marker_owner == token); }
    //--- \brief Release fake marker lease when token matches.
+   //--- \param token Current marker owner token.
    //--- \return true when marker_owner changes to -token.
    bool           MarkerRelease(long token) override;
    //--- \brief Fake integrity check.

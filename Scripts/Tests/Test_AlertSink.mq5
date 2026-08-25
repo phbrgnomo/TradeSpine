@@ -43,6 +43,10 @@ class AlertSinkCaptureSink : public IAlertSink
    //--- \return false because this capture-only sink is non-durable.
    bool         Halt(const HaltEvidence &ev) override
      { halt_called = true; last_halt = ev; return(false); }
+   //--- \brief Capture a non-fatal warning without UI side effects.
+   //--- \param category Warning category.
+   //--- \param msg Warning message, ignored by this capture sink.
+   //--- \return void.
    void         Warn(string category, string msg) override
      { warn_count++; last_warn_category = category; }
   };
@@ -83,10 +87,27 @@ class AlertSinkStateStoreDouble : public IStateStore
                                                   pending_submitted_ts(0),
                                                   pending_set(false) {}
 
+   //--- \brief Accept a scalar write in this non-persistent double.
+   //--- \param scope Logical scalar scope.
+   //--- \param value Scalar value, ignored by this double.
+   //--- \return true.
    bool         WriteScalar(string scope, double value)   override { return(true); }
+   //--- \brief Report scalar absence in this non-persistent double.
+   //--- \param scope Logical scalar scope.
+   //--- \param value [out] Unchanged because no scalar is stored.
+   //--- \return false.
    bool         ReadScalar(string scope, double &value)   override { return(false); }
+   //--- \brief Accept duplicate marking in this double.
+   //--- \param intent_id_hash Intent identifier hash.
+   //--- \return true.
    bool         SetDuplicate(string intent_id_hash)       override { return(true); }
+   //--- \brief Report that no duplicate is tracked in this double.
+   //--- \param intent_id_hash Intent identifier hash.
+   //--- \return false.
    bool         IsDuplicate(string intent_id_hash)        override { return(false); }
+   //--- \brief Persist injected HALT evidence unless failure is configured.
+   //--- \param ev HALT evidence payload.
+   //--- \return true when should_fail_halt is false.
    bool         SetHalt(const HaltEvidence &ev)           override
      {
       halt_call_count++;
@@ -103,15 +124,29 @@ class AlertSinkStateStoreDouble : public IStateStore
       last_halt_ev = ev;
       return(!should_fail_halt);
      }
+   //--- \brief Report the double's HALT flag.
+   //--- \return true when HALT was persisted.
    bool         IsHalted()                                override { return(halt_set); }
+   //--- \brief Clear the injected HALT flag.
+   //--- \return true.
    bool         ClearHalt()                               override
      {
       clear_halt_count++;
       halt_set = false;
       return(true);
      }
+   //--- \brief Accept a ticket write in this double.
+   //--- \param ticket Ticket value, ignored by this double.
+   //--- \return true.
    bool         WriteTicket(ulong ticket)                 override { return(true); }
+   //--- \brief Report ticket absence in this double.
+   //--- \param ticket [out] Unchanged because no ticket is stored.
+   //--- \return false.
    bool         ReadTicket(ulong &ticket)                 override { return(false); }
+   //--- \brief Store pending-order evidence for assertions.
+   //--- \param ticket Pending order ticket.
+   //--- \param submitted_ts Pending submission timestamp.
+   //--- \return true.
    bool         WritePendingOrder(ulong ticket, datetime submitted_ts) override
      {
       pending_ticket = ticket;
@@ -119,6 +154,10 @@ class AlertSinkStateStoreDouble : public IStateStore
       pending_set = true;
       return(true);
      }
+   //--- \brief Read pending-order evidence from this double.
+   //--- \param ticket [out] Pending order ticket.
+   //--- \param submitted_ts [out] Pending submission timestamp.
+   //--- \return true when pending evidence is stored.
    bool         ReadPendingOrder(ulong &ticket, datetime &submitted_ts) override
      {
       if(!pending_set) return(false);
@@ -126,6 +165,8 @@ class AlertSinkStateStoreDouble : public IStateStore
       submitted_ts = pending_submitted_ts;
       return(true);
      }
+   //--- \brief Clear pending-order evidence from this double.
+   //--- \return true.
    bool         ClearPendingOrder()                       override
      {
       pending_set = false;
@@ -133,6 +174,12 @@ class AlertSinkStateStoreDouble : public IStateStore
       pending_submitted_ts = 0;
       return(true);
      }
+   //--- \brief Return a deterministic marker claim.
+   //--- \param now Claim time, ignored by this double.
+   //--- \param lease_secs Lease duration, ignored by this double.
+   //--- \param out_token [out] Receives token one.
+   //--- \param status [out] Receives active ownership status.
+   //--- \return true.
    bool         MarkerClaimOrReclaim(datetime now,
                                      int lease_secs,
                                      long &out_token,
@@ -158,11 +205,16 @@ class AlertSinkStateStoreDouble : public IStateStore
    //--- \param token Marker token to inspect.
    //--- \return true when token is positive.
    bool         MarkerIsOwner(long token) override { return(token > 0); }
+   //--- \brief Record release of a positive injected marker token.
+   //--- \param token Marker owner token.
+   //--- \return true when token is positive.
    bool         MarkerRelease(long token)                 override
      {
       marker_release_count++;
       return(token > 0);
      }
+   //--- \brief Report successful fake-store integrity verification.
+   //--- \return true.
    bool         Verify()                                  override { return(true); }
   };
 
@@ -302,8 +354,8 @@ bool Test_AlertSink_NonVisualTester_Halt(CAssert &a)
                     "HALT message routed to logger in non-visual tester");
    ok &= a.TS_CHECK(sink.HasMessage("Non-visual test HALT"),
                     "HALT reason present in logger message");
-   ok &= a.TS_CHECK(!durable,
-                    "Missing state store is reported as durable HALT evidence failure");
+   ok &= a.TS_CHECK(durable,
+                    "Missing state store preserves notification-only HALT success");
 
    return(ok);
   }
@@ -416,8 +468,8 @@ bool Test_AlertSink_Halt_LoggerFirstContract(CAssert &a)
    HaltEvidence ev = MakeHalt("logger-first HALT", "Verify log written");
    bool durable = alert.Halt(ev);
 
-   ok &= a.TS_CHECK(!durable,
-                    "CAlertSink.Halt reports missing durable persistence without a store");
+   ok &= a.TS_CHECK(durable,
+                    "CAlertSink.Halt preserves notification-only success without a store");
 
    ok &= a.TS_CHECK(sink.HasMessage("TRADESPINE HALT"),
                     "logger.Error() called during Halt() — written before Alert() in live/visual path");

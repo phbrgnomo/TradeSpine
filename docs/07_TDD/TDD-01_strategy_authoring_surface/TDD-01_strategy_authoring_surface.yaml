@@ -114,7 +114,7 @@ test_cases:
         type: unit
         name: "Lifecycle rejects helper before Live and timer delegates framework maintenance"
         spec_ref: "@spec: SPEC-01"
-        target: "CStrategyBase.OpenLong"
+        target: "CStrategyBase.OpenLong, OnTimer, OnDeinit, runtime-namespace assembly, and OnTradeTransaction"
         test_file: "Scripts/Tests/Test_StrategyBase.mq5"
         test_function: "test_strategy_authoring_surface_unit_contract"
         inputs:

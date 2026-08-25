@@ -41,7 +41,8 @@ class CTradeTxRouter
    //--- \param evidence Transaction evidence provider.
    //--- \param sm Shared position state machine.
    //--- \param logger Optional diagnostic logger.
-   //--- \return true when required evidence and state machine dependencies exist.
+   //--- \param positions Mandatory current-position provider used by canonical reconciliation.
+   //--- \return true when all evidence, position, and state-machine dependencies exist.
    bool                       Init(string symbol,
                                    ulong magic,
                                    ITradeTransactionEvidence* evidence,

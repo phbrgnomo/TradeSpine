@@ -37,7 +37,7 @@ interface IAlertSink
   {
    //--- \brief Raise a HALT alert. Carries the full HaltEvidence payload.
    //--- \param ev HALT evidence payload.
-   //--- \return true only when durable HALT evidence was committed.
+   //--- \return true when no store is configured or durable HALT evidence was committed.
    bool Halt(const HaltEvidence &ev);
 
    //--- \brief Raise a non-fatal operator warning.
@@ -63,13 +63,13 @@ class CAlertSink : public IAlertSink
    //--- \brief Bind the alert sink to the runtime context, diagnostic logger, and optional state store.
    //--- \param ctx     Runtime mode gate (non-null; caller owns lifetime).
    //--- \param logger  Fallback diagnostic channel (non-null; caller owns lifetime).
-   //--- \param store   State store for persistent GV HALT flag (optional; NULL = no flag written).
+   //--- \param store   State store for persistent GV HALT flag (optional; NULL preserves notification-only success).
    //---                If SetHalt() fails, Halt returns false and emits a secondary Error.
    void           Init(COptContext* ctx, Logger* logger, IStateStore* store = NULL);
 
    //--- \brief Route a HALT alert per the active runtime mode.
    //--- \param ev HALT evidence payload.
-   //--- \return true only when durable HALT evidence was committed.
+   //--- \return true when no store is configured or durable HALT evidence was committed.
    bool           Halt(const HaltEvidence &ev) override;
 
    //--- \brief Route an operator warning per the active runtime mode.
@@ -89,7 +89,7 @@ void CAlertSink::Init(COptContext* ctx, Logger* logger, IStateStore* store)
 //+------------------------------------------------------------------+
 bool CAlertSink::Halt(const HaltEvidence &ev)
   {
-   bool persist_failed = (m_store == NULL);
+   bool persist_failed = false;
    if(m_store != NULL)
       persist_failed = !m_store.SetHalt(ev); // persistent circuit breaker
 

@@ -368,3 +368,20 @@ bool test_position_account_mode_and_state_e2e_acceptance(CAssert &a)
    ok &= Test_PositionContext_InvalidStopRepairHalts(a);
    return(ok);
   }
+
+#ifndef TRADESPINE_RUN_ALL_TESTS
+/** \brief Run the standalone position-context E2E cohort.
+    \return 0 when all assertions pass, 1 on failure, or 2 when skips occur. */
+int OnStart()
+  {
+   CAssert asserts;
+   asserts.Reset();
+   Print("== Test_AccountModeDeferred ==");
+   test_position_account_mode_and_state_e2e_acceptance(asserts);
+   if(!asserts.TS_REPORT_SUMMARY("Test_AccountModeDeferred"))
+      return(1);
+   if(asserts.TestsSkipped() > 0)
+      return(2);
+   return(0);
+  }
+#endif

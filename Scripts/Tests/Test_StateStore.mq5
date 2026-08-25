@@ -26,6 +26,11 @@
 #define TEST_SYMBOL   "TSTEST"
 #define TEST_MAGIC    ((ulong)99905)
 
+//--- \brief Read a test HALT audit file for assertions.
+//--- \param path Terminal-files-relative audit path.
+//--- \return Complete file content, or an empty string when unavailable.
+string ReadHaltFile(string path);
+
 /** \brief One in-memory marker slot key/value pair. */
 struct DeterministicMarkerSlot
   {

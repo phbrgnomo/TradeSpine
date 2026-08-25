@@ -108,6 +108,7 @@ data_models:
   models:
     - name: "StrategyLifecyclePhase"
       type: "enum"
+      purpose: "Defines the permitted framework lifecycle stages that gate strategy initialization and broker-facing helpers."
       fields:
         - name: "phase"
           type: "ENUM_STRATEGY_PHASE"
@@ -115,6 +116,7 @@ data_models:
           description: "Construct, framework-init, strategy-init, or live."
     - name: "StrategyIdentity"
       type: "struct"
+      purpose: "Carries the account, symbol, and magic tuple that scopes one strategy instance's ownership and evidence."
       fields:
         - name: "account"
           type: "long"
@@ -130,6 +132,7 @@ data_models:
           description: "Strategy magic number used for ownership and evidence."
     - name: "CommonInputSet"
       type: "include contract"
+      purpose: "Defines the shared operator-visible MT5 input groups supplied by the framework."
       fields:
         - name: "input_groups"
           type: "ordered group labels"
@@ -137,6 +140,7 @@ data_models:
           description: "Identity, lot caps, kill-switch, execution, session, sizing, symbol lifecycle, visualization, and logging groups."
     - name: "StrategyInputSet"
       type: "include contract"
+      purpose: "Defines strategy- and indicator-specific optimizer-visible MT5 inputs owned by the strategy artifact."
       fields:
         - name: "strategy_inputs"
           type: "MT5 input declarations"

@@ -80,6 +80,7 @@ class FakePositionView : public IBrokerPositionView
    //--- \param volume Position volume.
    //--- \param sl Stop-loss price.
    //--- \param tp Take-profit price.
+   //--- \return void.
    void               AddPosition(ulong ticket, string symbol, ulong magic, ENUM_POSITION_TYPE type, double volume, double sl, double tp);
    //--- \brief Append a position whose stable identifier differs from its ticket.
    //--- \param ticket Position ticket.
@@ -111,13 +112,13 @@ class FakePositionView : public IBrokerPositionView
    //--- \return Identifier, or zero when none is selected.
    ulong              Identifier() override;
    //--- \brief Return selected fake position symbol.
-   //--- \return Symbol string.
+   //--- \return Symbol string, or empty when none is selected.
    string             Symbol() override;
    //--- \brief Return selected fake position magic.
-   //--- \return Magic number.
+   //--- \return Magic number, or zero when none is selected.
    ulong              Magic() override;
    //--- \brief Return selected fake position type.
-   //--- \return Position side.
+   //--- \return Position side, or the fake's BUY fallback when none is selected.
    ENUM_POSITION_TYPE PositionType() override;
    //--- \brief Return selected fake position volume.
    //--- \return Volume in lots.
@@ -190,6 +191,7 @@ class FakeTradeTransactionEvidence : public ITradeTransactionEvidence
    //--- \param volume Position volume.
    //--- \param sl Stop-loss price.
    //--- \param tp Take-profit price.
+   //--- \return void.
    void               AddPosition(ulong ticket, string symbol, ulong magic, ENUM_POSITION_TYPE type, double volume, double sl, double tp);
    //--- \brief Append a fake history deal.
    //--- \param ticket Deal ticket.
@@ -212,12 +214,14 @@ class FakeTradeTransactionEvidence : public ITradeTransactionEvidence
    //--- \param symbol Order symbol.
    //--- \param magic Order magic number.
    //--- \param state Order state.
+   //--- \return void.
    void               AddOrder(ulong ticket, string symbol, ulong magic, ENUM_ORDER_STATE state);
    //--- \brief Append a fake history-only order unavailable to ActiveOrderSelect.
    //--- \param ticket Order ticket.
    //--- \param symbol Order symbol.
    //--- \param magic Order magic number.
    //--- \param state Final history order state.
+   //--- \return void.
    void               AddHistoryOrder(ulong ticket, string symbol, ulong magic, ENUM_ORDER_STATE state);
 
    //--- \brief Select fake history window.

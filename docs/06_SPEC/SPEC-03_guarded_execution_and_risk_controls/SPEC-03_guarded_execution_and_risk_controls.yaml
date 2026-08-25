@@ -59,7 +59,7 @@ interfaces:
         - "GuardResult rejected: validation, risk, market, OrderCheck, margin, fill, or broker outcome failed."
     - name: "ITradeExecutor"
       type: "interface"
-      signature: "interface ITradeExecutor { CloseTicket(ticket,lots); ModifyTicket(ticket,sl,tp); CancelOrder(order_ticket); }"
+      signature: "interface ITradeExecutor { bool CloseTicket(ulong ticket, double lots); bool ModifyTicket(ulong ticket, double sl, double tp); bool CancelOrder(ulong order_ticket); }"
       description: "Guarded close/modify/cancel seam consumed by the Position layer. IPLAN-04 declares and fake-tests the seam; CGuardedTrade implements it in IPLAN-03 (@chg: CHG-22)."
       errors:
         - "false: close, modify, or cancel rejected by guard, broker, or ownership policy."

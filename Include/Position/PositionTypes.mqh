@@ -13,16 +13,19 @@
 
 //+------------------------------------------------------------------+
 //| \brief Default pending-entry fill timeout in seconds.            |
+//| \return Compile-time timeout value of five seconds.              |
 //+------------------------------------------------------------------+
 #define POSITION_FILL_TIMEOUT_SECS_DEFAULT 5
 
 //+------------------------------------------------------------------+
 //| \brief Maximum wait for broker cancellation confirmation.       |
+//| \return Compile-time timeout value of five seconds.              |
 //+------------------------------------------------------------------+
 #define POSITION_CANCEL_CONFIRM_TIMEOUT_SECS 5
 
 //+------------------------------------------------------------------+
 //| \brief ENUM_CLOSE_REASON - why an open position was closed.      |
+//| \return One stable close-reason value.                            |
 //+------------------------------------------------------------------+
 enum ENUM_CLOSE_REASON
   {
@@ -36,6 +39,7 @@ enum ENUM_CLOSE_REASON
 
 //+------------------------------------------------------------------+
 //| \brief ENUM_STATE_TRIGGER - normalized state-machine trigger.    |
+//| \return One stable lifecycle-trigger value.                       |
 //+------------------------------------------------------------------+
 enum ENUM_STATE_TRIGGER
   {
@@ -51,6 +55,7 @@ enum ENUM_STATE_TRIGGER
 
 //+------------------------------------------------------------------+
 //| \brief ENUM_RECOVERY_DECISION - restart reconciliation outcome.  |
+//| \return One stable recovery-decision value.                       |
 //+------------------------------------------------------------------+
 enum ENUM_RECOVERY_DECISION
   {
@@ -64,6 +69,7 @@ enum ENUM_RECOVERY_DECISION
 
 //+------------------------------------------------------------------+
 //| \brief ENUM_EXIT_ROLE - role of an exit/cancel action.           |
+//| \return One stable exit-role value.                               |
 //+------------------------------------------------------------------+
 enum ENUM_EXIT_ROLE
   {

@@ -37,6 +37,7 @@ class FakeAlertSink : public IAlertSink
 
    //--- \brief Bind optional fake state store for HALT forwarding.
    //--- \param store Optional store receiving SetHalt(ev).
+   //--- \return void.
    void            Init(FakeStateStore* store = NULL) { m_store = store; }
    //--- \brief Capture HALT evidence and forward to bound fake store.
    //--- \param ev HALT evidence payload.
@@ -45,6 +46,7 @@ class FakeAlertSink : public IAlertSink
    //--- \brief Capture warning category and message.
    //--- \param category Warning category.
    //--- \param msg Warning message.
+   //--- \return void.
    void            Warn(string category, string msg) override;
   };
 

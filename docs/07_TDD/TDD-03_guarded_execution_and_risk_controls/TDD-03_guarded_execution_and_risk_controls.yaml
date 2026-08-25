@@ -130,7 +130,7 @@ test_cases:
         type: unit
         name: "GuardResult classifies unknown retcodes and ITradeExecutor close/modify/cancel delegates safely"
         spec_ref: "@spec: SPEC-03"
-        target: "CGuardedTrade.ClassifyRetcode"
+        target: "CGuardedTrade.ClassifyRetcode, CloseTicket, ModifyTicket, and CancelOrder"
         test_file: "Scripts/Tests/Test_GuardedTrade.mq5"
         test_function: "test_guarded_execution_and_risk_controls_unit_contract"
         inputs:

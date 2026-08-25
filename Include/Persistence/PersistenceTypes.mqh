@@ -31,6 +31,7 @@ enum ENUM_TRADE_RECORD_TYPE
 //+------------------------------------------------------------------+
 //| \brief ENUM_DUPLICATE_MARKER_STATUS - result of a token-fenced   |
 //|        duplicate marker lease claim.                             |
+//| \return One stable marker-claim outcome value.                    |
 //|                                                                  |
 //| Kept in PersistenceTypes to avoid a Persistence -> Position      |
 //| include cycle when IPLAN-04 consumes the marker lease.           |
