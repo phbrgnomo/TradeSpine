@@ -26,6 +26,89 @@
 #define TEST_SYMBOL   "TSTEST"
 #define TEST_MAGIC    ((ulong)99905)
 
+/** \brief One in-memory marker slot key/value pair. */
+struct DeterministicMarkerSlot
+  {
+   string key;
+   double value;
+  };
+
+/** \brief Deterministic marker backend with a controllable CAS-to-heartbeat theft hook. */
+class DeterministicMarkerBackend : public IMarkerBackend
+  {
+  private:
+   DeterministicMarkerSlot m_slots[];
+   bool m_locked;
+   string m_owner_key;
+   string m_hb_key;
+   bool m_heartbeat_mismatch_pending;
+   int _Find(string key)
+     {
+      for(int i = 0; i < ArraySize(m_slots); i++)
+         if(m_slots[i].key == key) return(i);
+      return(-1);
+     }
+   bool _Put(string key, double value)
+     {
+      int i = _Find(key);
+      if(i < 0)
+        {
+         i = ArraySize(m_slots);
+         ArrayResize(m_slots, i + 1);
+         m_slots[i].key = key;
+        }
+      m_slots[i].value = value;
+      return(true);
+     }
+  public:
+   bool steal_after_heartbeat;
+   bool transient_heartbeat_read_mismatch;
+   DeterministicMarkerBackend(void) : m_locked(false), m_owner_key(""), m_hb_key(""),
+                                      m_heartbeat_mismatch_pending(false),
+                                      steal_after_heartbeat(false),
+                                      transient_heartbeat_read_mismatch(false) {}
+   bool Exists(string key) override { return(_Find(key) >= 0); }
+   double Get(string key) override
+     {
+      int i = _Find(key);
+      if(key == m_hb_key && m_heartbeat_mismatch_pending)
+        {
+         m_heartbeat_mismatch_pending = false;
+         return(i >= 0 ? m_slots[i].value - 1.0 : 0.0);
+        }
+      return(i >= 0 ? m_slots[i].value : 0.0);
+     }
+   bool Set(string key, double value) override
+     {
+      if(m_owner_key == "") m_owner_key = key;
+      else if(m_hb_key == "" && key != m_owner_key) m_hb_key = key;
+      _Put(key, value);
+      if(transient_heartbeat_read_mismatch && key == m_hb_key && value > 0.0)
+        {
+         m_heartbeat_mismatch_pending = true;
+         transient_heartbeat_read_mismatch = false;
+        }
+      if(steal_after_heartbeat && key == m_hb_key && value > 0.0)
+        {
+         _Put(m_owner_key, Get(m_owner_key) + 100.0);
+         steal_after_heartbeat = false;
+        }
+      return(true);
+     }
+   bool CompareExchange(string key, double value, double expected) override
+     {
+      if(!Exists(key) || Get(key) != expected) return(false);
+      return(_Put(key, value));
+     }
+   int AcquireExclusive(string lock_name) override
+     {
+      if(m_locked) return(INVALID_HANDLE);
+      m_locked = true;
+      return(1);
+     }
+   void ReleaseExclusive(int handle) override { m_locked = false; }
+  };
+
 /** \brief Build a test CanonicalIdentity with the given scope. */
 CanonicalIdentity MakeTestId(string scope)
   {
@@ -43,6 +126,16 @@ void CleanupGVs(CKeyBuilder &kb)
    string scopes[] =
      {
       "fp", "halt_flag", "tkt_hi", "tkt_lo",
+      "pend_ord_hi", "pend_ord_lo", "pend_ord_ts",
+      "marker_owner", "marker_hb_ts", "life_commit",
+      "life0_pos_hi", "life0_pos_lo", "life0_pend_hi", "life0_pend_lo",
+      "life0_pid_hi", "life0_pid_lo",
+      "life0_state", "life0_sub_ts", "life0_cancel_ts", "life0_cancel_origin",
+      "life0_halted", "life0_generation", "life0_checksum",
+      "life1_pos_hi", "life1_pos_lo", "life1_pend_hi", "life1_pend_lo",
+      "life1_pid_hi", "life1_pid_lo",
+      "life1_state", "life1_sub_ts", "life1_cancel_ts", "life1_cancel_origin",
+      "life1_halted", "life1_generation", "life1_checksum",
       "test_scalar", "dup_intentA", "dup_intentB", "dup_xyz"
      };
    for(int i = 0; i < ArraySize(scopes); i++)
@@ -232,12 +325,50 @@ bool Test_StateStore_Halt(CAssert &a)
    ev.reason           = "Test HALT reason";
    ev.last_known_state = POSITION_STATE_ACTIVE;
    ev.operator_action  = "Restart and verify position";
+   ev.symbol           = TEST_SYMBOL;
+   ev.magic            = TEST_MAGIC;
+   ev.ticket           = (ulong)123456;
 
    ok &= a.TS_CHECK(store.SetHalt(ev), "SetHalt returns true");
    ok &= a.TS_CHECK(store.IsHalted(),  "IsHalted true after SetHalt");
 
    string halt_file = "TradeSpine/Halt_" + StringFormat("%I64u", TEST_MAGIC) + "_" + TEST_SYMBOL + ".txt";
    ok &= a.TS_CHECK(FileIsExist(halt_file), "HALT evidence file exists after SetHalt");
+
+   CleanupGVs(kb);
+   return(ok);
+  }
+
+/** \brief Verify CStateStore.ClearHalt() appends recovery evidence before clearing the flag. */
+bool Test_StateStore_ClearHalt(CAssert &a)
+  {
+   bool ok = true;
+   CKeyBuilder kb;
+   CleanupGVs(kb);
+
+   CStateStore store;
+   MakeStore(store, kb);
+
+   HaltEvidence ev;
+   ev.reason           = "Clear HALT reason";
+   ev.last_known_state = POSITION_STATE_HALT;
+   ev.operator_action  = "Clear after operator verification";
+   ev.symbol           = TEST_SYMBOL;
+   ev.magic            = TEST_MAGIC;
+   ev.ticket           = (ulong)98765;
+
+   string halt_file = "TradeSpine/Halt_" + StringFormat("%I64u", TEST_MAGIC) + "_" + TEST_SYMBOL + ".txt";
+
+   ok &= a.TS_CHECK(store.SetHalt(ev), "SetHalt before ClearHalt returns true");
+   ok &= a.TS_CHECK(store.IsHalted(), "HALT flag set before ClearHalt");
+   ok &= a.TS_CHECK(FileIsExist(halt_file), "HALT evidence file exists before ClearHalt");
+
+   ok &= a.TS_CHECK(store.ClearHalt(), "ClearHalt returns true");
+   ok &= a.TS_CHECK(!store.IsHalted(), "HALT flag removed by ClearHalt");
+   ok &= a.TS_CHECK(FileIsExist(halt_file), "HALT evidence remains retained after ClearHalt");
+   string recovered_content = ReadHaltFile(halt_file);
+   ok &= a.TS_CHECK(StringFind(recovered_content, "cleared_at=") >= 0,
+                    "ClearHalt appends durable recovery evidence before clearing the flag");
 
    CleanupGVs(kb);
    return(ok);
@@ -288,6 +419,9 @@ bool Test_StateStore_Halt_LargeMagic(CAssert &a)
    ev.reason           = "LargeMagic HALT test";
    ev.last_known_state = POSITION_STATE_ACTIVE;
    ev.operator_action  = "Verify and restart";
+   ev.symbol           = "TSTEST";
+   ev.magic            = large_magic;
+   ev.ticket           = (ulong)0;
 
    ok &= a.TS_CHECK(store.SetHalt(ev), "SetHalt with large magic returns true");
    ok &= a.TS_CHECK(FileIsExist(expected_file),
@@ -335,6 +469,448 @@ bool Test_StateStore_Ticket(CAssert &a)
    ulong r_zero = (ulong)99;
    ok &= a.TS_CHECK(store.ReadTicket(r_zero),     "ReadTicket (0) returns true");
    ok &= a.TS_CHECK_EQ_L((long)r_zero, (long)(ulong)0, "Zero ticket round-trip exact");
+
+   CleanupGVs(kb);
+   return(ok);
+  }
+
+/** \brief Verify corrupt split-ID GV halves are rejected before ulong reassembly.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
+bool Test_StateStore_SplitIdRejectsCorruptParts(CAssert &a)
+  {
+   bool ok = true;
+   CKeyBuilder kb;
+   CleanupGVs(kb);
+
+   CStateStore store;
+   MakeStore(store, kb);
+
+   string key_hi, key_lo;
+   kb.Build(MakeTestId("tkt_hi"), key_hi);
+   kb.Build(MakeTestId("tkt_lo"), key_lo);
+
+   ok &= a.TS_CHECK(store.WriteTicket((ulong)123456789), "WriteTicket before corruption succeeds");
+
+   ulong read_ticket = (ulong)777;
+   GlobalVariableSet(key_hi, 1.5);
+   ok &= a.TS_CHECK(!store.ReadTicket(read_ticket),
+                    "ReadTicket rejects fractional high split-ID half");
+   ok &= a.TS_CHECK_EQ_L((long)read_ticket, (long)(ulong)777,
+                         "ReadTicket leaves output unchanged on corrupt fractional high half");
+
+   GlobalVariableSet(key_hi, 0.0);
+   GlobalVariableSet(key_lo, 4294967296.0);
+   ok &= a.TS_CHECK(!store.ReadTicket(read_ticket),
+                    "ReadTicket rejects low split-ID half above 32-bit range");
+
+   GlobalVariableSet(key_hi, -1.0);
+   GlobalVariableSet(key_lo, 0.0);
+   ok &= a.TS_CHECK(!store.ReadTicket(read_ticket),
+                    "ReadTicket rejects negative high split-ID half");
+
+   CleanupGVs(kb);
+   return(ok);
+  }
+
+/** \brief Verify commit-last lifecycle snapshots, inactive-slot isolation, and corruption classification.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
+bool Test_StateStore_LifecycleSnapshot(CAssert &a)
+  {
+   bool ok = true;
+   CKeyBuilder kb;
+   CleanupGVs(kb);
+   CStateStore store;
+   MakeStore(store, kb);
+
+   LifecycleSnapshot idle;
+   idle.state = POSITION_STATE_IDLE;
+   idle.position_ticket = 0;
+   idle.position_identifier = 0;
+   idle.pending.ticket = 0;
+   idle.pending.submitted_ts = 0;
+   idle.pending.cancel_requested_ts = 0;
+   idle.pending.cancel_origin = CANCEL_ORIGIN_NONE;
+   idle.halted = false;
+   idle.generation = 0;
+   ok &= a.TS_CHECK(store.WriteLifecycleSnapshot(idle),
+                    "First complete lifecycle snapshot commits");
+
+   LifecycleSnapshot readback;
+   ok &= a.TS_CHECK(store.ReadLifecycleSnapshot(readback) == STORE_READ_VALID,
+                    "Committed lifecycle snapshot validates");
+   ok &= a.TS_CHECK(readback.state == POSITION_STATE_IDLE && readback.generation == 1,
+                    "First publication selects generation one");
+
+   LifecycleSnapshot unknown = idle;
+   unknown.state = POSITION_STATE_UNKNOWN;
+   ok &= a.TS_CHECK(!store.WriteLifecycleSnapshot(unknown),
+                    "UNKNOWN remains a legacy sentinel and is never committed");
+   ok &= a.TS_CHECK(store.ReadLifecycleSnapshot(readback) == STORE_READ_VALID
+                    && readback.state == POSITION_STATE_IDLE && readback.generation == 1,
+                    "Rejected UNKNOWN replacement preserves the prior generation");
+
+   LifecycleSnapshot contradictory = idle;
+   contradictory.position_ticket = (ulong)9911;
+   contradictory.position_identifier = (ulong)9911;
+   ok &= a.TS_CHECK(!store.WriteLifecycleSnapshot(contradictory),
+                    "Internally contradictory IDLE snapshot is rejected before publication");
+   ok &= a.TS_CHECK(store.ReadLifecycleSnapshot(readback) == STORE_READ_VALID
+                    && readback.state == POSITION_STATE_IDLE && readback.generation == 1,
+                    "Rejected replacement preserves the prior committed generation");
+
+   LifecycleSnapshot contradictory_halt = idle;
+   contradictory_halt.state = POSITION_STATE_HALT;
+   contradictory_halt.halted = true;
+   contradictory_halt.position_ticket = (ulong)9911;
+   contradictory_halt.position_identifier = (ulong)9911;
+   contradictory_halt.pending.ticket = (ulong)9922;
+   contradictory_halt.pending.submitted_ts = (datetime)1783167600;
+   ok &= a.TS_CHECK(!store.WriteLifecycleSnapshot(contradictory_halt),
+                    "HALT cannot publish contradictory position and pending-order ownership");
+   ok &= a.TS_CHECK(store.ReadLifecycleSnapshot(readback) == STORE_READ_VALID
+                    && readback.state == POSITION_STATE_IDLE && readback.generation == 1,
+                    "Rejected contradictory HALT preserves the prior committed generation");
+
+   string inactive_checksum;
+   kb.Build(MakeTestId("life0_checksum"), inactive_checksum);
+   GlobalVariableSet(inactive_checksum, 123.0);
+   ok &= a.TS_CHECK(store.ReadLifecycleSnapshot(readback) == STORE_READ_VALID,
+                    "Partial inactive-slot data cannot contradict the active snapshot");
+
+   LifecycleSnapshot pending = idle;
+   pending.state = POSITION_STATE_PENDING_CANCEL;
+   pending.pending.ticket = (ulong)445566;
+   pending.pending.submitted_ts = (datetime)1783167600;
+   pending.pending.cancel_requested_ts = (datetime)1783167610;
+   pending.pending.cancel_origin = CANCEL_ORIGIN_FRAMEWORK_TIMEOUT;
+   ok &= a.TS_CHECK(store.WriteLifecycleSnapshot(pending),
+                    "Replacement snapshot verifies before generation publication");
+   ok &= a.TS_CHECK(store.ReadLifecycleSnapshot(readback) == STORE_READ_VALID
+                    && readback.state == POSITION_STATE_PENDING_CANCEL
+                    && readback.pending.ticket == (ulong)445566
+                    && readback.generation == 2,
+                    "PENDING_CANCEL evidence is read as one internally consistent generation");
+
+   GlobalVariableSet(inactive_checksum, GlobalVariableGet(inactive_checksum) + 1.0);
+   ok &= a.TS_CHECK(store.ReadLifecycleSnapshot(readback) == STORE_READ_CORRUPT,
+                    "Checksum mismatch is classified as CORRUPT rather than ABSENT");
+
+   CleanupGVs(kb);
+   return(ok);
+  }
+
+/** \brief Verify pending-order persistence stores ticket and submission timestamp together.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
+bool Test_StateStore_PendingOrder(CAssert &a)
+  {
+   bool ok = true;
+   CKeyBuilder kb;
+   CleanupGVs(kb);
+
+   CStateStore store;
+   MakeStore(store, kb);
+
+   ulong written_ticket = (ulong)9876543210123;
+   datetime written_ts  = (datetime)1783167600;
+
+   ok &= a.TS_CHECK(store.WritePendingOrder(written_ticket, written_ts),
+                    "WritePendingOrder returns true");
+
+   ulong read_ticket = (ulong)0;
+   datetime read_ts  = (datetime)0;
+   ok &= a.TS_CHECK(store.ReadPendingOrder(read_ticket, read_ts),
+                    "ReadPendingOrder returns true");
+   ok &= a.TS_CHECK_EQ_L((long)read_ticket, (long)written_ticket,
+                         "Pending order ticket round-trips exactly");
+   ok &= a.TS_CHECK_EQ_L((long)read_ts, (long)written_ts,
+                         "Pending order submission timestamp round-trips exactly");
+
+   ok &= a.TS_CHECK(store.ClearPendingOrder(), "ClearPendingOrder returns true");
+   ok &= a.TS_CHECK(!store.ReadPendingOrder(read_ticket, read_ts),
+                    "ReadPendingOrder returns false after ClearPendingOrder");
+
+   CleanupGVs(kb);
+   return(ok);
+  }
+
+/** \brief Verify marker lease claim, conflict, heartbeat fencing, and release epoch behavior.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
+bool Test_StateStore_MarkerLease(CAssert &a)
+  {
+   bool ok = true;
+   CKeyBuilder kb;
+   CleanupGVs(kb);
+
+   CStateStore store;
+   MakeStore(store, kb);
+
+   long token1 = 0;
+   ENUM_DUPLICATE_MARKER_STATUS status = DUPLICATE_MARKER_CONFLICT;
+   datetime t0 = (datetime)1783167600;
+
+   ok &= a.TS_CHECK(store.MarkerClaimOrReclaim(t0, 60, token1, status),
+                    "MarkerClaimOrReclaim returns true on free marker");
+   ok &= a.TS_CHECK(token1 > 0, "Free marker claim returns a positive token");
+   ok &= a.TS_CHECK(status == DUPLICATE_MARKER_ACTIVE,
+                    "Free marker claim status is ACTIVE");
+   ok &= a.TS_CHECK(store.MarkerIsOwner(token1),
+                    "Claim reports success only after owner and heartbeat publication are revalidated");
+
+   long token_conflict = 0;
+   status = DUPLICATE_MARKER_ACTIVE;
+   ok &= a.TS_CHECK(store.MarkerClaimOrReclaim(t0 + 10, 60, token_conflict, status),
+                    "Fresh owner conflict returns true as handled result");
+   ok &= a.TS_CHECK(token_conflict == 0,
+                    "Fresh owner conflict returns no token");
+   ok &= a.TS_CHECK(status == DUPLICATE_MARKER_CONFLICT,
+                    "Fresh owner conflict reports CONFLICT");
+
+   long stale_token = token1;
+   ok &= a.TS_CHECK(store.MarkerHeartbeat(token1, t0 + 30),
+                    "Current owner can heartbeat");
+   long token2 = token1;
+   ok &= a.TS_CHECK(token2 == stale_token + 1,
+                    "Heartbeat returns advanced owner token to caller");
+   ok &= a.TS_CHECK(store.MarkerIsOwner(token2) && !store.MarkerIsOwner(stale_token),
+                    "Heartbeat fences the previous token immediately");
+   ok &= a.TS_CHECK(!store.MarkerHeartbeat(stale_token, t0 + 31),
+                    "Late old token cannot heartbeat after token advanced");
+   ok &= a.TS_CHECK(!store.MarkerRelease(stale_token),
+                    "Late old token cannot release after token advanced");
+   ok &= a.TS_CHECK(store.MarkerRelease(token2),
+                    "Current owner can release and preserve epoch");
+
+   long token3 = 0;
+   status = DUPLICATE_MARKER_CONFLICT;
+   ok &= a.TS_CHECK(store.MarkerClaimOrReclaim(t0 + 40, 60, token3, status),
+                    "Released marker can be claimed again");
+   ok &= a.TS_CHECK(token3 > token2,
+                    "Reclaimed marker token is strictly increasing");
+   ok &= a.TS_CHECK(status == DUPLICATE_MARKER_ACTIVE,
+                    "Released marker claim reports ACTIVE");
+
+   CleanupGVs(kb);
+   return(ok);
+  }
+
+/** \brief Verify positive owner without heartbeat is treated as conflict/corruption, never as free bootstrap.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
+bool Test_StateStore_MarkerRejectsMissingHeartbeat(CAssert &a)
+  {
+   bool ok = true;
+   CKeyBuilder kb;
+   CleanupGVs(kb);
+   CStateStore store;
+   MakeStore(store, kb);
+   string owner_key, hb_key;
+   kb.Build(MakeTestId("marker_owner"), owner_key);
+   kb.Build(MakeTestId("marker_hb_ts"), hb_key);
+   GlobalVariableSet(owner_key, 7.0);
+   GlobalVariableSet(hb_key, 0.0);
+   long token = 0;
+   ENUM_DUPLICATE_MARKER_STATUS status = DUPLICATE_MARKER_ACTIVE;
+   ok &= a.TS_CHECK(store.MarkerClaimOrReclaim((datetime)1783167600, 60, token, status),
+                    "Positive owner with missing heartbeat is handled as a conflict");
+   ok &= a.TS_CHECK(token == 0 && status == DUPLICATE_MARKER_CONFLICT,
+                    "Corrupt bootstrap evidence returns no ownership token");
+   CleanupGVs(kb);
+   return(ok);
+  }
+
+/** \brief Deterministically prove first-use and CAS-to-heartbeat interleavings never yield two owners.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
+bool Test_StateStore_MarkerInterleavings(CAssert &a)
+  {
+   bool ok = true;
+   CKeyBuilder kb;
+   CleanupGVs(kb);
+   DeterministicMarkerBackend backend;
+   CanonicalIdentity base = MakeTestId("");
+   string interleave_fp, stolen_fp;
+   kb.Build(MakeTestId("marker_interleave_fp"), interleave_fp);
+   kb.Build(MakeTestId("marker_stolen_fp"), stolen_fp);
+   GlobalVariableDel(interleave_fp);
+   GlobalVariableDel(stolen_fp);
+   CStateStore owner_a;
+   CStateStore owner_b;
+   ok &= a.TS_CHECK(owner_a.Init(base, &kb, "marker_interleave", &backend)
+                    && owner_b.Init(base, &kb, "marker_interleave", &backend),
+                    "Two stores share one deterministic marker backend");
+   long token_a = 0, token_b = 0;
+   ENUM_DUPLICATE_MARKER_STATUS status_a = DUPLICATE_MARKER_CONFLICT;
+   ENUM_DUPLICATE_MARKER_STATUS status_b = DUPLICATE_MARKER_ACTIVE;
+   ok &= a.TS_CHECK(owner_a.MarkerClaimOrReclaim((datetime)1000, 60, token_a, status_a)
+                    && token_a > 0 && owner_a.MarkerIsOwner(token_a),
+                    "First bootstrap claimant owns the fully published marker");
+   ok &= a.TS_CHECK(owner_b.MarkerClaimOrReclaim((datetime)1001, 60, token_b, status_b)
+                    && token_b == 0 && status_b == DUPLICATE_MARKER_CONFLICT,
+                    "Second first-use contender cannot report ownership");
+   backend.steal_after_heartbeat = true;
+   long heartbeat_token = token_a;
+   ok &= a.TS_CHECK(!owner_a.MarkerHeartbeat(heartbeat_token, (datetime)1030)
+                    && heartbeat_token == token_a
+                    && !owner_a.MarkerIsOwner(token_a),
+                    "CAS-to-heartbeat ownership theft cannot report a successful heartbeat owner");
+
+   DeterministicMarkerBackend stolen_backend;
+   stolen_backend.steal_after_heartbeat = true;
+   CStateStore stolen_claim;
+   ok &= a.TS_CHECK(stolen_claim.Init(base, &kb, "marker_stolen", &stolen_backend),
+                    "CAS-to-heartbeat fixture initializes");
+   long stolen_token = 0;
+   ENUM_DUPLICATE_MARKER_STATUS stolen_status = DUPLICATE_MARKER_ACTIVE;
+   ok &= a.TS_CHECK(!stolen_claim.MarkerClaimOrReclaim((datetime)2000, 60,
+                                                       stolen_token, stolen_status),
+                    "Ownership theft between heartbeat publication and reread fails the claim");
+   ok &= a.TS_CHECK(stolen_token == 0,
+                    "Interleaved claimant never receives a success token");
+   GlobalVariableDel(interleave_fp);
+   GlobalVariableDel(stolen_fp);
+   CleanupGVs(kb);
+   return(ok);
+  }
+
+/** \brief A transient heartbeat reread mismatch must not release the caller's lease.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
+bool Test_StateStore_MarkerHeartbeatMismatchPreservesOwner(CAssert &a)
+  {
+   bool ok = true;
+   CKeyBuilder kb;
+   DeterministicMarkerBackend backend;
+   CanonicalIdentity base = MakeTestId("");
+   string fingerprint_key;
+   kb.Build(MakeTestId("marker_mismatch_fp"), fingerprint_key);
+   GlobalVariableDel(fingerprint_key);
+
+   CStateStore store;
+   ok &= a.TS_CHECK(store.Init(base, &kb, "marker_mismatch", &backend),
+                    "Transient-mismatch fixture initializes");
+   long token = 0;
+   ENUM_DUPLICATE_MARKER_STATUS status = DUPLICATE_MARKER_CONFLICT;
+   ok &= a.TS_CHECK(store.MarkerClaimOrReclaim((datetime)3000, 60, token, status)
+                    && token > 0 && store.MarkerIsOwner(token),
+                    "Fixture claims a verified lease");
+
+   long original_token = token;
+   backend.transient_heartbeat_read_mismatch = true;
+   ok &= a.TS_CHECK(!store.MarkerHeartbeat(token, (datetime)3030),
+                    "Transient heartbeat reread mismatch reports failure");
+   ok &= a.TS_CHECK(token == original_token && store.MarkerIsOwner(original_token),
+                    "Failed heartbeat preserves the caller's positive owner epoch");
+   ok &= a.TS_CHECK(store.MarkerRelease(original_token),
+                    "Preserved owner can still perform an explicit release");
+
+   GlobalVariableDel(fingerprint_key);
+   return(ok);
+  }
+
+/** \brief Verify a runtime namespace isolates every generated key from the live store.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
+bool Test_StateStore_RuntimeNamespaceIsolation(CAssert &a)
+  {
+   bool ok = true;
+   CKeyBuilder kb;
+   CleanupGVs(kb);
+   CStateStore live;
+   CStateStore isolated;
+   CanonicalIdentity base = MakeTestId("");
+   ok &= a.TS_CHECK(live.Init(base, &kb), "Live store initializes");
+   ok &= a.TS_CHECK(isolated.Init(base, &kb, "pass7"), "Isolated store initializes");
+   ok &= a.TS_CHECK(!live.IsRuntimeIsolated(), "Live store reports no runtime isolation");
+   ok &= a.TS_CHECK(isolated.IsRuntimeIsolated(), "Namespaced store reports runtime isolation");
+   ok &= a.TS_CHECK(isolated.WriteScalar("test_scalar", 7.0),
+                    "Isolated store writes its own scalar");
+   double live_value = -1.0;
+   ok &= a.TS_CHECK(!live.ReadScalar("test_scalar", live_value),
+                    "Tester write never appears in the live namespace");
+   string isolated_scalar, isolated_fp;
+   kb.Build(MakeTestId("pass7_test_scalar"), isolated_scalar);
+   kb.Build(MakeTestId("pass7_fp"), isolated_fp);
+   if(GlobalVariableCheck(isolated_scalar)) GlobalVariableDel(isolated_scalar);
+   if(GlobalVariableCheck(isolated_fp)) GlobalVariableDel(isolated_fp);
+   CleanupGVs(kb);
+   return(ok);
+  }
+
+/** \brief Verify stale marker reclaim uses explicit heartbeat timestamp, not access time.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
+bool Test_StateStore_MarkerLease_StaleReclaim(CAssert &a)
+  {
+   bool ok = true;
+   CKeyBuilder kb;
+   CleanupGVs(kb);
+
+   CStateStore store;
+   MakeStore(store, kb);
+
+   long token1 = 0;
+   ENUM_DUPLICATE_MARKER_STATUS status = DUPLICATE_MARKER_CONFLICT;
+   datetime t0 = (datetime)1783167600;
+   ok &= a.TS_CHECK(store.MarkerClaimOrReclaim(t0, 60, token1, status),
+                    "Initial marker claim succeeds");
+
+//--- Accessing the marker through a second claim attempt must not refresh liveness.
+   long no_token = 0;
+   status = DUPLICATE_MARKER_ACTIVE;
+   ok &= a.TS_CHECK(store.MarkerClaimOrReclaim(t0 + 10, 60, no_token, status),
+                    "Fresh conflict check succeeds without taking ownership");
+   ok &= a.TS_CHECK(status == DUPLICATE_MARKER_CONFLICT,
+                    "Fresh conflict check reports CONFLICT");
+
+   long token2 = 0;
+   status = DUPLICATE_MARKER_CONFLICT;
+   ok &= a.TS_CHECK(store.MarkerClaimOrReclaim(t0 + 61, 60, token2, status),
+                    "Stale marker can be reclaimed after lease_secs");
+   ok &= a.TS_CHECK(token2 > token1,
+                    "Stale reclaim returns a newer token");
+   ok &= a.TS_CHECK(status == DUPLICATE_MARKER_STALE_RECLAIMED,
+                    "Stale reclaim reports STALE_RECLAIMED");
+
+   CleanupGVs(kb);
+   return(ok);
+  }
+
+/** \brief Verify fractional marker owner values are treated as lease corruption.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
+bool Test_StateStore_MarkerLeaseRejectsFractionalOwner(CAssert &a)
+  {
+   bool ok = true;
+   CKeyBuilder kb;
+   CleanupGVs(kb);
+
+   CStateStore store;
+   MakeStore(store, kb);
+
+   string owner_key, hb_key;
+   kb.Build(MakeTestId("marker_owner"), owner_key);
+   kb.Build(MakeTestId("marker_hb_ts"), hb_key);
+
+   datetime t0 = (datetime)1783167600;
+   GlobalVariableSet(owner_key, -1.5);
+   GlobalVariableSet(hb_key, 0.0);
+
+   long token = 0;
+   ENUM_DUPLICATE_MARKER_STATUS status = DUPLICATE_MARKER_ACTIVE;
+   ok &= a.TS_CHECK(!store.MarkerClaimOrReclaim(t0, 60, token, status),
+                    "MarkerClaimOrReclaim rejects fractional free owner epoch");
+   ok &= a.TS_CHECK(token == 0, "Fractional free owner returns no token");
+
+   GlobalVariableSet(owner_key, 1.5);
+   GlobalVariableSet(hb_key, (double)(t0 - 120));
+   status = DUPLICATE_MARKER_CONFLICT;
+   ok &= a.TS_CHECK(!store.MarkerClaimOrReclaim(t0, 60, token, status),
+                    "MarkerClaimOrReclaim rejects fractional stale owner token");
+   ok &= a.TS_CHECK(token == 0, "Fractional stale owner returns no token");
 
    CleanupGVs(kb);
    return(ok);
@@ -515,6 +1091,9 @@ bool Test_StateStore_Halt_PathSymbol(CAssert &a)
    ev.reason           = "PathSymbol HALT test";
    ev.last_known_state = POSITION_STATE_ACTIVE;
    ev.operator_action  = "Verify and restart";
+   ev.symbol           = "TST/EST";
+   ev.magic            = TEST_MAGIC;
+   ev.ticket           = (ulong)0;
 
    ok &= a.TS_CHECK(store.SetHalt(ev), "SetHalt with path-like symbol returns true");
 
@@ -551,6 +1130,9 @@ bool Test_StateStore_Halt_PayloadEscape(CAssert &a)
    ev.reason           = "line1\nline2";           // embedded LF must be stripped
    ev.last_known_state = POSITION_STATE_ACTIVE;
    ev.operator_action  = "action\r\nwith\nnewlines"; // embedded CRLF and LF must be stripped
+   ev.symbol           = TEST_SYMBOL;
+   ev.magic            = TEST_MAGIC;
+   ev.ticket           = (ulong)0;
 
    ok &= a.TS_CHECK(store.SetHalt(ev), "SetHalt with newlines in payload returns true");
 
@@ -570,8 +1152,8 @@ bool Test_StateStore_Halt_PayloadEscape(CAssert &a)
         }
       FileClose(fh);
      }
-   ok &= a.TS_CHECK(line_count == 3,
-                    "HALT file has exactly 3 lines (no injected lines from payload newlines)");
+   ok &= a.TS_CHECK(line_count == 7,
+                    "HALT file has exactly 7 lines (no injected lines from payload newlines)");
 
 //--- Positive check: reason payload newline was replaced with space, not silently dropped.
    string content = ReadHaltFile(halt_file);
@@ -599,10 +1181,21 @@ bool test_persistence_and_audit_evidence_unit_contract(CAssert &a)
    ok &= Test_StateStore_Scalar(a);
    ok &= Test_StateStore_Duplicate(a);
    ok &= Test_StateStore_Halt(a);
+   ok &= Test_StateStore_ClearHalt(a);
    ok &= Test_StateStore_Halt_LargeMagic(a);
    ok &= Test_StateStore_Halt_PathSymbol(a);
    ok &= Test_StateStore_Halt_PayloadEscape(a);
    ok &= Test_StateStore_Ticket(a);
+   ok &= Test_StateStore_SplitIdRejectsCorruptParts(a);
+   ok &= Test_StateStore_LifecycleSnapshot(a);
+   ok &= Test_StateStore_PendingOrder(a);
+   ok &= Test_StateStore_MarkerLease(a);
+   ok &= Test_StateStore_MarkerLease_StaleReclaim(a);
+   ok &= Test_StateStore_MarkerLeaseRejectsFractionalOwner(a);
+   ok &= Test_StateStore_MarkerRejectsMissingHeartbeat(a);
+   ok &= Test_StateStore_MarkerInterleavings(a);
+   ok &= Test_StateStore_MarkerHeartbeatMismatchPreservesOwner(a);
+   ok &= Test_StateStore_RuntimeNamespaceIsolation(a);
    ok &= Test_StateStore_VerifyFailOnCorruption(a);
    ok &= Test_StateStore_InitMismatch(a);
    ok &= Test_StateStore_LowIO(a);
@@ -615,6 +1208,7 @@ bool test_persistence_and_audit_evidence_0073_unit(CAssert &a)
    bool ok = true;
    ok &= Test_StateStore_Duplicate(a);
    ok &= Test_StateStore_Halt(a);
+   ok &= Test_StateStore_ClearHalt(a);
    ok &= Test_StateStore_Halt_LargeMagic(a);
    ok &= Test_StateStore_Halt_PathSymbol(a);
    ok &= Test_StateStore_Halt_PayloadEscape(a);
@@ -661,10 +1255,21 @@ int OnStart()
    Test_StateStore_Scalar(asserts);
    Test_StateStore_Duplicate(asserts);
    Test_StateStore_Halt(asserts);
+   Test_StateStore_ClearHalt(asserts);
    Test_StateStore_Halt_LargeMagic(asserts);
    Test_StateStore_Halt_PathSymbol(asserts);
    Test_StateStore_Halt_PayloadEscape(asserts);
    Test_StateStore_Ticket(asserts);
+   Test_StateStore_SplitIdRejectsCorruptParts(asserts);
+   Test_StateStore_LifecycleSnapshot(asserts);
+   Test_StateStore_PendingOrder(asserts);
+   Test_StateStore_MarkerLease(asserts);
+   Test_StateStore_MarkerLease_StaleReclaim(asserts);
+   Test_StateStore_MarkerLeaseRejectsFractionalOwner(asserts);
+   Test_StateStore_MarkerRejectsMissingHeartbeat(asserts);
+   Test_StateStore_MarkerInterleavings(asserts);
+   Test_StateStore_MarkerHeartbeatMismatchPreservesOwner(asserts);
+   Test_StateStore_RuntimeNamespaceIsolation(asserts);
    Test_StateStore_VerifyFailOnCorruption(asserts);
    Test_StateStore_InitMismatch(asserts);
    Test_StateStore_LowIO(asserts);

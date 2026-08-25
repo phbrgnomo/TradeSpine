@@ -1,0 +1,112 @@
+# TradeSpine Lifecycle Operations
+
+This runbook covers the CHG-22 lifecycle, persistence, duplicate-owner, and provider controls. It is an operator procedure, not approval evidence. CHG-22 remains open until the manual checks in the acceptance section are recorded.
+
+## Safety rules
+
+- Treat `HALT` as absorbing. Do not resume an EA by clearing globals or deleting files.
+- Preserve both lifecycle snapshot slots, the active-generation key, marker globals, terminal logs, and HALT audit files before diagnosis or rollback.
+- Never run tester or optimization suppression against the live namespace. Suppressed runtimes require an explicit isolated namespace.
+- Only a full reconciliation may recover HALT. Entry, modification, trailing, and ordinary exit operations remain blocked while halted.
+- Emergency cleanup is allowed only through a separately classified guarded path that proves current lease ownership and exact broker identity.
+
+## Restart recovery
+
+1. Confirm the canonical symbol, magic, account mode, and runtime namespace.
+2. Confirm that exactly one EA instance is expected to own that identity.
+3. Preserve the lifecycle slots, commit generation, marker owner/heartbeat, and HALT evidence file.
+4. Attach or restart the EA. Initialization must claim ownership and reconcile before reporting ready.
+5. Interpret the result:
+   - matching durable and broker evidence reconstructs the lifecycle;
+   - one unambiguous broker fact repairs drift;
+   - proven flat state becomes `IDLE`;
+   - missing required evidence, contradiction, or competing ownership becomes `HALT`.
+6. If the recovered state was `PENDING_CANCEL`, retain the order, submission, cancel-request, and origin evidence until broker history confirms the terminal result.
+
+Recovery target: safe ownership and reconciliation within one 60-second lease expiry plus one 30-second maintenance interval. This target is not evidence that recovery occurred; capture timestamps from the actual run.
+
+## HALT diagnosis and recovery
+
+1. Export the current lifecycle snapshot generations and the append-only HALT evidence file.
+2. Record the structured event code, symbol, magic, ticket/position identifier, marker token, and terminal timestamp.
+3. Check broker positions, active orders, and explicitly selected bounded history for the same identity.
+4. Correct provider/history availability or remove the competing EA instance without deleting evidence.
+5. Invoke the context's explicit `Recover(now, lease_secs)` path, which performs a fresh claim when required and then runs full reconciliation. Do not call scalar clear operations.
+6. Recovery is successful only when reconciliation proves either:
+   - flat state with no matching live order or position; or
+   - exactly one unambiguously owned position.
+7. The durable HALT flag is cleared last. Archive/write failure keeps the lifecycle halted.
+
+HALT and recovery evidence is retained for at least 30 days. The implementation appends rather than deletes; archive retention and eventual disposal are operator-controlled.
+
+## Lease conflict or loss
+
+- A claim succeeds only after exclusive bootstrap, owner-token CAS, heartbeat publication, and reread validation.
+- On conflict, identify every chart/EA using the same account-login, canonical symbol, and magic. Keep all but the intended owner disabled.
+- On heartbeat, ownership, or release loss, the context becomes nonready, routing stops, and the lifecycle enters HALT once.
+- Resumption requires a fresh claim and full reconciliation. A late heartbeat or release from an old token is not ownership proof.
+
+For the two-chart acceptance test, attach two instances with the same canonical identity and record that exactly one becomes ready. Then remove the owner, wait for lease expiry, and prove that a new owner reconciles before any mutation.
+
+## Provider or history failure
+
+- Live providers are read-only and must return safe empty values after a failed selection.
+- Required history must be selected before any deal or order field is read.
+- Pending-order recovery selects from submission time minus 60 seconds; active-position recovery selects by stable position identity.
+- Provider/history unavailability that prevents an unambiguous decision causes HALT. Do not infer a fill, cancellation, or flat state from a failed selection.
+- IPLAN-04 supplies the providers. Production lifetime and injection remain owned by IPLAN-01; guarded broker-operation fences remain owned by IPLAN-03.
+
+## Evidence export
+
+Capture, without modifying state:
+
+- both lifecycle slot payloads and checksums;
+- active committed generation;
+- marker owner token and heartbeat;
+- HALT/recovery audit file;
+- matching terminal logs and structured event codes;
+- native terminal position, order, deal, and history observations;
+- exact test pass/fail/skip counts and fresh EX5 timestamps.
+
+Suggested event-code families are `TS_REC_*`, `TS_HINT_*`, `TS_HALT_*`, `TS_LEASE_*`, `TS_STORE_*`, `TS_PROVIDER_*`, and `TS_TIMER_LATE`. Event-code emission is required acceptance evidence; absence is a release blocker.
+
+At every deploy boundary, capture `TS_DEPLOY_PHASE` with source commit, `CHG-22-R1`, fresh EX5 SHA-256 values, account, canonical symbol, magic, phase, and terminal timestamp. Export the MT5 Experts/Journal log to the CHG-22 evidence bundle and query it with:
+
+```sh
+rg -n '\[TS_(DEPLOY_PHASE|REC_|HINT_|HALT_|LEASE_|STORE_|PROVIDER_|TIMER_)' exported-terminal.log
+```
+
+The operational monitoring view is MT5 Toolbox → Experts/Journal filtered by `[TS_` and the account-symbol-magic identity. A missing deploy event, checksum drift, or unexplained maintenance gap blocks promotion.
+
+## Rollback
+
+1. Disable the affected EA within 60 seconds and preserve all evidence listed above.
+2. Restore source, interfaces, fakes, tests, and the canonical SPEC/TDD/IPLAN/CHG cascade from the bundle pinned to commit `ac7fe244dec1aa2d5897da406bf6c817804c607d`, or the later bundle explicitly approved at GATECODE. Never mix bundles.
+3. Do not attach a prior binary to migrated snapshots. If downgrade is necessary, remain disabled/HALT, prove flat broker state with no matching order under exclusive ownership, archive snapshots and legacy keys, publish the rehearsed rollback-compatible legacy IDLE state, and clear the legacy HALT flag last.
+4. Recompile restored scripts manually with MetaEditor F7 and require fresh EX5 artifacts with 0 errors and 0 warnings. The stale existing EX5 is not rollback evidence.
+5. Run the restored assertion suite, record exact counts, regain exactly one owner, and reconcile safely before re-enabling.
+6. Complete restore plus verification within 15 minutes or escalate while the EA remains disabled.
+
+The mandatory demo rehearsal injects lease theft, required provider/history unavailability, and inactive-slot corruption. Rollback passes only when evidence is preserved, the approved bundle is restored, exactly one owner is established, and reconciliation proves flat or one unambiguously owned position.
+
+The snapshot format change is the one-way decision `SPEC-05 / SPEC.05.06.7c3a`: old and CHG-22-R1 interfaces never coexist, and the first committed new generation retires the old binary. After that boundary, only the state-aware flat/no-order downgrade above is permitted.
+
+## Demo canary
+
+Use one demo account, one canonical symbol, one magic, and one EA instance for one complete terminal-reported trading session: attach no later than the first `SymbolInfoSessionTrade` opening, observe through the final reported close, and allow no disconnect longer than 60 seconds. Record startup reconciliation, 30-second maintenance, hints, snapshot generations, lease heartbeats, and shutdown/restart behavior. Stop on any unexplained HALT, duplicate owner, maintenance gap of 60 seconds or more, contradictory snapshot, uncorrelated transition, or unavailable required provider evidence.
+
+Promotion order is demo rehearsal → one restricted live identity → a partial identity cohort → full rollout, with the same evidence gate between stages. If the production topology contains only one identity, record that fact and mark the partial cohort not applicable rather than silently skipping it.
+
+## Acceptance evidence
+
+Run in this order:
+
+1. Canonical YAML/schema and cross-document validation.
+2. Focused unit/integration scripts and aggregate `RunAllTests`, with exact pass/fail/skip counts.
+3. Manual MetaEditor F7 for every changed script and aggregate runner, with fresh EX5 files and 0 errors/0 warnings.
+4. Complete IPLAN-05 producers and IPLAN-04, then IPLAN-02 coordination, then IPLAN-01 StrategyBase/provider assembly and IPLAN-03 GuardedTrade/final mutation fencing against the same `CHG-22-R1` bundle. Run `Test_StrategyBase.mq5`, `Test_Coordinator.mq5`, `Test_GuardedTrade.mq5`, `Test_BrokerBypassScan.mq5`, all IPLAN-04/05 focused suites, and `RunAllTests.mq5`.
+5. Manual two-chart ownership test using the fresh IPLAN-01 `StrategyTemplate` EX5; exactly one same-identity chart may become ready.
+6. Rollback rehearsal, then one full-session demo canary, one restricted live identity, partial cohort when applicable, and full rollout. Emit `TS_DEPLOY_PHASE` at each boundary.
+7. Review-team rerun.
+
+GATE06, GATE08, and GATECODE remain failed until this evidence is attached. Final acceptance requires no P0/P1 findings, each review lens at least 80, and weighted score at least 85.

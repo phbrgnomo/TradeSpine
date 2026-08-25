@@ -26,8 +26,9 @@ These come from the ADRs and are non-negotiable for any generated code:
    through one guarded boundary with layered defensive risk guards; bypass is a guarded
    policy. *(Implemented by IPLAN-03; not present yet.)*
 5. **Deterministic state + reconciliation (ADR-08, SPEC-04)** with GV state and CSV audit
-   evidence (ADR-02, SPEC-05). *(GV state and CSV audit evidence implemented by IPLAN-05.
-   SPEC-04 position state machine is owned by IPLAN-04; not present yet.)*
+   evidence (ADR-02, SPEC-05). GV state and CSV audit evidence are implemented by IPLAN-05;
+   the hedging-first position state machine and reconciliation seams are implemented by
+   IPLAN-04.
 6. **Test-first.** Every IPLAN writes its `Test_*.mq5` scripts before the module code.
 
 ## Dependency direction
@@ -40,11 +41,12 @@ pulling in production execution paths.
 ```text
 Strategies / Ports            (IPLAN-01, 12, 13)   — planned
 Coordination / Execution      (IPLAN-02, 03)       — planned
-Position / Indicators / Optional (IPLAN-04, 07, 10) — planned
+Position                      (IPLAN-04)            — SOURCE PRESENT / CHG-22 VERIFICATION OPEN
+Indicators / Optional        (IPLAN-07, 10)        — planned
 Market                        (IPLAN-06)            — IMPLEMENTED
         │
         ▼
-Persistence                   (IPLAN-05)            — IMPLEMENTED
+Persistence                   (IPLAN-05)            — REOPENED BY CHG-22
         │
         ▼
 Core Runtime                  (IPLAN-09)            — IMPLEMENTED
@@ -72,16 +74,14 @@ Test-time only. The canonical assertion helper `CAssert`, deterministic `FakeClo
 ### Persistence and Audit Evidence — `Include/Persistence/` (IPLAN-05)
 Three separated streams: GV-backed state, CSV trade evidence, and leveled diagnostics.
 
-- `CStateStore` — GV-backed `IStateStore`: deterministic hashed keys (FNV-1a, never raw identity
-  in GV names), lossless ulong ticket split across two 32-bit GVs, duplicate order-intent markers,
-  HALT circuit-breaker (flag GV + evidence file). `SetHalt()` sanitizes the symbol component of
-  the filename and strips `\n`/`\r` from payload fields before writing. IPLAN-04 scope owns the
-  account-symbol-magic ownership heartbeat (`GlobalVariableSetOnCondition`); IPLAN-05 provides the
-  primitive GV infrastructure.
+- `CStateStore` — GV-backed `IStateStore`: deterministic hashed keys, lossless identifiers,
+  two checksum-verified lifecycle slots with commit-last publication, explicit runtime namespaces,
+  append-only HALT/recovery evidence, and a token-fenced marker lease. First-use marker creation is
+  serialized by an identity lock and claim/heartbeat success is reread-validated.
 - `TradeLogger` — paired CSV intent/execution evidence per SPEC-05. Out-of-domain
   `ENUM_TRADE_SIDE` values are rejected (not silently coerced to `BUY`).
-- `Logger` / `CAlertSink` — leveled diagnostic routing; `CAlertSink` routes HALT signals to
-  `SetHalt()` + `Alert()` (live/visual) or log-only (tester), silent in optimization.
+- `Logger` / `CAlertSink` — leveled diagnostic routing; `CAlertSink.Halt()` returns durable
+  persistence success while the state machine keeps in-memory HALT absorbing if persistence fails.
 
 Full reference: [MODULES/Persistence.md](MODULES/Persistence.md).
 
@@ -110,6 +110,30 @@ submission; and detects futures contract-expiration warnings.
 
 Full reference: [MODULES/Market.md](MODULES/Market.md).
 
+### Position Account Mode and State — `Include/Position/` (IPLAN-04)
+
+Sits above Persistence/Market and below Coordination/Execution. It is the v1 boundary for
+strategy-owned exposure: hedging accounts are executable, while retail netting and exchange
+modes fail initialization before any trade write. Ownership is filtered by `symbol + magic`,
+not broker aggregate position alone.
+
+- `CPositionStateMachine` commits complete lifecycle snapshots before memory mutation and uses one
+  canonical reconciliation path for startup, 30-second timer maintenance, and correlated transaction
+  hints. Cancellation evidence includes origin and timestamps; HALT exits only after explicit safe recovery.
+- `CHedgingAdapter` computes strategy-owned exposure and delegates close/modify/cancel writes
+  only through `ITradeExecutor`. `CNettingAdapter` is a deferred no-write adapter for v1.
+- `CPositionContext` validates dependencies and runtime namespace, claims or deliberately suppresses
+  the lease, reconciles before readiness, and performs timeout evaluation on every timer callback plus
+  broker reconciliation/heartbeat at a fixed 30-second cadence. Lease loss disables routing and enters HALT.
+- `CTradeTxRouter` treats `OnTradeTransaction` as an untrusted wake-up hint. It correlates nonzero
+  order/deal/position identifiers through explicitly selected evidence and delegates state decisions to reconciliation.
+- `CLiveAccountModeProvider`, `CLiveBrokerPositionView`, and `CLiveTradeTransactionEvidence` are
+  read-only terminal adapters. IPLAN-01 still owns production lifetime/injection; IPLAN-03 owns the
+  immediate mutation fences at the guarded broker boundary.
+
+The production guarded executor is still IPLAN-03 scope; IPLAN-04 publishes the seam and
+test fakes. Full reference: [MODULES/Position.md](MODULES/Position.md).
+
 ## Runtime-mode policy (cross-cutting)
 
 `COptContext` ([`Include/Core/OptContext.mqh`](../Include/Core/OptContext.mqh)) is the single
@@ -125,9 +149,9 @@ through a `COptContext` rather than checking `MQLInfoInteger` directly.
 |---|---|---|---|
 | Core | `Include/Core/` | IPLAN-09 | Implemented |
 | Testing | `Include/Testing/`, `Scripts/Tests/Support/` | IPLAN-11 | Implemented |
-| Persistence | `Include/Persistence/` | IPLAN-05 | Implemented — see [Persistence.md](MODULES/Persistence.md) |
+| Persistence | `Include/Persistence/` | IPLAN-05 | Source present; CHG-22 verification open — see [Persistence.md](MODULES/Persistence.md) |
 | Market | `Include/Market/` | IPLAN-06 | Implemented — see [Market.md](MODULES/Market.md) |
-| Position | `Include/Position/` | IPLAN-04 | Planned |
+| Position | `Include/Position/` | IPLAN-04 | Source present; CHG-22 verification open — see [Position.md](MODULES/Position.md) |
 | Indicators | `Include/Indicators/` | IPLAN-07 | Planned |
 | Coordination | `Include/Coordination/` | IPLAN-02 | Planned |
 | Execution | `Include/Execution/` | IPLAN-03 | Planned |

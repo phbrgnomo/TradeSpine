@@ -7,15 +7,17 @@ id: SPEC-03
 title: Guarded Execution and Risk Controls
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-21T00:00:00-03:00"
+last_updated: "2026-08-24T00:00:00-03:00"
+chg_references: ["CHG-21", "CHG-22"]
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.4"
+  version: "1.5"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-21T00:00:00-03:00"
+  last_updated: "2026-08-24T00:00:00-03:00"
   author: "Codex"
+  chg_references: ["CHG-21", "CHG-22"]
   component: "CGuardedTrade and CRiskManager"
   tdd_ready_score: "92/100"
 
@@ -55,6 +57,12 @@ interfaces:
       description: "Submission seam used by coordinator and mocks. The TradeIntent argument is the canonical type from Include/Core/TradeTypes.mqh (SPEC-02 extends it); CGuardedTrade consumes that shared definition rather than a private struct (@chg: CHG-21)."
       errors:
         - "GuardResult rejected: validation, risk, market, OrderCheck, margin, fill, or broker outcome failed."
+    - name: "ITradeExecutor"
+      type: "interface"
+      signature: "interface ITradeExecutor { CloseTicket(ticket,lots); ModifyTicket(ticket,sl,tp); CancelOrder(order_ticket); }"
+      description: "Guarded close/modify/cancel seam consumed by the Position layer. IPLAN-04 declares and fake-tests the seam; CGuardedTrade implements it in IPLAN-03 (@chg: CHG-22)."
+      errors:
+        - "false: close, modify, or cancel rejected by guard, broker, or ownership policy."
     - name: "CGuardedTrade"
       type: "class"
       signature: "class CGuardedTrade : public ITradePort"
@@ -169,6 +177,8 @@ behavior:
       source: "@ears: EARS.01.03.ec72"
     - rule: "Unknown broker retcodes or unresolved retry outcomes SHALL be treated as failsafe ambiguity, not as success."
       source: "@ears: EARS.01.03.588b"
+    - rule: "CGuardedTrade SHALL implement the ITradeExecutor close/modify/cancel seam used by Position adapters and CPositionStateMachine timeout-cancel handling (@chg: CHG-22)."
+      source: "@chg: CHG-22"
   state_transitions:
     - from: "RiskControlState clear"
       to: "RiskControlState tripped"
@@ -190,16 +200,23 @@ behavior:
     - condition: "Broker returns TRADE_RETCODE_DONE_PARTIAL."
       response: "Set status to partial; record filled_lots from broker response; treat as deterministic — ambiguous: false, retryable: false."
       source: "@ears: EARS.01.03.ec72"
+    - condition: "Guarded close, modify, or cancel cannot be safely submitted or confirmed."
+      response: "Return false/guard rejection to Position; Position owns follow-up HALT or reconciliation policy (@chg: CHG-22)."
+      source: "@chg: CHG-22"
 
 ## Section 6: Implementation Notes
 implementation_notes:
   constraints:
+    - "Immediately before every OrderSend, cancel, close, or modify operation, guarded execution rechecks PositionContext readiness, non-HALT state, current MarkerIsOwner fence, supported account mode, and required provider evidence."
+    - "Lease loss or unavailable ownership/provider evidence rejects the mutation and requests HALT; a prior successful guard result cannot authorize a later broker operation."
+    - "While halted, entry, modification, trailing, and ordinary exit paths are blocked. Only a separately classified emergency cleanup path with current proven ownership may mutate broker state."
     - "CGuardedTrade owns the only private CTrade instance reachable from framework-mediated execution."
     - "Strategy files MUST NOT include terminal-global Trade.mqh or call raw broker execution APIs."
     - "OrderCheck and explicit margin validation are separate guard stages."
     - "CGuardedTrade MUST NOT become the owner of daily-loss, max-open-lots, max-trades-per-day, or panic-stop policy; it consumes CRiskManager state as an environmental gate only."
     - "CRiskManager MUST NOT submit broker orders directly; emergency close requests route back through strategy/coordinator/guarded execution paths."
-    - "Execution-owned test fixtures MUST supply spread, fill-mode, OrderCheck, margin, broker-retcode, and private CTrade outcome scenarios; do not add those fields to FakeMarketContext. @chg: CHG-19"
+    - "Execution-owned test fixtures MUST supply spread, fill-mode, OrderCheck, margin, broker-retcode, and private CTrade outcome scenarios; do not add those fields to FakeMarketContext (CHG-19)."
+    - "CGuardedTrade implements ITradeExecutor in IPLAN-03; IPLAN-04 ships only the seam and fake executor needed by position tests (@chg: CHG-22)."
   patterns:
     - "Use composition around vendored CTrade because convenience methods are not virtual."
     - "Classify retcodes into success, pending, retryable, terminal failure, and unknown-failsafe groups."
@@ -212,7 +229,7 @@ tdd_contracts:
   tdd_document: "@tdd: TDD.03.04.1f65"
   test_files:
     - path: "Scripts/Tests/Test_GuardedTrade.mq5"
-      covers: "TradeIntent consistency validation, catastrophic caps, OrderCheck, margin, fill-mode, retcode classification, and private CTrade boundary."
+      covers: "TradeIntent consistency validation, catastrophic caps, OrderCheck, margin, fill-mode, retcode classification, private CTrade boundary, and guarded close/modify/cancel executor seam."
     - path: "Scripts/Tests/Test_RiskManager.mq5"
       covers: "CRiskManager daily loss, open lots, trade count, and panic-stop trips."
     - path: "Scripts/Tests/Test_BrokerBypassScan.mq5"
@@ -220,7 +237,7 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
-  tags: ["@spec: SPEC-03", "@brd: BRD.01.07.a94e", "@prd: PRD.01.09.d74e", "@ears: EARS.01.03.222f", "@bdd: BDD.01.03.9a8b", "@adr: ADR.04.03.7277", "@chg: CHG-21"]
+  tags: ["@spec: SPEC-03", "@brd: BRD.01.07.a94e", "@prd: PRD.01.09.d74e", "@ears: EARS.01.03.222f", "@bdd: BDD.01.03.9a8b", "@adr: ADR.04.03.7277", "@chg: CHG-21", "@chg: CHG-22"]
   upstream:
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.09.03.84b9"]
     bdd_references: ["@bdd: BDD.01.03.9a8b", "@bdd: BDD.01.03.0ad7", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.ef54"]

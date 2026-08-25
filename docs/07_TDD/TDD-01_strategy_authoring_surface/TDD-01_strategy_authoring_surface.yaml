@@ -7,7 +7,8 @@ id: TDD-01
 title: "Strategy Authoring Surface Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-06-02T00:00:00-03:00"
+last_updated: "2026-08-24T00:00:00-03:00"
+chg_references: ["CHG-22"]
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -23,10 +24,11 @@ metadata:
 
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-06-02T00:00:00-03:00"
+  last_updated: "2026-08-24T00:00:00-03:00"
   author: "Codex"
+  chg_references: ["CHG-22"]
   component: "CStrategyBase and strategy template surface"
   spec_reference: "@spec: SPEC-01"
   source_spec: "../../06_SPEC/SPEC-01_strategy_authoring_surface/SPEC-01_strategy_authoring_surface.yaml"
@@ -110,7 +112,7 @@ test_cases:
     cases:
       - id: "TDD.01.04.c4a3"
         type: unit
-        name: "Lifecycle rejects helper before Live"
+        name: "Lifecycle rejects helper before Live and timer delegates framework maintenance"
         spec_ref: "@spec: SPEC-01"
         target: "CStrategyBase.OpenLong"
         test_file: "Scripts/Tests/Test_StrategyBase.mq5"
@@ -125,6 +127,16 @@ test_cases:
         edge_cases:
           - condition: "Live phase with registered ready indicators routes through coordinator"
             expected: "Case remains deterministic and broker-safe."
+          - condition: "Framework timer event fires after init"
+            expected: "CStrategyBase delegates to CPositionContext.OnMaintenance(now); OnTickEvent remains the home for strategy-authored sub-cadence trade logic."
+          - condition: "Deinit runs after timer registration"
+            expected: "EventKillTimer is called and no maintenance callback remains active."
+          - condition: "Live versus optimization/nonvisual tester assembly"
+            expected: "StrategyBase injects long-lived read-only providers; live uses canonical state namespace and suppressed runtimes use explicit isolated namespaces."
+          - condition: "Timer callbacks before and at the maintenance boundary"
+            expected: "Local timeout evaluation runs on each callback; broker reconciliation and lease heartbeat run at fixed 30-second cadence."
+          - condition: "Trade transaction reaches StrategyBase"
+            expected: "StrategyBase delegates to PositionContext readiness and lease fences before hint reconciliation."
   integration_tests:
     cases:
       - id: "TDD.01.04.65b2"
@@ -141,6 +153,7 @@ test_cases:
           description: "Assemble strategy, call OpenLong and CloseAll after Live"
         expected_state:
           - "Entry and close branches receive normalized requests; strategy does not call broker APIs"
+          - "Timer maintenance reaches PositionContext without strategy-authored OnTick heartbeat writes"
         error_paths:
           - condition: "Missing required override returns INIT_FAILED"
             expected_error: "SPEC-defined rejection or HALT path."
@@ -231,6 +244,7 @@ traceability:
     - "@bdd: BDD.01.03.c0f6"
     - "@adr: ADR.01.03.42e3"
     - "@adr: ADR.09.03.84b9"
+    - "@chg: CHG-22"
   upstream:
     spec_references:
       - "@spec: SPEC-01"

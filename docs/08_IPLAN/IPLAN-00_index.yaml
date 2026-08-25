@@ -3,14 +3,14 @@ metadata:
   document_type: "iplan-registry"
   layer: 8
   total_plans: 12
-  last_updated: "2026-06-21"
+  last_updated: "2026-08-24"
 
 registry:
   plans:
     - id: "IPLAN-01"
       title: "Strategy Authoring Surface Implementation"
       source_spec: "@spec: SPEC-01"
-      scope: "Implement CStrategyBase, strategy template, sample strategy packaging, and authoring documentation handoff."
+      scope: "Implement CStrategyBase, production provider lifetime/injection, explicit runtime namespaces, 30-second maintenance routing, strategy template, sample strategy packaging, and authoring documentation handoff."
       status: "Draft"
       status_date: "2026-06-03"
       complexity: 5
@@ -44,7 +44,7 @@ registry:
     - id: "IPLAN-03"
       title: "Guarded Execution and Risk Controls Implementation"
       source_spec: "@spec: SPEC-03"
-      scope: "Implement guarded broker boundary, retcode classification, fill/spread guards, and runtime risk manager."
+      scope: "Implement guarded broker boundary with immediate HALT/lease/account-mode/provider fences, classified emergency cleanup, retcode classification, fill/spread guards, and runtime risk manager."
       status: "Draft"
       status_date: "2026-06-03"
       complexity: 5
@@ -61,37 +61,39 @@ registry:
     - id: "IPLAN-04"
       title: "Position Account Mode and State Implementation"
       source_spec: "@spec: SPEC-04"
-      scope: "Implement hedging ownership, deferred account-mode diagnostics, duplicate identity, router, and state machine."
-      status: "Draft"
-      status_date: "2026-06-03"
+      scope: "Implement hedging ownership, deferred account-mode diagnostics, duplicate marker lease, router, and state machine."
+      status: "In Progress"
+      status_date: "2026-08-24"
       complexity: 5
-      session_count: 0
-      sessions_completed: 0
-      files_declared: 10
-      files_done: 0
+      session_count: 2
+      sessions_completed: 2
+      files_declared: 18
+      files_done: 18
       skipped: []
       skip_reasons: {}
       depends_on: ["IPLAN-05", "IPLAN-11"]
       blocks: ["IPLAN-01", "IPLAN-02", "IPLAN-03"]
       parallel_with: ["IPLAN-06", "IPLAN-07", "IPLAN-10"]
       file_path: "IPLAN-04_position_account_mode_and_state.yaml"
+      note: "2026-08-24 CHG-22 recovery: source and assertion-backed tests implement reconciliation, absorbing HALT, transaction correlation, snapshot commits, lease fencing, isolated runtimes, and live read-only providers. All 18 files remain unverified pending fresh manual F7, exact MT5 results, two-chart ownership, canary, and final approval."
     - id: "IPLAN-05"
       title: "Persistence and Audit Evidence Implementation"
       source_spec: "@spec: SPEC-05"
       scope: "Implement GV-backed state, deterministic keys, trade evidence, diagnostics, and alert sinks."
-      status: "Completed"
-      status_date: "2026-06-16"
+      status: "In Progress"
+      status_date: "2026-08-24"
       complexity: 4
-      session_count: 8
-      sessions_completed: 8
-      files_declared: 9
-      files_done: 9
+      session_count: 10
+      sessions_completed: 10
+      files_declared: 10
+      files_done: 10
       skipped: []
       skip_reasons: {}
       depends_on: ["IPLAN-09", "IPLAN-11"]
       blocks: ["IPLAN-02", "IPLAN-03", "IPLAN-04", "IPLAN-06"]
       parallel_with: []
       file_path: "IPLAN-05_persistence_and_audit_evidence.yaml"
+      note: "Reopened by CHG-22 for lifecycle snapshots, retained HALT evidence, checked persistence failures, marker bootstrap fencing, and fresh manual/runtime validation."
     - id: "IPLAN-06"
       title: "Market Session and Symbol Context Implementation"
       source_spec: "@spec: SPEC-06"
@@ -231,11 +233,11 @@ execution_path:
       plans: ["IPLAN-11"]
     - tier: 3
       label: "Persistence and Market Foundations"
-      status: "COMPLETED"
+      status: "IN_PROGRESS"
       plans: ["IPLAN-05", "IPLAN-06"]
     - tier: 4
       label: "State, Behavior, and Optional Services"
-      status: "NOT_STARTED"
+      status: "IN_PROGRESS"
       plans: ["IPLAN-04", "IPLAN-07", "IPLAN-10"]
     - tier: 5
       label: "Coordinator"
@@ -408,6 +410,18 @@ cross_plan_obligations:
       description: "At the end of each code-deliverable IPLAN, produce in-code Doxygen documentation for the new/changed public interfaces AND the module's Docs/MODULES/<Module>.md reference page for the delivered files, and update code_inventory accordingly. The Tier-9 documentation_closeout then reconciles release docs and sweeps the per-module pages (see CHG-12)."
       introduced_by: "IPLAN-00"
       adopted_date: "2026-06-13"
+    - id: "CPO-007"
+      description: "Live runtimes retain the canonical state namespace; tester and optimization suppression requires an explicit isolated namespace and must never clear or mutate live lifecycle keys."
+      introduced_by: "CHG-22"
+      adopted_date: "2026-08-24"
+    - id: "CPO-008"
+      description: "Every state-changing broker or lifecycle operation revalidates non-HALT state, current marker ownership, supported account mode, and required provider evidence immediately before mutation."
+      introduced_by: "CHG-22"
+      adopted_date: "2026-08-24"
+    - id: "CPO-009"
+      description: "CHG-22 remains open and GATE06, GATE08, and GATECODE remain failed until fresh manual F7, exact MT5 assertion counts, two-chart ownership, demo canary, and post-change review evidence are recorded."
+      introduced_by: "CHG-22"
+      adopted_date: "2026-08-24"
 
 deferred_items:
   _guidance: "Cross-plan scope deferrals."
@@ -443,12 +457,20 @@ status_history:
         to: "Draft"
         date: "2026-06-03"
         reason: "TDD-04 audit passed 96/100 and reached IPLAN-Ready."
+      - from: "In Progress"
+        to: "In Progress"
+        date: "2026-08-24"
+        reason: "CHG-22 recovery implemented the corrected source and canonical cascade; verification and approval remain pending."
   - plan_id: "IPLAN-05"
     transitions:
       - from: "BACKLOG"
         to: "Draft"
         date: "2026-06-03"
         reason: "TDD-05 audit passed 95/100 and reached IPLAN-Ready."
+      - from: "Completed"
+        to: "In Progress"
+        date: "2026-08-24"
+        reason: "CHG-22 reopens persistence acceptance for lifecycle snapshots, lease fencing, retained HALT evidence, and fresh runtime proof."
   - plan_id: "IPLAN-06"
     transitions:
       - from: "BACKLOG"

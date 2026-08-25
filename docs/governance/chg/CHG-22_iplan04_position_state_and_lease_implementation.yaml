@@ -1,0 +1,298 @@
+id: CHG-22
+title: "IPLAN-04 correctness, safety, persistence, and governance recovery"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-08-25"
+  change_level:
+    value: C3
+  change_source:
+    value: design
+
+change_control:
+  chg_id: "CHG-22"
+  status: In Review
+  change_level: C3
+  change_source: design
+  entry_gate: GATE-06
+  semver_impact: major
+  author: "Codex"
+  date_proposed: "2026-07-04T00:00:00-03:00"
+  date_approved: null
+  date_implemented: null
+  supersedes: []
+
+change_description:
+  what: |
+    Recover the IPLAN-04 position/account-mode/state layer after correctness,
+    safety, persistence, integration, and traceability review findings.
+
+    The change adds the Position module under `Include/Position/`: shared
+    position types, public interfaces, `CPositionStateMachine`, hedging and
+    deferred netting account-mode adapters, `CPositionContext` with external
+    SL/TP drift repair through the guarded write seam, and `CTradeTxRouter`.
+    It also adds IPLAN-04-owned test fixtures and tests:
+    `FakePositionView`, `FakeStateStore`, `FakeAlertSink`,
+    `Test_PositionStateMachine.mq5`, `Test_AccountModeAdapters.mq5`, and
+    `Test_AccountModeDeferred.mq5`.
+
+    The recovery revision makes the public persistence contract source-breaking:
+    lifecycle state is committed as a checked double-buffered snapshot, pending
+    cancellation evidence is retained through ambiguous outcomes, marker claims
+    are bootstrap-fenced and revalidated, and `IAlertSink::Halt` reports durable
+    evidence success. Trade transactions become hints that can only request the
+    canonical broker-evidence reconciler. Three read-only terminal providers are
+    added, while production lifetime/assembly remains owned by IPLAN-01.
+  why: |
+    IPLAN-04 blocks IPLAN-01, IPLAN-02, and IPLAN-03. The reviewed external
+    plan identified missing state-machine, account-mode, and persistence
+    contracts that must be stable before downstream strategy/coordinator/
+    guarded-execution work can safely consume the Position layer.
+
+    The Option B lease design is required because MQL5 `GlobalVariableTime()`
+    records last access time; reads/checks can refresh it, so it cannot be used
+    as authoritative liveness. A separate heartbeat timestamp GV keeps liveness
+    explicit while `marker_owner` remains the only ownership fence.
+  trigger: |
+    User requested implementation of the IPLAN-04 Correctness, Safety, and
+    Governance Recovery Plan while keeping CHG-22 open until all manual and
+    runtime acceptance evidence is available.
+
+impact_assessment:
+  affected_layers:
+    - layer: SPEC
+      artifacts: ["SPEC-04"]
+      impact: |
+        Canonical reconciliation, correlated untrusted hints, absorbing HALT,
+        classified cancellation evidence, live read-only providers, immediate
+        lease fences, fixed maintenance cadence, and isolated runtimes.
+      cascade_direction: downstream
+    - layer: SPEC
+      artifacts: ["SPEC-05"]
+      impact: |
+        Commit-last lifecycle snapshots, detailed read results, retained HALT
+        evidence, checked alert persistence, runtime namespaces, bootstrap
+        mutex/CAS/reread lease fencing, and deterministic interleaving seams.
+      cascade_direction: downstream
+    - layer: SPEC
+      artifacts: ["SPEC-03"]
+      impact: |
+        SPEC-03 needs a generated/canonical cascade to declare ITradeExecutor
+        CloseTicket/ModifyTicket/CancelOrder as the guarded write seam that
+        CGuardedTrade will implement in IPLAN-03.
+      cascade_direction: downstream
+    - layer: SPEC
+      artifacts: ["SPEC-01"]
+      impact: |
+        SPEC-01 needs a generated/canonical cascade for the CStrategyBase
+        OnTimer lifecycle that will drive CPositionContext.OnMaintenance rather
+        than OnTick.
+      cascade_direction: downstream
+    - layer: TDD
+      artifacts: ["TDD-04", "TDD-05", "TDD-03", "TDD-01"]
+      impact: |
+        TDDs need generated/canonical updates for the new Position tests,
+        persistence regression tests, guarded executor seam tests, and timer
+        lifecycle tests.
+      cascade_direction: downstream
+    - layer: IPLAN
+      artifacts: ["IPLAN-04", "IPLAN-05", "IPLAN-03", "IPLAN-01", "IPLAN-00"]
+      impact: |
+        IPLAN-04 expands beyond the original 14-file manifest to include live
+        evidence providers and recovery tests. IPLAN-05 owns snapshot and lease
+        integrity, IPLAN-03 owns pre-write HALT/lease enforcement, and IPLAN-01
+        owns timer/provider lifetime and production assembly. IPLAN-00 must keep
+        IPLAN-04 in progress until manual compilation and runtime evidence exist.
+      cascade_direction: downstream
+    - layer: Code
+      artifacts:
+        - "Include/Position/*"
+        - "Scripts/Tests/Support/FakePositionView.mqh"
+        - "Scripts/Tests/Support/FakeStateStore.mqh"
+        - "Scripts/Tests/Support/FakeAlertSink.mqh"
+        - "Scripts/Tests/Test_PositionStateMachine.mq5"
+        - "Scripts/Tests/Test_AccountModeAdapters.mq5"
+        - "Scripts/Tests/Test_AccountModeDeferred.mq5"
+        - "Scripts/Tests/Test_PositionLiveProviders.mq5"
+        - "Include/Position/LiveAccountModeProvider.mqh"
+        - "Include/Position/LiveBrokerPositionView.mqh"
+        - "Include/Position/LiveTradeTransactionEvidence.mqh"
+        - "Include/Persistence/StateStore.mqh"
+        - "Include/Persistence/PersistenceTypes.mqh"
+        - "Include/Persistence/AlertSink.mqh"
+        - "Scripts/Tests/Test_StateStore.mq5"
+        - "Scripts/Tests/Test_AlertSink.mq5"
+        - "Scripts/Tests/RunAllTests.mq5"
+        - "Docs/OPERATIONS.md"
+      impact: |
+        Adds the Position module, shared IPLAN-04 fakes, focused tests, and
+        aggregate registration. Existing IPLAN-05 tests are updated for the
+        additive `IStateStore` contract and AlertSink optimization persistence.
+      cascade_direction: downstream
+  cascade_direction: bubble-down
+  risk_level: High
+  risk_justification: |
+    This is a source-breaking cross-layer change at the persistence, lifecycle,
+    and guarded-execution boundaries. Earlier file-presence and aliased-test
+    evidence overstated completion. No compile/runtime result is inherited by
+    this recovery revision. The change remains blocked until canonical artifacts,
+    focused tests, manual MetaEditor compilation, MT5 runtime counts, canary
+    evidence, and the post-remediation review all pass.
+
+implementation:
+  steps:
+    - step: 1
+      action: "Extend PersistenceTypes, StateStore, and AlertSink for IPLAN-04 persistence contracts."
+      artifact: "Include/Persistence"
+      status: Completed
+    - step: 2
+      action: "Update existing StateStore and AlertSink tests for additive persistence methods and optimization HALT persistence."
+      artifact: "Scripts/Tests/Test_StateStore.mq5, Scripts/Tests/Test_AlertSink.mq5"
+      status: Completed
+    - step: 3
+      action: "Add Position module public types, interfaces, state machine, account-mode adapters, context, external SL/TP repair hook, and router."
+      artifact: "Include/Position"
+      status: Completed
+    - step: 4
+      action: "Add IPLAN-04 fakes and focused tests."
+      artifact: "Scripts/Tests/Support, Scripts/Tests/Test_Position*.mq5, Scripts/Tests/Test_AccountMode*.mq5"
+      status: Completed
+    - step: 5
+      action: "Register IPLAN-04 tests in RunAllTests."
+      artifact: "Scripts/Tests/RunAllTests.mq5"
+      status: Completed
+    - step: 6
+      action: "Update IPLAN-04 YAML, IPLAN-00 registry, and module docs."
+      artifact: "docs/08_IPLAN, Docs/MODULES"
+      status: Completed
+    - step: 7
+      action: "Update canonical SPEC/TDD cascade and regenerate affected readable SPEC/TDD/IPLAN views."
+      artifact: "docs/06_SPEC, docs/07_TDD, docs/08_IPLAN"
+      status: Completed
+    - step: 8
+      action: "Run authoritative MT5 IDE compile and execute RunAllTests from the Navigator."
+      artifact: "Scripts/Tests/RunAllTests.mq5"
+      status: Completed
+    - step: 9
+      action: "Run two-chart ownership, full-session demo canary, and post-runtime review-team acceptance."
+      artifact: "Docs/OPERATIONS.md and .aidoc/review"
+      status: Pending
+
+verification:
+  checks:
+    - check: "Changed persistence tests compile."
+      result: Pass
+      method: "User reported the post-fix RunAllTests aggregate passed all tests; it transitively compiles and executes the registered persistence tests. Exact MetaEditor warning summary and fresh EX5 metadata remain unrecorded."
+    - check: "New IPLAN-04 tests compile."
+      result: Pass
+      method: "User reported RunAllTests compiled and executed on 2026-08-25; the aggregate transitively compiles the registered IPLAN-04 test sources. Warning count and fresh EX5 metadata were not supplied."
+    - check: "Aggregate runner compiles after IPLAN-04 registration."
+      result: Pass
+      method: "User reported RunAllTests compiled and produced runtime output at 2026-08-25 07:42:07. Warning count and fresh EX5 metadata remain unrecorded."
+    - check: "In-code public API documentation."
+      result: Pass
+      method: "New Position headers, IPLAN-04 support fakes, and touched Persistence interfaces carry Doxygen-style \\brief plus \\param/\\return notes where applicable."
+    - check: "Aidoc CHG/gate cascade."
+      result: Fail
+      method: "GATE-06, GATE-08, and GATE-CODE remain blocked while the source-breaking cascade and implementation are in progress."
+    - check: "Canonical SPEC/TDD CHG-22 term coverage."
+      result: Pass
+      method: "Canonical YAML duplicate-key parse, affected-reference resolution, delivered-path validation, readable drift scan, and quoted-include resolution pass for the CHG-22 cascade."
+    - check: "Runtime assertion execution."
+      result: Pass
+      method: "User reported all post-fix RunAllTests assertions passed. Exact post-fix pass/skip totals were not supplied; pre-fix evidence was 682 of 684 passed, 11 skipped, 2 failed."
+    - check: "Gate report prepared."
+      result: Pass
+      method: "docs/governance/chg/CHG-22_GATE-06_08_CODE_report.md prepared without approval signatures."
+
+gate_approval:
+  gate: "GATE-06/GATE-08/GATE-CODE"
+  approver: null
+  approval_date: null
+  conditions:
+    - "No unresolved P0/P1 finding; each review lens >=80 and weighted score >=85."
+    - "Fresh manual F7 evidence reports 0 errors, 0 warnings, and matching fresh EX5 artifacts."
+    - "Record exact focused and RunAllTests pass/fail/skip counts plus two-chart and canary evidence."
+
+recovery_governance:
+  adr_impact:
+    - "ADR-02 preserved: terminal GV persistence remains the durable scalar boundary."
+    - "ADR-06 preserved: all production providers compose quoted, vendored StdLib includes."
+    - "ADR-07 preserved: hedging-first ownership and deferred netting remain unchanged."
+    - "ADR-08 preserved: broker/history evidence is canonical; transactions are hints only."
+    - "ADR-10 preserved: Position and Persistence module boundaries remain distinct."
+  failure_modes:
+    - "Unavailable or contradictory lifecycle evidence enters absorbing HALT without deleting recovery data."
+    - "Lost lease makes the context non-ready and blocks subsequent state-changing operations."
+    - "Partial snapshot publication leaves the previous committed generation readable."
+    - "Unselected, replayed, out-of-order, or uncorrelated transactions cannot mutate lifecycle state."
+  threat_model_delta:
+    - "Competing charts attempting first-use ownership are serialized by an exclusive bootstrap mutex and post-publication owner recheck."
+    - "Transaction identifiers are untrusted until selected history proves symbol, magic, order, position, entry, and residual volume."
+    - "HALT and cancellation evidence is append-preserved for operator recovery."
+  recovery_objectives:
+    rpo: "Zero acknowledged lifecycle transitions without a complete committed snapshot; uncertainty fails closed to HALT."
+    rto: "At most one 60-second lease expiry plus one 30-second maintenance interval when broker evidence is available."
+  telemetry_events:
+    - TS_DEPLOY_PHASE
+    - TS_REC_DECISION
+    - TS_HINT_DEFERRED
+    - TS_HALT_ENTER
+    - TS_HALT_PERSIST_FAIL
+    - TS_HALT_UNFENCED
+    - TS_HALT_CLEAR
+    - TS_REC_RECOVERED
+    - TS_LEASE_CLAIM
+    - TS_LEASE_CONFLICT
+    - TS_LEASE_LOST
+    - TS_STORE_SNAPSHOT_REJECTED
+    - TS_STORE_SNAPSHOT_CORRUPT
+    - TS_PROVIDER_HISTORY_FAIL
+    - TS_PROVIDER_POSITION_HISTORY_FAIL
+    - TS_TIMER_LATE
+  canary: "Demo rollback rehearsal, then one full terminal-reported demo session, one restricted live identity, a partial identity cohort when topology permits, and full rollout. Each stage requires zero duplicate owners, lease loss, contradictory snapshots, provider/history failure, uncorrelated transitions, or maintenance gaps >=60 seconds."
+
+contract_cutover:
+  revision: "CHG-22-R1"
+  policy: "One atomic source/interface/test bundle; zero-width old/new interface coexistence window. The first committed CHG-22-R1 LifecycleSnapshot retires the old binary and activates the SPEC-05 SPEC.05.06.7c3a decision."
+  required_consumers:
+    persistence: ["CStateStore", "CAlertSink", "CPositionStateMachine", "FakeStateStore", "FakeAlertSink", "Test_StateStore", "Test_AlertSink", "RunAllTests"]
+    position: ["CPositionStateMachine", "CPositionContext", "CTradeTxRouter", "three live providers", "IPLAN-02 CTradeCoordinator", "IPLAN-03 CGuardedTrade", "IPLAN-01 CStrategyBase"]
+  gates:
+    - "IPLAN-05 producers and IPLAN-04 consumers pass first against CHG-22-R1."
+    - "IPLAN-02 coordination then consumes the pinned readiness/lifecycle contract."
+    - "IPLAN-01 provider assembly and IPLAN-03 final broker-mutation fences pass a joint integration suite before two-chart, rollback rehearsal, or canary."
+    - "TS_DEPLOY_PHASE records source commit, contract revision, fresh EX5 checksums, identity, rollout phase, and timestamp at demo, restricted-live, cohort, and full boundaries."
+
+rollback_plan:
+  strategy: "state-aware disable-and-restore"
+  source_commit: "ac7fe244dec1aa2d5897da406bf6c817804c607d"
+  restore_sla: "Disable within 60 seconds; restore plus static/manual verification within 15 minutes or remain disabled and escalate."
+  steps:
+    - "Disable strategy entry and preserve/export lifecycle GVs, HALT evidence, logs, and broker history before changing binaries."
+    - "Verify no active owner, pending order, or owned exposure; otherwise keep HALT and reconcile manually."
+    - "Restore the complete pinned source/interface/document/test bundle; use only a fresh manual-F7 EX5 checksum captured before rehearsal."
+    - "Never attach a prior binary to migrated snapshots. Under disabled/HALT operation and exclusive ownership, export snapshot and legacy keys, prove flat/no-order broker state, publish the rehearsed rollback-compatible legacy IDLE state, and clear the legacy HALT flag last."
+    - "Re-enable only after the restored build has 0 errors/0 warnings, exact passing test counts, exactly one owner, and safe broker reconciliation."
+  estimated_effort: "Medium"
+  affected_artifacts:
+    - "Include/Position"
+    - "Scripts/Tests/Support/FakePositionView.mqh"
+    - "Scripts/Tests/Support/FakeStateStore.mqh"
+    - "Scripts/Tests/Support/FakeAlertSink.mqh"
+    - "Scripts/Tests/Test_PositionStateMachine.mq5"
+    - "Scripts/Tests/Test_AccountModeAdapters.mq5"
+    - "Scripts/Tests/Test_AccountModeDeferred.mq5"
+    - "Scripts/Tests/Test_PositionLiveProviders.mq5"
+    - "Include/Persistence/StateStore.mqh"
+    - "Include/Persistence/PersistenceTypes.mqh"
+    - "Include/Persistence/AlertSink.mqh"
+    - "Scripts/Tests/Test_StateStore.mq5"
+    - "Scripts/Tests/Test_AlertSink.mq5"
+    - "Scripts/Tests/RunAllTests.mq5"
+    - "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.yaml"
+    - "docs/08_IPLAN/IPLAN-00_index.yaml"
+    - "Docs/MODULES/Position.md"
+    - "Docs/MODULES/Persistence.md"
+    - "Docs/OPERATIONS.md"

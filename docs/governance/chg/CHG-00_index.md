@@ -41,6 +41,7 @@ custom_fields:
 | CHG-19 | Session close reference input and broker market-session gate reconciliation | C3 | feedback | Proposed | GATE-CODE pending |
 | CHG-20 | Fixture ownership and FakeMarketContext scope clarification | C3 | design | Approved | GATE-06/GATE-08 approved |
 | CHG-21 | Canonical TradeIntent type extraction and regular-session-end close reference | C3 | design | Approved | GATE-06 + GATE-08 PASS (2026-06-21) |
+| CHG-22 | IPLAN-04 correctness, safety, persistence, and governance recovery | C3 | design | In Review | GATE-06/GATE-08/GATE-CODE failed pending fresh compile, runtime, ownership, canary, and review evidence |
 
 ## Planned
 

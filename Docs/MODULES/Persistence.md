@@ -8,8 +8,8 @@
 
 The Persistence layer provides two contracts for the TradeSpine framework:
 
-1. **State persistence** — deterministic GV keys + double-only terminal Global Variable storage,
-   with lossless ulong ticket splitting and identity fingerprint verification.
+1. **State persistence** — deterministic GV keys plus checksum-verified, double-buffered lifecycle
+   snapshots whose active generation is published last; legacy scalar/ticket access remains for migration.
 2. **Evidence sinks** — paired CSV trade evidence, leveled diagnostics, and mode-aware
    operator alerts in three strictly separated streams.
 
@@ -44,30 +44,61 @@ struct CanonicalIdentity {
 
 `CStateStore : public IStateStore` — GV-backed implementation.
 
-Call `Init(id, kb)` once before any other method. It writes an identity fingerprint on first
-call and verifies it on restart; returns `false` on fingerprint mismatch (StateCorruption).
+Call `Init(id, kb, runtime_namespace, marker_backend)` once before any other method. Live uses an
+empty namespace. Tester/optimization suppression requires a nonempty isolated namespace. The optional
+marker backend is a deterministic interleaving seam; production uses terminal globals and an exclusive file lock.
+
+The lease protocol itself lives in `Include/Persistence/MarkerLease.mqh`. `CStateStore` builds the
+canonical identity keys and delegates claim, heartbeat, ownership, and release to `CMarkerLease`.
+`IMarkerBackend` and `CTerminalMarkerBackend` are defined alongside that protocol so its critical
+interleavings can be reviewed and tested without the unrelated lifecycle persistence implementation.
 
 | Method | Returns | Description |
 |---|---|---|
-| `Init(id, kb)` | `bool` | Bind identity and key builder; write/verify fingerprint GV. |
+| `Init(id, kb, runtime_namespace, marker_backend)` | `bool` | Bind identity, namespace, key builder, and optional marker backend; write/verify fingerprint GV. |
+| `WriteLifecycleSnapshot(snapshot)` | `bool` | Write the inactive slot, checksum and readback-verify it, then publish the generation last. |
+| `ReadLifecycleSnapshot(&snapshot)` | `ENUM_STORE_READ_RESULT` | Return `ABSENT`, `VALID`, `CORRUPT`, or `ERROR`; only `VALID` exposes a committed aggregate. |
+| `IsRuntimeIsolated()` | `bool` | Report whether an explicit non-live namespace was configured. |
 | `WriteScalar(scope, value)` | `bool` | Store a `double` in a scoped GV slot. |
 | `ReadScalar(scope, &value)` | `bool` | Read back the scalar; `false` if key absent. |
 | `SetDuplicate(intent_id_hash)` | `bool` | Mark an order intent as already-processed. |
 | `IsDuplicate(intent_id_hash)` | `bool` | Check the duplicate marker GV. |
 | `SetHalt(ev)` | `bool` | Set HALT flag GV (1.0) and write `HaltEvidence` to file. `false` if GV write or any file-write step fails; HALT flag remains set on file failure. |
+| `AppendHaltEvidence(ev)` | `bool` | Append the seven-line audit record without changing lifecycle or HALT globals; used by a stale owner that must halt locally without overwriting the current owner. |
 | `IsHalted()` | `bool` | Check whether the HALT flag GV is set. |
+| `ClearHalt()` | `bool` | Append recovery evidence and clear the HALT flag last; append/clear failure leaves HALT active. |
 | `WriteTicket(ticket)` | `bool` | Store a `ulong` losslessly across two 32-bit GV slots. |
 | `ReadTicket(&ticket)` | `bool` | Reassemble the `ulong` from the two GV slots. |
+| `WritePendingOrder(ticket, submitted_ts)` | `bool` | Store a pending-entry order ticket plus submission timestamp. |
+| `ReadPendingOrder(&ticket, &submitted_ts)` | `bool` | Reassemble pending-entry order evidence after restart. |
+| `ClearPendingOrder()` | `bool` | Legacy compatibility cleanup; lifecycle code clears pending data by publishing a new complete snapshot. |
+| `MarkerClaimOrReclaim(now, lease_secs, &token, &status)` | `bool` | Claim/reclaim the duplicate marker lease using the token-fenced owner GV and explicit heartbeat timestamp GV. |
+| `MarkerHeartbeat(&token, now)` | `bool` | Under the same identity mutex, advance the current token, publish heartbeat, and reread both before success. A reread mismatch returns `false` and restores the prior positive epoch when still owned; it never implies release. |
+| `MarkerIsOwner(token)` | `bool` | Reread the authoritative owner token immediately before lifecycle or broker mutation. |
+| `MarkerRelease(token)` | `bool` | Release ownership only if `token` is current; stores `-token` to preserve epoch. |
 | `Verify()` | `bool` | Re-check fingerprint; `false` = StateCorruption. |
 
 GV write failures (`WriteScalar`, `SetDuplicate`, `SetHalt`, `WriteTicket`, `Init`) log the
 `GlobalVariableSet()` error code via `PrintFormat()` for diagnostics; the bool return contract
 is unchanged.
 
-> **IPLAN-04 boundary.** Account-symbol-magic duplicate *ownership* detection — heartbeat GV
-> via `GlobalVariableSetOnCondition()`, stale recovery after 90 s, and owner diagnostics
-> (PRD AC-39/AC-42) — is IPLAN-04 scope. `CStateStore` provides the primitive GV write
-> infrastructure that IPLAN-04 will consume; it does not implement the ownership protocol.
+> **CHG-22 lease fence.** Account-symbol-magic ownership uses `marker_owner` plus
+> `marker_hb_ts`. First-use creation and claim publication run under an exclusive identity lock;
+> owner CAS, heartbeat publication, and owner/heartbeat reread must all agree before success.
+> Positive owner with missing heartbeat is conflict/corruption, never an available lease.
+
+### Lifecycle aggregate
+
+`PendingOrderEvidence` stores order ticket, submission time, cancellation-request time, and
+`ENUM_CANCEL_ORIGIN` (`NONE`, `FRAMEWORK_TIMEOUT`, `DAY_TRADE`). `LifecycleSnapshot` stores state,
+position ticket, stable position identifier, pending evidence, HALT flag, and generation.
+
+The inactive slot payload and checksum are verified before the active generation is published. A
+failed replacement preserves the prior committed generation. Legacy state is read only when no
+committed snapshot exists and is migrated only when internally unambiguous. `UNKNOWN` is valid only
+as a pre-snapshot legacy sentinel: reconciliation classifies it as IDLE, ACTIVE, or PENDING_ENTRY
+from complete evidence, while contradictory evidence enters HALT. A committed snapshot never stores
+`UNKNOWN`.
 
 ### Shared enums — `Include/Persistence/PersistenceTypes.mqh`
 
@@ -76,17 +107,19 @@ Types used by more than one Persistence module live here to avoid spurious cross
 | Enum | Values |
 |---|---|
 | `ENUM_TRADE_RECORD_TYPE` | `TRADE_RECORD_INTENT=0`, `TRADE_RECORD_EXECUTION=1` |
+| `ENUM_DUPLICATE_MARKER_STATUS` | `DUPLICATE_MARKER_ACTIVE=0`, `DUPLICATE_MARKER_STALE_RECLAIMED=1`, `DUPLICATE_MARKER_CONFLICT=2` |
 
 ### StateStore enums — `Include/Persistence/StateStore.mqh`
 
 | Enum | Values |
 |---|---|
-| `ENUM_POSITION_STATE` | `UNKNOWN=0`, `IDLE=1`, `ACTIVE=2`, `PENDING_EXIT=3`, `HALT=4`, `PENDING_ENTRY=5` |
+| `ENUM_POSITION_STATE` | `UNKNOWN=0`, `IDLE=1`, `ACTIVE=2`, `PENDING_EXIT=3`, `HALT=4`, `PENDING_ENTRY=5`, `PENDING_CANCEL=6` |
 | `ENUM_GV_VALUE_ENCODING` | `FLAG`, `TIMESTAMP`, `VOLUME`, `HASH_FRAG`, `SPLIT_ID_HI`, `SPLIT_ID_LO` |
+| `ENUM_STORE_READ_RESULT` | `STORE_READ_ABSENT`, `STORE_READ_VALID`, `STORE_READ_CORRUPT`, `STORE_READ_ERROR` |
+| `ENUM_CANCEL_ORIGIN` | `CANCEL_ORIGIN_NONE`, `CANCEL_ORIGIN_FRAMEWORK_TIMEOUT`, `CANCEL_ORIGIN_DAY_TRADE` |
 
-> `PENDING_ENTRY=5` was added during IPLAN-04 implementation (values 0–4 defined by IPLAN-05
-> remain stable). Lifecycle order: IDLE (flat) → PENDING_ENTRY (entry order placed, awaiting
-> fill) → ACTIVE (position open) → PENDING_EXIT (exit order placed) → IDLE or HALT.
+> `PENDING_ENTRY=5` and `PENDING_CANCEL=6` were added during IPLAN-04 implementation
+> (values 0–4 defined by IPLAN-05 remain stable).
 
 ### `TradeLogger` — `Include/Persistence/TradeLogger.mqh`
 
@@ -160,7 +193,7 @@ MUST NOT write to trade evidence CSV — that is `TradeLogger`'s stream.
 
 ```mql5
 interface IAlertSink {
-    void Halt(const HaltEvidence &ev);
+    bool Halt(const HaltEvidence &ev);
     void Warn(string category, string msg);
 };
 ```
@@ -173,15 +206,15 @@ void Init(COptContext* ctx, Logger* logger, IStateStore* store = NULL);
 
 | Runtime mode | `Halt()` | `Warn()` |
 |---|---|---|
-| Live | `logger.Error()` -> `SetHalt()` -> `Alert()` | `Print()` + `logger.Warn()` |
-| Visual tester | `logger.Error()` -> `SetHalt()` -> `Alert()` | `logger.Warn()` |
-| Non-visual tester | `logger.Error()` -> `SetHalt()` | `logger.Warn()` |
-| Optimization | silent | silent |
+| Live | `SetHalt()` -> `logger.Error()` -> `Alert()` | `Print()` + `logger.Warn()` |
+| Visual tester | `SetHalt()` -> `logger.Error()` -> `Alert()` | `logger.Warn()` |
+| Non-visual tester | `SetHalt()` -> `logger.Error()` | `logger.Warn()` |
+| Optimization | `SetHalt()` only | silent |
 
-- When `Init()` is called with a non-NULL `IStateStore*`, `Halt()` writes the persistent GV HALT flag via `store.SetHalt(ev)` before calling `Alert()`. The EA remains halted after the dialog is dismissed — clicking OK is not a resume signal.
+- When `Init()` is called with a non-NULL `IStateStore*`, `Halt()` writes the persistent GV HALT flag via `store.SetHalt(ev)` before UI/log suppression and before calling `Alert()`. The EA remains halted after the dialog is dismissed — clicking OK is not a resume signal.
 - If `SetHalt()` returns `false` (GV write or file-write failure), a secondary `logger.Error()` is emitted: `"HALT persistence failed; persistent circuit breaker may not be set"`. Falls back to `Print()` when logger is NULL. The operator must treat the halt state as unconfirmed.
 - The Coordinator must call `IStateStore.IsHalted()` as the first action in `OnTick()` and return immediately if true.
-- Resume requires explicit operator action: remove and re-attach the EA, or run a recovery script that clears the flag.
+- Resume requires a fresh lease claim and full canonical reconciliation. Removing/re-attaching the EA or clearing a scalar flag is not proof of safety.
 - `SetHalt()` is skipped when `store` is NULL (backward-compat default); `Alert()` and `logger.Error()` still fire.
 
 ---
@@ -200,6 +233,13 @@ Standard scope tags used by `CStateStore`:
 | `halt_flag` | Boolean HALT flag (1.0 = halted) |
 | `tkt_hi` | Upper 32 bits of a ulong ticket |
 | `tkt_lo` | Lower 32 bits of a ulong ticket |
+| `pend_ord_hi` | Upper 32 bits of a pending-entry order ticket |
+| `pend_ord_lo` | Lower 32 bits of a pending-entry order ticket |
+| `pend_ord_ts` | Pending-entry submission timestamp |
+| `marker_owner` | Duplicate marker owner token/epoch; positive = owned, non-positive = free with epoch preserved |
+| `marker_hb_ts` | Explicit duplicate marker heartbeat timestamp |
+| `life_commit` | Last committed lifecycle generation; written after inactive-slot verification |
+| `life_<slot>_*` | Double-buffered lifecycle payload, stable IDs, pending evidence, HALT flag, generation, and checksum |
 | `dup_<hash>` | Duplicate marker for a processed order intent |
 | Custom string | Caller-defined scalar state slot |
 
@@ -209,6 +249,9 @@ Standard scope tags used by `CStateStore`:
 
 | Test file | Coverage |
 |---|---|
-| `Scripts/Tests/Test_StateStore.mq5` | KeyBuilder determinism, bounds, collision detection; GV round-trips, duplicate markers, HALT flag and evidence file, HALT filename sanitization (path-like symbols), HALT payload newline stripping, large magic unsigned encoding, ticket lossless split, fingerprint corruption detection |
+| `Scripts/Tests/Test_StateStore.mq5` | Snapshot publication/readback/corruption, prior-generation preservation, retained HALT/recovery evidence, runtime namespaces, lossless IDs, missing-heartbeat conflict, double claim, CAS-to-heartbeat theft, late tokens, and fingerprint corruption. |
 | `Scripts/Tests/Test_TradeLogger.mq5` | Intent/execution pairing, CSV content verification, log separation, optimization gate, write failure path, invalid `ENUM_TRADE_SIDE` rejection |
-| `Scripts/Tests/Test_AlertSink.mq5` | Logger gating per mode, Error always emits, CAlertSink routing for tester/optimization/live, logger-first contract, HALT flag persistence via FakeStateStore, FakeAlertSink E2E (visual-mode path is structurally injectable via `RuntimeMode.is_visual` but `Alert()` remains manual-only in Strategy Tester) |
+| `Scripts/Tests/Test_AlertSink.mq5` | Logger/runtime routing plus explicit durable-HALT success/failure return and persistence-attempt evidence. |
+
+Changed CHG-22 persistence files have assertion-backed source coverage but no fresh F7/runtime
+evidence. See `Docs/OPERATIONS.md`; IPLAN-05 remains In Progress.

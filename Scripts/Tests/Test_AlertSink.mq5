@@ -10,7 +10,7 @@
 //|     Error always emits (outside optimization).                   |
 //|   - CAlertSink routing per mode: non-visual tester → log-only;  |
 //|     optimization → silent; live/visual → logger.Error() emitted. |
-//|   - FakeAlertSink defined inline to capture calls without        |
+//|   - AlertSinkCaptureSink defined inline to capture calls without |
 //|     triggering Alert() dialogs in the test environment.          |
 //|   - CAlertSink.Halt() logger-first contract verified via tester  |
 //|     context; the live/visual branch (Alert() call) is code-     |
@@ -28,7 +28,7 @@
 #include "Support/FakeLogSink.mqh"
 
 /** \brief Stub IAlertSink that records Halt/Warn calls without triggering UI side-effects. */
-class FakeAlertSink : public IAlertSink
+class AlertSinkCaptureSink : public IAlertSink
   {
   public:
    HaltEvidence last_halt;
@@ -36,24 +36,52 @@ class FakeAlertSink : public IAlertSink
    int          warn_count;
    string       last_warn_category;
 
-                FakeAlertSink(void) : halt_called(false), warn_count(0) {}
+                AlertSinkCaptureSink(void) : halt_called(false), warn_count(0) {}
 
-   void         Halt(const HaltEvidence &ev) override
-     { halt_called = true; last_halt = ev; }
+   //--- \brief Capture a HALT payload without durable persistence.
+   //--- \param ev HALT evidence payload.
+   //--- \return false because this capture-only sink is non-durable.
+   bool         Halt(const HaltEvidence &ev) override
+     { halt_called = true; last_halt = ev; return(false); }
    void         Warn(string category, string msg) override
      { warn_count++; last_warn_category = category; }
   };
 
 /** \brief Stub IStateStore that records SetHalt/IsHalted calls without writing to GlobalVariables. */
-class FakeStateStore : public IStateStore
+class AlertSinkStateStoreDouble : public IStateStore
   {
   public:
+   //--- \brief Accept a lifecycle snapshot in this non-persistent double.
+   //--- \param snapshot Lifecycle aggregate to accept.
+   //--- \return true.
+   bool         WriteLifecycleSnapshot(const LifecycleSnapshot &snapshot) override { return(true); }
+   //--- \brief Report the absence of a lifecycle snapshot.
+   //--- \param snapshot [out] Unchanged because this double stores no snapshot.
+   //--- \return STORE_READ_ABSENT.
+   ENUM_STORE_READ_RESULT ReadLifecycleSnapshot(LifecycleSnapshot &snapshot) override { return(STORE_READ_ABSENT); }
+   //--- \brief Report this double's live namespace behavior.
+   //--- \return false because no isolated namespace is simulated.
+   bool         IsRuntimeIsolated() override { return(false); }
    bool         halt_set;
    bool         should_fail_halt; // when true, SetHalt() returns false (simulates GV/file failure)
    int          halt_call_count;  // independent proof SetHalt() was attempted, regardless of outcome
+   int          clear_halt_count;
+   int          marker_heartbeat_count;
+   int          marker_release_count;
+   ulong        pending_ticket;
+   datetime     pending_submitted_ts;
+   bool         pending_set;
    HaltEvidence last_halt_ev;
 
-                FakeStateStore(void) : halt_set(false), should_fail_halt(false), halt_call_count(0) {}
+                AlertSinkStateStoreDouble(void) : halt_set(false),
+                                                  should_fail_halt(false),
+                                                  halt_call_count(0),
+                                                  clear_halt_count(0),
+                                                  marker_heartbeat_count(0),
+                                                  marker_release_count(0),
+                                                  pending_ticket(0),
+                                                  pending_submitted_ts(0),
+                                                  pending_set(false) {}
 
    bool         WriteScalar(string scope, double value)   override { return(true); }
    bool         ReadScalar(string scope, double &value)   override { return(false); }
@@ -67,9 +95,74 @@ class FakeStateStore : public IStateStore
       halt_set = true;
       return(true);
      }
+   //--- \brief Capture appended HALT evidence without changing the flag.
+   //--- \param ev HALT evidence payload.
+   //--- \return true unless HALT persistence failure is injected.
+   bool         AppendHaltEvidence(const HaltEvidence &ev) override
+     {
+      last_halt_ev = ev;
+      return(!should_fail_halt);
+     }
    bool         IsHalted()                                override { return(halt_set); }
+   bool         ClearHalt()                               override
+     {
+      clear_halt_count++;
+      halt_set = false;
+      return(true);
+     }
    bool         WriteTicket(ulong ticket)                 override { return(true); }
    bool         ReadTicket(ulong &ticket)                 override { return(false); }
+   bool         WritePendingOrder(ulong ticket, datetime submitted_ts) override
+     {
+      pending_ticket = ticket;
+      pending_submitted_ts = submitted_ts;
+      pending_set = true;
+      return(true);
+     }
+   bool         ReadPendingOrder(ulong &ticket, datetime &submitted_ts) override
+     {
+      if(!pending_set) return(false);
+      ticket = pending_ticket;
+      submitted_ts = pending_submitted_ts;
+      return(true);
+     }
+   bool         ClearPendingOrder()                       override
+     {
+      pending_set = false;
+      pending_ticket = 0;
+      pending_submitted_ts = 0;
+      return(true);
+     }
+   bool         MarkerClaimOrReclaim(datetime now,
+                                     int lease_secs,
+                                     long &out_token,
+                                     ENUM_DUPLICATE_MARKER_STATUS &status) override
+     {
+      out_token = 1;
+      status = DUPLICATE_MARKER_ACTIVE;
+      return(true);
+     }
+   //--- \brief Advance an injected marker heartbeat token.
+   //--- \param token [in,out] Token to advance when valid.
+   //--- \param now Heartbeat time, ignored by this double.
+   //--- \return true when token is positive.
+   bool         MarkerHeartbeat(long &token, datetime now) override
+     {
+      marker_heartbeat_count++;
+      if(token <= 0)
+         return(false);
+      token++;
+      return(true);
+     }
+   //--- \brief Report ownership for a positive injected marker token.
+   //--- \param token Marker token to inspect.
+   //--- \return true when token is positive.
+   bool         MarkerIsOwner(long token) override { return(token > 0); }
+   bool         MarkerRelease(long token)                 override
+     {
+      marker_release_count++;
+      return(token > 0);
+     }
    bool         Verify()                                  override { return(true); }
   };
 
@@ -85,6 +178,9 @@ HaltEvidence MakeHalt(string reason = "Test HALT", string action = "Check positi
    ev.reason           = reason;
    ev.last_known_state = POSITION_STATE_ACTIVE;
    ev.operator_action  = action;
+   ev.symbol           = "TSTEST";
+   ev.magic            = (ulong)99905;
+   ev.ticket           = (ulong)123456789;
    return(ev);
   }
 
@@ -198,7 +294,7 @@ bool Test_AlertSink_NonVisualTester_Halt(CAssert &a)
    alert.Init(&ctx, &logger);
 
    HaltEvidence ev = MakeHalt("Non-visual test HALT", "Operator check");
-   alert.Halt(ev);
+   bool durable = alert.Halt(ev);
 
 //--- Alert() is NOT called (IsLive=false, IsVisualMode=false).
 //--- logger.Error() IS called.
@@ -206,6 +302,8 @@ bool Test_AlertSink_NonVisualTester_Halt(CAssert &a)
                     "HALT message routed to logger in non-visual tester");
    ok &= a.TS_CHECK(sink.HasMessage("Non-visual test HALT"),
                     "HALT reason present in logger message");
+   ok &= a.TS_CHECK(!durable,
+                    "Missing state store is reported as durable HALT evidence failure");
 
    return(ok);
   }
@@ -231,6 +329,41 @@ bool Test_AlertSink_Optimization_Silent(CAssert &a)
 
    alert.Warn("Cat", "opt warn");
    ok &= a.TS_CHECK(sink.Count() == 0, "Warn silent in optimization");
+
+   return(ok);
+  }
+
+/** \brief Verify Halt() persists the safety flag in optimization but emits no UI/log output.
+    \param a Assertion collector.
+    \return true when all assertions pass. */
+bool Test_AlertSink_Optimization_PersistsHalt(CAssert &a)
+  {
+   bool ok = true;
+
+   RuntimeMode opt;
+   opt.is_tester = true; opt.is_optimization = true; opt.diagnostics_enabled = false;
+   COptContext ctx(opt);
+
+   FakeLogSink sink;
+   Logger logger;
+   logger.Init(&ctx, &sink);
+
+   AlertSinkStateStoreDouble store;
+   CAlertSink alert;
+   alert.Init(&ctx, &logger, &store);
+
+   HaltEvidence ev = MakeHalt("Opt HALT persisted", "No operator action in optimization");
+   bool durable = alert.Halt(ev);
+
+   ok &= a.TS_CHECK(durable,
+                    "Optimization Halt reports durable persistence success");
+
+   ok &= a.TS_CHECK(store.halt_call_count == 1,
+                    "Optimization Halt attempts SetHalt exactly once");
+   ok &= a.TS_CHECK(store.halt_set,
+                    "Optimization Halt persists the HALT safety flag");
+   ok &= a.TS_CHECK(sink.Count() == 0,
+                    "Optimization Halt remains UI/log silent after persistence");
 
    return(ok);
   }
@@ -281,7 +414,10 @@ bool Test_AlertSink_Halt_LoggerFirstContract(CAssert &a)
    alert.Init(&ctx, &logger);
 
    HaltEvidence ev = MakeHalt("logger-first HALT", "Verify log written");
-   alert.Halt(ev);
+   bool durable = alert.Halt(ev);
+
+   ok &= a.TS_CHECK(!durable,
+                    "CAlertSink.Halt reports missing durable persistence without a store");
 
    ok &= a.TS_CHECK(sink.HasMessage("TRADESPINE HALT"),
                     "logger.Error() called during Halt() — written before Alert() in live/visual path");
@@ -307,12 +443,15 @@ bool Test_AlertSink_Halt_FlagPersisted(CAssert &a)
    Logger       logger;
    logger.Init(&ctx, &sink);
 
-   FakeStateStore store;
+   AlertSinkStateStoreDouble store;
    CAlertSink     alert;
    alert.Init(&ctx, &logger, &store);
 
    HaltEvidence ev = MakeHalt("Ambiguous state", "Check positions");
-   alert.Halt(ev);
+   bool durable = alert.Halt(ev);
+
+   ok &= a.TS_CHECK(durable,
+                    "CAlertSink.Halt reports durable persistence success");
 
    ok &= a.TS_CHECK(store.halt_call_count == 1,
                     "CAlertSink.Halt() attempts IStateStore.SetHalt() exactly once");
@@ -337,18 +476,20 @@ bool Test_AlertSink_Halt_PersistenceFailureDiagnostic(CAssert &a)
    Logger       logger;
    logger.Init(&ctx, &sink);
 
-   FakeStateStore store;
+   AlertSinkStateStoreDouble store;
    store.should_fail_halt = true; // simulate GV / file-write failure
    CAlertSink     alert;
    alert.Init(&ctx, &logger, &store);
 
    HaltEvidence ev = MakeHalt("GV failure scenario", "Check MT5 terminal");
-   alert.Halt(ev);
+   bool durable = alert.Halt(ev);
 
    ok &= a.TS_CHECK(store.halt_call_count == 1,
                     "CAlertSink.Halt() attempts IStateStore.SetHalt() even though it will fail");
    ok &= a.TS_CHECK(!store.halt_set,
                     "SetHalt() returned false — flag not recorded in store");
+   ok &= a.TS_CHECK(!durable,
+                    "CAlertSink exposes durable HALT persistence failure to its caller");
    ok &= a.TS_CHECK(sink.HasMessage("HALT persistence failed"),
                     "Persistence-failure diagnostic emitted via logger.Error()");
 
@@ -368,7 +509,7 @@ bool Test_AlertSink_FakeSink_E2E(CAssert &a)
    Logger logger;
    logger.Init(&ctx, &log_sink);
 
-   FakeAlertSink fake_alert;
+   AlertSinkCaptureSink fake_alert;
 
 //--- Wire a fake sink in place of CAlertSink to capture calls without UI.
    HaltEvidence ev = MakeHalt("E2E HALT scenario", "Restart terminal");
@@ -427,6 +568,7 @@ bool test_persistence_and_audit_evidence_e2e_acceptance(CAssert &a)
    ok &= Test_Logger_ErrorSilentInOptimization(a);
    ok &= Test_AlertSink_NonVisualTester_Halt(a);
    ok &= Test_AlertSink_Optimization_Silent(a);
+   ok &= Test_AlertSink_Optimization_PersistsHalt(a);
    ok &= Test_AlertSink_NonVisualTester_Warn(a);
    ok &= Test_AlertSink_Halt_LoggerFirstContract(a);
    ok &= Test_AlertSink_Halt_FlagPersisted(a);
@@ -474,6 +616,7 @@ int OnStart()
    Test_Logger_ErrorSilentInOptimization(asserts);
    Test_AlertSink_NonVisualTester_Halt(asserts);
    Test_AlertSink_Optimization_Silent(asserts);
+   Test_AlertSink_Optimization_PersistsHalt(asserts);
    Test_AlertSink_NonVisualTester_Warn(asserts);
    Test_AlertSink_Halt_LoggerFirstContract(asserts);
    Test_AlertSink_Halt_FlagPersisted(asserts);
