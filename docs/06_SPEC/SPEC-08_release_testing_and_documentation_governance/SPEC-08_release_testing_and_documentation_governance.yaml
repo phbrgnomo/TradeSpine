@@ -276,7 +276,7 @@ data_models:
         - name: "verdict"
           type: "string"
           required: true
-          description: "PASS, FAIL, or explicitly approved nonconformance."
+          description: "PASS or FAIL only. Any approved upstream threshold amendment is a separate prerequisite for a new evaluation; it is not a third verdict value."
     - name: "DependencyEvidence"
       type: "struct"
       fields:

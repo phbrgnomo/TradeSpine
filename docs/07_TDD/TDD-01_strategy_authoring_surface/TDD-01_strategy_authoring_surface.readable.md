@@ -75,7 +75,7 @@ Executable coverage is currently 0/0/0 for aa68, c0f6, and 7b02. All named funct
 
 | Trace Type | References |
 | --- | --- |
-| tags | @tdd: TDD.01.04.c4a3, @spec: SPEC-01, @brd: BRD.01.07.88a6, @brd: BRD.01.07.a94e, @prd: PRD.01.09.5ef1, @prd: PRD.01.09.eaf3, @ears: EARS.01.03.4c3f, @ears: EARS.01.03.b784, @bdd: BDD.01.03.aa68, @bdd: BDD.01.03.c0f6, @adr: ADR.01.03.42e3, @adr: ADR.09.03.84b9, @chg: CHG-22 |
+| tags | @tdd: TDD.01.04.c4a3, @spec: SPEC-01, @brd: BRD.01.07.88a6, @brd: BRD.01.07.a94e, @prd: PRD.01.09.5ef1, @prd: PRD.01.09.eaf3, @ears: EARS.01.03.4c3f, @ears: EARS.01.03.b784, @bdd: BDD.01.03.aa68, @bdd: BDD.01.03.c0f6, @adr: ADR.01.03.42e3, @adr: ADR.09.03.84b9, @chg: CHG-22, @chg: CHG-23 |
 | upstream | spec_references: @spec: SPEC-01, adr_references: @adr: ADR.01.03.42e3, @adr: ADR.09.03.84b9, @adr: ADR.10.03.51ea, bdd_references: @bdd: BDD.01.03.aa68, @bdd: BDD.01.03.c0f6, @bdd: BDD.01.03.7b02, ears_references: @ears: EARS.01.03.4c3f, @ears: EARS.01.03.b784, @ears: EARS.01.03.0c0a, @ears: EARS.01.03.4e80, prd_references: @prd: PRD.01.09.5ef1, @prd: PRD.01.09.eaf3, @prd: PRD.01.09.5963, brd_references: @brd: BRD.01.07.88a6, @brd: BRD.01.07.a94e |
 | downstream | type: IPLAN; layer: 8; target: IPLAN-01; description: Implementation plan must generate tests before component code. |
 | health_score | iplan_ready: 94%, target_score: >=90/100 |

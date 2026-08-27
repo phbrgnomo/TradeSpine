@@ -15,7 +15,7 @@
 | IPLAN-ready Score | 96/100 |
 | CHG References | CHG-22, CHG-23 |
 | Created | 2026-06-02T00:00:00-03:00 |
-| Updated | 2026-08-26T00:00:00-03:00 |
+| Updated | 2026-08-27T00:00:00-03:00 |
 
 ## Test Pyramid
 
@@ -63,6 +63,7 @@ Named assertion-backed coverage is: 8180 `0/0/1`, f11f `0/0/1`, e16a `1/0/0`, 9a
 
 | ID | Name | Target | File | Function | Expected | Edge Cases |
 | --- | --- | --- | --- | --- | --- | --- |
+| TDD.04.04.8180 | Account mode ownership remains strategy scoped | @bdd: BDD.01.03.8180 | Scripts/Tests/Test_AccountModeDeferred.mq5 | test_position_account_mode_and_state_8180_e2e | Netting/exchange initialization fails before lease or broker writes; hedging exposes only matching symbol/magic ownership and readiness; all assertions pass. |  |
 | TDD.04.04.b7d2 | Account modes preserve ownership under parameterization | @bdd: BDD.01.03.f11f | Scripts/Tests/Test_AccountModeDeferred.mq5 | test_position_account_mode_and_state_e2e_acceptance | Hedging initializes only after claim+reconcile; netting/exchange fail with no writes; maintenance runs at 30 seconds; lease loss removes readiness; optimization/nonvisual tester require isolated namespaces without live-key cleanup; stop repair is ownership-fenced. | Manual F7/runtime/two-chart/canary evidence remains pending. |
 | TDD.04.04.c6e1 | Live read-only provider parity | @bdd: BDD.01.03.f11f | Scripts/Tests/Test_PositionLiveProviders.mq5 | test_position_live_providers_contract | Terminal-backed account, position, order, deal, and bounded-history values match native selections; failure returns safe empty values and the provider boundary cannot submit trades. | Manual F7 and terminal-backed runtime evidence remains pending. |
 

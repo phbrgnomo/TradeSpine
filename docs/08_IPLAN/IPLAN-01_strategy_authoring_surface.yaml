@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-01"
   source_tdd: "@tdd: TDD.01.04.c4a3"
   total_sections: 6
-  last_updated: "2026-08-24T00:00:00-03:00"
+  last_updated: "2026-08-27T00:00:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
@@ -18,7 +18,7 @@ document_control:
   status: Draft
   version: "1.1"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-08-24T00:00:00-03:00"
+  last_updated: "2026-08-27T00:00:00-03:00"
   author: "Codex"
   component: "CStrategyBase and strategy template surface"
   complexity: 5

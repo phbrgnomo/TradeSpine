@@ -119,7 +119,7 @@ flowchart LR
 
 | Trace Type | References |
 | --- | --- |
-| tags | @spec: SPEC-05, @brd: BRD.01.08.cea7, @prd: PRD.01.14.737b, @ears: EARS.01.03.a023, @bdd: BDD.01.03.0073, @adr: ADR.02.03.c7dd, @chg: CHG-22 |
+| tags | @spec: SPEC-05, @brd: BRD.01.08.cea7, @prd: PRD.01.14.737b, @ears: EARS.01.03.a023, @bdd: BDD.01.03.0073, @adr: ADR.02.03.c7dd, @chg: CHG-22, @chg: CHG-23 |
 | upstream | adr_references: @adr: ADR.02.03.c7dd, @adr: ADR.03.03.4124, @adr: ADR.05.03.2586, bdd_references: @bdd: BDD.01.03.0073, @bdd: BDD.01.03.d6ae, @bdd: BDD.01.03.e16a, @bdd: BDD.01.03.b37d, ears_references: @ears: EARS.01.03.a023, @ears: EARS.01.03.fef3, @ears: EARS.01.03.a71c, @ears: EARS.01.03.c5b7, @ears: EARS.01.03.588b, prd_references: @prd: PRD.01.14.737b, @prd: PRD.01.09.9d68, @prd: PRD.01.09.c622, @prd: PRD.01.09.3092, brd_references: @brd: BRD.01.08.cea7, @brd: BRD.01.07.8e15, @brd: BRD.01.07.bf02 |
 | downstream | type: TDD; layer: 7; description: Persistence, evidence, logging, and alert-sink test cases. |
 | health_score | tdd_ready: 94%, target_score: >=90/100 |

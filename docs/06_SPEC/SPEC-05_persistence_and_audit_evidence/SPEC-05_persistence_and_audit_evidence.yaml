@@ -443,7 +443,7 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
-  provenance: ["@chg: CHG-23"]
+  provenance: ["@chg: CHG-22", "@chg: CHG-23"]
   tags: ["@spec: SPEC-05", "@brd: BRD.01.08.cea7", "@prd: PRD.01.14.737b", "@ears: EARS.01.03.a023", "@bdd: BDD.01.03.0073", "@adr: ADR.02.03.c7dd", "@chg: CHG-22"]
   upstream:
     adr_references: ["@adr: ADR.02.03.c7dd", "@adr: ADR.03.03.4124", "@adr: ADR.05.03.2586"]

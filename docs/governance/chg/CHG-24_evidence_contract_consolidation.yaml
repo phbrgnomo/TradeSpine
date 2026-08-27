@@ -35,8 +35,8 @@ impact_assessment:
       artifacts: ["SPEC-08"]
       impact: "Add the canonical module-closure, release-obligation, aggregate-test, and evidence-field contract; no runtime interface changes."
     - layer: IPLAN
-      artifacts: ["IPLAN-04", "IPLAN-05"]
-      impact: "Replace repeated closure criteria with a reference to SPEC-08 while retaining plan-specific evidence facts."
+      artifacts: ["IPLAN-00", "IPLAN-04", "IPLAN-05"]
+      impact: "Replace repeated closure criteria with a reference to SPEC-08 while retaining plan-specific evidence facts and the IPLAN-00 registry inventory."
     - layer: Documentation
       artifacts: ["README", "Docs/OPERATIONS", "CHG-22 gate report"]
       impact: "Reference the canonical contract and retain only local operational or historical facts."
@@ -70,6 +70,9 @@ implementation:
       change_type: modified
     - id: "IPLAN-05"
       file: "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+      change_type: modified
+    - id: "IPLAN-00"
+      file: "docs/08_IPLAN/IPLAN-00_index.yaml"
       change_type: modified
     - id: "IPLAN-04 readable"
       file: "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.readable.md"

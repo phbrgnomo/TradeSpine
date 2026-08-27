@@ -5,7 +5,11 @@ metadata:
   artifact_type: "SPEC"
   layer: 6
   total_sections: 8
-  last_updated: "2026-08-26T00:00:00-03:00"
+  last_updated: "2026-08-27T00:00:00-03:00"
+  timestamp_policy:
+    canonical_field: "metadata.last_updated"
+    mirrored_fields: ["last_updated", "document_control.last_updated"]
+    require_equal: true
   deliverable_type: code
   tags: ["spec-document", "layer-6-artifact", "shared-architecture"]
   c4_level:
@@ -19,7 +23,7 @@ id: SPEC-04
 title: Position Account Mode and State
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-08-26T00:00:00-03:00"
+last_updated: "2026-08-27T00:00:00-03:00"
 chg_references: ["CHG-22", "CHG-23"]
 
 ## Section 1: Document Control
@@ -27,7 +31,7 @@ document_control:
   status: Draft
   version: "1.2"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-08-26T00:00:00-03:00"
+  last_updated: "2026-08-27T00:00:00-03:00"
   author: "Codex"
   chg_references: ["CHG-22", "CHG-23"]
   component: "CPositionContext, adapters, router, and state machine"
@@ -54,8 +58,8 @@ component_overview:
       version: "CHG-22-R1"
       purpose: "Persists the commit-last lifecycle snapshot, token-fenced marker lease, deferred-mode diagnostics, and retained HALT/recovery evidence."
     - name: "CGuardedTrade"
-      version: "CHG-22-R1 consumer; implementation owned by IPLAN-03"
-      purpose: "Submits hedging adapter close/modify operations only after immediate readiness, HALT, lease, mode, and provider fences; pending-exit operations are v2+ netting scope."
+      version: "Deferred CHG-22-R1 consumer; implementation owned by IPLAN-03"
+      purpose: "Deferred v1 consumer. IPLAN-03 will submit hedging adapter close/modify operations only after immediate readiness, HALT, lease, mode, and provider fences; pending-exit operations are v2+ netting scope."
     - name: "Vendored CPositionInfo and history classes"
       version: "frozen StdLib VERSION.md"
       purpose: "Read broker tickets, deals, orders, and position diagnostics."
@@ -120,7 +124,7 @@ interfaces:
     - name: "ITradeExecutor"
       type: "interface"
       signature: "interface ITradeExecutor { bool CloseTicket(ulong ticket, double lots); bool ModifyTicket(ulong ticket, double sl, double tp); bool CancelOrder(ulong order_ticket); }"
-      description: "Canonical declaration owned by IPLAN-04 at Include/Position/Interfaces.mqh. IPLAN-03 consumes it by defining ITradePort as its single derived interface and CGuardedTrade as the ITradePort implementation (CHG-22, CHG-23)."
+      description: "Implemented canonical declaration owned by IPLAN-04 at Include/Position/Interfaces.mqh. IPLAN-03 will consume it by defining the deferred ITradePort as its single derived interface and the deferred CGuardedTrade as the ITradePort implementation (CHG-22, CHG-23)."
       errors:
         - "false: guarded close, modify, or cancel was rejected or unavailable."
     - name: "CLiveAccountModeProvider, CLiveBrokerPositionView, CLiveTradeTransactionEvidence"
@@ -258,7 +262,7 @@ behavior:
       source: "@ears: EARS.01.03.4f9d"
     - rule: "CPositionContext SHALL validate dependencies, establish runtime namespace and account mode, claim or deliberately suppress the lease, initialize the state machine and router, reconcile, and only then become ready. OnMaintenance(now) SHALL evaluate local timeouts every callback and run broker reconciliation plus heartbeat at a fixed 30-second cadence with a minimum 60-second live lease; OnTick SHALL NOT persist maintenance state."
       source: "@chg: CHG-22"
-    - rule: "Account-mode adapters SHALL delegate close, modify, and cancel writes only through ITradeExecutor; production guard implementation is owned by IPLAN-03 (CHG-22)."
+    - rule: "Account-mode adapters SHALL delegate close, modify, and cancel writes only through the implemented ITradeExecutor seam; the production guard implementation remains deferred to IPLAN-03 (CHG-22)."
       source: "@chg: CHG-22"
     - rule: "CPositionStateMachine SHALL commit order ticket, submission time, cancel-request time, and cancellation origin before CancelOrder; wait five seconds for confirmation; reconcile once; and retain the evidence in HALT when the outcome remains unavailable."
       source: "@chg: CHG-22"

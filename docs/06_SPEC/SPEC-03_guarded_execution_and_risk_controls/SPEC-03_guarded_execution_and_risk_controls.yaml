@@ -5,7 +5,11 @@ metadata:
   artifact_type: "SPEC"
   layer: 6
   total_sections: 8
-  last_updated: "2026-08-26T00:00:00-03:00"
+  last_updated: "2026-08-27T00:00:00-03:00"
+  timestamp_policy:
+    canonical_field: "metadata.last_updated"
+    mirrored_fields: ["last_updated", "document_control.last_updated"]
+    require_equal: true
   deliverable_type: code
   tags: ["spec-document", "layer-6-artifact", "shared-architecture"]
   c4_level:
@@ -19,7 +23,7 @@ id: SPEC-03
 title: Guarded Execution and Risk Controls
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-08-26T00:00:00-03:00"
+last_updated: "2026-08-27T00:00:00-03:00"
 chg_references: ["CHG-21", "CHG-22", "CHG-23"]
 
 ## Section 1: Document Control
@@ -27,7 +31,7 @@ document_control:
   status: Draft
   version: "1.6"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-08-26T00:00:00-03:00"
+  last_updated: "2026-08-27T00:00:00-03:00"
   author: "Codex"
   chg_references: ["CHG-21", "CHG-22", "CHG-23"]
   component: "CGuardedTrade and CRiskManager"
@@ -66,21 +70,21 @@ interfaces:
     - name: "ITradePort"
       type: "interface"
       signature: "interface ITradePort : public ITradeExecutor { GuardResult Submit(const TradeIntent &intent); }"
-      description: "Single-inheritance MQL5 submission seam used by coordinator and mocks. ITradePort extends the Position-owned ITradeExecutor contract so CGuardedTrade can expose submit/close/modify/cancel through one parent interface. The TradeIntent argument is canonical from Include/Core/TradeTypes.mqh (@chg: CHG-21, CHG-23)."
+      description: "Deferred v1 submission seam; IPLAN-03 will derive ITradePort from the Position-owned ITradeExecutor contract so a future CGuardedTrade can expose submit/close/modify/cancel through one parent interface. The TradeIntent argument is canonical from Include/Core/TradeTypes.mqh (@chg: CHG-21, CHG-23)."
       errors:
-        - "GuardResult rejected: validation, risk, market, OrderCheck, margin, fill, or broker outcome failed."
+        - "Deferred: GuardResult and submission behavior are not implemented until IPLAN-03."
     - name: "ITradeExecutor"
       type: "interface"
       signature: "interface ITradeExecutor { bool CloseTicket(ulong ticket, double lots); bool ModifyTicket(ulong ticket, double sl, double tp); bool CancelOrder(ulong order_ticket); }"
-      description: "Guarded close/modify/cancel seam consumed by the Position layer. IPLAN-04 declares and fake-tests the seam; CGuardedTrade implements it in IPLAN-03 (@chg: CHG-22)."
+      description: "Implemented close/modify/cancel seam consumed by the Position layer. IPLAN-04 declares and fake-tests this interface; the IPLAN-03 guarded implementation remains deferred (@chg: CHG-22)."
       errors:
         - "false: close, modify, or cancel rejected by guard, broker, or ownership policy."
     - name: "CGuardedTrade"
       type: "class"
       signature: "class CGuardedTrade : public ITradePort"
-      description: "Validates and submits TradeIntent through a private vendored CTrade and, through ITradePort's single inherited ITradeExecutor contract, owns the production close/modify/cancel implementation delivered by IPLAN-03."
+      description: "Deferred v1 class; IPLAN-03 will validate and submit TradeIntent through a private vendored CTrade and implement the ITradeExecutor operations through ITradePort. No production implementation exists yet."
       errors:
-        - "GuardResult halted: broker outcome is ambiguous or ownership cannot be proven."
+        - "Deferred: no GuardResult or CGuardedTrade implementation exists until IPLAN-03."
     - name: "CRiskManager"
       type: "class"
       signature: "class CRiskManager"
@@ -102,7 +106,7 @@ interfaces:
     - name: "GuardResult"
       type: "struct"
       signature: "struct GuardResult"
-      description: "Submission outcome returned to the coordinator."
+      description: "Deferred v1 submission outcome that IPLAN-03 will return to the coordinator."
       errors:
         - "None; contains status and reason fields."
 
@@ -111,6 +115,7 @@ data_models:
   models:
     - name: "GuardResult"
       type: "struct"
+      description: "Deferred v1 model; its fields define the planned IPLAN-03 submission outcome contract and are not currently implemented."
       fields:
         - name: "status"
           type: "ENUM_GUARD_STATUS"
@@ -179,9 +184,9 @@ behavior:
       source: "@ears: EARS.01.03.222f"
     - rule: "Daily loss, max open lots, max trades per day, and panic trips SHALL refuse new entries and trigger strategy-scoped close behavior."
       source: "@ears: EARS.01.03.375b"
-    - rule: "CRiskManager SHALL own daily-loss, max-open-lots, max-trades-per-day, and panic-stop evaluation; CGuardedTrade SHALL own per-order TradeIntent consistency, catastrophic caps, broker preflight, and private CTrade submission."
+    - rule: "CRiskManager SHALL own daily-loss, max-open-lots, max-trades-per-day, and panic-stop evaluation; the deferred IPLAN-03 CGuardedTrade SHALL own per-order TradeIntent consistency, catastrophic caps, broker preflight, and private CTrade submission when implemented."
       source: "@prd: PRD.01.09.d74e"
-    - rule: "CGuardedTrade SHALL reject internally inconsistent order definitions before broker handoff, including non-positive lots, invalid entry price, side-inverted stops, zero risk distance, and off-grid lots or prices."
+    - rule: "The deferred IPLAN-03 CGuardedTrade SHALL reject internally inconsistent order definitions before broker handoff, including non-positive lots, invalid entry price, side-inverted stops, zero risk distance, and off-grid lots or prices when implemented."
       source: "@ears: EARS.01.03.ec72"
     - rule: "Panic stop SHALL close only the strategy instance's virtual position or tickets."
       source: "@ears: EARS.01.03.f562"
@@ -189,7 +194,7 @@ behavior:
       source: "@ears: EARS.01.03.ec72"
     - rule: "Unknown broker retcodes or unresolved retry outcomes SHALL be treated as failsafe ambiguity, not as success."
       source: "@ears: EARS.01.03.588b"
-    - rule: "ITradePort SHALL inherit ITradeExecutor and CGuardedTrade SHALL inherit only ITradePort, satisfying MQL5 single inheritance while implementing the Position close/modify/cancel seam used by adapters and timeout-cancel handling (@chg: CHG-22, CHG-23)."
+    - rule: "IPLAN-03 SHALL implement the deferred ITradePort as a single interface derived from ITradeExecutor and CGuardedTrade as its only parent, satisfying MQL5 single inheritance while implementing the Position close/modify/cancel seam used by adapters and timeout-cancel handling (@chg: CHG-22, CHG-23)."
       source: "@chg: CHG-22"
   state_transitions:
     - from: "RiskControlState clear"
@@ -198,41 +203,41 @@ behavior:
       source: "@bdd: BDD.01.03.0ad7"
   error_handling:
     - condition: "Catastrophic validation fails."
-      response: "Return rejection and do not call private CTrade."
+      response: "When IPLAN-03 is implemented, return rejection and do not call private CTrade."
       source: "@bdd: BDD.01.03.9a8b"
     - condition: "Broker or retcode outcome is ambiguous after submission."
-      response: "Request HALT through state-machine/reconciliation path."
+      response: "When IPLAN-03 is implemented, request HALT through the state-machine/reconciliation path."
       source: "@bdd: BDD.01.03.e16a"
     - condition: "Retryable broker retcode is returned."
-      response: "Apply the configured bounded retry policy; HALT if final outcome remains ambiguous."
+      response: "The deferred IPLAN-03 implementation will apply the configured bounded retry policy; HALT if final outcome remains ambiguous."
       source: "@ears: EARS.01.03.588b"
     - condition: "OrderCheck or margin validation fails."
-      response: "Reject with preflight evidence and do not call private CTrade."
+      response: "When IPLAN-03 is implemented, reject with preflight evidence and do not call private CTrade."
       source: "@bdd: BDD.01.03.9a8b"
     - condition: "Broker returns TRADE_RETCODE_DONE_PARTIAL."
-      response: "Set status to partial; record filled_lots from broker response; treat as deterministic — ambiguous: false, retryable: false."
+      response: "The deferred IPLAN-03 implementation will set status to partial and record filled_lots from the broker response; treat it as deterministic — ambiguous: false, retryable: false."
       source: "@ears: EARS.01.03.ec72"
     - condition: "Guarded close, modify, or cancel cannot be safely submitted or confirmed."
-      response: "Return false/guard rejection to Position; Position owns follow-up HALT or reconciliation policy (@chg: CHG-22)."
+      response: "The deferred IPLAN-03 implementation will return false/guard rejection to Position; Position owns follow-up HALT or reconciliation policy (@chg: CHG-22)."
       source: "@chg: CHG-22"
 
 ## Section 6: Implementation Notes
 implementation_notes:
   constraints:
-    - "Immediately before every OrderSend, cancel, close, or modify operation, guarded execution rechecks PositionContext readiness, non-HALT state, current MarkerIsOwner fence, supported account mode, and required provider evidence."
-    - "Lease loss or unavailable ownership/provider evidence rejects the mutation and requests HALT; a prior successful guard result cannot authorize a later broker operation."
-    - "While halted, entry, modification, trailing, and ordinary exit paths are blocked. Only a separately classified emergency cleanup path with current proven ownership may mutate broker state."
-    - "CGuardedTrade owns the only private CTrade instance reachable from framework-mediated execution."
+    - "When implemented by IPLAN-03, immediately before every OrderSend, cancel, close, or modify operation, guarded execution rechecks PositionContext readiness, non-HALT state, current MarkerIsOwner fence, supported account mode, and required provider evidence."
+    - "The deferred IPLAN-03 implementation will reject mutation on lease loss or unavailable ownership/provider evidence and request HALT; a prior successful guard result cannot authorize a later broker operation."
+    - "The deferred IPLAN-03 implementation will block entry, modification, trailing, and ordinary exit paths while halted; only a separately classified emergency cleanup path with current proven ownership may mutate broker state."
+    - "When implemented by IPLAN-03, CGuardedTrade will own the only private CTrade instance reachable from framework-mediated execution."
     - "Strategy files MUST NOT include terminal-global Trade.mqh or call raw broker execution APIs."
     - "OrderCheck and explicit margin validation are separate guard stages."
-    - "CGuardedTrade MUST NOT become the owner of daily-loss, max-open-lots, max-trades-per-day, or panic-stop policy; it consumes CRiskManager state as an environmental gate only."
+    - "The deferred IPLAN-03 CGuardedTrade MUST NOT become the owner of daily-loss, max-open-lots, max-trades-per-day, or panic-stop policy; it will consume CRiskManager state as an environmental gate only."
     - "CRiskManager MUST NOT submit broker orders directly; emergency close requests route back through strategy/coordinator/guarded execution paths."
     - "Execution-owned test fixtures MUST supply spread, fill-mode, OrderCheck, margin, broker-retcode, and private CTrade outcome scenarios; do not add those fields to FakeMarketContext (CHG-19)."
-    - "IPLAN-03 SHALL define ITradePort as the single derived interface over the IPLAN-04-owned ITradeExecutor declaration and implement only that parent on CGuardedTrade. IPLAN-04 ships the seam and fake executor needed by position tests; no multiple inheritance is permitted (@chg: CHG-22, CHG-23)."
+    - "IPLAN-03 SHALL define the deferred ITradePort as the single derived interface over the IPLAN-04-owned ITradeExecutor declaration and implement only that parent on the deferred CGuardedTrade. IPLAN-04 ships the seam and fake executor needed by position tests; no multiple inheritance is permitted (@chg: CHG-22, CHG-23)."
   patterns:
     - "Use composition around vendored CTrade because convenience methods are not virtual."
     - "Classify retcodes into success, pending, retryable, terminal failure, and unknown-failsafe groups."
-    - "Store normalized submitted price/lots and broker retcodes in GuardResult so trade evidence can compare intended versus actual outcome."
+    - "When implemented by IPLAN-03, store normalized submitted price/lots and broker retcodes in GuardResult so trade evidence can compare intended versus actual outcome."
   performance_considerations:
     - "The matched release benchmark SHALL run the same terminal/build, data, symbol/timeframe, and settings as the hand-written equivalent. After at least 1,000 warm-up callbacks, collect at least 10,000 callbacks through the SPEC-09 profiler; gate matched median tester overhead at <=10% per @threshold: PRD.01.perf.tester_overhead and report median/p95 guard-stage time, request count, broker-preflight count, and measurement window."
     - "Rejected orders should emit diagnostics without adding optimization-mode I/O unless audit in optimization is enabled. Guard saturation fails closed: do not submit a new broker mutation when preflight or the event queue cannot preserve the current ownership/HALT deadline; shed nonessential diagnostics before lease/risk/fence work."

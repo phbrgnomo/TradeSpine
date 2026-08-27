@@ -57,7 +57,7 @@ impact_assessment:
       artifacts: ["CHG-00", "CHG-22", "CHG-23"]
       impact: "Amend the CHG-22 acceptance boundary, register this change, and prepare unsigned gate evidence."
     - layer: Documentation
-      artifacts: ["SPEC-01/03/04/05/08 readable", "TDD-03 readable", "IPLAN-04 readable", "IPLAN-05 readable", "IPLAN-00 readable", "Position module", "Persistence module", "Operations", "CLAUDE.md"]
+      artifacts: ["SPEC-01/03/04/05/08 readable", "TDD-01 readable", "TDD-03 readable", "IPLAN-04 readable", "IPLAN-05 readable", "IPLAN-00 readable", "Position module", "Persistence module", "Operations", "CLAUDE.md"]
       impact: "Regenerate affected views and remove stale standalone-evidence and completion wording."
   cascade_direction: downstream
   risk_level: High
@@ -147,6 +147,12 @@ implementation:
       change_type: modified
     - id: "TDD-05"
       file: "docs/07_TDD/TDD-05_persistence_and_audit_evidence/TDD-05_persistence_and_audit_evidence.yaml"
+      change_type: modified
+    - id: "TDD-01 readable"
+      file: "docs/07_TDD/TDD-01_strategy_authoring_surface/TDD-01_strategy_authoring_surface.readable.md"
+      change_type: modified
+    - id: "TDD-03 readable"
+      file: "docs/07_TDD/TDD-03_guarded_execution_and_risk_controls/TDD-03_guarded_execution_and_risk_controls.readable.md"
       change_type: modified
     - id: "IPLAN-01"
       file: "docs/08_IPLAN/IPLAN-01_strategy_authoring_surface.yaml"

@@ -258,5 +258,7 @@ Standard scope tags used by `CStateStore`:
 Fresh aggregate evidence verifies the changed CHG-22 persistence files:
 `RunAllTests` compiled the included test/dependency graph with 0 errors and
 0 warnings, then reported IPLAN-05 243/243 passed with 0 failed and 0 skipped.
-IPLAN-05 remains In Progress only until the fresh governance audits and human
-approvals are recorded. See `Docs/OPERATIONS.md`.
+IPLAN-05 is complete at the approved module boundary; governance verification
+and downstream release obligations remain separate. See the [CHG-22 human
+evidence record](../../docs/governance/chg/CHG-22_human_evidence_2026-08-26.md)
+and [Docs/OPERATIONS.md](../OPERATIONS.md).

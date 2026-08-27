@@ -2,7 +2,7 @@
 
 > Human-readable rendering generated from `SPEC-08_release_testing_and_documentation_governance.yaml`. The YAML file remains canonical. SPEC-08 intentionally has no TDD-08 or IPLAN-08.
 >
-> Provenance: @chg: CHG-23
+> Provenance: @chg: CHG-23, @chg: CHG-24
 
 ## Document Control
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | Status | Draft |
 | Version | 1.2 |
-| Updated | 2026-08-26T00:00:00-03:00 |
+| Updated | 2026-08-27T00:00:00-03:00 |
 | Component | Release evidence, test harnesses, and documentation gates |
 | TDD-ready Score | N/A - documentation/process scope |
 | Architecture Decision | ADR-10 |
@@ -64,7 +64,7 @@ final-release-closeout obligations.
 | ReleaseEvidencePack | Module packs plus release-integration, dependency, documentation, benchmark, and final approval evidence. |
 | DeferredAccountModeEvidencePack | Evidence that RETAIL_NETTING and EXCHANGE fail initialization with no trade-path side effects. |
 | DocumentationInventory | Required docs, same-change updates, canonical/readable parity, retained Doxygen/API result, CHANGELOG decision, and named documentation approvals. |
-| BenchmarkEvidence | Applicable PRD thresholds, environment/method/measurements, evidence pointer, and PASS/FAIL/approved-nonconformance verdict. |
+| BenchmarkEvidence | Applicable PRD thresholds, environment/method/measurements, evidence pointer, and PASS/FAIL verdict. An approved upstream threshold amendment is a separate prerequisite for a new evaluation. |
 | DependencyEvidence | Vendored inventory/version/hash plus licensing and dependency/bypass scan result. |
 | ApprovalEvidence | Gate/report revision, human identity/role, explicit decision, and timestamp; blank or pending is not approval. |
 

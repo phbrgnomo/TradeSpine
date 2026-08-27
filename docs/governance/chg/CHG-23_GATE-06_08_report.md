@@ -24,7 +24,7 @@ deployment, or change any IPLAN/CHG terminal status.
 | Corpus reference integrity | **Pass** | 0 unresolved document/element references, duplicate element IDs, malformed element IDs, or cumulative-tag gaps in the active eight-layer corpus. |
 | Registry/path/count consistency | **Pass** | IPLAN paths, statuses, manifest counts, completed counts, session counts, CHG-23 artifact paths, and registry totals agree. |
 | Quoted include resolution | **Pass** | Implementation surfaces contain 0 unresolved quoted includes and 0 angle-bracket includes. Documentation snippets are not implementation surfaces. |
-| CHG provenance | **Pass** | All 22 CHG-23 artifacts classified as modified carry `@chg: CHG-23`; CHG-22 records the amendment. |
+| CHG provenance | **Pass** | All 36 CHG-23 artifacts classified as modified carry `@chg: CHG-23`; CHG-22 records the amendment. |
 | Workspace whitespace | **Pass** | `git diff --check` reports no findings. |
 | MQL5 source mutation | **Pass** | No `.mq5` or `.mqh` file is modified by CHG-23. |
 | MetaEditor/MT5 execution | **Pass** | Not attempted, as explicitly required by the approved plan. |

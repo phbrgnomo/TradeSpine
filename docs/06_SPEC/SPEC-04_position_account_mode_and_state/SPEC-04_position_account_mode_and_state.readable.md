@@ -12,7 +12,7 @@
 | TDD-ready Score | 95/100 |
 | CHG References | CHG-22, CHG-23 |
 | Created | 2026-06-02T00:20:00-03:00 |
-| Updated | 2026-08-26T00:00:00-03:00 |
+| Updated | 2026-08-27T00:00:00-03:00 |
 
 ## Overview
 
@@ -43,7 +43,7 @@ flowchart LR
 | IBrokerPositionView | interface | Exact typed surface in `Include/Position/Interfaces.mqh`: Total, index/ticket selection, identity/symbol/magic/type/volume, SL, and TP. | Read-only current-position seam exposing ticket and stable POSITION_IDENTIFIER. | false: selected position or stable identity is unavailable. |
 | ITradeTransactionEvidence | interface | Exact typed surface in `Include/Position/Interfaces.mqh`: bounded history selection, deal/order correlation, active-order iteration, and residual-position reads. | Explicit bounded-history, active-order iteration, deal/order/position correlation, and residual-position evidence seam. | false/zero/empty evidence: required proof is unavailable; ambiguous correlated evidence enters HALT. |
 | CLiveAccountModeProvider / CLiveBrokerPositionView / CLiveTradeTransactionEvidence | classes | separate read-only adapters | Compose vendored CAccountInfo, CPositionInfo, COrderInfo, CHistoryOrderInfo, and CDealInfo; selection failures invalidate prior state; no CTrade or broker submission. | Safe empty values after failed selection. |
-| ITradeExecutor | interface | interface ITradeExecutor { bool CloseTicket(ulong ticket, double lots); bool ModifyTicket(ulong ticket, double sl, double tp); bool CancelOrder(ulong order_ticket); } | Canonical declaration owned by IPLAN-04; IPLAN-03 consumes it through derived ITradePort and one-parent CGuardedTrade. | false: guarded close, modify, or cancel was rejected or unavailable. |
+| ITradeExecutor | interface | interface ITradeExecutor { bool CloseTicket(ulong ticket, double lots); bool ModifyTicket(ulong ticket, double sl, double tp); bool CancelOrder(ulong order_ticket); } | Implemented canonical declaration owned by IPLAN-04; IPLAN-03 will consume it through deferred ITradePort and one-parent CGuardedTrade. | false: close, modify, or cancel was rejected or unavailable. |
 
 ## Data Models
 
@@ -67,7 +67,7 @@ flowchart LR
 - Netting and exchange-netting execution paths are deferred v2+ and SHALL NOT be reachable in v1.
 - External intervention detection SHALL reconcile strategy-owned state and preserve manual/non-TradeSpine exposure boundaries.
 - CPositionContext SHALL become ready only after dependencies, runtime namespace, account mode, lease, router, and startup reconciliation succeed. OnMaintenance SHALL evaluate local timeouts every callback and run broker reconciliation plus heartbeat every fixed 30 seconds with a minimum 60-second live lease; OnTick SHALL NOT persist maintenance state.
-- Account-mode adapters SHALL delegate close, modify, and cancel writes only through ITradeExecutor; production guard implementation is owned by IPLAN-03 (CHG-22).
+- Account-mode adapters SHALL delegate close, modify, and cancel writes only through the implemented ITradeExecutor seam; the production guard implementation remains deferred to IPLAN-03 (CHG-22).
 - CPositionStateMachine SHALL commit order ticket, submission time, cancel-request time, and cancellation origin before CancelOrder; wait five seconds for confirmation; reconcile once; and retain evidence in HALT when the outcome remains unavailable.
 - Every state-changing lifecycle operation SHALL validate the current marker owner token immediately before commit; every context-owned broker mutation SHALL revalidate it immediately before submission.
 - Optimization and nonvisual tester suppression SHALL require an explicit isolated state namespace and SHALL NOT clear or mutate the live namespace.
