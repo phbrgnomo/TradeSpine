@@ -1,6 +1,8 @@
 # IPLAN-00: TradeSpine Implementation Plan Registry
 
 > Human-readable rendering generated from `IPLAN-00_index.yaml`. The YAML file remains the canonical aidoc artifact.
+>
+> Provenance: @chg: CHG-23
 
 ## Document Control
 
@@ -10,18 +12,18 @@
 | Document Type | iplan-registry |
 | Layer | 8 |
 | Total Permanent Plans | 12 |
-| Last Updated | 2026-08-24 |
-| Status | 3 completed plans; 9 non-completed plans |
+| Last Updated | 2026-08-27 |
+| Status | 5 completed plans; 7 non-completed plans |
 
 ## Registry
 
 | ID | Title | Source | Status | Files | Depends On | Blocks | Note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| IPLAN-01 | Strategy Authoring Surface Implementation | @spec: SPEC-01 | Draft | 0/9 | IPLAN-02, IPLAN-04, IPLAN-07, IPLAN-09, IPLAN-10 | IPLAN-12, IPLAN-13 | Owns production-provider lifetime/injection, isolated runtime namespaces, and StrategyBase timer/transaction routing. |
-| IPLAN-02 | Trade Coordination Pipeline Implementation | @spec: SPEC-02 | Draft | 0/7 | IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-09, IPLAN-11 | IPLAN-01, IPLAN-03 |  |
-| IPLAN-03 | Guarded Execution and Risk Controls Implementation | @spec: SPEC-03 | Draft | 0/8 | IPLAN-02, IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-09, IPLAN-11 |  | Owns immediate HALT/lease/account-mode/provider fences at every broker mutation and the emergency-cleanup boundary. |
-| IPLAN-04 | Position Account Mode and State Implementation | @spec: SPEC-04 | In Progress | 18/18 present, 0/18 freshly verified | IPLAN-05, IPLAN-11 | IPLAN-01, IPLAN-02, IPLAN-03 | CHG-22 recovery source and assertion-backed tests are present; fresh F7, exact MT5 results, two-chart ownership, canary, and approval remain pending. |
-| IPLAN-05 | Persistence and Audit Evidence Implementation | @spec: SPEC-05 | In Progress | 9/9 present, 5/9 retain prior verification | IPLAN-09, IPLAN-11 | IPLAN-02, IPLAN-03, IPLAN-04, IPLAN-06 | Reopened by CHG-22 for snapshots, lease fencing, retained evidence, and fresh validation of changed files. |
+| IPLAN-01 | Strategy Authoring Surface Implementation | @spec: SPEC-01 | Draft | 0/8 | IPLAN-02, IPLAN-04, IPLAN-07, IPLAN-09, IPLAN-10 | IPLAN-12, IPLAN-13 | Owns provider assembly, timer/transaction wiring, attachable EA packaging, and two-chart validation. |
+| IPLAN-02 | Trade Coordination Pipeline Implementation | @spec: SPEC-02 | Draft | 0/7 | IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-09, IPLAN-11 | IPLAN-01, IPLAN-03 | Owns coordinator consumption of the CHG-22-R1 readiness/lifecycle contract. |
+| IPLAN-03 | Guarded Execution and Risk Controls Implementation | @spec: SPEC-03 | Draft | 0/9 | IPLAN-02, IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-09, IPLAN-11 |  | Owns final broker-mutation fences, classified emergency cleanup, and zero broker-bypass findings. |
+| IPLAN-04 | Position Account Mode and State Implementation | @spec: SPEC-04 | Completed | 18/18 present and verified | IPLAN-05, IPLAN-11 | IPLAN-01, IPLAN-02, IPLAN-03 | Module closure approved: 137/137 module and 694/694 aggregate; exact inclusion/reachability verified. No production rollout authorization. |
+| IPLAN-05 | Persistence and Audit Evidence Implementation | @spec: SPEC-05 | Completed | 10/10 present and verified | IPLAN-09, IPLAN-11 | IPLAN-02, IPLAN-03, IPLAN-04, IPLAN-06 | Module closure approved: 243/243 module; all inventory entries delivered. No production rollout authorization. |
 | IPLAN-06 | Market Session and Symbol Context Implementation | @spec: SPEC-06 | Completed | 10/10 | IPLAN-05, IPLAN-09, IPLAN-11 | IPLAN-02, IPLAN-03, IPLAN-07 | CHG-21 (2026-06-21): canonical TradeIntent hoisted to Include/Core/TradeTypes.mqh (SPEC-02 extends, SPEC-03 consumes); MarketSessionEndTod returns the regular (first/index-0) session end; B3 full-day sentinel handled. GATE-06/GATE-08 APPROVED 2026-06-21 (phbr). |
 | IPLAN-07 | Indicators Stops Sizing and Trailing Implementation | @spec: SPEC-07 | Draft | 0/8 | IPLAN-06, IPLAN-09, IPLAN-11 | IPLAN-01, IPLAN-02 |  |
 | IPLAN-09 | Core Runtime and Configuration Implementation | @spec: SPEC-09 | Completed | 10/10 |  | IPLAN-01, IPLAN-02, IPLAN-03, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-10, IPLAN-11 |  |
@@ -30,12 +32,13 @@
 | IPLAN-12 | 1minscalpv3 Hedging Port Implementation | @spec: SPEC-01 | Draft | 0/2 | IPLAN-01, IPLAN-02, IPLAN-03, IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-09, IPLAN-11 |  |  |
 | IPLAN-13 | BullishBearish Engulfing v7 Hedging Port Implementation | @spec: SPEC-01 | Draft | 0/2 | IPLAN-01, IPLAN-02, IPLAN-03, IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-09, IPLAN-11 |  |  |
 
-## CHG-22 Cross-Plan Controls
+## CHG-22/CHG-23 Cross-Plan Controls
 
 - Live runtimes retain the canonical state namespace. Tester and optimization suppression requires an explicit isolated namespace and never clears live lifecycle keys.
 - Every state-changing broker or lifecycle operation revalidates non-HALT state, current marker ownership, supported account mode, and required provider evidence immediately before mutation.
-- IPLAN-01 owns production-provider lifetime/injection and timer/transaction wiring. IPLAN-03 owns the guarded broker boundary and classified emergency cleanup.
-- CHG-22, GATE06, GATE08, and GATECODE remain open/failed until fresh manual F7, exact MT5 assertion counts, two-chart ownership, demo canary, and post-change review evidence are recorded.
+- IPLAN-02 owns coordinator consumption. IPLAN-01 owns production-provider assembly, timer/transaction wiring, attachable packaging, and two-chart validation. IPLAN-03 owns final broker-mutation fences and bypass validation.
+- CHG-22 module closure accepts fresh aggregate F7/EX5 evidence, exact module/aggregate MT5 counts, exact test inclusion/case reachability, fresh team audits, and human approval. It does not authorize deployment.
+- Final release closeout owns rollback rehearsal, demo canary, restricted live, partial cohort, full rollout, and production-readiness approval after IPLAN-01/02/03 complete.
 
 ## Final Documentation Step
 
@@ -57,3 +60,4 @@
 - ARCHITECTURE and MODULES document the codebase after implementation, including dependencies and no-bypass boundaries.
 - TESTING documents how to run each declared script and how to collect release evidence.
 - Docs use the TradeSpine root MQL5/Experts/Main/TradeSpine/ and quoted relative include examples.
+- Final release evidence covers coordinator consumption, provider assembly/timer wiring, final mutation fencing, zero bypass findings, attachable two-chart ownership, rollback rehearsal, demo canary, and staged live rollout.

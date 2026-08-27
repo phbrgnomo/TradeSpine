@@ -7,8 +7,8 @@ id: TDD-04
 title: "Position Account Mode and State Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-08-24T00:00:00-03:00"
-chg_references: ["CHG-22"]
+last_updated: "2026-08-26T00:00:00-03:00"
+chg_references: ["CHG-22", "CHG-23"]
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -24,11 +24,11 @@ metadata:
 
 document_control:
   status: Draft
-  version: "1.1"
+  version: "1.2"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-08-24T00:00:00-03:00"
+  last_updated: "2026-08-26T00:00:00-03:00"
   author: "Codex"
-  chg_references: ["CHG-22"]
+  chg_references: ["CHG-22", "CHG-23"]
   component: "CPositionContext, adapters, router, and state machine"
   spec_reference: "@spec: SPEC-04"
   source_spec: "../../06_SPEC/SPEC-04_position_account_mode_and_state/SPEC-04_position_account_mode_and_state.yaml"
@@ -102,6 +102,7 @@ test_mapping:
           status: pending
     - bdd_scenario: "@bdd: BDD.01.03.9a7d"
       description: "Day trade close failure enters halt"
+      owner: "Final release integration after @iplan: IPLAN-01, @iplan: IPLAN-02, and @iplan: IPLAN-03; trigger evidence is owned by TDD-06/IPLAN-06 and the Position HALT contribution by TDD-04/IPLAN-04."
       tests:
         - type: unit
           file: "Scripts/Tests/Test_PositionStateMachine.mq5"
@@ -132,6 +133,7 @@ test_mapping:
           status: implemented
     - bdd_scenario: "@bdd: BDD.01.03.f415"
       description: "Missing deferred account-mode evidence blocks signoff"
+      owner: "@tdd: TDD.11.04.4f72 / @iplan: IPLAN-11; TDD-04 retains only deferred-mode module evidence."
       tests:
         - type: unit
           file: "Scripts/Tests/Test_PositionStateMachine.mq5"
@@ -154,7 +156,7 @@ test_mapping:
       - ["@bdd: BDD.01.03.9a7d", 0, 0, 0, 0]
       - ["@bdd: BDD.01.03.a31d", 0, 0, 1, 1]
       - ["@bdd: BDD.01.03.f415", 0, 0, 0, 0]
-    basis: "Counts include only named functions whose assertions directly prove the complete mapped scenario. Day-trade close and release-signoff evidence remain pending their owning IPLAN workflows."
+    basis: "Counts include only named functions whose assertions directly prove the complete mapped scenario. BDD 9a7d is a final integration obligation across IPLAN-01/02/03 with trigger evidence from TDD-06/IPLAN-06; BDD f415 release-signoff blocking is implemented by TDD-11/IPLAN-11. Neither zero is represented as missing IPLAN-04 module execution."
 
 test_cases:
   unit_tests:
@@ -316,6 +318,7 @@ tdd_order:
       output: "Refactored source with tests still green."
 
 traceability:
+  provenance: ["@chg: CHG-23"]
   tags:
     - "@tdd: TDD.04.04.8b79"
     - "@tdd: TDD.04.04.c6e1"

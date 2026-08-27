@@ -15,7 +15,7 @@ document_control:
   subtype: "code_build"
   source_spec: "@spec: SPEC-06"
   source_tdd: "@tdd: TDD.06.04.8f4d"
-  status: Complete
+  status: Completed
   version: "1.4"
   date_created: "2026-06-03T00:00:00-03:00"
   last_updated: "2026-06-21T00:00:00-03:00"
@@ -287,6 +287,7 @@ session_handoff:
         lint_clean: true
 
 traceability:
+  provenance: ["@chg: CHG-23"]
   upstream:
     spec_references: ["@spec: SPEC-06", "@spec: SPEC-11"]
     tdd_references: ["@tdd: TDD.06.04.8f4d", "@tdd: TDD.11.04.6805"]

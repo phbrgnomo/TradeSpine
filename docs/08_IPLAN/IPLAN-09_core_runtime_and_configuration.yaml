@@ -14,6 +14,7 @@ document_control:
   iplan_id: "IPLAN-09"
   source_spec: "@spec: SPEC-09"
   source_tdd: "@tdd: TDD.09.04.f745"
+  subtype: code_build
   status: Completed
   version: "1.2"
   date_created: "2026-06-03T00:00:00-03:00"
@@ -34,61 +35,61 @@ file_manifest:
   files:
     - path: "Scripts/Tests/Test_CommonInputs.mq5"
       order: 1
-      status: COMPLETED
+      status: DONE
       session: 1
       verified: true
       purpose: "Input validation, v1/v2 boundary rejection, and strategy guide alignment tests."
     - path: "Scripts/Tests/Test_OptContextProfiler.mq5"
       order: 2
-      status: COMPLETED
+      status: DONE
       session: 1
       verified: true
       purpose: "Tester/optimization policy, diagnostic gating, and profile sample enablement tests."
     - path: "Scripts/Tests/Test_SafeMathAndNewBar.mq5"
       order: 3
-      status: COMPLETED
+      status: DONE
       session: 1
       verified: true
       purpose: "Numeric normalization, grid snapping, finite checks, and new-bar detection tests."
     - path: "Include/Core/CommonInputs.mqh"
       order: 4
-      status: COMPLETED
+      status: DONE
       session: 1
       verified: true
       purpose: "Canonical framework input binding and v1/v2 placeholder validation."
     - path: "Include/Core/Interfaces.mqh"
       order: 5
-      status: COMPLETED
+      status: DONE
       session: 1
       verified: true
       purpose: "Stable shared interfaces for clocks, trade ports, state stores, diagnostics, runtime context, and test fakes."
     - path: "Include/Core/OptContext.mqh"
       order: 6
-      status: COMPLETED
+      status: DONE
       session: 1
       verified: true
       purpose: "Tester, optimization, diagnostics, logging, and profiling runtime predicates."
     - path: "Include/Core/SafeMath.mqh"
       order: 7
-      status: COMPLETED
+      status: DONE
       session: 1
       verified: true
       purpose: "Finite, price-grid, lot-grid, tolerance, and normalization helpers."
     - path: "Include/Core/Profiler.mqh"
       order: 8
-      status: COMPLETED
+      status: DONE
       session: 1
       verified: true
       purpose: "Low-overhead profiling macros and evidence helpers."
     - path: "Include/Core/NewBarDetector.mqh"
       order: 9
-      status: COMPLETED
+      status: DONE
       session: 1
       verified: true
       purpose: "Bar-transition detector for strategy hook code."
     - path: "Scripts/Tests/TestAssert.mqh"
       order: 10
-      status: COMPLETED
+      status: DONE
       session: 1
       verified: true
       purpose: "Shared Tier-1 assertion harness (OnStart + bool tests + counters) for the three test scripts; test scaffolding only, carries no SPEC contract."
@@ -187,6 +188,7 @@ session_handoff:
         lint_clean: "MetaEditor compile clean. sdd-doc-lint STRUCT01/ID01 hook findings remain pre-existing parser false-positives on quoted trace-tags (28 findings, unchanged count)."
 
 traceability:
+  provenance: ["@chg: CHG-23"]
   upstream:
     spec_references: ["@spec: SPEC-09"]
     tdd_references: ["@tdd: TDD.09.04.f745", "@tdd: TDD.09.04.8050", "@tdd: TDD.09.04.bb66"]

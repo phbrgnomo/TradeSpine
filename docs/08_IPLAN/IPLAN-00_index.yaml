@@ -3,7 +3,7 @@ metadata:
   document_type: "iplan-registry"
   layer: 8
   total_plans: 12
-  last_updated: "2026-08-24"
+  last_updated: "2026-08-27"
 
 registry:
   plans:
@@ -16,7 +16,7 @@ registry:
       complexity: 5
       session_count: 0
       sessions_completed: 0
-      files_declared: 9
+      files_declared: 8
       files_done: 0
       skipped: []
       skip_reasons: {}
@@ -24,10 +24,11 @@ registry:
       blocks: ["IPLAN-12", "IPLAN-13"]
       parallel_with: []
       file_path: "IPLAN-01_strategy_authoring_surface.yaml"
+      note: "Draft owner of CHG-22-R1 live-provider assembly, timer/transaction wiring, attachable EA packaging, and two-chart validation; CHG-22 module closure does not complete these release obligations."
     - id: "IPLAN-02"
       title: "Trade Coordination Pipeline Implementation"
       source_spec: "@spec: SPEC-02"
-      scope: "Implement Signal, TradeIntent, coordinator processing, update synchronization, and evidence pairing."
+      scope: "Implement Signal, TradeIntent, coordinator processing, CHG-22-R1 readiness/lifecycle consumption, update synchronization, and evidence pairing."
       status: "Draft"
       status_date: "2026-06-03"
       complexity: 5
@@ -41,6 +42,7 @@ registry:
       blocks: ["IPLAN-01", "IPLAN-03"]
       parallel_with: []
       file_path: "IPLAN-02_trade_coordination_pipeline.yaml"
+      note: "Draft owner of coordinator consumption for the CHG-22-R1 Position/Persistence module boundary."
     - id: "IPLAN-03"
       title: "Guarded Execution and Risk Controls Implementation"
       source_spec: "@spec: SPEC-03"
@@ -50,7 +52,7 @@ registry:
       complexity: 5
       session_count: 0
       sessions_completed: 0
-      files_declared: 8
+      files_declared: 9
       files_done: 0
       skipped: []
       skip_reasons: {}
@@ -58,15 +60,16 @@ registry:
       blocks: []
       parallel_with: []
       file_path: "IPLAN-03_guarded_execution_and_risk_controls.yaml"
+      note: "Draft owner of final broker-mutation fencing, classified emergency cleanup, and zero-finding broker-bypass validation before release integration."
     - id: "IPLAN-04"
       title: "Position Account Mode and State Implementation"
       source_spec: "@spec: SPEC-04"
       scope: "Implement hedging ownership, deferred account-mode diagnostics, duplicate marker lease, router, and state machine."
-      status: "In Progress"
-      status_date: "2026-08-24"
+      status: "Completed"
+      status_date: "2026-08-27"
       complexity: 5
-      session_count: 2
-      sessions_completed: 2
+      session_count: 7
+      sessions_completed: 7
       files_declared: 18
       files_done: 18
       skipped: []
@@ -75,16 +78,16 @@ registry:
       blocks: ["IPLAN-01", "IPLAN-02", "IPLAN-03"]
       parallel_with: ["IPLAN-06", "IPLAN-07", "IPLAN-10"]
       file_path: "IPLAN-04_position_account_mode_and_state.yaml"
-      note: "2026-08-24 CHG-22 recovery: source and assertion-backed tests implement reconciliation, absorbing HALT, transaction correlation, snapshot commits, lease fencing, isolated runtimes, and live read-only providers. All 18 files remain unverified pending fresh manual F7, exact MT5 results, two-chart ownership, canary, and final approval."
+      note: "Completed at the CHG-22 module boundary. RunAllTests evidence covers all 18 files: IPLAN-04 passed 137/137 with 0 failed/0 skipped and the aggregate passed 694/694 with 11 mapped non-module skips. IPLAN audit quorum scored 94.44 with zero P0/P1; human GATE-06/GATE-08/GATE-CODE approval is recorded. No production rollout is authorized."
     - id: "IPLAN-05"
       title: "Persistence and Audit Evidence Implementation"
       source_spec: "@spec: SPEC-05"
       scope: "Implement GV-backed state, deterministic keys, trade evidence, diagnostics, and alert sinks."
-      status: "In Progress"
-      status_date: "2026-08-24"
+      status: "Completed"
+      status_date: "2026-08-27"
       complexity: 4
-      session_count: 10
-      sessions_completed: 10
+      session_count: 13
+      sessions_completed: 13
       files_declared: 10
       files_done: 10
       skipped: []
@@ -93,7 +96,7 @@ registry:
       blocks: ["IPLAN-02", "IPLAN-03", "IPLAN-04", "IPLAN-06"]
       parallel_with: []
       file_path: "IPLAN-05_persistence_and_audit_evidence.yaml"
-      note: "Reopened by CHG-22 for lifecycle snapshots, retained HALT evidence, checked persistence failures, marker bootstrap fencing, and fresh manual/runtime validation."
+      note: "Completed at the CHG-22 module boundary. RunAllTests evidence covers all 10 files: IPLAN-05 passed 243/243 with 0 failed/0 skipped. IPLAN audit quorum scored 93.42 with zero P0/P1; human GATE-06/GATE-08/GATE-CODE approval is recorded. Module closure does not authorize rollout."
     - id: "IPLAN-06"
       title: "Market Session and Symbol Context Implementation"
       source_spec: "@spec: SPEC-06"
@@ -233,7 +236,7 @@ execution_path:
       plans: ["IPLAN-11"]
     - tier: 3
       label: "Persistence and Market Foundations"
-      status: "IN_PROGRESS"
+      status: "COMPLETED"
       plans: ["IPLAN-05", "IPLAN-06"]
     - tier: 4
       label: "State, Behavior, and Optional Services"
@@ -377,6 +380,7 @@ documentation_closeout:
     - "ARCHITECTURE and MODULES document the codebase after implementation, including dependencies and no-bypass boundaries."
     - "TESTING documents how to run each declared script and how to collect release evidence."
     - "Docs use the TradeSpine root MQL5/Experts/Main/TradeSpine/ and quoted relative include examples."
+    - "After IPLAN-01/02/03 complete, the final release gate proves coordinator consumption, provider assembly/timer wiring, final mutation fencing, zero broker bypass, attachable two-chart ownership, rollback rehearsal, demo canary, and staged live rollout."
   status_history:
     - from: "UNTRACKED"
       to: "NOT_STARTED"
@@ -419,9 +423,25 @@ cross_plan_obligations:
       introduced_by: "CHG-22"
       adopted_date: "2026-08-24"
     - id: "CPO-009"
-      description: "CHG-22 remains open and GATE06, GATE08, and GATECODE remain failed until fresh manual F7, exact MT5 assertion counts, two-chart ownership, demo canary, and post-change review evidence are recorded."
-      introduced_by: "CHG-22"
-      adopted_date: "2026-08-24"
+      description: "CHG-22 module closure accepts a fresh RunAllTests F7/EX5, exact module and aggregate MT5 counts, exact Test_*.mq5 inclusion and actual-case reachability, fresh team audits, and human approval for IPLAN-04/05; it does not authorize production deployment."
+      introduced_by: "CHG-23"
+      adopted_date: "2026-08-25"
+    - id: "CPO-010"
+      description: "IPLAN-02 owns coordinator consumption of the pinned CHG-22-R1 readiness and lifecycle contract."
+      introduced_by: "CHG-23"
+      adopted_date: "2026-08-25"
+    - id: "CPO-011"
+      description: "IPLAN-01 owns live-provider assembly, timer/transaction wiring, attachable EA packaging, and two-chart validation."
+      introduced_by: "CHG-23"
+      adopted_date: "2026-08-25"
+    - id: "CPO-012"
+      description: "IPLAN-03 owns final broker-mutation fencing, classified emergency cleanup, and broker-bypass validation."
+      introduced_by: "CHG-23"
+      adopted_date: "2026-08-25"
+    - id: "CPO-013"
+      description: "Final release closeout owns rollback rehearsal, demo canary, restricted live, partial cohort, full rollout, and production-readiness approval after IPLAN-01/02/03 complete."
+      introduced_by: "CHG-23"
+      adopted_date: "2026-08-25"
 
 deferred_items:
   _guidance: "Cross-plan scope deferrals."
@@ -439,18 +459,30 @@ status_history:
         to: "Draft"
         date: "2026-06-03"
         reason: "TDD-01 audit passed 94/100 and reached IPLAN-Ready."
+      - from: "Draft"
+        to: "Draft"
+        date: "2026-08-25"
+        reason: "CHG-23 records provider assembly, timer wiring, attachable two-chart validation, and strategy packaging as IPLAN-01 release obligations without starting implementation."
   - plan_id: "IPLAN-02"
     transitions:
       - from: "BACKLOG"
         to: "Draft"
         date: "2026-06-03"
         reason: "TDD-02 audit passed 95/100 and reached IPLAN-Ready."
+      - from: "Draft"
+        to: "Draft"
+        date: "2026-08-25"
+        reason: "CHG-23 records coordinator consumption of CHG-22-R1 as IPLAN-02 scope without starting implementation."
   - plan_id: "IPLAN-03"
     transitions:
       - from: "BACKLOG"
         to: "Draft"
         date: "2026-06-03"
         reason: "TDD-03 audit passed 95/100 and reached IPLAN-Ready."
+      - from: "Draft"
+        to: "Draft"
+        date: "2026-08-25"
+        reason: "CHG-23 records final mutation fencing and bypass validation as IPLAN-03 release obligations without starting implementation."
   - plan_id: "IPLAN-04"
     transitions:
       - from: "BACKLOG"
@@ -461,6 +493,22 @@ status_history:
         to: "In Progress"
         date: "2026-08-24"
         reason: "CHG-22 recovery implemented the corrected source and canonical cascade; verification and approval remain pending."
+      - from: "In Progress"
+        to: "In Progress"
+        date: "2026-08-25"
+        reason: "CHG-23 narrows CHG-22 closure to module evidence; verification flags remain false pending fresh F7, exact MT5 counts, team audits, and approval."
+      - from: "In Progress"
+        to: "In Progress"
+        date: "2026-08-26"
+        reason: "Human aggregate evidence passed IPLAN-04 137/137 and RunAllTests 694/694, but focused F7/fresh EX5 evidence, team quorum, and approvals remain incomplete."
+      - from: "In Progress"
+        to: "In Progress"
+        date: "2026-08-26"
+        reason: "Superseding reconciliation: RunAllTests includes all Test_*.mq5 sources and reaches every actual Test_* case, so 18/18 verification is evidence-backed. Only team quorum and human approvals remain."
+      - from: "In Progress"
+        to: "Completed"
+        date: "2026-08-27"
+        reason: "Audit quorum passed at 94.44 with zero P0/P1 and human GATE-06/GATE-08/GATE-CODE approval was confirmed. CHG-22 closes at the IPLAN-04/05 module boundary only."
   - plan_id: "IPLAN-05"
     transitions:
       - from: "BACKLOG"
@@ -471,6 +519,22 @@ status_history:
         to: "In Progress"
         date: "2026-08-24"
         reason: "CHG-22 reopens persistence acceptance for lifecycle snapshots, lease fencing, retained HALT evidence, and fresh runtime proof."
+      - from: "In Progress"
+        to: "In Progress"
+        date: "2026-08-25"
+        reason: "CHG-23 preserves the reopened state until five verification flags, three inventory entries, fresh audits, and approval are evidence-backed."
+      - from: "In Progress"
+        to: "In Progress"
+        date: "2026-08-26"
+        reason: "Human aggregate evidence passed IPLAN-05 243/243, but focused F7/fresh EX5 evidence, team quorum, and approvals remain incomplete."
+      - from: "In Progress"
+        to: "In Progress"
+        date: "2026-08-26"
+        reason: "Superseding reconciliation: aggregate compilation/execution covers the complete IPLAN-05 test and dependency set, so 10/10 verification and all inventory delivery states are evidence-backed. Only team quorum and human approvals remain."
+      - from: "In Progress"
+        to: "Completed"
+        date: "2026-08-27"
+        reason: "Audit quorum passed at 93.42 with zero P0/P1 and human GATE-06/GATE-08/GATE-CODE approval was confirmed. CHG-22 closes at the IPLAN-04/05 module boundary only."
   - plan_id: "IPLAN-06"
     transitions:
       - from: "BACKLOG"
@@ -549,3 +613,6 @@ update_triggers:
     - "Add to deferred_items and the plan skipped list."
   on_cross_plan_obligation_added:
     - "Append to cross_plan_obligations.obligations."
+
+traceability:
+  provenance: ["@chg: CHG-22", "@chg: CHG-23"]

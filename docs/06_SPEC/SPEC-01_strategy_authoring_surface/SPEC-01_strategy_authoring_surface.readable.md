@@ -7,12 +7,12 @@
 | Field | Value |
 | --- | --- |
 | Status | Draft |
-| Version | 1.2 |
+| Version | 1.3 |
 | Component | CStrategyBase and strategy template surface |
 | TDD-ready Score | 93/100 |
-| CHG References | CHG-22 |
+| CHG References | CHG-22, CHG-23 |
 | Created | 2026-06-02T00:20:00-03:00 |
-| Updated | 2026-08-24T00:00:00-03:00 |
+| Updated | 2026-08-26T00:00:00-03:00 |
 
 ## Overview
 
@@ -27,6 +27,7 @@ flowchart LR
   Base --> Coordinator["CTradeCoordinator"]
   Base --> Indicators["Registered IIndicator list"]
   Base --> StateMachine["CPositionStateMachine"]
+  Base --> PositionContext["CPositionContext"]
 ```
 
 ## Interfaces
@@ -41,6 +42,9 @@ flowchart LR
 | OnManagePosition | virtual method | void OnManagePosition() | Strategy hook for signal exits, trailing-stop decisions, partial-management logic, and other post-entry exit management distinct from entry-time SL/TP and CloseAll. | None; invalid management actions are rejected by helper, guard, or position-context calls. |
 | RegisterIndicator | method | bool RegisterIndicator(IIndicator *indicator) | Registers an indicator for readiness-gate enforcement. | false: indicator reference is invalid or strategy init phase has passed. |
 | OnTimer | framework event method | void OnTimer() | Framework timer event that delegates maintenance to CPositionContext.OnMaintenance(now). Strategy-authored sub-maintenance-cadence trade logic remains in OnTickEvent (CHG-22). | None; maintenance failures are routed through owned components. |
+| OnTickEvent | virtual method | void OnTickEvent() | Strategy-authored hook reached only after framework lifecycle, HALT, and readiness gates. | State-changing requests remain subject to coordinator and guarded-execution results. |
+| OnTradeTransaction | framework event method | void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest &request, const MqlTradeResult &result) | Forwards untrusted hints to CPositionContext.RouteTradeTransaction; production wiring remains IPLAN-01 scope. | Missing or ambiguous evidence is deferred/reconciled or preserves HALT. |
+| OnDeinit | framework event method | void OnDeinit(const int reason) | Stops the timer and delegates owned component teardown; IPLAN-01 owns implementation. | Must not implicitly clear durable state/evidence. |
 
 ## Data Models
 
@@ -80,6 +84,8 @@ flowchart LR
 - Keep CloseAll as an explicit strategy-exposure close request; keep signal exits and trailing stops in OnManagePosition or strategy hooks so they remain distinct from entry-time SL/TP.
 - Use classes for lifecycle/stateful concerns and pure namespaces for stateless calculations per ADR-10.
 - Optimization-aware branches SHALL skip logging, drawing, and persistence work not required for accepted audit output.
+- Matched release benchmarks use the same terminal/build/data/settings and at least 1,000 warm-up plus 10,000 measured idle callbacks. Median idle tick must be <=50 us and matched median tester overhead <=10%; p95 and the measurement window are reported. Under backlog, lease/HALT/risk maintenance wins, new entries block, and drawing/nonessential diagnostics shed first.
+- Each EA instance uses one serial, non-reentrant MQL5 event queue. Separate EA/chart instances coordinate only through the SPEC-04/SPEC-05 token-fenced marker lease.
 
 ## TDD Contract
 

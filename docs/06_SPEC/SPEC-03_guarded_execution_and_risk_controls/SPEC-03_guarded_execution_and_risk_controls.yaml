@@ -1,4 +1,16 @@
 ---
+metadata:
+  schema_version: "1.0"
+  document_type: "spec-document"
+  artifact_type: "SPEC"
+  layer: 6
+  total_sections: 8
+  last_updated: "2026-08-26T00:00:00-03:00"
+  deliverable_type: code
+  tags: ["spec-document", "layer-6-artifact", "shared-architecture"]
+  c4_level:
+    value: component
+
 document_type: spec-document
 artifact_type: SPEC
 layer: 6
@@ -7,17 +19,17 @@ id: SPEC-03
 title: Guarded Execution and Risk Controls
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-08-24T00:00:00-03:00"
-chg_references: ["CHG-21", "CHG-22"]
+last_updated: "2026-08-26T00:00:00-03:00"
+chg_references: ["CHG-21", "CHG-22", "CHG-23"]
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.5"
+  version: "1.6"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-08-24T00:00:00-03:00"
+  last_updated: "2026-08-26T00:00:00-03:00"
   author: "Codex"
-  chg_references: ["CHG-21", "CHG-22"]
+  chg_references: ["CHG-21", "CHG-22", "CHG-23"]
   component: "CGuardedTrade and CRiskManager"
   tdd_ready_score: "92/100"
 
@@ -53,8 +65,8 @@ interfaces:
   exports:
     - name: "ITradePort"
       type: "interface"
-      signature: "interface ITradePort { GuardResult Submit(const TradeIntent &intent); }"
-      description: "Submission seam used by coordinator and mocks. The TradeIntent argument is the canonical type from Include/Core/TradeTypes.mqh (SPEC-02 extends it); CGuardedTrade consumes that shared definition rather than a private struct (@chg: CHG-21)."
+      signature: "interface ITradePort : public ITradeExecutor { GuardResult Submit(const TradeIntent &intent); }"
+      description: "Single-inheritance MQL5 submission seam used by coordinator and mocks. ITradePort extends the Position-owned ITradeExecutor contract so CGuardedTrade can expose submit/close/modify/cancel through one parent interface. The TradeIntent argument is canonical from Include/Core/TradeTypes.mqh (@chg: CHG-21, CHG-23)."
       errors:
         - "GuardResult rejected: validation, risk, market, OrderCheck, margin, fill, or broker outcome failed."
     - name: "ITradeExecutor"
@@ -66,7 +78,7 @@ interfaces:
     - name: "CGuardedTrade"
       type: "class"
       signature: "class CGuardedTrade : public ITradePort"
-      description: "Validates and submits TradeIntent through a private vendored CTrade."
+      description: "Validates and submits TradeIntent through a private vendored CTrade and, through ITradePort's single inherited ITradeExecutor contract, owns the production close/modify/cancel implementation delivered by IPLAN-03."
       errors:
         - "GuardResult halted: broker outcome is ambiguous or ownership cannot be proven."
     - name: "CRiskManager"
@@ -177,7 +189,7 @@ behavior:
       source: "@ears: EARS.01.03.ec72"
     - rule: "Unknown broker retcodes or unresolved retry outcomes SHALL be treated as failsafe ambiguity, not as success."
       source: "@ears: EARS.01.03.588b"
-    - rule: "CGuardedTrade SHALL implement the ITradeExecutor close/modify/cancel seam used by Position adapters and CPositionStateMachine timeout-cancel handling (@chg: CHG-22)."
+    - rule: "ITradePort SHALL inherit ITradeExecutor and CGuardedTrade SHALL inherit only ITradePort, satisfying MQL5 single inheritance while implementing the Position close/modify/cancel seam used by adapters and timeout-cancel handling (@chg: CHG-22, CHG-23)."
       source: "@chg: CHG-22"
   state_transitions:
     - from: "RiskControlState clear"
@@ -216,13 +228,14 @@ implementation_notes:
     - "CGuardedTrade MUST NOT become the owner of daily-loss, max-open-lots, max-trades-per-day, or panic-stop policy; it consumes CRiskManager state as an environmental gate only."
     - "CRiskManager MUST NOT submit broker orders directly; emergency close requests route back through strategy/coordinator/guarded execution paths."
     - "Execution-owned test fixtures MUST supply spread, fill-mode, OrderCheck, margin, broker-retcode, and private CTrade outcome scenarios; do not add those fields to FakeMarketContext (CHG-19)."
-    - "CGuardedTrade implements ITradeExecutor in IPLAN-03; IPLAN-04 ships only the seam and fake executor needed by position tests (@chg: CHG-22)."
+    - "IPLAN-03 SHALL define ITradePort as the single derived interface over the IPLAN-04-owned ITradeExecutor declaration and implement only that parent on CGuardedTrade. IPLAN-04 ships the seam and fake executor needed by position tests; no multiple inheritance is permitted (@chg: CHG-22, CHG-23)."
   patterns:
     - "Use composition around vendored CTrade because convenience methods are not virtual."
     - "Classify retcodes into success, pending, retryable, terminal failure, and unknown-failsafe groups."
     - "Store normalized submitted price/lots and broker retcodes in GuardResult so trade evidence can compare intended versus actual outcome."
   performance_considerations:
-    - "Rejected orders should emit diagnostics without adding optimization-mode I/O unless audit in optimization is enabled."
+    - "The matched release benchmark SHALL run the same terminal/build, data, symbol/timeframe, and settings as the hand-written equivalent. After at least 1,000 warm-up callbacks, collect at least 10,000 callbacks through the SPEC-09 profiler; gate matched median tester overhead at <=10% per @threshold: PRD.01.perf.tester_overhead and report median/p95 guard-stage time, request count, broker-preflight count, and measurement window."
+    - "Rejected orders should emit diagnostics without adding optimization-mode I/O unless audit in optimization is enabled. Guard saturation fails closed: do not submit a new broker mutation when preflight or the event queue cannot preserve the current ownership/HALT deadline; shed nonessential diagnostics before lease/risk/fence work."
 
 ## Section 7: Downstream TDD Contracts
 tdd_contracts:
@@ -237,6 +250,7 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
+  provenance: ["@chg: CHG-23"]
   tags: ["@spec: SPEC-03", "@brd: BRD.01.07.a94e", "@prd: PRD.01.09.d74e", "@ears: EARS.01.03.222f", "@bdd: BDD.01.03.9a8b", "@adr: ADR.04.03.7277", "@chg: CHG-21", "@chg: CHG-22"]
   upstream:
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.09.03.84b9"]

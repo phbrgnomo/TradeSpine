@@ -7,12 +7,12 @@
 | Field | Value |
 | --- | --- |
 | Status | Draft |
-| Version | 1.5 |
+| Version | 1.6 |
 | Component | CGuardedTrade and CRiskManager |
 | TDD-ready Score | 92/100 |
-| CHG References | CHG-21, CHG-22 |
+| CHG References | CHG-21, CHG-22, CHG-23 |
 | Created | 2026-06-02T00:20:00-03:00 |
-| Updated | 2026-08-24T00:00:00-03:00 |
+| Updated | 2026-08-26T00:00:00-03:00 |
 
 ## Overview
 
@@ -33,9 +33,9 @@ flowchart LR
 
 | Export | Type | Signature | Purpose | Errors |
 | --- | --- | --- | --- | --- |
-| ITradePort | interface | interface ITradePort { GuardResult Submit(const TradeIntent &intent); } | Submission seam used by coordinator and mocks. The TradeIntent argument is the canonical type from Include/Core/TradeTypes.mqh (SPEC-02 extends it); CGuardedTrade consumes that shared definition rather than a private struct (CHG-21). | GuardResult rejected: validation, risk, market, OrderCheck, margin, fill, or broker outcome failed. |
-| ITradeExecutor | interface | interface ITradeExecutor { CloseTicket(ticket,lots); ModifyTicket(ticket,sl,tp); CancelOrder(order_ticket); } | Guarded close/modify/cancel seam consumed by the Position layer. IPLAN-04 declares and fake-tests the seam; CGuardedTrade implements it in IPLAN-03 (CHG-22). | false: close, modify, or cancel rejected by guard, broker, or ownership policy. |
-| CGuardedTrade | class | class CGuardedTrade : public ITradePort | Validates and submits TradeIntent through a private vendored CTrade. | GuardResult halted: broker outcome is ambiguous or ownership cannot be proven. |
+| ITradePort | interface | interface ITradePort : public ITradeExecutor { GuardResult Submit(const TradeIntent &intent); } | Single derived interface combining submission with the IPLAN-04-owned executor seam; this satisfies MQL5 single inheritance. | GuardResult rejected: validation, risk, market, OrderCheck, margin, fill, or broker outcome failed. |
+| ITradeExecutor | interface | interface ITradeExecutor { bool CloseTicket(ulong ticket, double lots); bool ModifyTicket(ulong ticket, double sl, double tp); bool CancelOrder(ulong order_ticket); } | Canonical Position-owned close/modify/cancel seam inherited by ITradePort and implemented by IPLAN-03. | false: close, modify, or cancel rejected by guard, broker, or ownership policy. |
+| CGuardedTrade | class | class CGuardedTrade : public ITradePort | One-parent MQL5 implementation for submit/close/modify/cancel through a private vendored CTrade. | GuardResult halted: broker outcome is ambiguous or ownership cannot be proven. |
 | CRiskManager | class | class CRiskManager | Tracks strategy-scoped daily loss, open lots, trade count, and panic-stop state independently from per-order guarded execution. | RiskTrip: new entries are refused and strategy-scoped close behavior is requested. |
 | FillingPolicy | class | class FillingPolicy | Selects and validates broker-supported fill mode from initialized symbol metadata before submission. | UnsupportedFill: no allowed filling mode is compatible with the requested order. |
 | SpreadGuard | class | class SpreadGuard | Applies symbol-aware spread and price-grid checks before broker handoff. | SpreadBlocked: current market spread exceeds configured strategy guard. |
@@ -57,7 +57,7 @@ flowchart LR
 - Panic stop SHALL close only the strategy instance's virtual position or tickets.
 - Filling mode, lot grid, price grid, stop distance, spread, margin, and OrderCheck SHALL all pass before private CTrade submission.
 - Unknown broker retcodes or unresolved retry outcomes SHALL be treated as failsafe ambiguity, not as success.
-- CGuardedTrade SHALL implement the ITradeExecutor close/modify/cancel seam used by Position adapters and CPositionStateMachine timeout-cancel handling (CHG-22).
+- ITradePort SHALL inherit ITradeExecutor and CGuardedTrade SHALL inherit only ITradePort, satisfying MQL5 single inheritance while implementing the Position close/modify/cancel seam (CHG-22, CHG-23).
 
 | From | To | Trigger | Source |
 | --- | --- | --- | --- |
@@ -82,11 +82,12 @@ flowchart LR
 - CGuardedTrade MUST NOT become the owner of daily-loss, max-open-lots, max-trades-per-day, or panic-stop policy; it consumes CRiskManager state as an environmental gate only.
 - CRiskManager MUST NOT submit broker orders directly; emergency close requests route back through strategy/coordinator/guarded execution paths.
 - Execution-owned test fixtures MUST supply spread, fill-mode, OrderCheck, margin, broker-retcode, and private CTrade outcome scenarios; do not add those fields to FakeMarketContext (CHG-19).
-- CGuardedTrade implements ITradeExecutor in IPLAN-03; IPLAN-04 ships only the seam and fake executor needed by position tests (CHG-22).
+- IPLAN-03 defines ITradePort as the single interface derived from the IPLAN-04-owned ITradeExecutor seam; CGuardedTrade inherits only ITradePort. IPLAN-04 ships the declaration and fake executor (CHG-22, CHG-23).
 - Use composition around vendored CTrade because convenience methods are not virtual.
 - Classify retcodes into success, pending, retryable, terminal failure, and unknown-failsafe groups.
 - Store normalized submitted price/lots and broker retcodes in GuardResult so trade evidence can compare intended versus actual outcome.
 - Rejected orders should emit diagnostics without adding optimization-mode I/O unless audit in optimization is enabled.
+- Matched release benchmarks use at least 1,000 warm-up plus 10,000 measured callbacks, require median tester overhead <=10%, and report median/p95 guard-stage time, request/preflight counts, and the measurement window. Saturation fails closed and sheds nonessential diagnostics before ownership/HALT/risk fences.
 
 ## TDD Contract
 

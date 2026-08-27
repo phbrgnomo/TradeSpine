@@ -1,5 +1,7 @@
 # Module: Position Account Mode and State
 
+> Provenance: @chg: CHG-22, @chg: CHG-23
+
 **Owning plan:** IPLAN-04 · **Spec:** SPEC-04 · **Source:** `Include/Position/`
 
 ---
@@ -138,6 +140,8 @@ instantiate `CTrade` or submit operations. IPLAN-01 owns their production lifeti
 | `Scripts/Tests/Test_AccountModeDeferred.mq5` | Initialization ordering, deferred modes, duplicate ownership, 30-second cadence, lease loss, isolated suppressed runtimes, no idle `OnTick` writes, and external-stop repair fences. |
 | `Scripts/Tests/Test_PositionLiveProviders.mq5` | Read-only provider comparison against native terminal account, position, order, and bounded-history APIs without submitting trades. |
 
-The source assertions are present, but the CHG-22 revisions have no fresh compile/runtime evidence.
-Manual MetaEditor F7, exact MT5 pass/fail/skip counts, two-chart ownership, and demo-canary evidence
-remain required. See `Docs/OPERATIONS.md`.
+Fresh aggregate evidence verifies the CHG-22 module revision: `RunAllTests`
+compiled every included test/dependency with 0 errors and 0 warnings, then
+reported IPLAN-04 137/137 passed with 0 failed and 0 skipped. Two-chart
+ownership and demo-canary evidence remain downstream release obligations,
+not IPLAN-04 module-closure requirements. See `Docs/OPERATIONS.md`.

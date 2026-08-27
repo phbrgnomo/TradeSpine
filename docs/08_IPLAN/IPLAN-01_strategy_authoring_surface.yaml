@@ -14,6 +14,7 @@ document_control:
   iplan_id: "IPLAN-01"
   source_spec: "@spec: SPEC-01"
   source_tdd: "@tdd: TDD.01.04.c4a3"
+  subtype: code_build
   status: Draft
   version: "1.1"
   date_created: "2026-06-03T00:00:00-03:00"
@@ -125,14 +126,15 @@ session_handoff:
       agent: "Codex IPLAN autopilot"
       files_touched: []
       partial_work: "No implementation started; this seed session only created the execution plan."
-      blockers: "Begin only after IPLAN-02, IPLAN-04, IPLAN-07, IPLAN-09, and IPLAN-10 have stable public contracts. Production readiness remains blocked until provider assembly, namespace isolation, and event delegation tests pass."
-      next_session_directive: "Start with Scripts/Tests/Test_StrategyBase.mq5, then implement Include/Strategy/StrategyBase.mqh against TDD-01."
+      blockers: "Begin only after IPLAN-02, IPLAN-04, IPLAN-07, IPLAN-09, and IPLAN-10 have stable public contracts. This plan owns provider assembly, timer/transaction wiring, attachable two-chart validation, and strategy packaging required before release readiness; CHG-22 module closure does not satisfy them."
+      next_session_directive: "Start with Scripts/Tests/Test_StrategyBase.mq5, implement Include/Strategy/StrategyBase.mqh against TDD-01, then collect provider-assembly and attachable two-chart evidence before release closeout."
       validation_results:
         tests_passing: null
         coverage: null
         lint_clean: null
 
 traceability:
+  provenance: ["@chg: CHG-22", "@chg: CHG-23"]
   upstream:
     spec_references: ["@spec: SPEC-01"]
     tdd_references: ["@tdd: TDD.01.04.c4a3"]

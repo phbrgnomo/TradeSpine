@@ -8,14 +8,14 @@
 | --- | --- |
 | Document ID | TDD-03 |
 | Status | Draft |
-| Version | 1.3 |
+| Version | 1.4 |
 | Component | CGuardedTrade and CRiskManager |
 | SPEC Reference | @spec: SPEC-03 |
 | Source SPEC | ../../06_SPEC/SPEC-03_guarded_execution_and_risk_controls/SPEC-03_guarded_execution_and_risk_controls.yaml |
 | IPLAN-ready Score | 95/100 |
-| CHG References | CHG-22 |
+| CHG References | CHG-22, CHG-23 |
 | Created | 2026-06-02T00:00:00-03:00 |
-| Updated | 2026-08-24T00:00:00-03:00 |
+| Updated | 2026-08-26T00:00:00-03:00 |
 
 ## Test Pyramid
 
@@ -42,12 +42,14 @@
 
 ## Test Cases
 
+Executable coverage is currently 0/0/0 for 9a8b, 0ad7, e16a, and ef54. All named functions are planned under Draft IPLAN-03. IPLAN-03 owns the ef54 broker-fencing/bypass contribution; the existing final registry release-closeout obligation owns the complete SPEC-08 release-governance scenario. Future scans/fakes cannot approve assembly, two-chart validation, canary, rollout, or production readiness.
+
 
 ### Unit Tests
 
 | ID | Name | Target | File | Function | Expected | Edge Cases |
 | --- | --- | --- | --- | --- | --- | --- |
-| TDD.03.04.1f65 | GuardResult classifies unknown retcodes and ITradeExecutor close/modify/cancel delegates safely | CGuardedTrade.ClassifyRetcode | Scripts/Tests/Test_GuardedTrade.mq5 | test_guarded_execution_and_risk_controls_unit_contract | status=halted, ambiguous=true, retryable=false | condition: Known success, pending, retryable, and terminal retcodes classify distinctly; expected: Case remains deterministic and broker-safe.<br>condition: CloseTicket, ModifyTicket, or CancelOrder is rejected by guard/preflight; expected: ITradeExecutor method returns false and Position owns HALT/reconcile follow-up (CHG-22). |
+| TDD.03.04.1f65 | GuardResult classifies unknown retcodes and ITradeExecutor close/modify/cancel delegates safely | ITradePort.Submit plus observable ITradeExecutor results | Scripts/Tests/Test_GuardedTrade.mq5 | test_guarded_execution_and_risk_controls_unit_contract | status=halted, ambiguous=true, retryable=false | Known retcodes classify deterministically; rejected executor calls return false; compile topology proves ITradePort inherits ITradeExecutor and CGuardedTrade has one parent only (CHG-23). |
 | TDD.03.04.d74f | GuardResult captures filled_lots on partial fill | CGuardedTrade.Submit | Scripts/Tests/Test_GuardedTrade.mq5 | test_guarded_execution_partial_fill_evidence | status=partial, filled_lots=1.0, submitted_lots=2.0, ambiguous=false, retryable=false | condition: filled_lots equals submitted_lots; expected: status=filled, not partial.<br>condition: filled_lots is 0.0 on TRADE_RETCODE_DONE_PARTIAL; expected: status=partial with filled_lots=0.0; not treated as ambiguous. |
 
 ### Integration Tests

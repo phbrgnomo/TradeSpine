@@ -7,12 +7,12 @@
 | Field | Value |
 | --- | --- |
 | Status | Draft |
-| Version | 1.7 |
+| Version | 1.8 |
 | Component | PersistenceTypes, CStateStore, CKeyBuilder, TradeLogger, Logger, AlertSink |
 | TDD-ready Score | 94/100 |
-| CHG References | CHG-13, CHG-14, CHG-15, CHG-16, CHG-17, CHG-18, CHG-22 |
+| CHG References | CHG-13, CHG-14, CHG-15, CHG-16, CHG-17, CHG-18, CHG-22, CHG-23 |
 | Created | 2026-06-02T00:20:00-03:00 |
-| Updated | 2026-08-24T00:00:00-03:00 |
+| Updated | 2026-08-26T00:00:00-03:00 |
 
 ## Overview
 
@@ -33,22 +33,25 @@ flowchart LR
 
 | Export | Type | Signature | Purpose | Errors |
 | --- | --- | --- | --- | --- |
-| IStateStore | interface | interface IStateStore | LifecycleSnapshot read/write, detailed ABSENT/VALID/CORRUPT/ERROR classification, runtime isolation, retained HALT/recovery and unfenced audit evidence, legacy migration surfaces, and MarkerIsOwner fencing. | Corruption/error or failed commit is never reported as absence/success. |
-| CKeyBuilder | class | class CKeyBuilder | Builds deterministic hashed GV names from canonical strategy identity fields. | KeyCollision: stored identity hash does not match expected identity. |
+| IStateStore | interface | Exact typed surface in `Include/Persistence/StateStore.mqh`: snapshot read/write, isolation/scalars, duplicate/HALT/evidence, lossless ticket/pending-order helpers, claim/heartbeat/is-owner/release, and Verify. | LifecycleSnapshot read/write, ABSENT/VALID/CORRUPT/ERROR classification, runtime isolation, retained evidence, and marker fencing. | Corruption/error or failed commit is never reported as absence/success. |
+| CKeyBuilder | class | Build, Verify, and Fingerprint exact signatures from `KeyBuilder.mqh`. | Builds deterministic hashed GV names from canonical strategy identity fields. | KeyCollision: stored identity hash does not match expected identity. |
 | CStateStore | class | class CStateStore : public IStateStore | Writes inactive snapshot payload/checksum, verifies readback, then publishes generation; retains the prior commit on failure. First-use lease creation is protected by an exclusive hashed lock and ownership is reread-validated. | Any failed stage leaves the prior committed snapshot authoritative. |
-| TradeLogger | class | class TradeLogger | Writes paired intent and execution records for trade evaluation. _EnsureFile() checks the CSV header write on a newly created file and fails closed if it cannot be written (CHG-18). | LogFailure: evidence write failed, including header-write failure on new-file creation (CHG-18); component returns status for caller policy. |
-| Logger | class | class Logger | Writes leveled diagnostic messages separate from trade evaluation records. | None; logging failures are reported as diagnostics where possible. |
-| IAlertSink | interface | bool Halt(const HaltEvidence &ev) | Routes HALT and reports whether durable evidence succeeded; in-memory HALT remains effective on false. | false: persistence failed, lifecycle stays halted. |
-| CAlertSink | class | class CAlertSink : public IAlertSink | Persists HALT evidence before runtime-mode UI/log suppression and returns the persistence result. A missing store is a durable failure; the state machine keeps HALT effective in memory when this result is false. | false: durable evidence failed; recovery remains blocked and a secondary diagnostic is emitted. |
+| TradeLogger | class | Init, WriteIntent, WriteExecution, and Close exact signatures from `TradeLogger.mqh`. | Writes paired intent and execution records for trade evaluation. | LogFailure: checked evidence write failed. |
+| Logger | class | Init plus Debug/Info/Warn/Error exact signatures from `Logger.mqh`. | Writes leveled diagnostic messages separate from trade evaluation records. | None; logging failures are reported as diagnostics where possible. |
+| IAlertSink | interface | interface IAlertSink { bool Halt(const HaltEvidence &ev); void Warn(string category, string msg); } | Routes HALT/warnings; Halt reports durable evidence success when a store is configured. | false: configured persistence failed; lifecycle stays halted in memory. |
+| CAlertSink | class | class CAlertSink : public IAlertSink | With a store, persists before UI/log suppression; without a store, preserves notification-only success. | SetHalt false means durable circuit-breaker state is unconfirmed, not that in-memory HALT cleared. |
+| IMarkerBackend | interface | Exists/Get/Set/CompareExchange/AcquireExclusive/ReleaseExclusive exact signatures from `MarkerLease.mqh`. | Primitive GV and exclusive-lock seam; production uses CTerminalMarkerBackend and tests inject a fake. | Primitive failure/contended lock fails lease acquisition closed. |
 
 ## Data Models
 
 | Model | Type | Purpose |
 | --- | --- | --- |
+| ENUM_STORE_READ_RESULT | enum | ABSENT=0, VALID=1, CORRUPT=2, ERROR=3; preserves distinct caller policy. |
+| LifecycleSnapshot | struct | state, position ticket/identifier, complete PendingOrderEvidence, halted, and positive committed generation. |
 | CanonicalIdentity | struct |  |
 | TradeEvidenceRecord | struct |  |
 | HaltEvidence | struct |  |
-| PendingOrderEvidence | struct |  |
+| PendingOrderEvidence | struct | Ticket, submitted_ts, cancel_requested_ts, and cancel_origin committed together. |
 | DuplicateMarkerLease | struct |  |
 | GlobalVariableScalarState | struct |  |
 
@@ -72,7 +75,7 @@ flowchart LR
 
 | Condition | Response | Source |
 | --- | --- | --- |
-| GV identity hash mismatch. | Fail init before live trading, or set persistent GV HALT flag via IStateStore.SetHalt() and notify operator via Alert()/SendNotification() if detected live. EA remains halted on subsequent ticks until operator resets the flag. If SetHalt() fails, a secondary Error is emitted; the operator must treat the halt state as unconfirmed. (CHG-16, CHG-17) | @bdd: BDD.01.03.a31d |
+| GV identity hash mismatch. | Fail init before live trading or enter HALT. If SetHalt fails, emit a secondary error: in-memory HALT remains effective while only the durable circuit-breaker state is unconfirmed. | @bdd: BDD.01.03.a31d |
 | Trade evidence write fails. | Log diagnostic failure and preserve broker safety outcome. Header-write failure on new-file creation is treated as a write failure: the file handle is closed and reset, and the call returns false (CHG-18). | @bdd: BDD.01.03.d6ae |
 | Marker owner is fresh or token compare-and-swap loses. | Return status=DUPLICATE_MARKER_CONFLICT and no token (CHG-22). | @chg: CHG-22 |
 | Marker owner is stale by explicit marker_hb_ts. | Allow MarkerClaimOrReclaim to CAS a strictly larger token and return status=DUPLICATE_MARKER_STALE_RECLAIMED on success (CHG-22). | @chg: CHG-22 |
@@ -102,6 +105,7 @@ flowchart LR
 - CStateStore marker lease uses marker_owner as the CAS fence and marker_hb_ts as liveness; first-use creation/claim is mutex-protected, positive-owner/missing-heartbeat is conflict, success requires owner+heartbeat reread, and MarkerRelease stores -token to prevent ABA reuse.
 - CAlertSink.Halt routes symbol, magic, and ticket in the HALT payload; existing callers may leave them empty/zero for backward compatibility (CHG-22).
 - State writes occur on meaningful transitions, not every tick, and release evidence must cover @threshold: PRD.01.perf.idle_tick.
+- Each EA instance uses one serial event queue; separate instances contend only through token-fenced Global Variables and identity/namespace-specific checked evidence writes.
 
 ## TDD Contract
 

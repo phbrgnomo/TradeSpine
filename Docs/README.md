@@ -1,5 +1,7 @@
 # TradeSpine — Implementation Documentation
 
+> Provenance: @chg: CHG-22
+
 This `Docs/` tree is the **implementation-time reference** for the TradeSpine codebase:
 how the shipped modules work, how they fit together, and how to build on them. It is
 distinct from the lowercase [`docs/`](../docs) tree, which is the authoritative

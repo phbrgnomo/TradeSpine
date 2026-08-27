@@ -14,6 +14,7 @@ document_control:
   iplan_id: "IPLAN-11"
   source_spec: "@spec: SPEC-11"
   source_tdd: "@tdd: TDD.11.04.6805"
+  subtype: code_build
   status: Completed
   version: "1.1"
   date_created: "2026-06-03T00:00:00-03:00"
@@ -224,6 +225,7 @@ session_handoff:
         notes: "User confirmed compilation worked after the CAssert TS_* migration and Mocks.mqh move."
 
 traceability:
+  provenance: ["@chg: CHG-23"]
   upstream:
     spec_references: ["@spec: SPEC-11"]
     tdd_references: ["@tdd: TDD.11.04.6805"]

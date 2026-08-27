@@ -1,4 +1,16 @@
 ---
+metadata:
+  schema_version: "1.0"
+  document_type: "spec-document"
+  artifact_type: "SPEC"
+  layer: 6
+  total_sections: 8
+  last_updated: "2026-08-26T00:00:00-03:00"
+  deliverable_type: code
+  tags: ["spec-document", "layer-6-artifact", "shared-architecture"]
+  c4_level:
+    value: component
+
 document_type: spec-document
 artifact_type: SPEC
 layer: 6
@@ -7,17 +19,17 @@ id: SPEC-04
 title: Position Account Mode and State
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-08-24T00:00:00-03:00"
-chg_references: ["CHG-22"]
+last_updated: "2026-08-26T00:00:00-03:00"
+chg_references: ["CHG-22", "CHG-23"]
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.1"
+  version: "1.2"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-08-24T00:00:00-03:00"
+  last_updated: "2026-08-26T00:00:00-03:00"
   author: "Codex"
-  chg_references: ["CHG-22"]
+  chg_references: ["CHG-22", "CHG-23"]
   component: "CPositionContext, adapters, router, and state machine"
   tdd_ready_score: "95/100"
 
@@ -51,15 +63,21 @@ component_overview:
 ## Section 3: Interfaces
 interfaces:
   exports:
+    - name: "IAccountModeProvider"
+      type: "interface"
+      signature: "interface IAccountModeProvider { ENUM_ACCOUNT_MARGIN_MODE MarginMode(); }"
+      description: "Injectable account margin-mode source. CLiveAccountModeProvider is the production read-only implementation; tests may supply deterministic fakes."
+      errors:
+        - "Unsupported/deferred mode: CPositionContext initialization fails before any trade path."
     - name: "IAccountModeAdapter"
       type: "interface"
-      signature: "interface IAccountModeAdapter"
+      signature: "interface IAccountModeAdapter { bool Init(string symbol, ulong magic, IBrokerPositionView* view, ITradeExecutor* executor, Logger* logger); string ModeName(); bool IsReady(); bool HasOwnedPosition(); int OwnedTicketCount(); double NetExposureLots(); bool CloseTicket(ulong ticket, double lots); bool ModifyTicket(ulong ticket, double sl, double tp); bool CancelOrder(ulong order_ticket); bool TrailSL(ulong ticket, double candidate_sl); bool SupportsMultiplePositions(); bool AllowsAddVolume(); }"
       description: "Mode-specific ownership and position operation contract."
       errors:
         - "OperationRejected: ownership unknown, invalid lots, or unsupported mode operation."
     - name: "CPositionContext"
       type: "class"
-      signature: "class CPositionContext : public IPositionView"
+      signature: "class CPositionContext : public IPositionView { bool Init(string symbol, ulong magic, IAccountModeProvider* mode_provider, IBrokerPositionView* broker_view, ITradeTransactionEvidence* tx_evidence, ITradeExecutor* executor, IStateStore* store, CPositionStateMachine* sm, COptContext* opt, Logger* logger, datetime now, int lease_secs=60); void OnDeinit(); bool OnMaintenance(datetime now); bool Recover(datetime now, int lease_secs=60); bool OnTick(); bool RouteTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest &request, const MqlTradeResult &result); bool RepairExternalStops(ulong ticket, double expected_sl, double expected_tp); CTradeTxRouter* Router(); bool IsReady(); bool HasOpenPosition(); double NetExposureLots(); int MyTicketCount(); ENUM_POSITION_STATE State(); ENUM_ACCOUNT_MARGIN_MODE MarginMode(); }"
       description: "Owns initialization ordering, live or isolated runtime namespace, lease claim and fencing, startup/timer/hint reconciliation, explicit HALT recovery, and strategy-owned position queries. Init becomes ready only after safe ownership and reconciliation; Recover is the only context path that may resume an absorbing HALT."
       errors:
         - "INIT_FAILED: account mode or duplicate identity cannot be initialized safely."
@@ -77,38 +95,38 @@ interfaces:
         - "OperationRejected: no strategy-owned ticket matches requested operation."
     - name: "CPositionStateMachine"
       type: "class"
-      signature: "class CPositionStateMachine"
+      signature: "class CPositionStateMachine { bool Init(IStateStore* store, IAlertSink* alerts, ITradeExecutor* executor, Logger* logger, int fill_timeout_secs=5, IClock* clock=NULL, string symbol=\"\", ulong magic=0); void SetIdentity(string symbol, ulong magic); void BindLeaseFence(bool required, long token); ENUM_POSITION_STATE State(); ulong PendingOrderTicket(); datetime PendingSubmittedTs(); bool CancelOwned(); LifecycleSnapshot Snapshot(); bool OnPendingEntrySubmitted(ulong order_ticket, datetime now); bool RequestCancellation(ENUM_CANCEL_ORIGIN origin, datetime now); bool Update(datetime now, IBrokerPositionView* positions=NULL, ITradeTransactionEvidence* evidence=NULL); bool EnterHalt(const HaltEvidence &ev); bool Reconcile(IBrokerPositionView* positions, ITradeTransactionEvidence* evidence, datetime now, bool allow_halt_clear=false); bool ReconcileOnInit(IBrokerPositionView* positions, ITradeTransactionEvidence* evidence, datetime now); bool TryAutoClearHalt(ITradeTransactionEvidence* evidence); bool IsHalted(); }"
       description: "Owns guarded lifecycle transitions, complete-snapshot commit-before-mutation, timeout cancellation evidence, canonical restart/timer/hint reconciliation, stable position identity, and absorbing HALT behavior. It accepts an optional IClock; in-memory HALT remains effective even if durable alert evidence fails."
       errors:
         - "HALT: async, cancel, or reconciliation outcome is ambiguous."
     - name: "IPositionView"
       type: "interface"
-      signature: "interface IPositionView"
+      signature: "interface IPositionView { bool HasOpenPosition(); double NetExposureLots(); int MyTicketCount(); ENUM_POSITION_STATE State(); ENUM_ACCOUNT_MARGIN_MODE MarginMode(); }"
       description: "Read-only strategy-owned position facade consumed by downstream coordination layers (CHG-22)."
       errors:
         - "UNKNOWN: position state is not yet initialized."
     - name: "IBrokerPositionView"
       type: "interface"
-      signature: "interface IBrokerPositionView"
+      signature: "interface IBrokerPositionView { int Total(); bool SelectByIndex(int index); bool SelectByTicket(ulong ticket); ulong Ticket(); ulong Identifier(); string Symbol(); ulong Magic(); ENUM_POSITION_TYPE PositionType(); double Volume(); double StopLoss(); double TakeProfit(); }"
       description: "Selected-position broker evidence seam exposing ticket, exact symbol and magic, volume, and stable POSITION_IDENTIFIER. Selection failure invalidates prior selection and returns safe empty evidence."
       errors:
         - "false: selected position or ticket is unavailable."
     - name: "ITradeTransactionEvidence"
       type: "interface"
-      signature: "interface ITradeTransactionEvidence"
+      signature: "interface ITradeTransactionEvidence { bool SelectHistory(datetime from, datetime to); bool SelectHistoryByPosition(ulong position_id); int HistoryDealCount(); ulong HistoryDealTicket(int index); ulong HistoryDealMagic(ulong ticket); string HistoryDealSymbol(ulong ticket); ENUM_DEAL_ENTRY HistoryDealEntry(ulong ticket); ulong HistoryDealOrder(ulong ticket); ulong HistoryDealPositionId(ulong ticket); double HistoryDealVolume(ulong ticket); ENUM_ORDER_STATE HistoryOrderState(ulong ticket); ulong HistoryOrderMagic(ulong ticket); string HistoryOrderSymbol(ulong ticket); ulong HistoryOrderPositionId(ulong ticket); int ActiveOrderTotal(); bool ActiveOrderSelectByIndex(int index); ulong ActiveOrderTicket(); bool ActiveOrderSelect(ulong ticket); ENUM_ORDER_STATE ActiveOrderState(); ulong ActiveOrderMagic(); string ActiveOrderSymbol(); bool PositionSelectByTicket(ulong ticket); string PositionSymbol(); ulong PositionMagic(); ENUM_POSITION_TYPE EvidencePositionType(); double PositionVolume(); double PositionSL(); double PositionTP(); }"
       description: "Explicit bounded-history selection, deal-to-order/position correlation, active-order iteration, and residual-position evidence seam used by canonical reconciliation. Every usable fact requires nonzero identity plus exact symbol and magic."
       errors:
         - "false/zero/empty evidence: transaction hint cannot be proven and must be reconciled later."
     - name: "ITradeExecutor"
       type: "interface"
-      signature: "interface ITradeExecutor { CloseTicket(ticket,lots); ModifyTicket(ticket,sl,tp); CancelOrder(order_ticket); }"
-      description: "Guarded write seam consumed by the position state machine and adapters; CGuardedTrade implements it in IPLAN-03 (CHG-22)."
+      signature: "interface ITradeExecutor { bool CloseTicket(ulong ticket, double lots); bool ModifyTicket(ulong ticket, double sl, double tp); bool CancelOrder(ulong order_ticket); }"
+      description: "Canonical declaration owned by IPLAN-04 at Include/Position/Interfaces.mqh. IPLAN-03 consumes it by defining ITradePort as its single derived interface and CGuardedTrade as the ITradePort implementation (CHG-22, CHG-23)."
       errors:
         - "false: guarded close, modify, or cancel was rejected or unavailable."
     - name: "CLiveAccountModeProvider, CLiveBrokerPositionView, CLiveTradeTransactionEvidence"
       type: "classes"
       signature: "read-only terminal evidence providers"
-      description: "Separate composition-based production providers over the vendored account, position, order, history-order, and deal readers. They never instantiate CTrade or submit broker operations."
+      description: "Separate composition-based production providers implementing IAccountModeProvider, IBrokerPositionView, and ITradeTransactionEvidence over the vendored account, position, order, history-order, and deal readers. They never instantiate CTrade or submit broker operations."
       errors:
         - "false/empty evidence: native selection or bounded history selection failed; previous selection is invalidated."
 
@@ -308,6 +326,7 @@ behavior:
 ## Section 6: Implementation Notes
 implementation_notes:
   constraints:
+    - "Each EA instance executes startup, timer, tick, and transaction callbacks on one serial, non-reentrant MQL5 event queue. Separate EA/chart instances coordinate only through the token-fenced SPEC-05 marker lease; ownership must be revalidated immediately before every shared-state or broker mutation."
     - "Startup order is dependency validation, explicit runtime namespace and account-mode establishment, lease claim or deliberate suppression, checked state-machine/router initialization, canonical reconciliation, then readiness."
     - "Startup, transaction hints, and fixed 30-second timer maintenance invoke one reconciliation routine; local timeout evaluation runs on every timer callback and the lease threshold is at least 60 seconds."
     - "Transaction payloads are untrusted hints. A transition requires nonzero IDs, explicit bounded history selection, exact symbol/magic, order-to-position correlation, and observed residual volume."
@@ -331,7 +350,8 @@ implementation_notes:
     - "Runtime namespaces are explicit: live uses the canonical namespace; optimization and nonvisual tester contexts require an isolated namespace and never clear or claim the live lease."
     - "CPositionContext.Recover performs an explicit fresh claim when ownership was lost, rebinds the fence, and invokes Reconcile with HALT-clear permission; ordinary maintenance and transaction hints never carry that permission."
   performance_considerations:
-    - "Reconciliation requiring broker scans runs on init, trade transaction, explicit timer maintenance, or intervention detection, not on idle ticks."
+    - "Idle OnTick SHALL perform zero broker scans and zero persistence writes. The matched release benchmark SHALL use the same terminal/build, data, symbol/timeframe, and settings as its baseline; after at least 1,000 warm-up callbacks, collect at least 10,000 idle callbacks with the SPEC-09 profiler and gate median idle tick at <=50 us and matched median tester overhead at <=10% per @threshold: PRD.01.perf.idle_tick and @threshold: PRD.01.perf.tester_overhead. Report p95, scan/write counts, position/order/history cardinality, and the measurement window."
+    - "Reconciliation requiring broker scans runs on init, trade transaction, explicit timer maintenance, or intervention detection, not on idle ticks. When queue delay or evidence cardinality threatens the lease/maintenance deadline, block new mutations and preserve or enter reconciliation/HALT rather than skipping ownership proof."
 
 ## Section 7: Downstream TDD Contracts
 tdd_contracts:
@@ -348,6 +368,7 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
+  provenance: ["@chg: CHG-23"]
   tags: ["@spec: SPEC-04", "@brd: BRD.01.07.b44d", "@prd: PRD.01.09.5cce", "@ears: EARS.01.03.5d1b", "@bdd: BDD.01.03.8180", "@adr: ADR.07.03.6df1", "@chg: CHG-22"]
   upstream:
     adr_references: ["@adr: ADR.02.03.c7dd", "@adr: ADR.07.03.6df1", "@adr: ADR.08.03.0a8f"]

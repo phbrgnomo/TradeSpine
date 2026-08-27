@@ -1,5 +1,7 @@
 # TradeSpine Lifecycle Operations
 
+> Provenance: @chg: CHG-22, @chg: CHG-23
+
 This runbook covers the CHG-22 lifecycle, persistence, duplicate-owner, and provider controls. It is an operator procedure, not approval evidence. CHG-22 remains open until the manual checks in the acceptance section are recorded.
 
 ## Safety rules
@@ -99,14 +101,15 @@ Promotion order is demo rehearsal → one restricted live identity → a partial
 
 ## Acceptance evidence
 
-Run in this order:
+The normative module-closure, aggregate-test, and release-obligation criteria
+are [SPEC-08 `data_models.evidence_contract`](../docs/06_SPEC/SPEC-08_release_testing_and_documentation_governance/SPEC-08_release_testing_and_documentation_governance.yaml). This runbook records operational execution only.
 
-1. Canonical YAML/schema and cross-document validation.
-2. Focused unit/integration scripts and aggregate `RunAllTests`, with exact pass/fail/skip counts.
-3. Manual MetaEditor F7 for every changed script and aggregate runner, with fresh EX5 files and 0 errors/0 warnings.
-4. Complete IPLAN-05 producers and IPLAN-04, then IPLAN-02 coordination, then IPLAN-01 StrategyBase/provider assembly and IPLAN-03 GuardedTrade/final mutation fencing against the same `CHG-22-R1` bundle. Run `Test_StrategyBase.mq5`, `Test_Coordinator.mq5`, `Test_GuardedTrade.mq5`, `Test_BrokerBypassScan.mq5`, all IPLAN-04/05 focused suites, and `RunAllTests.mq5`.
-5. Manual two-chart ownership test using the fresh IPLAN-01 `StrategyTemplate` EX5; exactly one same-identity chart may become ready.
-6. Rollback rehearsal, then one full-session demo canary, one restricted live identity, partial cohort when applicable, and full rollout. Emit `TS_DEPLOY_PHASE` at each boundary.
-7. Review-team rerun.
+Accepted CHG-22 module evidence: IPLAN-05 243/243 and IPLAN-04 137/137, both
+with zero failures/skips; aggregate 694/694 passed with 11 mapped skips outside
+those module suites.
 
-GATE06, GATE08, and GATECODE remain failed until this evidence is attached. Final acceptance requires no P0/P1 findings, each review lens at least 80, and weighted score at least 85.
+The following release obligations remain downstream and do not reopen module closure:
+
+5. Complete IPLAN-02 coordination, IPLAN-01 StrategyBase/provider assembly, and IPLAN-03 GuardedTrade/final mutation fencing against the same `CHG-22-R1` bundle.
+6. Run the manual two-chart ownership test using the fresh IPLAN-01 attachable EA EX5; exactly one same-identity chart may become ready.
+7. Perform rollback rehearsal, one full-session demo canary, one restricted live identity, partial cohort when applicable, and full rollout. Emit `TS_DEPLOY_PHASE` at each boundary.

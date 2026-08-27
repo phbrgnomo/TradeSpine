@@ -7,12 +7,12 @@
 | Field | Value |
 | --- | --- |
 | Status | Draft |
-| Version | 1.1 |
+| Version | 1.2 |
 | Component | CPositionContext, adapters, router, and state machine |
 | TDD-ready Score | 95/100 |
-| CHG References | CHG-22 |
+| CHG References | CHG-22, CHG-23 |
 | Created | 2026-06-02T00:20:00-03:00 |
-| Updated | 2026-08-24T00:00:00-03:00 |
+| Updated | 2026-08-26T00:00:00-03:00 |
 
 ## Overview
 
@@ -33,16 +33,17 @@ flowchart LR
 
 | Export | Type | Signature | Purpose | Errors |
 | --- | --- | --- | --- | --- |
-| IAccountModeAdapter | interface | interface IAccountModeAdapter | Mode-specific ownership and position operation contract. | OperationRejected: ownership unknown, invalid lots, or unsupported mode operation. |
-| CPositionContext | class | class CPositionContext : public IPositionView | Owns initialization order, runtime namespace, lease fencing, canonical reconciliation, and explicit HALT recovery; readiness follows proof, never precedes it. | INIT_FAILED: account mode, evidence, or duplicate identity cannot be initialized safely. |
+| IAccountModeProvider | interface | interface IAccountModeProvider { ENUM_ACCOUNT_MARGIN_MODE MarginMode(); } | Injectable account-mode source; CLiveAccountModeProvider is the production read-only implementation. | Deferred/unsupported mode fails context initialization before trading. |
+| IAccountModeAdapter | interface | Exact typed surface in `Include/Position/AccountModeAdapter.mqh`: Init, mode/readiness/ownership queries, CloseTicket, ModifyTicket, CancelOrder, TrailSL, and capability queries. | Mode-specific ownership and position operation contract. | OperationRejected: ownership unknown, invalid lots, or unsupported mode operation. |
+| CPositionContext | class | Exact typed surface in `Include/Position/PositionContext.mqh`: Init, OnDeinit, OnMaintenance, Recover, OnTick, RouteTradeTransaction, RepairExternalStops, Router, IsReady, and every IPositionView query. | Owns initialization order, runtime namespace, lease fencing, canonical reconciliation, and explicit HALT recovery; readiness follows proof, never precedes it. | INIT_FAILED: account mode, evidence, or duplicate identity cannot be initialized safely. |
 | CNettingAdapter | class | class CNettingAdapter : public IAccountModeAdapter | Deferred v2+ placeholder for netting/exchange strategy exposure through virtual ledger and pending exits. In v1, selecting netting or exchange-netting fails initialization before this adapter can trade. | INIT_FAILED: netting/exchange mode is deferred in v1. |
 | CHedgingAdapter | class | class CHedgingAdapter : public IAccountModeAdapter | Tracks strategy exposure through magic-filtered broker tickets and orders. | OperationRejected: no strategy-owned ticket matches requested operation. |
-| CPositionStateMachine | class | class CPositionStateMachine | Commits complete lifecycle snapshots before memory mutation; owns classified cancellation, canonical startup/timer/hint reconciliation, stable position identity, lease-fenced mutations, and absorbing HALT. | HALT: evidence, ownership, or persistence is ambiguous. |
-| IPositionView | interface | interface IPositionView | Read-only strategy-owned position facade consumed by downstream coordination layers (CHG-22). | UNKNOWN: position state is not yet initialized. |
-| IBrokerPositionView | interface | interface IBrokerPositionView | Read-only current-position seam exposing ticket and stable POSITION_IDENTIFIER. | false: selected position or stable identity is unavailable. |
-| ITradeTransactionEvidence | interface | interface ITradeTransactionEvidence | Explicit bounded-history, active-order iteration, deal/order/position correlation, and residual-position evidence seam. | false/zero/empty evidence: required proof is unavailable; ambiguous correlated evidence enters HALT. |
+| CPositionStateMachine | class | Exact typed surface in `Include/Position/PositionStateMachine.mqh`: Init, identity/lease binding, state/snapshot accessors, pending/cancel commits, Update, EnterHalt, Reconcile/ReconcileOnInit, TryAutoClearHalt, and IsHalted. | Commits complete lifecycle snapshots before memory mutation; owns classified cancellation, canonical reconciliation, stable identity, lease-fenced mutations, and absorbing HALT. | HALT: evidence, ownership, or persistence is ambiguous. |
+| IPositionView | interface | interface IPositionView { bool HasOpenPosition(); double NetExposureLots(); int MyTicketCount(); ENUM_POSITION_STATE State(); ENUM_ACCOUNT_MARGIN_MODE MarginMode(); } | Read-only strategy-owned position facade consumed by downstream coordination layers (CHG-22). | UNKNOWN: position state is not yet initialized. |
+| IBrokerPositionView | interface | Exact typed surface in `Include/Position/Interfaces.mqh`: Total, index/ticket selection, identity/symbol/magic/type/volume, SL, and TP. | Read-only current-position seam exposing ticket and stable POSITION_IDENTIFIER. | false: selected position or stable identity is unavailable. |
+| ITradeTransactionEvidence | interface | Exact typed surface in `Include/Position/Interfaces.mqh`: bounded history selection, deal/order correlation, active-order iteration, and residual-position reads. | Explicit bounded-history, active-order iteration, deal/order/position correlation, and residual-position evidence seam. | false/zero/empty evidence: required proof is unavailable; ambiguous correlated evidence enters HALT. |
 | CLiveAccountModeProvider / CLiveBrokerPositionView / CLiveTradeTransactionEvidence | classes | separate read-only adapters | Compose vendored CAccountInfo, CPositionInfo, COrderInfo, CHistoryOrderInfo, and CDealInfo; selection failures invalidate prior state; no CTrade or broker submission. | Safe empty values after failed selection. |
-| ITradeExecutor | interface | interface ITradeExecutor { CloseTicket(ticket,lots); ModifyTicket(ticket,sl,tp); CancelOrder(order_ticket); } | Guarded write seam consumed by the position state machine and adapters; CGuardedTrade implements it in IPLAN-03 (CHG-22). | false: guarded close, modify, or cancel was rejected or unavailable. |
+| ITradeExecutor | interface | interface ITradeExecutor { bool CloseTicket(ulong ticket, double lots); bool ModifyTicket(ulong ticket, double sl, double tp); bool CancelOrder(ulong order_ticket); } | Canonical declaration owned by IPLAN-04; IPLAN-03 consumes it through derived ITradePort and one-parent CGuardedTrade. | false: guarded close, modify, or cancel was rejected or unavailable. |
 
 ## Data Models
 
@@ -113,6 +114,8 @@ flowchart LR
 - CPositionContext.Recover obtains a fresh claim after ownership loss, rebinds the fence, and invokes reconciliation with explicit HALT-clear permission; maintenance and transaction hints never carry that permission.
 - Select pending history from submission time minus 60 seconds or active-position history by stable identifier before reading any HistoryOrderGet*/HistoryDealGet* evidence.
 - Reconciliation requiring broker scans runs on init, trade transaction, explicit timer maintenance, or intervention detection, not on idle ticks.
+- Idle OnTick performs zero broker scans/writes. Matched release benchmarks use at least 1,000 warm-up plus 10,000 measured callbacks, require median idle tick <=50 us and tester overhead <=10%, and report p95, scan/write counts, evidence cardinality, and the measurement window. Threatened safety deadlines block mutations and preserve reconciliation/HALT.
+- Each EA instance uses a serial, non-reentrant event queue; separate chart instances coordinate only through the SPEC-05 token-fenced marker lease and revalidate ownership immediately before mutation.
 
 ## TDD Contract
 

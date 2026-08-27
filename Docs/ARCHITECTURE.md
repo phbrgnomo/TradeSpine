@@ -1,5 +1,7 @@
 # TradeSpine — Architecture Reference
 
+> Provenance: @chg: CHG-22
+
 This page describes the architecture of the **implemented** TradeSpine codebase. It is
 updated as each IPLAN lands. For the decision records behind these rules, see the ADRs and
 SPECs under [`docs/`](../docs).

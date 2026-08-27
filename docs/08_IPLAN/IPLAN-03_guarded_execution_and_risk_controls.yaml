@@ -7,17 +7,18 @@ metadata:
   source_spec: "@spec: SPEC-03"
   source_tdd: "@tdd: TDD.03.04.1f65"
   total_sections: 6
-  last_updated: "2026-08-24T00:00:00-03:00"
+  last_updated: "2026-08-26T00:00:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
   iplan_id: "IPLAN-03"
   source_spec: "@spec: SPEC-03"
   source_tdd: "@tdd: TDD.03.04.1f65"
+  subtype: code_build
   status: Draft
-  version: "1.3"
+  version: "1.4"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-08-24T00:00:00-03:00"
+  last_updated: "2026-08-26T00:00:00-03:00"
   author: "Codex"
   component: "CGuardedTrade and CRiskManager"
   complexity: 5
@@ -94,6 +95,7 @@ execution_commands:
   implementation:
     - "# Pre-flight: decide the execution-owned fixture surface before writing tests: FakeTradePort/private CTrade outcomes, spread, fill mode, OrderCheck/margin, retcodes, and call counters; do not extend FakeMarketContext for execution data."
     - "# Write TDD-03 tests first, then implement GuardResult, CGuardedTrade, guard helpers, and CRiskManager."
+    - "# Define ITradePort as the single interface derived from the IPLAN-04-owned ITradeExecutor contract; CGuardedTrade inherits only ITradePort because MQL5 does not support multiple inheritance (CHG-23)."
     - "# Verify private vendored CTrade composition and reject unknown retcodes as failsafe ambiguity."
     - "# On TRADE_RETCODE_DONE_PARTIAL: set status=partial, record filled_lots from broker response, ambiguous=false, retryable=false (TDD.03.04.d74f)."
     - "# Recheck PositionContext readiness, non-HALT state, current lease ownership, supported account mode, and provider readiness immediately before each state-changing broker call."
@@ -110,7 +112,7 @@ implementation_contracts:
       - name: "ITradePort guarded boundary"
         type: "Protocol Interface"
         files: ["Include/Execution/GuardedTrade.mqh", "Include/Execution/GuardResult.mqh"]
-        summary: "CGuardedTrade is the only broker submission port, revalidates lifecycle and ownership fences at the final mutation boundary, and returns GuardResult for every outcome."
+        summary: "ITradePort derives from the IPLAN-04-owned ITradeExecutor seam; CGuardedTrade inherits that single combined interface, remains the only broker submission port, revalidates lifecycle and ownership fences at the final mutation boundary, and returns GuardResult for every submit outcome."
       - name: "Runtime risk state"
         type: "State Machine"
         files: ["Include/Risk/RiskManager.mqh", "Scripts/Tests/Test_RiskManager.mq5"]
@@ -134,14 +136,15 @@ session_handoff:
       agent: "Codex IPLAN autopilot"
       files_touched: []
       partial_work: "No implementation started; this seed session only created the execution plan."
-      blockers: "Requires TradeIntent, position context, persistence, market metadata, runtime, and test support contracts; execution-specific spread/fill/margin/broker outcomes are owned by FakeTradePort in this plan."
-      next_session_directive: "Start by defining Scripts/Tests/Support/FakeTradePort.mqh, then write Scripts/Tests/Test_GuardedTrade.mq5 and GuardResult before implementing GuardedTrade."
+      blockers: "Requires TradeIntent, position context, persistence, market metadata, runtime, and test support contracts; this plan owns final broker-mutation HALT/lease/account-mode/provider fencing and bypass validation. CHG-22 module closure does not verify those controls."
+      next_session_directive: "Start by defining Scripts/Tests/Support/FakeTradePort.mqh, write Test_GuardedTrade.mq5 and GuardResult, then prove final mutation fencing and a zero-finding broker-bypass scan before release integration."
       validation_results:
         tests_passing: null
         coverage: null
         lint_clean: null
 
 traceability:
+  provenance: ["@chg: CHG-22", "@chg: CHG-23"]
   upstream:
     spec_references: ["@spec: SPEC-03"]
     tdd_references: ["@tdd: TDD.03.04.1f65", "@tdd: TDD.03.04.d74f"]

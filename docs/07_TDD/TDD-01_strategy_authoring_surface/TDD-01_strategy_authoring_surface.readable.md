@@ -8,14 +8,14 @@
 | --- | --- |
 | Document ID | TDD-01 |
 | Status | Draft |
-| Version | 1.1 |
+| Version | 1.2 |
 | Component | CStrategyBase and strategy template surface |
 | SPEC Reference | @spec: SPEC-01 |
 | Source SPEC | ../../06_SPEC/SPEC-01_strategy_authoring_surface/SPEC-01_strategy_authoring_surface.yaml |
 | IPLAN-ready Score | 94/100 |
-| CHG References | CHG-22 |
+| CHG References | CHG-22, CHG-23 |
 | Created | 2026-06-02T00:00:00-03:00 |
-| Updated | 2026-08-24T00:00:00-03:00 |
+| Updated | 2026-08-26T00:00:00-03:00 |
 
 ## Test Pyramid
 
@@ -40,6 +40,8 @@
 | @bdd: BDD.01.03.7b02 | Documentation coverage gate is enforced | `Scripts/Tests/Test_StrategyBase.mq5` / `test_strategy_authoring_surface_7b02_unit` (pending) | `Scripts/Tests/Test_StrategyTemplateCompile.mq5` / `test_strategy_authoring_surface_7b02_integration` (pending) | `Scripts/Tests/Test_AuthoringDocsChecklist.mq5` / `test_strategy_authoring_surface_7b02_e2e` (pending) |
 
 ## Test Cases
+
+Executable coverage is currently 0/0/0 for aa68, c0f6, and 7b02. All named functions are planned under Draft IPLAN-01; this TDD does not claim implemented coverage or CHG-22 module closure. IPLAN-01 owns the 7b02 strategy-documentation contribution; the existing final registry release-closeout obligation owns the complete SPEC-08 documentation gate.
 
 
 ### Unit Tests

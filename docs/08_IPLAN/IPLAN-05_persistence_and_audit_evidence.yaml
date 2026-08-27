@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-05"
   source_tdd: "@tdd: TDD.05.04.e64a"
   total_sections: 6
-  last_updated: "2026-08-25T00:00:00-03:00"
+  last_updated: "2026-08-27T00:00:00-03:00"
   chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18", "CHG-22"]
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
@@ -15,16 +15,18 @@ document_control:
   iplan_id: "IPLAN-05"
   source_spec: "@spec: SPEC-05"
   source_tdd: "@tdd: TDD.05.04.e64a"
-  status: In Progress
-  version: "1.7"
+  subtype: code_build
+  status: Completed
+  version: "1.9"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-08-25T00:00:00-03:00"
+  last_updated: "2026-08-27T00:00:00-03:00"
   author: "Codex"
   component: "PersistenceTypes, CMarkerLease, CStateStore, CKeyBuilder, TradeLogger, Logger, AlertSink"
   complexity: 4
   estimated_files: 10
-  session_count: 10
-  readiness_gate: "Reopened by CHG-22; lifecycle snapshot, lease interleaving, and HALT retention require fresh manual F7/runtime evidence"
+  session_count: 13
+  readiness_gate: "Completed at the CHG-22 module boundary: aggregate build/runtime evidence, audit quorum, and human GATE-06/GATE-08/GATE-CODE approval are recorded."
+  evidence_contract_reference: "@spec: SPEC-08 data_models.evidence_contract"
   source_inputs:
     - "../07_TDD/TDD-05_persistence_and_audit_evidence/TDD-05_persistence_and_audit_evidence.yaml"
     - "../06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
@@ -37,7 +39,7 @@ file_manifest:
       order: 1
       status: DONE
       session: 9
-      verified: false
+      verified: true
       purpose: "Checked snapshot generations, corruption classification, exact IDs, retained HALT evidence, runtime namespaces, and deterministic lease interleavings."
     - path: "Scripts/Tests/Test_TradeLogger.mq5"
       order: 2
@@ -49,7 +51,7 @@ file_manifest:
       order: 3
       status: DONE
       session: 9
-      verified: false
+      verified: true
       purpose: "Runtime alert routing plus observable durable HALT persistence success/failure."
     - path: "Include/Persistence/KeyBuilder.mqh"
       order: 4
@@ -61,13 +63,13 @@ file_manifest:
       order: 5
       status: DONE
       session: 10
-      verified: false
+      verified: true
       purpose: "Extracted marker backend and token/heartbeat/lock protocol with ownership-preserving heartbeat failure handling."
     - path: "Include/Persistence/StateStore.mqh"
       order: 6
       status: DONE
       session: 9
-      verified: false
+      verified: true
       purpose: "Double-buffer lifecycle snapshots, runtime namespaces, append-only HALT/recovery evidence, and delegated marker fencing."
     - path: "Include/Persistence/TradeLogger.mqh"
       order: 7
@@ -85,7 +87,7 @@ file_manifest:
       order: 9
       status: DONE
       session: 9
-      verified: false
+      verified: true
       purpose: "HALT alert sink that returns durable persistence status while preserving runtime-mode routing."
     - path: "Include/Persistence/PersistenceTypes.mqh"
       order: 10
@@ -103,8 +105,9 @@ execution_commands:
     - "Implement commit-last lifecycle snapshots, explicit namespaces, retained HALT audit evidence, and checked alert persistence."
   validation:
     - "Parse canonical YAML and run static include/interface consistency checks."
-    - "Compile Test_StateStore, Test_TradeLogger, Test_AlertSink, and RunAllTests with manual MetaEditor F7; require 0 errors and 0 warnings."
-    - "Run MT5 scripts and record exact pass, fail, and skip counts."
+    - "Verify RunAllTests includes Test_StateStore, Test_TradeLogger, Test_AlertSink, and their dependencies in the aggregate translation unit."
+    - "Compile RunAllTests with manual MetaEditor F7; require a fresh aggregate EX5, 0 errors, and 0 warnings."
+    - "Execute RunAllTests in MT5 and require IPLAN-05 243/243 passed with 0 failed and 0 skipped."
 
 implementation_contracts:
   provided:
@@ -249,7 +252,7 @@ session_handoff:
         - "docs/governance/chg/CHG-18_persistence_defensive_write_and_test_fixes.yaml"
         - "docs/governance/chg/CHG-00_index.md"
       partial_work: "CHG-18: five code-review-driven fixes. (1) Test_TradeLogger.mq5 prefixes included \"TradeSpine/\", which TradeLogger._EnsureFile() also prepends, so tests read/deleted a different file than the logger wrote; added a TradeLoggerPath() helper and made all prefixes relative to the TradeSpine/ root. (2) Test_TradeLogger_WriteFailure made deterministic by occupying the target file path with a folder instead of relying on sandbox path-rejection behavior. (3) Test_AlertSink.mq5 FakeStateStore gained halt_call_count to independently prove CAlertSink.Halt() attempts SetHalt() in both the success and failure paths (CHG-17 regression guard). (4) TradeEvidenceRecord.side changed from a free-form string to ENUM_TRADE_SIDE (TRADE_SIDE_BUY/TRADE_SIDE_SELL) with a _SideToString() CSV formatter. (5) CStateStore::_setGV() now logs GetLastError() via PrintFormat on GlobalVariableSet() failure. Also: TradeLogger::_EnsureFile() previously ignored the CSV header FileWriteString() result on new-file creation; it now checks the result, closes/resets the handle, and returns false on failure so WriteIntent()/WriteExecution() emit the existing failure diagnostic. file_manifest.PersistenceTypes.mqh verified flag corrected true (compile-confirmed across this and prior sessions). SPEC-05 (1.5→1.6) and Docs/MODULES/Persistence.md updated; CHG-18 registered in CHG-00_index.md."
-      blockers: "Full MT5 IDE test execution (assertions actually run, not just MetaEditor headless compile) still outstanding for all three test scripts."
+      blockers: "Full MT5 IDE test execution (assertions actually run, beyond MetaEditor headless compile) remains outstanding for all three test scripts."
       next_session_directive: "Run Test_StateStore.mq5, Test_TradeLogger.mq5, Test_AlertSink.mq5, and RunAllTests.mq5 in the MT5 IDE and record tests_passing: true once all assertions are confirmed green at runtime."
       validation_results:
         tests_passing: pending_run
@@ -280,14 +283,52 @@ session_handoff:
         - "Scripts/Tests/Test_PositionStateMachine.mq5"
         - "Docs/MODULES/Persistence.md"
       partial_work: "Extracted the marker lease protocol, preserved ownership on transient heartbeat reread mismatch, documented snapshot invariants/commit-last publication, migrated legacy UNKNOWN only from provable evidence, and regression-tested checked HALT persistence control flow."
-      blockers: "User reported the post-fix aggregate passed all tests. Exact post-fix counts, MetaEditor warning summary, and fresh EX5 metadata were not supplied."
-      next_session_directive: "Capture exact post-fix aggregate counts and MetaEditor 0-error/0-warning evidence before changing verification flags."
+      blockers: "User reported the post-fix aggregate passed all tests. Exact focused and aggregate counts, per-script MetaEditor 0-error/0-warning summaries, fresh EX5 timestamps/SHA-256 values, fresh team audit, and human approval were not supplied."
+      next_session_directive: "Capture exact focused and aggregate counts plus fresh per-script F7/EX5 evidence before changing the five false verification flags, three in-progress inventory statuses, or plan status."
       validation_results:
         tests_passing: "Pass reported by user after the Position HALT fix; exact post-fix pass/skip totals not supplied."
         coverage: "Added direct assertions for committed UNKNOWN rejection, safe legacy UNKNOWN classification, transient heartbeat mismatch ownership preservation, and durable HALT failure propagation."
         lint_clean: null
+    - date: "2026-08-26"
+      agent: "Human MetaEditor/MT5 evidence + Codex read-only reconciliation"
+      files_touched:
+        - "docs/governance/chg/CHG-22_human_evidence_2026-08-26.md"
+      partial_work: "Human evidence supplied a clean aggregate RunAllTests compile and exact MT5 output. IPLAN-05 executed 243/243 assertions with 0 failed and 0 skipped; the full aggregate executed 694/694 with 11 mapped skips outside IPLAN-04/05. RunAllTests.ex5 is fresh and fingerprinted."
+      blockers: "Aggregate compilation and execution are accepted as complete IPLAN-05 module evidence. Team audit quorum and human gate approvals remain absent."
+      next_session_directive: "Run fresh team audits, regenerate the CHG-22/23 gate reports, and request the required human approvals. No further MetaEditor or MT5 action is required for IPLAN-05 module closure."
+      validation_results:
+        tests_passing: "IPLAN-05 243/243 passed, 0 failed, 0 skipped; aggregate 694/694 passed, 0 failed, 11 mapped skips outside IPLAN-04/05."
+        coverage: "RunAllTests includes every Test_*.mq5 source exactly once and reaches all 158 actual Test_* case functions; exact aggregate evidence is recorded in CHG-22_human_evidence_2026-08-26.md."
+        lint_clean: true
+    - date: "2026-08-27"
+      agent: "Codex / IPLAN-04/05 team-audit reconciliation"
+      files_touched:
+        - "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.yaml"
+        - "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+        - "docs/08_IPLAN/IPLAN-00_index.yaml"
+      partial_work: "Fresh IPLAN team-audit quorum is complete. IPLAN-05 weighted score is 93.42/100 with no P0/P1; the remaining P2 advisories concern all-files inventory provenance and explicit downstream handoff/retention/benchmark documentation, not the verified module result."
+      blockers: "CHG-22 remains In Review pending final auditor adjudication of non-lifecycle MQL5 provenance placement and required human GATE-06/GATE-08/GATE-CODE approvals. No MQL5 source may change in this documentation-only run."
+      next_session_directive: "After CHG-22 reaches audit-ready state, regenerate gate reports and obtain the required human approvals; only then transition IPLAN-04/05 to Completed at the module boundary."
+      validation_results:
+        tests_passing: "Accepted aggregate evidence remains IPLAN-05 243/243 and aggregate 694/694; module failures/skips are zero and 11 aggregate skips are mapped outside IPLAN-04/05."
+        coverage: "IPLAN team audit: tech_lead=100, architect=86, operator=100, integration_lead=86, auditor=86, chaos_engineer=100; weighted=93.42, quorum met, zero P0/P1."
+        lint_clean: true
+    - date: "2026-08-27"
+      agent: "Codex / CHG-22 module-closure record"
+      files_touched:
+        - "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+        - "docs/08_IPLAN/IPLAN-00_index.yaml"
+        - "docs/governance/chg/CHG-22_iplan04_position_state_and_lease_implementation.yaml"
+      partial_work: "IPLAN-05 is completed at the CHG-22 module boundary. Accepted evidence is IPLAN-05 243/243 passed, 0 failed, 0 skipped; aggregate 694/694 passed with 11 mapped skips outside IPLAN-04/05. Audit quorum scored 93.42/100 with zero P0/P1; human GATE-06/GATE-08/GATE-CODE approval is confirmed."
+      blockers: "None for IPLAN-05 module closure. Production consumption and release rollout remain owned by IPLAN-01/02/03 and the final release gate."
+      next_session_directive: "Do not reopen IPLAN-05 for downstream integration work; record it in the owning IPLAN or release gate."
+      validation_results:
+        tests_passing: "IPLAN-05 243/243 passed, 0 failed, 0 skipped; aggregate 694/694 passed with 11 mapped non-module skips."
+        coverage: "Human-approved CHG-22 module closure; source remains frozen after accepted aggregate evidence."
+        lint_clean: true
 
 traceability:
+  provenance: ["@chg: CHG-22", "@chg: CHG-23"]
   upstream:
     spec_references: ["@spec: SPEC-05"]
     tdd_references: ["@tdd: TDD.05.04.e64a"]
@@ -309,10 +350,10 @@ traceability:
         status: delivered
       - path: "Include/Persistence/MarkerLease.mqh"
         exports: ["IMarkerBackend", "CTerminalMarkerBackend", "CMarkerLease"]
-        status: in_progress
+        status: delivered
       - path: "Include/Persistence/StateStore.mqh"
         exports: ["ENUM_POSITION_STATE", "ENUM_STORE_READ_RESULT", "ENUM_CANCEL_ORIGIN", "PendingOrderEvidence", "LifecycleSnapshot", "HaltEvidence", "IStateStore", "CStateStore"]
-        status: in_progress
+        status: delivered
       - path: "Include/Persistence/TradeLogger.mqh"
         exports: ["TradeEvidenceRecord", "TradeLogger"]
         status: delivered
@@ -321,7 +362,7 @@ traceability:
         status: delivered
       - path: "Include/Persistence/AlertSink.mqh"
         exports: ["IAlertSink", "CAlertSink"]
-        status: in_progress
+        status: delivered
       - path: "Scripts/Tests/Test_StateStore.mq5"
         exports: ["test_persistence_and_audit_evidence_unit_contract", "test_persistence_and_audit_evidence_0073_unit", "test_persistence_and_audit_evidence_d6ae_unit", "test_persistence_and_audit_evidence_e16a_unit", "test_persistence_and_audit_evidence_b37d_unit"]
         status: delivered
