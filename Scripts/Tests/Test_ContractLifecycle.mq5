@@ -190,7 +190,7 @@ bool Test_MarketContext_SessionGate(CAssert &a)
    ok &= a.TS_CHECK(w.market_open,
                     "broker session open → market_open=true");
 
-   g_contract_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0,
+   g_contract_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, 0,
                                      SYMBOL_TRADE_MODE_DISABLED);
    CMarketContext ctx_disabled;
    ok &= a.TS_CHECK(BuildContext(ctx_disabled, opt_ctx), "DISABLED: InitFromFixtures ok");
@@ -270,7 +270,7 @@ bool Test_MarketContext_OrderDefinitionValidation(CAssert &a)
    in_long.entry_window_end   = 0;
    in_long.sizing_mode       = SIZING_FIXED_LOT;
    in_long.signal_timeframe  = PERIOD_M1;
-   g_contract_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0,
+   g_contract_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, 0,
                                      SYMBOL_TRADE_MODE_LONGONLY);
    CMarketContext ctx_long;
    ok &= a.TS_CHECK(ctx_long.InitFromFixtures(g_contract_fake.Metadata(), in_long, &g_clock,

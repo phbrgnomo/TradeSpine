@@ -473,7 +473,7 @@ bool test_market_session_and_symbol_context_a399_e2e(CAssert &a)
   }
 
 /**
- * \brief BDD.01.03.d4a5 — Day trade session closes exposure.
+ * \brief BDD.01.03.d4a5 — Day trade session raises a close-required trigger.
  * \param a      Test assertion collector.
  * \return true when all assertions in this test pass.
  */
@@ -491,7 +491,7 @@ bool test_market_session_and_symbol_context_d4a5_integration(CAssert &a)
   }
 
 /**
- * \brief BDD.01.03.d4a5 — unit view (delegates to day-trade close assertions).
+ * \brief BDD.01.03.d4a5 — unit view (delegates to close-required trigger assertions).
  * \param a      Test assertion collector.
  * \return true when all assertions in this test pass.
  */
@@ -501,7 +501,7 @@ bool test_market_session_and_symbol_context_d4a5_unit(CAssert &a)
   }
 
 /**
- * \brief BDD.01.03.d4a5 — e2e view (delegates to day-trade close assertions).
+ * \brief BDD.01.03.d4a5 — deferred e2e view; delegates only to close-required trigger assertions.
  * \param a      Test assertion collector.
  * \return true when all assertions in this test pass.
  */

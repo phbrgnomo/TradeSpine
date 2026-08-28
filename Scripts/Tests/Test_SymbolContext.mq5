@@ -8,6 +8,7 @@
 //| Tier-1 unit tests for CSymbolContext and SymbolMetadata:         |
 //|   - Valid fixture init via InitFromMetadata.                     |
 //|   - Invalid metadata (tick_size=0) rejection.                   |
+//|   - Failed fixture re-init cannot retain prior valid metadata.   |
 //|   - Trade-mode side-aware entry permission checks.              |
 //|   - Lot validation: min, max, step grid, valid.                 |
 //|   - Price validation: zero, off-grid, on-grid.                  |
@@ -49,12 +50,14 @@ bool Test_SymbolContext_ValidMetadata(CAssert &a)
    SymbolMetadata m = ctx.Metadata();
    ok &= a.TS_CHECK_EQ_D(m.tick_size,  5.0,  0.0, "tick_size read-back");
    ok &= a.TS_CHECK_EQ_D(m.tick_value, 1.0,  0.0, "tick_value read-back");
+   ok &= a.TS_CHECK_EQ_D(m.contract_size, 1.0, 0.0, "contract_size read-back");
    ok &= a.TS_CHECK_EQ_D(m.point,      1.0,  0.0, "point read-back");
    ok &= a.TS_CHECK_EQ_D(m.lot_step,   1.0,  0.0, "lot_step read-back");
    ok &= a.TS_CHECK_EQ_D(m.lot_min,    1.0,  0.0, "lot_min read-back");
    ok &= a.TS_CHECK_EQ_D(m.lot_max,  900.0,  0.0, "lot_max read-back");
    ok &= a.TS_CHECK(m.digits       == 0,            "digits read-back");
    ok &= a.TS_CHECK(m.stops_level  == 0,            "stops_level read-back");
+   ok &= a.TS_CHECK(m.freeze_level == 0,            "freeze_level read-back");
    ok &= a.TS_CHECK(m.trade_mode   == SYMBOL_TRADE_MODE_FULL, "trade_mode read-back");
    return(ok);
   }
@@ -79,6 +82,27 @@ bool Test_SymbolContext_MissingTickSize(CAssert &a)
   }
 
 /**
+ * \brief A failed fixture re-initialization cannot retain the prior valid snapshot.
+ * \param a  Test assertion collector.
+ * \return true when the context is uninitialized and exposes the invalid fixture, not stale data.
+ */
+bool Test_SymbolContext_InvalidReinitDoesNotRetainMetadata(CAssert &a)
+  {
+   bool ok = true;
+   SetupB3();
+   CSymbolContext ctx;
+   ok &= a.TS_CHECK(ctx.InitFromMetadata(g_fake.Metadata()), "valid fixture: initial init succeeds");
+
+   g_fake.SetAsInvalidSymbol();
+   ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "invalid fixture: re-init fails");
+   ok &= a.TS_CHECK(!ctx.IsInitialized(), "failed re-init: context is uninitialized");
+   SymbolMetadata meta = ctx.Metadata();
+   ok &= a.TS_CHECK_EQ_D(meta.tick_size, 0.0, 0.0,
+                          "failed re-init: stale tick_size is not retained");
+   return(ok);
+  }
+
+/**
  * \brief Each individually-required metadata field rejects on invalid value.
  * \param a      Test assertion collector.
  * \return true when all assertions in this test pass.
@@ -89,43 +113,54 @@ bool Test_SymbolContext_InvalidMetadataFields(CAssert &a)
    CSymbolContext ctx;
 
    // tick_value <= 0
-   g_fake.ConfigureMetadata(5.0, 0.0, 1.0, 1.0, 1.0, 900.0, 0, 0, SYMBOL_TRADE_MODE_FULL);
+   g_fake.ConfigureMetadata(5.0, 0.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_FULL);
    ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "tick_value=0: rejected");
 
    // lot_min <= 0
-   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 0.0, 900.0, 0, 0, SYMBOL_TRADE_MODE_FULL);
+   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 0.0, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_FULL);
    ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "lot_min=0: rejected");
 
    // lot_max < lot_min
-   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 5.0, 1.0, 0, 0, SYMBOL_TRADE_MODE_FULL);
+   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 5.0, 1.0, 0, 0, 0, SYMBOL_TRADE_MODE_FULL);
    ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "lot_max < lot_min: rejected");
 
    // digits < 0
-   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 900.0, -1, 0, SYMBOL_TRADE_MODE_FULL);
+   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 1.0, 900.0, -1, 0, 0, SYMBOL_TRADE_MODE_FULL);
    ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "digits<0: rejected");
 
    // stops_level < 0
-   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, -1, SYMBOL_TRADE_MODE_FULL);
+   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, -1, 0, SYMBOL_TRADE_MODE_FULL);
    ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "stops_level<0: rejected");
 
    // unknown trade_mode cast
-   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, (ENUM_SYMBOL_TRADE_MODE)999);
+   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, 0, (ENUM_SYMBOL_TRADE_MODE)999);
    ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "unknown trade_mode: rejected");
 
    // Non-finite (NaN/+Inf) fields: without SafeMath::IsFinite guards the comparison
    // `<= 0.0` returns false for NaN, silently passing bad metadata through.
    double nan_val = MathLog(-1.0);      // MQL5: log of negative → NaN
    double inf_val = MathPow(2.0, 1024); // exceeds max double exponent → +Inf
-   g_fake.ConfigureMetadata(nan_val, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, SYMBOL_TRADE_MODE_FULL);
+   g_fake.ConfigureMetadata(nan_val, 1.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_FULL);
    ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "NaN tick_size: rejected");
-   g_fake.ConfigureMetadata(inf_val, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, SYMBOL_TRADE_MODE_FULL);
+   g_fake.ConfigureMetadata(inf_val, 1.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_FULL);
    ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "+Inf tick_size: rejected");
-   g_fake.ConfigureMetadata(5.0, nan_val, 1.0, 1.0, 1.0, 900.0, 0, 0, SYMBOL_TRADE_MODE_FULL);
+   g_fake.ConfigureMetadata(5.0, nan_val, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_FULL);
    ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "NaN tick_value: rejected");
-   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, nan_val, 900.0, 0, 0, SYMBOL_TRADE_MODE_FULL);
+   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, nan_val, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_FULL);
    ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "NaN lot_min: rejected");
-   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, inf_val, 0, 0, SYMBOL_TRADE_MODE_FULL);
+   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 1.0, inf_val, 0, 0, 0, SYMBOL_TRADE_MODE_FULL);
    ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "+Inf lot_max: rejected");
+
+   g_fake.ConfigureMetadata(5.0, 1.0, 0.0, 1.0, 1.0, 1.0, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_FULL);
+   ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "contract_size=0: rejected");
+   g_fake.ConfigureMetadata(5.0, 1.0, -1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_FULL);
+   ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "contract_size<0: rejected");
+   g_fake.ConfigureMetadata(5.0, 1.0, nan_val, 1.0, 1.0, 1.0, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_FULL);
+   ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "NaN contract_size: rejected");
+   g_fake.ConfigureMetadata(5.0, 1.0, inf_val, 1.0, 1.0, 1.0, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_FULL);
+   ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "+Inf contract_size: rejected");
+   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, -1, SYMBOL_TRADE_MODE_FULL);
+   ok &= a.TS_CHECK(!ctx.InitFromMetadata(g_fake.Metadata()), "freeze_level<0: rejected");
 
    return(ok);
   }
@@ -155,7 +190,7 @@ bool Test_SymbolContext_TradeMode_Disabled(CAssert &a)
    bool ok = true;
    // DISABLED is structurally valid metadata (tick_size/lot/point are fine);
    // ValidateMetadata only checks geometric fields, not trade_mode.
-   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, SYMBOL_TRADE_MODE_DISABLED);
+   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_DISABLED);
    CSymbolContext ctx;
    ok &= a.TS_CHECK(ctx.InitFromMetadata(g_fake.Metadata()),
                     "DISABLED: InitFromMetadata succeeds (geometry is valid)");
@@ -183,21 +218,21 @@ bool Test_SymbolContext_TradeMode_SideAware(CAssert &a)
 
    // LONGONLY: buy only
    CSymbolContext ctx_long;
-   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, SYMBOL_TRADE_MODE_LONGONLY);
+   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_LONGONLY);
    ok &= a.TS_CHECK(ctx_long.InitFromMetadata(g_fake.Metadata()), "LONGONLY: Init ok");
    ok &= a.TS_CHECK(ctx_long.IsEntryAllowedLive(ORDER_TYPE_BUY),        "LONGONLY: BUY allowed");
    ok &= a.TS_CHECK(!ctx_long.IsEntryAllowedLive(ORDER_TYPE_SELL),      "LONGONLY: SELL rejected");
 
    // SHORTONLY: sell only
    CSymbolContext ctx_short;
-   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, SYMBOL_TRADE_MODE_SHORTONLY);
+   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_SHORTONLY);
    ok &= a.TS_CHECK(ctx_short.InitFromMetadata(g_fake.Metadata()), "SHORTONLY: Init ok");
    ok &= a.TS_CHECK(!ctx_short.IsEntryAllowedLive(ORDER_TYPE_BUY),       "SHORTONLY: BUY rejected");
    ok &= a.TS_CHECK(ctx_short.IsEntryAllowedLive(ORDER_TYPE_SELL),       "SHORTONLY: SELL allowed");
 
    // CLOSEONLY: no new entries
    CSymbolContext ctx_close;
-   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, SYMBOL_TRADE_MODE_CLOSEONLY);
+   g_fake.ConfigureMetadata(5.0, 1.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 0, 0, SYMBOL_TRADE_MODE_CLOSEONLY);
    ok &= a.TS_CHECK(ctx_close.InitFromMetadata(g_fake.Metadata()), "CLOSEONLY: Init ok");
    ok &= a.TS_CHECK(!ctx_close.IsEntryAllowedLive(ORDER_TYPE_BUY),       "CLOSEONLY: BUY rejected");
    ok &= a.TS_CHECK(!ctx_close.IsEntryAllowedLive(ORDER_TYPE_SELL),      "CLOSEONLY: SELL rejected");
@@ -271,7 +306,7 @@ bool Test_SymbolContext_PriceGridValidation(CAssert &a)
   {
    bool ok = true;
    // Use a Forex-like fixture for easier grid testing: tick_size=0.00001, point=0.00001
-   g_fake.ConfigureMetadata(0.00001, 10.0, 0.00001, 0.01, 0.01, 100.0, 5, 0,
+   g_fake.ConfigureMetadata(0.00001, 10.0, 1.0, 0.00001, 0.01, 0.01, 100.0, 5, 0, 0,
                              SYMBOL_TRADE_MODE_FULL);
    CSymbolContext ctx;
    ok &= a.TS_CHECK(ctx.InitFromMetadata(g_fake.Metadata()), "PriceGrid: Init ok");
@@ -322,7 +357,7 @@ bool Test_SymbolContext_StopValidation(CAssert &a)
   {
    bool ok = true;
    // Use a fixture with stops_level=100 points, point=0.00001
-   g_fake.ConfigureMetadata(0.00001, 10.0, 0.00001, 0.01, 0.01, 100.0, 5, 100,
+   g_fake.ConfigureMetadata(0.00001, 10.0, 1.0, 0.00001, 0.01, 0.01, 100.0, 5, 100, 0,
                              SYMBOL_TRADE_MODE_FULL);
    CSymbolContext ctx;
    ok &= a.TS_CHECK(ctx.InitFromMetadata(g_fake.Metadata()), "StopValidation: Init ok");
@@ -368,7 +403,7 @@ bool Test_SymbolContext_StopValidation(CAssert &a)
 
    // Fractional-point distance: 97.5 raw points rounds to 98 under MathRound, which
    // would pass a stops_level=98 threshold — a bug. Raw comparison catches it.
-   g_fake.ConfigureMetadata(1.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 98,
+   g_fake.ConfigureMetadata(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 900.0, 0, 98, 0,
                              SYMBOL_TRADE_MODE_FULL);
    CSymbolContext ctx_frac;
    ok &= a.TS_CHECK(ctx_frac.InitFromMetadata(g_fake.Metadata()), "StopFrac: Init ok");
@@ -409,6 +444,7 @@ bool test_market_session_and_symbol_context_unit_contract(CAssert &a)
    bool ok = true;
    ok &= Test_SymbolContext_ValidMetadata(a);
    ok &= Test_SymbolContext_MissingTickSize(a);
+   ok &= Test_SymbolContext_InvalidReinitDoesNotRetainMetadata(a);
    ok &= Test_SymbolContext_InvalidMetadataFields(a);
    ok &= Test_SymbolContext_TradeMode_Uninitialized(a);
    ok &= Test_SymbolContext_TradeMode_Disabled(a);
@@ -483,39 +519,6 @@ bool test_market_session_and_symbol_context_4dcb_e2e(CAssert &a)
    return(Test_SymbolContext_TradeMode_SideAware(a));
   }
 
-/**
- * \brief BDD.01.03.e593 — Sizing modes use initialized symbol data.
- * \param a      Test assertion collector.
- * \return true when all assertions in this test pass.
- */
-bool test_market_session_and_symbol_context_e593_unit(CAssert &a)
-  {
-   bool ok = true;
-   ok &= Test_SymbolContext_LotValidation(a);
-   ok &= Test_SymbolContext_PriceGridValidation(a);
-   return(ok);
-  }
-
-/**
- * \brief BDD.01.03.e593 — integration view (delegates to unit assertions).
- * \param a      Test assertion collector.
- * \return true when all assertions in this test pass.
- */
-bool test_market_session_and_symbol_context_e593_integration(CAssert &a)
-  {
-   return(test_market_session_and_symbol_context_e593_unit(a));
-  }
-
-/**
- * \brief BDD.01.03.e593 — e2e view (delegates to unit assertions).
- * \param a      Test assertion collector.
- * \return true when all assertions in this test pass.
- */
-bool test_market_session_and_symbol_context_e593_e2e(CAssert &a)
-  {
-   return(test_market_session_and_symbol_context_e593_unit(a));
-  }
-
 //+------------------------------------------------------------------+
 //| Script entry point.                                              |
 //| Returns 0=all pass, 1=any failure, 2=pass but skips present.   |
@@ -528,6 +531,7 @@ int OnStart()
    Print("== Test_SymbolContext ==");
    Test_SymbolContext_ValidMetadata(asserts);
    Test_SymbolContext_MissingTickSize(asserts);
+   Test_SymbolContext_InvalidReinitDoesNotRetainMetadata(asserts);
    Test_SymbolContext_InvalidMetadataFields(asserts);
    Test_SymbolContext_TradeMode_Uninitialized(asserts);
    Test_SymbolContext_TradeMode_Disabled(asserts);

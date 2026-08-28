@@ -92,8 +92,8 @@ or Coordination. Loads immutable symbol metadata once at init; evaluates broker 
 user trading-hours, and day-trade close gates per-tick; validates order definitions before
 submission; and detects futures contract-expiration warnings.
 
-- `CSymbolContext` — loads `SymbolMetadata` from the broker (production) or from a fixture
-  struct (tests). All lot/price/stop validators use the cached snapshot — no live broker calls on tick.
+- `CSymbolContext` — maps static broker metadata from vendored `CSymbolInfo` (production) or a fixture
+  struct (tests) into `SymbolMetadata`. All lot/price/stop validators use the cached snapshot — no live broker calls on tick.
   `ValidatePrice()` uses cached `tick_size`/`digits` so tests are deterministic without a live symbol.
 - `CSessionContext` — pure time-gate over `IClock` + `CommonInputs`. Produces a `SessionWindow`
   with three boolean flags: `market_open`, `user_trading_hours_open`, `day_trade_close_required`.

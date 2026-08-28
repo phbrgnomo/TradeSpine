@@ -7,14 +7,14 @@ id: SPEC-02
 title: Trade Coordination Pipeline
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-21T00:00:00-03:00"
+last_updated: "2026-08-28T00:00:00-03:00"
 
 ## Section 1: Document Control
 document_control:
   status: Draft
   version: "1.2"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-21T00:00:00-03:00"
+  last_updated: "2026-08-28T00:00:00-03:00"
   author: "Codex"
   component: "CTradeCoordinator, Signal, TradeIntent"
   tdd_ready_score: "94/100"
@@ -42,6 +42,9 @@ component_overview:
     - name: "IStopPolicy"
       version: "v1"
       purpose: "Computes initial SL/TP when the helper did not supply explicit levels."
+    - name: "PolicyTypes::StopLevels"
+      version: "v1"
+      purpose: "IPLAN-07-owned initial SL/TP and risk-distance result consumed by TradeIntent; it is not declared in Signal.mqh."
     - name: "ITradePort"
       version: "v1"
       purpose: "Submits TradeIntent to guarded execution or mocks."
@@ -132,7 +135,7 @@ data_models:
         - name: "stops"
           type: "StopLevels"
           required: true
-          description: "Resolved initial SL/TP and risk distance."
+          description: "Resolved initial SL/TP and risk distance supplied by Include/Strategy/PolicyTypes.mqh (IPLAN-07 owner)."
         - name: "lots_requested"
           type: "double"
           required: true
@@ -229,7 +232,7 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
-  tags: ["@spec: SPEC-02", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.eaf3", "@ears: EARS.01.03.b784", "@bdd: BDD.01.03.0073", "@adr: ADR.09.03.84b9", "@chg: CHG-21"]
+  tags: ["@spec: SPEC-02", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.eaf3", "@ears: EARS.01.03.b784", "@bdd: BDD.01.03.0073", "@adr: ADR.09.03.84b9", "@chg: CHG-21", "@chg: CHG-25"]
   upstream:
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.08.03.0a8f", "@adr: ADR.09.03.84b9"]
     bdd_references: ["@bdd: BDD.01.03.0073", "@bdd: BDD.01.03.c0f6", "@bdd: BDD.01.03.e16a", "@bdd: BDD.01.03.9a8b"]

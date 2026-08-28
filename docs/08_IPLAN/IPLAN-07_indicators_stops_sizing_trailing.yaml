@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-07"
   source_tdd: "@tdd: TDD.07.04.a6d8"
   total_sections: 6
-  last_updated: "2026-08-27T00:00:00-03:00"
+  last_updated: "2026-08-28T19:45:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
@@ -16,13 +16,13 @@ document_control:
   source_tdd: "@tdd: TDD.07.04.a6d8"
   subtype: code_build
   status: Draft
-  version: "1.1"
+  version: "1.3"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-08-27T00:00:00-03:00"
+  last_updated: "2026-08-28T19:45:00-03:00"
   author: "Codex"
   component: "IIndicator, stop, sizing, and trailing policy modules"
   complexity: 5
-  estimated_files: 8
+  estimated_files: 18
   session_count: 0
   readiness_gate: "TDD-07 audit PASS 94/100"
   source_inputs:
@@ -62,50 +62,112 @@ file_manifest:
       status: NOT_STARTED
       session: null
       verified: false
-      purpose: "IndATR, IndMA, IndDonchian, and IndSupertrend wrappers."
-    - path: "Include/Strategy/Stops/StopPolicies.mqh"
+      purpose: "Native MQL5 ATR and moving-average indicator-handle adapters."
+    - path: "Include/Indicators/Custom/IndDonchian.mqh"
       order: 6
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Custom Donchian indicator adapter."
+    - path: "Include/Indicators/Custom/IndSupertrend.mqh"
+      order: 7
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Custom Supertrend indicator adapter."
+    - path: "Include/Indicators/Indicators.mqh"
+      order: 8
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Single public include facade for the generic interface, native adapters, and custom adapters."
+    - path: "Include/Strategy/PolicyTypes.mqh"
+      order: 9
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "IPLAN-07-owned policy request/result types and account-value seam."
+    - path: "Include/Strategy/Stops/StopPolicies.mqh"
+      order: 10
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "IStopPolicy, CStopATR, CStopFixed, and CStopSwing."
     - path: "Include/Strategy/Sizing/Sizers.mqh"
-      order: 7
+      order: 11
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "IPositionSizer, futures risk-percent sizing, fixed lot, and v2 placeholders."
     - path: "Include/Strategy/Trailing/TrailingStops.mqh"
-      order: 8
+      order: 12
       status: NOT_STARTED
       session: null
       verified: false
       purpose: "ITrailingStop, ATR multiple, and breakeven tighten-only policies."
+    - path: "Scripts/Tests/Support/FakeIndicatorRuntime.mqh"
+      order: 13
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Deterministic native-indicator handle, bars, copy, and release fake."
+    - path: "Scripts/Tests/Support/FakeAccountValueProvider.mqh"
+      order: 14
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Deterministic account-equity fake for risk-percent sizing."
+    - path: "Docs/MODULES/IndicatorsStopsSizingTrailing.md"
+      order: 15
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Implemented public IPLAN-07 module reference; no planned placeholder content."
+    - path: "Scripts/Tests/RunAllTests.mq5"
+      order: 16
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Aggregate reachability update for the three IPLAN-07 test suites."
+    - path: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      order: 17
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Registry count, status, traceability, and CHG-25 handoff update after IPLAN-07 implementation."
+    - path: "docs/08_IPLAN/IPLAN-07_indicators_stops_sizing_trailing.readable.md"
+      order: 18
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Generated readable mirror of this canonical IPLAN; regenerate through aidoc-flow after canonical updates."
 
 execution_commands:
   cwd: "MQL5/Experts/Main/TradeSpine"
   setup:
-    - "mkdir -p Include/Indicators Include/Strategy/Stops Include/Strategy/Sizing Include/Strategy/Trailing Scripts/Tests"
+    - "mkdir -p Include/Indicators/Custom Include/Strategy/Stops Include/Strategy/Sizing Include/Strategy/Trailing Scripts/Tests/Support"
   implementation:
-    - "# Pre-flight: reuse @iplan: IPLAN-06 FakeMarketContext/CSymbolContext metadata for sizing and stop-policy tests; create a local FakeSymbolContext facade only if a consumer interface cannot use the @iplan: IPLAN-06 fixture directly."
+    - "# Pre-flight: reuse @iplan: IPLAN-06 FakeMarketContext/CSymbolContext metadata; add IPLAN-07-owned indicator-runtime and account-value fakes."
     - "# Write TDD-07 tests first, then implement indicator wrappers, stop policies, sizers, and trailing policies."
-    - "# Keep indicator readiness strategy-owned and make v2 equity sizing placeholders visibly reject in v1."
+    - "# Keep indicator readiness strategy-owned, proposals broker-pure, and v2 equity sizing placeholders visibly rejected in v1."
   validation:
-    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_Indicators.mq5"
-    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_Sizers.mq5"
-    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_StopsAndTrailing.mq5"
+    - "Manual MetaEditor F7: Scripts/Tests/Test_Indicators.mq5"
+    - "Manual MetaEditor F7: Scripts/Tests/Test_Sizers.mq5"
+    - "Manual MetaEditor F7: Scripts/Tests/Test_StopsAndTrailing.mq5"
+    - "Manual MetaEditor F7: Scripts/Tests/RunAllTests.mq5"
+    - "aidoc-flow: regenerate affected readable mirrors after each canonical documentation update."
 
 implementation_contracts:
   provided:
     contracts:
       - name: "Pluggable behavior interfaces"
         type: "Protocol Interface"
-        files: ["Include/Indicators/IndicatorBase.mqh", "Include/Strategy/Stops/StopPolicies.mqh", "Include/Strategy/Sizing/Sizers.mqh", "Include/Strategy/Trailing/TrailingStops.mqh"]
+        files: ["Include/Indicators/IndicatorBase.mqh", "Include/Indicators/Indicators.mqh", "Include/Strategy/PolicyTypes.mqh", "Include/Strategy/Stops/StopPolicies.mqh", "Include/Strategy/Sizing/Sizers.mqh", "Include/Strategy/Trailing/TrailingStops.mqh"]
         summary: "Strategies compose indicators, stop policies, sizers, and trailing policies as swappable members."
       - name: "Sizing and stop data contract"
         type: "Data Model"
-        files: ["Include/Strategy/Stops/StopPolicies.mqh", "Include/Strategy/Sizing/Sizers.mqh"]
-        summary: "StopLevels and SizingRequest preserve executable stop distance and broker-normalized lot behavior."
+        files: ["Include/Strategy/PolicyTypes.mqh", "Include/Strategy/Stops/StopPolicies.mqh", "Include/Strategy/Sizing/Sizers.mqh"]
+        summary: "Policy requests remain independent of IPLAN-02 Signal; StopLevels preserves executable stop distance and SizingRequest preserves broker-normalized lot behavior."
   consumed:
     dependencies:
       - "@iplan: IPLAN-06"
@@ -118,25 +180,25 @@ session_handoff:
       agent: "Codex IPLAN autopilot"
       files_touched: []
       partial_work: "No implementation started; this seed session only created the execution plan."
-      blockers: "Requires @iplan: IPLAN-06 market symbol metadata, runtime helpers, and test support; use existing FakeMarketContext/CSymbolContext metadata before adding any local symbol facade."
-      next_session_directive: "Start with Scripts/Tests/Test_Indicators.mq5 and implement IndicatorBase readiness semantics; for sizing/stops, bind to @iplan: IPLAN-06 metadata fixtures and add a local FakeSymbolContext only if the interface boundary requires it."
+      blockers: "None for implementation start: CHG-25 GATE-06/GATE-08/GATE-CODE were approved by explicit user authorization. IPLAN-07 remains Draft until implementation is separately instructed."
+      next_session_directive: "On a separate implementation instruction, start with the IPLAN-07 test files and contract fakes; use PolicyTypes.mqh for requests/results, never IPLAN-02 Signal. On implementation completion, update manifest entries 17-18 through the IPLAN registry and the directly authorized readable companion."
       validation_results:
         tests_passing: null
         coverage: null
         lint_clean: null
 
 traceability:
-  provenance: ["@chg: CHG-23"]
+  provenance: ["@chg: CHG-23", "@chg: CHG-25"]
   upstream:
     spec_references: ["@spec: SPEC-07"]
     tdd_references: ["@tdd: TDD.07.04.a6d8"]
     brd_references: ["@brd: BRD.01.07.69ef", "@brd: BRD.01.07.88a6"]
     prd_references: ["@prd: PRD.01.09.5963", "@prd: PRD.01.09.60ad", "@prd: PRD.01.09.eaf3"]
     ears_references: ["@ears: EARS.01.03.4e80", "@ears: EARS.01.03.5e92", "@ears: EARS.01.03.bc8b", "@ears: EARS.01.03.932d", "@ears: EARS.01.03.ec72"]
-    bdd_references: ["@bdd: BDD.01.03.c0f6", "@bdd: BDD.01.03.e593", "@bdd: BDD.01.03.cb03", "@bdd: BDD.01.03.aa68"]
+    bdd_references: ["@bdd: BDD.01.03.c0f6", "@bdd: BDD.01.03.e593", "@bdd: BDD.01.03.cb03"]
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.09.03.84b9", "@adr: ADR.10.03.51ea"]
   downstream:
-    code_paths: ["@code: Include/Indicators/IndicatorBase.mqh", "@code: Include/Indicators/NativeIndicators.mqh", "@code: Include/Strategy/Stops/StopPolicies.mqh", "@code: Include/Strategy/Sizing/Sizers.mqh", "@code: Include/Strategy/Trailing/TrailingStops.mqh"]
+    code_paths: ["@code: Include/Indicators/IndicatorBase.mqh", "@code: Include/Indicators/NativeIndicators.mqh", "@code: Include/Indicators/Custom/IndDonchian.mqh", "@code: Include/Indicators/Custom/IndSupertrend.mqh", "@code: Include/Indicators/Indicators.mqh", "@code: Include/Strategy/PolicyTypes.mqh", "@code: Include/Strategy/Stops/StopPolicies.mqh", "@code: Include/Strategy/Sizing/Sizers.mqh", "@code: Include/Strategy/Trailing/TrailingStops.mqh"]
     test_paths: ["@tests: Scripts/Tests/Test_Indicators.mq5", "@tests: Scripts/Tests/Test_Sizers.mq5", "@tests: Scripts/Tests/Test_StopsAndTrailing.mq5"]
   code_inventory:
     files: []

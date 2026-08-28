@@ -7,14 +7,14 @@ id: SPEC-06
 title: Market Session and Symbol Context
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-19T00:00:00-03:00"
+last_updated: "2026-08-28T19:30:00-03:00"
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.2"
+  version: "1.5"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-21T00:00:00-03:00"
+  last_updated: "2026-08-28T19:30:00-03:00"
   author: "Codex"
   component: "CSymbolContext, CSessionContext, CMarketContext"
   tdd_ready_score: "92/100"
@@ -31,13 +31,14 @@ component_overview:
         Market --> Symbol["CSymbolContext"]
         Market --> Session["CSessionContext"]
         Symbol --> StdLib["Vendored CSymbolInfo"]
+        StdLib --> Terminal["MT5 symbol-property API"]
         Session --> BrokerClock["TimeCurrent broker time"]
         Market --> Guard["CGuardedTrade gates"]
   language: "MQL5"
   dependencies:
     - name: "Vendored CSymbolInfo"
-      version: "frozen StdLib VERSION.md"
-      purpose: "Loads tick, lot, digits, trade mode, and session metadata."
+      version: "pinned MQL5 Standard Library"
+      purpose: "Single adapter for one-time static tick, contract, lot, digits, stop/freeze, and trade-mode metadata loading into SymbolMetadata."
     - name: "TimeCurrent"
       version: "MT5 runtime"
       purpose: "Authoritative broker/server time for sessions."
@@ -99,7 +100,23 @@ data_models:
         - name: "tick_value"
           type: "double"
           required: true
-          description: "Broker tick-value metadata."
+          description: "Broker tick-value metadata (SYMBOL_TRADE_TICK_VALUE)."
+        - name: "contract_size"
+          type: "double"
+          required: true
+          description: "Broker contract size (SYMBOL_TRADE_CONTRACT_SIZE)."
+        - name: "point"
+          type: "double"
+          required: true
+          description: "Broker point size used for stop-distance conversion."
+        - name: "lot_min"
+          type: "double"
+          required: true
+          description: "Broker minimum volume."
+        - name: "lot_max"
+          type: "double"
+          required: true
+          description: "Broker maximum volume."
         - name: "lot_step"
           type: "double"
           required: true
@@ -111,7 +128,15 @@ data_models:
         - name: "trade_mode"
           type: "ENUM_SYMBOL_TRADE_MODE"
           required: true
-          description: "Broker trade mode."
+          description: "Initialization snapshot of broker trade mode; live entry permission re-reads the dynamic terminal value."
+        - name: "stops_level"
+          type: "int"
+          required: true
+          description: "Minimum stop distance in points (SYMBOL_TRADE_STOPS_LEVEL)."
+        - name: "freeze_level"
+          type: "int"
+          required: true
+          description: "Modification freeze distance in points (SYMBOL_TRADE_FREEZE_LEVEL)."
     - name: "SessionWindow"
       type: "struct"
       fields:
@@ -135,6 +160,8 @@ behavior:
       source: "@ears: EARS.01.03.03b2"
     - rule: "Order definitions SHALL validate sizing, lots, stop prices, and price grid against initialized symbol information."
       source: "@ears: EARS.01.03.ec72"
+    - rule: "Symbol metadata SHALL require finite positive tick_size, tick_value, contract size, point, lot step, and lot bounds; stops_level and freeze_level SHALL be non-negative point counts."
+      source: "@chg: CHG-25"
     - rule: "Entries SHALL require both market trade session and user-defined strategy trading-hours window."
       source: "@ears: EARS.01.03.1a3e"
     - id: "VR-CLOSE-REF-06"
@@ -175,7 +202,8 @@ implementation_notes:
     - "v1 simplification (@chg: CHG-21): MarketSessionEndTod uses the regular (first / index-0) trade session only; after-hours sessions are excluded. Brokers that split the regular session across multiple indices before after-hours would need refinement. Consistent with the existing midnight-crossing-out-of-scope simplification."
     - "v1 limitation (@chg: CHG-21, verified on B3 WINQ26 2026-06-21): some B3 brokers do not configure real session hours and report a full-day window (00:00-24:00) for index 0. MarketSessionEndTod treats to >= 86400 as a sentinel and returns -1 (close trigger falls back to entry_window_end). A side effect is that IsMarketSessionOpen always returns true for such symbols (the [0,86400) window covers all times), effectively disabling the market_open gate; this is a broker-configuration limitation, not a framework defect. For B3, CLOSE_REF_USER_WINDOW_END is the recommended close reference."
   patterns:
-    - "Load symbol metadata once during init and expose immutable reads to sizing and guard components."
+    - "CSymbolContext SHALL use vendored CSymbolInfo as the sole adapter for one-time static metadata loading, map its typed accessors once into SymbolMetadata, validate the snapshot, and expose immutable reads to sizing and guard components."
+    - "A live SYMBOL_TRADE_MODE read is permitted only for entry permission because the broker restriction can change intraday; it SHALL NOT become a second static metadata loader."
     - "Keep session entry gates separate from forced exit and emergency close paths."
   performance_considerations:
     - "Session and symbol checks must avoid heavy history or file I/O on idle ticks."
@@ -185,7 +213,9 @@ tdd_contracts:
   tdd_document: "@tdd: TDD.06.04.8f4d"
   test_files:
     - path: "Scripts/Tests/Test_SymbolContext.mq5"
-      covers: "Required metadata loading, invalid metadata init failure, lot/price-grid validation."
+      covers: "Deterministic fixture validation, invalid fixture re-initialization without stale data, and lot/price-grid validation."
+    - path: "Scripts/Tests/Test_SymbolContextLive.mq5"
+      covers: "Manual Tier-1.5 production initialization through vendored CSymbolInfo on the chart or explicitly supplied broker symbol; excluded from RunAllTests because it is environment-dependent."
     - path: "Scripts/Tests/Test_SessionContext.mq5"
       covers: "Market session, user trading-hours gate, and day-trade close trigger."
     - path: "Scripts/Tests/Test_ContractLifecycle.mq5"
@@ -193,7 +223,7 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
-  tags: ["@spec: SPEC-06", "@brd: BRD.01.07.69ef", "@prd: PRD.01.09.fada", "@ears: EARS.01.03.03b2", "@bdd: BDD.01.03.edae", "@adr: ADR.10.03.51ea", "@chg: CHG-19", "@chg: CHG-21"]
+  tags: ["@spec: SPEC-06", "@brd: BRD.01.07.69ef", "@prd: PRD.01.09.fada", "@ears: EARS.01.03.03b2", "@bdd: BDD.01.03.edae", "@adr: ADR.10.03.51ea", "@chg: CHG-19", "@chg: CHG-21", "@chg: CHG-25"]
   upstream:
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.10.03.51ea"]
     bdd_references: ["@bdd: BDD.01.03.edae", "@bdd: BDD.01.03.a399", "@bdd: BDD.01.03.d4a5", "@bdd: BDD.01.03.4dcb", "@bdd: BDD.01.03.4a71", "@bdd: BDD.01.03.e593"]

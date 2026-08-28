@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-06"
   source_tdd: "@tdd: TDD.06.04.8f4d"
   total_sections: 6
-  last_updated: "2026-08-27T00:00:00-03:00"
+  last_updated: "2026-08-28T19:45:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
@@ -16,13 +16,13 @@ document_control:
   source_spec: "@spec: SPEC-06"
   source_tdd: "@tdd: TDD.06.04.8f4d"
   status: Completed
-  version: "1.4"
+  version: "1.8"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-08-27T00:00:00-03:00"
+  last_updated: "2026-08-28T19:45:00-03:00"
   author: "Codex"
   component: "CSymbolContext, CSessionContext, CMarketContext"
   complexity: 4
-  estimated_files: 10
+  estimated_files: 11
   session_count: 4
   readiness_gate: "TDD-06 audit PASS 93/100"
   source_inputs:
@@ -40,7 +40,7 @@ file_manifest:
       status: DONE
       session: 1
       verified: true
-      purpose: "Required metadata loading, invalid metadata failure, and lot/price-grid validation tests."
+      purpose: "Required metadata loading, invalid metadata failure, tick value, contract size, freeze level, and lot/price-grid validation tests."
     - path: "Scripts/Tests/Test_SessionContext.mq5"
       order: 2
       status: DONE
@@ -58,13 +58,13 @@ file_manifest:
       status: DONE
       session: 1
       verified: true
-      purpose: "Reusable IPLAN-06 owner-extension fake surface for deterministic symbol metadata, session windows, and contract lifecycle fixtures. Implements IContractInfoProvider."
+      purpose: "Reusable IPLAN-06 owner-extension fake surface for deterministic complete symbol metadata, session windows, and contract lifecycle fixtures. Implements IContractInfoProvider."
     - path: "Include/Market/SymbolContext.mqh"
       order: 5
       status: DONE
       session: 1
       verified: true
-      purpose: "Vendored CSymbolInfo wrapper and immutable symbol metadata reads."
+      purpose: "Vendored CSymbolInfo static metadata loading and immutable caching including tick value, contract size, stops level, and freeze level; the live trade-mode read remains a dynamic exception."
     - path: "Include/Market/SessionContext.mqh"
       order: 6
       status: DONE
@@ -78,23 +78,29 @@ file_manifest:
       verified: true
       purpose: "Symbol, session, and contract lifecycle context facade. Defines live provider adapters and CMarketContext with two init paths. CHG-21: TradeIntent moved out to Include/Core/TradeTypes.mqh (now included); CLiveMarketSessionProvider::MarketSessionEndTod returns the regular (first/index-0) session end (after-hours excluded)."
     - path: "Include/Core/TradeTypes.mqh"
-      order: 7
+      order: 8
       status: DONE
       session: 4
       verified: true
       purpose: "Canonical shared TradeIntent struct (price/sl/tp/lots/order_type), hoisted from MarketContext.mqh so Market and the future Coordination/Execution layers share one include-guarded definition (@chg: CHG-21). SPEC-02 extends it; SPEC-03 consumes it."
     - path: "Include/Market/Interfaces.mqh"
-      order: 8
+      order: 9
       status: DONE
       session: 2
       verified: true
       purpose: "Injectable Market-layer seams (IContractInfoProvider, IMarketSessionProvider), extracted from MarketContext.mqh to mirror the Core/Interfaces.mqh convention. Added in the session-2 review-fix spike."
     - path: "Scripts/Tests/Test_CommonInputs.mq5"
-      order: 9
+      order: 10
       status: DONE
       session: 3
       verified: true
       purpose: "CommonInputs close_reference field validation tests (Test_CloseReferenceValidation); added during CHG-19 branch-review remediation to cover the ENUM_SESSION_CLOSE_REF input introduced for the market-session-close-reference feature."
+    - path: "Scripts/Tests/Test_SymbolContextLive.mq5"
+      order: 11
+      status: DONE
+      session: 5
+      verified: true
+      purpose: "Manual Tier-1.5 smoke test for CSymbolContext::Init through vendored CSymbolInfo on a real broker symbol; intentionally excluded from RunAllTests."
 
 execution_commands:
   cwd: "MQL5/Experts/Main/TradeSpine"
@@ -106,10 +112,11 @@ execution_commands:
     - "# Write TDD-06 tests first, then implement symbol, session, and market context."
     - "# Use broker/server time as authoritative and keep session gates separate from emergency close paths."
   validation:
-    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_SymbolContext.mq5"
-    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_SessionContext.mq5"
-    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/Test_ContractLifecycle.mq5"
-    - "bash ../../../Scripts/compile_mql.sh Scripts/Tests/RunAllTests.mq5"
+    - "Manual MetaEditor F7: Scripts/Tests/Test_SymbolContext.mq5"
+    - "Manual MetaEditor F7: Scripts/Tests/Test_SessionContext.mq5"
+    - "Manual MetaEditor F7: Scripts/Tests/Test_ContractLifecycle.mq5"
+    - "Manual MetaEditor F7: Scripts/Tests/RunAllTests.mq5"
+    - "Manual MetaEditor F7 and Navigator execution: Scripts/Tests/Test_SymbolContextLive.mq5 on target B3 symbol"
 
 implementation_contracts:
   provided:
@@ -126,6 +133,10 @@ implementation_contracts:
         type: "Test Helper"
         files: ["Scripts/Tests/Support/FakeMarketContext.mqh", "Scripts/Tests/Test_SymbolContext.mq5", "Scripts/Tests/Test_SessionContext.mq5", "Scripts/Tests/Test_ContractLifecycle.mq5"]
         summary: "Owner-plan fake surface supplies deterministic symbol metadata, broker session window state and end-of-session reference, and contract expiration fixtures without calling live broker APIs from unit tests."
+      - name: "Live symbol adapter smoke contract"
+        type: "Manual Integration Test"
+        files: ["Scripts/Tests/Test_SymbolContextLive.mq5"]
+        summary: "Manual, read-only proof that CSymbolContext::Init loads and validates the production SymbolMetadata snapshot through vendored CSymbolInfo; excluded from deterministic aggregate execution."
   consumed:
     dependencies:
       - "@iplan: IPLAN-05"
@@ -285,9 +296,68 @@ session_handoff:
         tests_passing: "RunAllTests.mq5 compiled clean via compile_mql.sh after the TradeIntent relocation (no redefinition); MT5 Navigator execution owed."
         coverage: "No new test cases (M1 is a type relocation; L2 live-adapter change has no fake-based coverage and is verified manually on B3). Existing IPLAN-06 suite unchanged."
         lint_clean: true
+    - date: "2026-08-27"
+      agent: "Codex"
+      files_touched:
+        - "Include/Market/SymbolContext.mqh"
+        - "Scripts/Tests/Support/FakeMarketContext.mqh"
+        - "Scripts/Tests/Test_SymbolContext.mq5"
+        - "Scripts/Tests/Test_ContractLifecycle.mq5"
+        - "Docs/MODULES/Market.md"
+      partial_work: "CHG-25 added contract-size and freeze-level metadata acquisition, validation, deterministic fixtures, and static test coverage."
+      blockers: "Fresh readable artifacts, aidoc audits, manual MetaEditor F7/MT5 runtime evidence, code review, and GATE-06/GATE-08/GATE-CODE approval remain pending."
+      next_session_directive: "Do not begin IPLAN-07 implementation until CHG-25 gate evidence is complete and approved."
+      validation_results:
+        tests_passing: "Static only: strict YAML parse, fixture arity validation, ordered IPLAN-07 manifest validation, and git diff --check passed."
+        coverage: "Test_SymbolContext adds independent invalid contract size and freeze level cases; runtime execution is pending."
+        lint_clean: true
+    - date: "2026-08-28"
+      agent: "Manual MetaEditor / MT5 evidence supplied by user"
+      files_touched: []
+      partial_work: "CHG-25 evidence recorded: Test_SymbolContext compiled in MetaEditor with 0 errors and 0 warnings; its fresh .ex5 ran 92/92 assertions. RunAllTests compiled in MetaEditor with 0 errors and 0 warnings in 5,461 ms; its fresh .ex5 ran 705/705 assertions with 11 skipped."
+      blockers: "Live CSymbolContext::Init() evidence through CSymbolInfo on the target B3 symbol, aidoc audits, code review, and GATE-06/GATE-08/GATE-CODE approval remain pending."
+      next_session_directive: "Record live B3 initialization evidence, then complete the audit and approval workflow before IPLAN-07 implementation."
+      validation_results:
+        tests_passing: "Manual evidence dated 2026-08-28: Test_SymbolContext F7 0 errors/0 warnings and 92/92 passed; RunAllTests F7 0 errors/0 warnings in 5,461 ms and 705/705 passed with 11 skipped."
+        coverage: "The new invalid re-initialization, contract-size, and freeze-level fixture coverage executed; the production CSymbolInfo initialization path remains unexecuted."
+        lint_clean: true
+    - date: "2026-08-28"
+      agent: "Codex"
+      files_touched: ["Scripts/Tests/Test_SymbolContextLive.mq5"]
+      partial_work: "Added a separate manual Tier-1.5 smoke script for the production CSymbolContext::Init path through vendored CSymbolInfo. It prints the validated snapshot and is excluded from RunAllTests."
+      blockers: "Manual F7 and target-B3 execution of Test_SymbolContextLive, aidoc audits, code review, and GATE-06/GATE-08/GATE-CODE approval remain pending."
+      next_session_directive: "Compile and run Test_SymbolContextLive on WINV26 or another approved target B3 symbol; retain the summary and [LIVE] snapshot line as CHG-25 evidence."
+      validation_results:
+        tests_passing: "Static only for the new live smoke script; manual MetaEditor/MT5 evidence is required."
+        coverage: "Separates broker-dependent CSymbolInfo initialization from deterministic fixture coverage."
+        lint_clean: true
+    - date: "2026-08-28"
+      agent: "Manual MT5 evidence supplied by user"
+      files_touched: []
+      partial_work: "Final Test_SymbolContextLive revision ran on WINV26,H1 and passed 13/13. Its fresh .ex5 is newer than the source. The prior live diagnostic reported tick_size=5, tick_value=1, contract_size=1, point=1, lot_step=1, lot_min=1, lot_max=25000, digits=0, stops_level=0, freeze_level=0, and trade_mode=4."
+      blockers: "Aidoc audits, code review, and GATE-06/GATE-08/GATE-CODE approval remain pending."
+      next_session_directive: "Complete the audit and approval workflow before IPLAN-07 implementation."
+      validation_results:
+        tests_passing: "Manual live evidence dated 2026-08-28: Test_SymbolContextLive F7 0 errors/0 warnings in 431 ms and 13/13 passed on WINV26,H1; matching .ex5 is newer than source."
+        coverage: "Production CSymbolContext::Init through vendored CSymbolInfo is now executed on B3."
+        lint_clean: true
+    - date: "2026-08-28"
+      agent: "Codex (explicit user-authorized CHG-25 closure)"
+      files_touched:
+        - "docs/governance/chg/CHG-25_GATE_APPROVAL_FORM.md"
+        - "docs/governance/chg/CHG-25_GATE-06_08_CODE_report.md"
+        - "docs/08_IPLAN/IPLAN-06_market_session_and_symbol_context.yaml"
+        - "docs/08_IPLAN/IPLAN-00_index.yaml"
+      partial_work: "@chg: CHG-25 gate approval and the @iplan: IPLAN-06 closure were recorded after focused, aggregate, and live B3 evidence."
+      blockers: "None for the IPLAN-06 module boundary. Formal aidoc audit/validator execution was explicitly waived by the approving user. Production deployment remains outside scope."
+      next_session_directive: "@iplan: IPLAN-07 may begin only on a separate instruction; do not treat this module closure as production authorization."
+      validation_results:
+        tests_passing: "Manual 2026-08-28 evidence: Test_SymbolContext F7 0 errors/0 warnings and 92/92; RunAllTests F7 0 errors/0 warnings and 705/705 with 11 skipped; Test_SymbolContextLive F7 0 errors/0 warnings and 13/13 on WINV26,H1."
+        coverage: "Deterministic fixture tests plus production CSymbolInfo initialization on B3."
+        lint_clean: true
 
 traceability:
-  provenance: ["@chg: CHG-23"]
+  provenance: ["@chg: CHG-23", "@chg: CHG-25"]
   upstream:
     spec_references: ["@spec: SPEC-06", "@spec: SPEC-11"]
     tdd_references: ["@tdd: TDD.06.04.8f4d", "@tdd: TDD.11.04.6805"]
@@ -296,10 +366,10 @@ traceability:
     ears_references: ["@ears: EARS.01.03.03b2", "@ears: EARS.01.03.ec72", "@ears: EARS.01.03.1a3e", "@ears: EARS.01.03.7669", "@ears: EARS.01.03.db97", "@ears: EARS.01.03.e152", "@ears: EARS.01.03.368c"]
     bdd_references: ["@bdd: BDD.01.03.edae", "@bdd: BDD.01.03.a399", "@bdd: BDD.01.03.d4a5", "@bdd: BDD.01.03.4dcb", "@bdd: BDD.01.03.4a71", "@bdd: BDD.01.03.e593"]
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.10.03.51ea"]
-    chg_references: ["@chg: CHG-19", "@chg: CHG-20", "@chg: CHG-21"]
+    chg_references: ["@chg: CHG-19", "@chg: CHG-20", "@chg: CHG-21", "@chg: CHG-25"]
   downstream:
     code_paths: ["@code: Include/Core/TradeTypes.mqh", "@code: Include/Market/SymbolContext.mqh", "@code: Include/Market/SessionContext.mqh", "@code: Include/Market/MarketContext.mqh", "@code: Include/Market/Interfaces.mqh"]
-    test_paths: ["@tests: Scripts/Tests/Support/FakeMarketContext.mqh", "@tests: Scripts/Tests/Test_SymbolContext.mq5", "@tests: Scripts/Tests/Test_SessionContext.mq5", "@tests: Scripts/Tests/Test_ContractLifecycle.mq5", "@tests: Scripts/Tests/Test_CommonInputs.mq5"]
+    test_paths: ["@tests: Scripts/Tests/Support/FakeMarketContext.mqh", "@tests: Scripts/Tests/Test_SymbolContext.mq5", "@tests: Scripts/Tests/Test_SymbolContextLive.mq5", "@tests: Scripts/Tests/Test_SessionContext.mq5", "@tests: Scripts/Tests/Test_ContractLifecycle.mq5", "@tests: Scripts/Tests/Test_CommonInputs.mq5"]
   code_inventory:
     files:
       - "Include/Core/TradeTypes.mqh"
@@ -309,6 +379,7 @@ traceability:
       - "Include/Market/MarketContext.mqh"
       - "Scripts/Tests/Support/FakeMarketContext.mqh"
       - "Scripts/Tests/Test_SymbolContext.mq5"
+      - "Scripts/Tests/Test_SymbolContextLive.mq5"
       - "Scripts/Tests/Test_SessionContext.mq5"
       - "Scripts/Tests/Test_ContractLifecycle.mq5"
       - "Scripts/Tests/Test_CommonInputs.mq5"

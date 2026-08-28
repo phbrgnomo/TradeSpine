@@ -7,14 +7,14 @@ id: SPEC-07
 title: Indicators Stops Sizing and Trailing
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-02T00:40:00-03:00"
+last_updated: "2026-08-28T00:00:00-03:00"
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.1"
+  version: "1.2"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-02T00:40:00-03:00"
+  last_updated: "2026-08-28T00:00:00-03:00"
   author: "Codex"
   component: "IIndicator, stop, sizing, and trailing policy modules"
   tdd_ready_score: "93/100"
@@ -52,34 +52,52 @@ interfaces:
   exports:
     - name: "IIndicator"
       type: "interface"
-      signature: "interface IIndicator"
-      description: "Indicator readiness and handle contract for native and custom wrappers consumed by strategy-layer readiness checks."
+      signature: "interface IIndicator { bool Init(string symbol, ENUM_TIMEFRAMES timeframe); bool IsInitialized(); bool IsReady(int min_bars); int Handle(); string Name(); IndicatorValue ValueAt(int buffer, int shift); }"
+      description: "Indicator readiness, handle observability, and buffer-value contract consumed by strategy-layer readiness checks."
       errors:
         - "NotReady: indicator history or buffer data is unavailable."
     - name: "CIndicatorBase"
       type: "class"
       signature: "class CIndicatorBase : public IIndicator"
-      description: "Base wrapper for handle lifecycle, buffer reads, and readiness."
+      description: "Base wrapper for handle lifecycle, buffer reads, and readiness through an injectable indicator runtime seam."
       errors:
         - "InitFailed: indicator handle cannot be created."
     - name: "IStopPolicy"
       type: "interface"
-      signature: "interface IStopPolicy { StopLevels ComputeStops(const Signal &signal, double entry); }"
-      description: "Computes initial SL/TP when a strategy helper leaves stops unset."
+      signature: "interface IStopPolicy { StopLevels ComputeStops(const StopRequest &request); }"
+      description: "Computes initial SL/TP from IPLAN-07-owned policy inputs without a coordinator Signal dependency."
       errors:
         - "InvalidStops: returns unusable stop distance for coordinator rejection."
     - name: "IPositionSizer"
       type: "interface"
       signature: "interface IPositionSizer { double CalcLots(const SizingRequest &request); }"
-      description: "Calculates broker-normalized lots for supported sizing modes."
+      description: "Calculates broker-normalized lots; concrete risk sizing obtains equity through IAccountValueProvider."
       errors:
         - "0.0: sizing anomaly or v2 placeholder selection."
     - name: "ITrailingStop"
       type: "interface"
-      signature: "interface ITrailingStop { double ProposeNewSL(ulong ticket, double current_price); }"
-      description: "Proposes tighten-only ongoing stop movement."
+      signature: "interface ITrailingStop { double ProposeNewSL(const TrailingRequest &request); }"
+      description: "Proposes a tighten-only stop from a supplied position snapshot and never reads or mutates broker state."
       errors:
         - "0.0: no trailing change."
+    - name: "IIndicatorRuntime"
+      type: "interface"
+      signature: "interface IIndicatorRuntime { int BarsCalculated(int handle); int CopyBuffer(int handle, int buffer, int shift, int count, double &values[]); void Release(int handle); }"
+      description: "Adapter seam for post-creation native handle operations used by CIndicatorBase and deterministic tests. Each concrete adapter owns CreateHandle(symbol,timeframe), calling iATR, iMA, or iCustom as appropriate; the runtime does not expose an ambiguous generic Create operation."
+      errors:
+        - "InitFailed or NotReady when create, bars, copy, or release operations fail."
+    - name: "IAccountValueProvider"
+      type: "interface"
+      signature: "interface IAccountValueProvider { double Equity(); }"
+      description: "Injected account-equity seam used only by risk-percent sizing."
+      errors:
+        - "0.0 or non-finite equity: sizing returns 0.0."
+    - name: "SizingMath::CalcRiskLots"
+      type: "namespace function"
+      signature: "double SizingMath::CalcRiskLots(double equity, const SizingRequest &request, const SymbolMetadata &metadata)"
+      description: "Pure risk-percent sizing calculation called by the injected-provider concrete sizer; it performs no account or broker lookup."
+      errors:
+        - "0.0: non-finite or invalid input, risk below the minimum lot, or no executable broker-normalized result."
     - name: "IndATR, IndMA, IndDonchian, IndSupertrend"
       type: "classes"
       signature: "class IndATR/IndMA/IndDonchian/IndSupertrend : public CIndicatorBase"
@@ -102,8 +120,20 @@ interfaces:
 ## Section 4: Data Models
 data_models:
   models:
+    - name: "StopRequest"
+      type: "struct"
+      fields:
+        - name: "order_type"
+          type: "ENUM_ORDER_TYPE"
+          required: true
+          description: "BUY or SELL direction for stop topology."
+        - name: "entry_price"
+          type: "double"
+          required: true
+          description: "Resolved entry price."
     - name: "StopLevels"
       type: "struct"
+      owner: "Include/Strategy/PolicyTypes.mqh; @iplan: IPLAN-07"
       fields:
         - name: "sl_price"
           type: "double"
@@ -120,11 +150,11 @@ data_models:
     - name: "SizingRequest"
       type: "struct"
       fields:
-        - name: "side"
-          type: "ENUM_POSITION_SIDE"
+        - name: "order_type"
+          type: "ENUM_ORDER_TYPE"
           required: true
-          description: "Long or short side."
-        - name: "entry"
+          description: "BUY or SELL entry direction; sizing is performed before a position exists."
+        - name: "entry_price"
           type: "double"
           required: true
           description: "Resolved entry price."
@@ -136,6 +166,37 @@ data_models:
           type: "double"
           required: true
           description: "Strategy risk percentage input."
+        - name: "fixed_lots"
+          type: "double"
+          required: false
+          description: "Requested fixed volume for CPositionSizerFixed; ignored by risk-percent sizing."
+    - name: "TrailingRequest"
+      type: "struct"
+      fields:
+        - name: "ticket"
+          type: "ulong"
+          required: true
+          description: "Position correlation identifier; no broker lookup is implied."
+        - name: "position_type"
+          type: "ENUM_POSITION_TYPE"
+          required: true
+          description: "Open position side."
+        - name: "open_price"
+          type: "double"
+          required: true
+          description: "Position open price."
+        - name: "current_price"
+          type: "double"
+          required: true
+          description: "Current market price supplied by the caller."
+        - name: "current_sl"
+          type: "double"
+          required: true
+          description: "Current stop price or zero when unset."
+        - name: "current_tp"
+          type: "double"
+          required: false
+          description: "Current take-profit price or zero when unset."
     - name: "IndicatorValue"
       type: "struct"
       fields:
@@ -165,6 +226,14 @@ behavior:
       source: "@ears: EARS.01.03.ec72"
     - rule: "Trailing policies SHALL only propose tighten-only stop changes and SHALL be invoked by strategy management code, not by the framework idle path."
       source: "@prd: PRD.01.09.5963"
+    - rule: "Policy request and result types SHALL be owned by IPLAN-07 and SHALL NOT depend on Signal or any IPLAN-02 implementation type."
+      source: "@chg: CHG-25"
+    - rule: "Indicator runtime and account-equity reads SHALL cross injectable seams; stop, sizing, and trailing policies SHALL not mutate broker state."
+      source: "@chg: CHG-25"
+    - rule: "Each concrete indicator adapter SHALL create its own native handle through CreateHandle(symbol,timeframe); CIndicatorBase SHALL use IIndicatorRuntime only for BarsCalculated, CopyBuffer, and Release so tests can deterministically replace every post-creation operation."
+      source: "@chg: CHG-25"
+    - rule: "SizingMath::CalcRiskLots SHALL calculate risk_money=equity*risk_percent/100, loss_per_lot=abs(entry_price-sl_price)/tick_size*tick_value, and raw_lots=risk_money/loss_per_lot. It SHALL round down to lot_step, cap at lot_max, and return 0.0 when the result is below lot_min or any required input is non-finite or invalid. contract_size is retained as validated market metadata and SHALL NOT be multiplied into this tick-value-per-lot formula."
+      source: "@chg: CHG-25"
   state_transitions:
     - from: "IndicatorNotReady"
       to: "IndicatorReady"
@@ -189,11 +258,15 @@ implementation_notes:
   constraints:
     - "v1 active sizing modes are futures risk percent and fixed lot; equity modes are placeholders."
     - "v1 active native indicators are limited to wrappers required by the simple samples, approved hedging ports, and approved custom indicators."
-    - "Trailing is strategy-owned in OnManagePosition and the framework MUST NOT auto-call trailing."
+    - "Trailing is strategy-owned in OnManagePosition and the framework MUST NOT auto-call trailing; accepted proposals later route through ITradeExecutor::ModifyTicket."
     - "Indicator readiness is strategy-owned; the coordinator may defensively reject unresolved requests but MUST NOT own indicator-readiness decisions."
   patterns:
     - "Use enum-selected member policy objects rather than conditional feature branches."
-    - "Use one file per indicator wrapper under Native or Custom."
+    - "Keep IIndicator generic: it defines lifecycle, readiness, and value access, never one method per indicator type."
+    - "Group v1 native ATR and MA handle adapters in Include/Indicators/NativeIndicators.mqh; keep each custom algorithm in its own file because its buffers and calculation differ."
+    - "Expose Include/Indicators/Indicators.mqh as an include-only facade over IndicatorBase, NativeIndicators, and custom adapters."
+    - "Own StopRequest, StopLevels, SizingRequest, TrailingRequest, and IndicatorValue in Include/Strategy/PolicyTypes.mqh."
+    - "Concrete ATR policies own their IIndicator dependency; generic policy requests contain no indicator-specific field."
     - "Use pure namespace functions for stateless sizing and stop-distance math."
     - "Map v1 enum values explicitly to IndATR, IndMA, IndDonchian, IndSupertrend, CStopATR, CStopFixed, CStopSwing, CTrailATRMultiple, and CTrailBreakeven."
   performance_considerations:
@@ -212,10 +285,10 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
-  tags: ["@spec: SPEC-07", "@brd: BRD.01.07.69ef", "@prd: PRD.01.09.60ad", "@ears: EARS.01.03.5e92", "@bdd: BDD.01.03.e593", "@adr: ADR.10.03.51ea"]
+  tags: ["@spec: SPEC-07", "@brd: BRD.01.07.69ef", "@prd: PRD.01.09.60ad", "@ears: EARS.01.03.5e92", "@bdd: BDD.01.03.e593", "@adr: ADR.10.03.51ea", "@chg: CHG-25"]
   upstream:
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.09.03.84b9", "@adr: ADR.10.03.51ea"]
-    bdd_references: ["@bdd: BDD.01.03.c0f6", "@bdd: BDD.01.03.e593", "@bdd: BDD.01.03.cb03", "@bdd: BDD.01.03.aa68"]
+    bdd_references: ["@bdd: BDD.01.03.c0f6", "@bdd: BDD.01.03.e593", "@bdd: BDD.01.03.cb03"]
     ears_references: ["@ears: EARS.01.03.4e80", "@ears: EARS.01.03.5e92", "@ears: EARS.01.03.bc8b", "@ears: EARS.01.03.932d", "@ears: EARS.01.03.ec72"]
     prd_references: ["@prd: PRD.01.09.5963", "@prd: PRD.01.09.60ad", "@prd: PRD.01.09.eaf3"]
     brd_references: ["@brd: BRD.01.07.69ef", "@brd: BRD.01.07.88a6"]
