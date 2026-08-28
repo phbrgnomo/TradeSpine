@@ -178,6 +178,7 @@ public:
    //| \param stops_level Minimum stop distance in points.              |
    //| \param freeze_level Modification freeze distance in points.      |
    //| \param mode        ENUM_SYMBOL_TRADE_MODE.                       |
+   //| \return None.                                                    |
    //+------------------------------------------------------------------+
    void ConfigureMetadata(const double tick_size,
                           const double tick_value,

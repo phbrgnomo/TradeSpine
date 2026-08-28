@@ -88,6 +88,7 @@ No IPLAN-07 E2E test is owned before downstream IPLAN-01 strategy packaging.
 
 | Trace Type | References |
 | --- | --- |
+| TDD | @tdd: TDD.07.04.a6d8, @tdd: TDD.07.04.12de, @tdd: TDD.07.04.cb03, @tdd: TDD.07.04.8d11 |
 | SPEC | @spec: SPEC-07 |
 | ADR | @adr: ADR.04.03.7277, @adr: ADR.09.03.84b9, @adr: ADR.10.03.51ea |
 | BDD | @bdd: BDD.01.03.c0f6, @bdd: BDD.01.03.e593, @bdd: BDD.01.03.cb03 |

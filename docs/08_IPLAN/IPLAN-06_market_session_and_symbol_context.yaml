@@ -23,7 +23,7 @@ document_control:
   component: "CSymbolContext, CSessionContext, CMarketContext"
   complexity: 4
   estimated_files: 11
-  session_count: 4
+  session_count: 10
   readiness_gate: "TDD-06 audit PASS 93/100"
   source_inputs:
     - "../07_TDD/TDD-06_market_session_and_symbol_context/TDD-06_market_session_and_symbol_context.yaml"

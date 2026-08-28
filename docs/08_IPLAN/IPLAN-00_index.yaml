@@ -104,8 +104,8 @@ registry:
       status: "Completed"
       status_date: "2026-08-28"
       complexity: 4
-      session_count: 4
-      sessions_completed: 4
+      session_count: 10
+      sessions_completed: 10
       files_declared: 11
       files_done: 11
       skipped: []
