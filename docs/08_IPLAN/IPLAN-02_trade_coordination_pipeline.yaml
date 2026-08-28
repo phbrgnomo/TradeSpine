@@ -56,7 +56,7 @@ file_manifest:
       status: NOT_STARTED
       session: null
       verified: false
-      purpose: "Internal Signal, entry mode, signal type, StopLevels, and TradeIntent data contract."
+      purpose: "Internal Signal, entry mode, signal type, and TradeIntent data contract; consumes @iplan: IPLAN-07 PolicyTypes.mqh::StopLevels rather than owning it."
     - path: "Include/Coordination/TradeCoordinator.mqh"
       order: 5
       status: NOT_STARTED

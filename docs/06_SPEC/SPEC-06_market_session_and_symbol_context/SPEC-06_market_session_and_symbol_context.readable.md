@@ -7,12 +7,12 @@
 | Field | Value |
 | --- | --- |
 | Status | Draft |
-| Version | 1.2 |
+| Version | 1.5 |
 | Component | CSymbolContext, CSessionContext, CMarketContext |
 | TDD-ready Score | 92/100 |
 | Architecture Decision | ADR-10 |
 | TDD Target | TDD-06 |
-| Last Updated | 2026-06-21 |
+| Last Updated | 2026-08-28T19:30:00-03:00 |
 
 ## Overview
 
@@ -24,6 +24,7 @@ flowchart LR
   Market --> Symbol["CSymbolContext"]
   Market --> Session["CSessionContext"]
   Symbol --> StdLib["Vendored CSymbolInfo"]
+  StdLib --> Terminal["MT5 symbol-property API"]
   Session --> BrokerClock["TimeCurrent broker time"]
   Market --> Guard["CGuardedTrade gates"]
 ```
@@ -43,7 +44,7 @@ flowchart LR
 
 | Model | Purpose |
 | --- | --- |
-| SymbolMetadata | Tick size, volume min/max/step, stops level, freeze level, contract size, and supported filling/order data. |
+| SymbolMetadata | Cached MT5 tick size/value, contract size, point, volume min/max/step, digits, stops level, freeze level, and trade mode. `tick_value` remains the broker compatibility value; no loss-side tick-value property is required. |
 | SessionWindow | `market_open` (broker session schedule), `user_trading_hours_open` (operator window), and `day_trade_close_required` (close buffer reached). |
 
 ## Behavior
@@ -54,6 +55,7 @@ flowchart LR
 - Day-trade forced-close trigger SHALL be measured from the reference selected by `CommonInputs.close_reference`: `entry_window_end` for `CLOSE_REF_USER_WINDOW_END`, or the broker REGULAR (first / index-0) market-session end for `CLOSE_REF_MARKET_SESSION_END`, falling back to `entry_window_end` when unavailable. After-hours sessions SHALL NOT be used.
 - Expiration warning SHALL fire at session open when a supported futures contract expires in one broker day.
 - Day-trade mode reaching force-close before session close; failure enters HALT and preserves unresolved exposure evidence.
+- `CSymbolContext` SHALL reject non-finite or non-positive tick size, tick value, contract size, point, and lot fields; it SHALL enforce `lot_max >= lot_min` and reject negative stops or freeze levels.
 
 ## Implementation Notes
 
@@ -62,15 +64,17 @@ flowchart LR
 - Contract-expiration warning threshold is fixed via `@fixed-threshold: PRD.01.market.expiration_warning_one_broker_day`.
 - **v1 simplification (@chg: CHG-21):** `MarketSessionEndTod` uses the regular (first / index-0) trade session only; after-hours sessions are excluded. Brokers that split the regular session across multiple indices before after-hours would need refinement. Consistent with the midnight-crossing out-of-scope simplification.
 - **v1 limitation (@chg: CHG-21, verified B3 WINQ26 2026-06-21):** some B3 brokers do not configure real session hours and report a full-day window (00:00–24:00) for index 0. `MarketSessionEndTod` treats `to >= 86400` as a sentinel and returns -1; the close trigger falls back to `entry_window_end`. A side effect is that `IsMarketSessionOpen` always returns true for such symbols (the `[0, 86400)` window covers all times), effectively disabling the `market_open` gate — a broker-configuration limitation, not a framework defect. For B3, `CLOSE_REF_USER_WINDOW_END` is the recommended close reference.
+- `CSymbolContext.Init` uses vendored `CSymbolInfo` as the sole static metadata adapter, maps its typed accessors into `SymbolMetadata`, then validates the immutable snapshot once. Normal validators do not query broker metadata per tick. The only direct terminal-property exception is the live `SYMBOL_TRADE_MODE` entry-permission read, because broker restrictions can change intraday.
 
 ## TDD Contract
 
 | Test File | Coverage |
 | --- | --- |
-| `Scripts/Tests/Test_SymbolContext.mq5` | Required metadata loading, invalid metadata init failure, lot/price-grid validation. |
+| `Scripts/Tests/Test_SymbolContext.mq5` | Required metadata loading, invalid re-initialization without stale fixture data, contract-size/freeze-level rejection, and lot/price-grid validation. |
+| `Scripts/Tests/Test_SymbolContextLive.mq5` | Manual Tier-1.5 `CSymbolContext.Init()` smoke on the chart or supplied broker symbol, through vendored `CSymbolInfo`; excluded from `RunAllTests`. |
 | `Scripts/Tests/Test_SessionContext.mq5` | Market session, user trading-hours gate, entry blocking, and day-trade forced close. |
 | `Scripts/Tests/Test_ContractLifecycle.mq5` | One-broker-day expiration warning at session open. |
 
 ## Traceability
 
-`@spec: SPEC-06`, `@brd: BRD.01.07.69ef`, `@prd: PRD.01.09.fada`, `@ears: EARS.01.03.03b2`, `@bdd: BDD.01.03.edae`, `@adr: ADR.10.03.51ea`, `@chg: CHG-19`, `@chg: CHG-21`
+`@spec: SPEC-06`, `@brd: BRD.01.07.69ef`, `@prd: PRD.01.09.fada`, `@ears: EARS.01.03.03b2`, `@bdd: BDD.01.03.edae`, `@adr: ADR.10.03.51ea`, `@chg: CHG-19`, `@chg: CHG-21`, `@chg: CHG-25`

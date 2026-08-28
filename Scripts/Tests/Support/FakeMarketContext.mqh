@@ -123,21 +123,21 @@ public:
      }
 
    //+------------------------------------------------------------------+
-   //| \brief Preset: typical B3 mini-futures (WIN/WDO style) defaults. |
-   //|        tick_size=5.0, point=1.0, tick_value=1.0, lot_step=1.0,  |
-   //|        lot_min=1.0, lot_max=900.0, digits=0, stops_level=0,     |
-   //|        trade_mode=FULL, session open.                             |
+   //| \brief Preset: synthetic B3-style metadata for deterministic tests.|
+   //|        This fixture is not a broker contract specification.       |
    //+------------------------------------------------------------------+
    void SetAsB3Futures(void)
      {
       m_meta.tick_size    = 5.0;
       m_meta.tick_value   = 1.0;
+      m_meta.contract_size = 1.0;
       m_meta.point        = 1.0;
       m_meta.lot_step     = 1.0;
       m_meta.lot_min      = 1.0;
       m_meta.lot_max      = 900.0;
       m_meta.digits       = 0;
       m_meta.stops_level  = 0;
+      m_meta.freeze_level = 0;
       m_meta.trade_mode   = SYMBOL_TRADE_MODE_FULL;
       m_expiration_time   = 0;
       m_session_prov.SetMarketSessionOpen(true);
@@ -151,12 +151,14 @@ public:
      {
       m_meta.tick_size    = 0.0;
       m_meta.tick_value   = 0.0;
+      m_meta.contract_size = 0.0;
       m_meta.point        = 0.0;
       m_meta.lot_step     = 0.0;
       m_meta.lot_min      = 0.0;
       m_meta.lot_max      = 0.0;
       m_meta.digits       = 0;
       m_meta.stops_level  = 0;
+      m_meta.freeze_level = 0;
       m_meta.trade_mode   = SYMBOL_TRADE_MODE_DISABLED;
       m_expiration_time   = 0;
       m_session_prov.SetMarketSessionOpen(false);
@@ -167,32 +169,39 @@ public:
    //| \brief Configure all SymbolMetadata fields explicitly.            |
    //| \param tick_size   Broker tick size (0.0 = invalid).             |
    //| \param tick_value  Broker tick value.                            |
+   //| \param contract_size Broker contract size.                       |
    //| \param point       SYMBOL_POINT for stop-distance math.          |
    //| \param lot_step    Volume step.                                   |
    //| \param lot_min     Minimum volume.                                |
    //| \param lot_max     Maximum volume.                                |
    //| \param digits      Price digits.                                  |
    //| \param stops_level Minimum stop distance in points.              |
+   //| \param freeze_level Modification freeze distance in points.      |
    //| \param mode        ENUM_SYMBOL_TRADE_MODE.                       |
+   //| \return None.                                                    |
    //+------------------------------------------------------------------+
    void ConfigureMetadata(const double tick_size,
                           const double tick_value,
+                          const double contract_size,
                           const double point,
                           const double lot_step,
                           const double lot_min,
                           const double lot_max,
                           const int    digits,
                           const int    stops_level,
+                          const int    freeze_level,
                           const ENUM_SYMBOL_TRADE_MODE mode)
      {
       m_meta.tick_size    = tick_size;
       m_meta.tick_value   = tick_value;
+      m_meta.contract_size = contract_size;
       m_meta.point        = point;
       m_meta.lot_step     = lot_step;
       m_meta.lot_min      = lot_min;
       m_meta.lot_max      = lot_max;
       m_meta.digits       = digits;
       m_meta.stops_level  = stops_level;
+      m_meta.freeze_level = freeze_level;
       m_meta.trade_mode   = mode;
      }
 

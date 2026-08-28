@@ -7,7 +7,7 @@ id: TDD-07
 title: "Indicators Stops Sizing and Trailing Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-06-02T00:00:00-03:00"
+last_updated: "2026-08-28T00:00:00-03:00"
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -23,9 +23,9 @@ metadata:
 
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.1"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-06-02T00:00:00-03:00"
+  last_updated: "2026-08-28T00:00:00-03:00"
   author: "Codex"
   component: "IIndicator, stop, sizing, and trailing policy modules"
   spec_reference: "@spec: SPEC-07"
@@ -60,66 +60,46 @@ test_mapping:
           file: "Scripts/Tests/Test_Indicators.mq5"
           function: "test_indicators_stops_sizing_trailing_c0f6_unit"
           status: pending
-        - type: integration
-          file: "Scripts/Tests/Test_Sizers.mq5"
-          function: "test_indicators_stops_sizing_trailing_c0f6_integration"
-          status: pending
-        - type: e2e
-          file: "Scripts/Tests/Test_StopsAndTrailing.mq5"
-          function: "test_indicators_stops_sizing_trailing_c0f6_e2e"
-          status: pending
     - bdd_scenario: "@bdd: BDD.01.03.e593"
       description: "Sizing modes use initialized symbol data"
       tests:
         - type: unit
-          file: "Scripts/Tests/Test_Indicators.mq5"
+          file: "Scripts/Tests/Test_Sizers.mq5"
           function: "test_indicators_stops_sizing_trailing_e593_unit"
           status: pending
         - type: integration
           file: "Scripts/Tests/Test_Sizers.mq5"
           function: "test_indicators_stops_sizing_trailing_e593_integration"
           status: pending
-        - type: e2e
-          file: "Scripts/Tests/Test_StopsAndTrailing.mq5"
-          function: "test_indicators_stops_sizing_trailing_e593_e2e"
-          status: pending
     - bdd_scenario: "@bdd: BDD.01.03.cb03"
       description: "Equity sizing remains placeholder"
       tests:
         - type: unit
-          file: "Scripts/Tests/Test_Indicators.mq5"
+          file: "Scripts/Tests/Test_Sizers.mq5"
           function: "test_indicators_stops_sizing_trailing_cb03_unit"
           status: pending
         - type: integration
           file: "Scripts/Tests/Test_Sizers.mq5"
           function: "test_indicators_stops_sizing_trailing_cb03_integration"
           status: pending
-        - type: e2e
-          file: "Scripts/Tests/Test_StopsAndTrailing.mq5"
-          function: "test_indicators_stops_sizing_trailing_cb03_e2e"
-          status: pending
-    - bdd_scenario: "@bdd: BDD.01.03.aa68"
-      description: "Shipped strategy authoring, porting, and packaging"
+  contract_cases:
+    - spec_ref: "@spec: SPEC-07"
+      description: "Stop topology and trailing proposals are broker-pure policy contracts without a dedicated upstream BDD scenario."
       tests:
         - type: unit
-          file: "Scripts/Tests/Test_Indicators.mq5"
-          function: "test_indicators_stops_sizing_trailing_aa68_unit"
-          status: pending
-        - type: integration
-          file: "Scripts/Tests/Test_Sizers.mq5"
-          function: "test_indicators_stops_sizing_trailing_aa68_integration"
-          status: pending
-        - type: e2e
           file: "Scripts/Tests/Test_StopsAndTrailing.mq5"
-          function: "test_indicators_stops_sizing_trailing_aa68_e2e"
+          function: "test_indicators_stops_sizing_trailing_stops_trailing_unit"
           status: pending
   coverage_table:
     columns: [BDD Scenario, Unit, Integration, E2E, Total]
     rows:
-      - ["@bdd: BDD.01.03.c0f6", 1, 1, 1, 3]
-      - ["@bdd: BDD.01.03.e593", 1, 1, 1, 3]
-      - ["@bdd: BDD.01.03.cb03", 1, 1, 1, 3]
-      - ["@bdd: BDD.01.03.aa68", 1, 1, 1, 3]
+      - ["@bdd: BDD.01.03.c0f6", 1, 0, 0, 1]
+      - ["@bdd: BDD.01.03.e593", 1, 1, 0, 2]
+      - ["@bdd: BDD.01.03.cb03", 1, 1, 0, 2]
+  contract_coverage:
+    columns: [SPEC Contract, Unit, Integration, E2E, Total]
+    rows:
+      - ["@spec: SPEC-07 stop/trailing broker-pure proposal", 1, 0, 0, 1]
 
 test_cases:
   unit_tests:
@@ -128,59 +108,72 @@ test_cases:
         type: unit
         name: "Indicator wrapper reports not-ready before buffer data exists"
         spec_ref: "@spec: SPEC-07"
-        target: "CIndicatorBase.IsReady"
+        target: "CIndicatorBase.IsReady through IIndicatorRuntime; concrete adapter CreateHandle(symbol,timeframe)"
         test_file: "Scripts/Tests/Test_Indicators.mq5"
-        test_function: "test_indicators_stops_sizing_trailing_unit_contract"
+        test_function: "test_indicators_stops_sizing_trailing_c0f6_unit"
         inputs:
           - name: fixture
             type: string
             value: "handle valid, bars_calculated=0, buffer read unavailable"
         expected_output:
           type: contract-result
-          value: "ready=false and no strategy entry request"
+          value: "ready=false; no broker or strategy mutation occurs"
         edge_cases:
           - condition: "Handle creation failure returns InitFailed"
             expected: "Case remains deterministic and broker-safe."
+      - id: "TDD.07.04.8d11"
+        type: unit
+        name: "Stop and trailing proposals remain topology-valid and broker-pure"
+        spec_ref: "@spec: SPEC-07"
+        target: "IStopPolicy.ComputeStops and ITrailingStop.ProposeNewSL"
+        test_file: "Scripts/Tests/Test_StopsAndTrailing.mq5"
+        test_function: "test_indicators_stops_sizing_trailing_stops_trailing_unit"
+        inputs:
+          - name: request
+            type: "StopRequest or TrailingRequest"
+            value: "BUY/SELL StopRequest and POSITION_TYPE_BUY/POSITION_TYPE_SELL TrailingRequest with current SL/TP supplied by a deterministic fixture"
+        expected_output:
+          type: contract-result
+          value: "invalid stops use sl_distance=0; non-tightening proposals return 0; no broker mutation occurs"
   integration_tests:
     cases:
       - id: "TDD.07.04.12de"
         type: integration
         name: "Futures sizing uses symbol grid and stop distance"
         spec_ref: "@spec: SPEC-07"
-        contract: "IPositionSizer with fake CSymbolContext"
+        contract: "IPositionSizer with fake CSymbolContext and IAccountValueProvider"
         test_file: "Scripts/Tests/Test_Sizers.mq5"
-        test_function: "test_indicators_stops_sizing_trailing_integration_contract"
+        test_function: "test_indicators_stops_sizing_trailing_e593_integration"
         setup:
-          - "Assemble component with deterministic fakes for broker, clock, store, symbol, and logs where required."
+          - "Assemble component with deterministic symbol and account-value fakes; no broker mutation seam is present."
           - "Load SPEC-defined configuration and BDD trace tags."
         action:
-          description: "risk_percent=1.0, entry=100000, sl=99900, lot_step=1"
+          description: "Risk fixture: equity=100000, risk_percent=1.0, ORDER_TYPE_BUY, entry_price=100000, sl_price=99500, tick_size=5, tick_value=1, lot_step=1, lot_min=1, lot_max=900."
         expected_state:
-          - "Lots are snapped to broker grid or return 0 on anomaly"
+          - "risk_money=1000, loss_per_lot=100, raw_lots=10, and normalized lots=10."
+          - "A result below lot_min, a non-finite input, or invalid metadata returns 0 without broker mutation."
         error_paths:
           - condition: "Equity placeholder selection returns visible rejection"
             expected_error: "SPEC-defined rejection or HALT path."
-  e2e_tests:
-    cases:
-      - id: "TDD.07.04.6898"
-        type: e2e
-        name: "Sizing modes use initialized symbol data"
-        bdd_ref: "@bdd: BDD.01.03.e593"
+      - id: "TDD.07.04.cb03"
+        type: integration
+        name: "Equity sizing placeholder remains visibly non-executable"
         spec_ref: "@spec: SPEC-07"
-        test_file: "Scripts/Tests/Test_StopsAndTrailing.mq5"
-        test_function: "test_indicators_stops_sizing_trailing_e2e_acceptance"
-        workflow:
-          - step: 1
-            action: "Load symbol metadata"
-            expected: "Executable lots use initialized tick value and lot step"
-          - step: 2
-            action: "Compute futures risk-percent lots"
-            expected: "Zero stop distance blocks before broker call"
-          - step: 3
-            action: "Submit through coordinator validation"
-            expected: "Placeholder sizing cannot execute"
-        timeout_seconds: 300
-        cleanup: "Clear fake broker state, fake stores, generated evidence files, and chart objects under the strategy prefix."
+        bdd_ref: "@bdd: BDD.01.03.cb03"
+        contract: "IPositionSizer equity placeholder"
+        test_file: "Scripts/Tests/Test_Sizers.mq5"
+        test_function: "test_indicators_stops_sizing_trailing_cb03_integration"
+        setup:
+          - "Assemble the selected v1 equity placeholder with deterministic market metadata and account-value fakes."
+        action:
+          description: "Request lots through the equity sizing placeholder."
+        expected_state:
+          - "The placeholder returns its visible rejection and does not submit or mutate broker state."
+        error_paths:
+          - condition: "The placeholder is selected as if it were futures risk sizing"
+            expected_error: "Reject without fallback to another sizing mode."
+  e2e_tests:
+    cases: []
   security_tests:
     cases: []
 
@@ -201,9 +194,8 @@ thresholds:
     coverage_target: ">=75% of mapped happy paths"
     timeout_budget: "<=300s"
     pass_criteria:
-      - "Critical BDD workflow passes."
-      - "Required evidence artifacts are present."
-    fail_action: "Block release-candidate gate."
+      - "No IPLAN-07 e2e test is owned before downstream IPLAN-01 strategy packaging."
+    fail_action: "Block downstream integration planning when an IPLAN-07 policy contract is untested."
   security:
     coverage_target: "Not mandated by parent SPEC."
     pass_criteria:
@@ -232,10 +224,17 @@ tdd_order:
       name: "Refactor"
       action: "Clean implementation without changing the test-observed behavior."
       output: "Refactored source with tests still green."
+  deferred_integration:
+    - bdd_scenario: "@bdd: BDD.01.03.aa68"
+      owner: "@iplan: IPLAN-01"
+      reason: "Strategy authoring, packaging, and e2e integration are downstream of IPLAN-07 policy contracts."
 
 traceability:
   tags:
     - "@tdd: TDD.07.04.a6d8"
+    - "@tdd: TDD.07.04.12de"
+    - "@tdd: TDD.07.04.cb03"
+    - "@tdd: TDD.07.04.8d11"
     - "@spec: SPEC-07"
     - "@brd: BRD.01.07.69ef"
     - "@brd: BRD.01.07.88a6"
@@ -245,6 +244,8 @@ traceability:
     - "@ears: EARS.01.03.5e92"
     - "@bdd: BDD.01.03.c0f6"
     - "@bdd: BDD.01.03.e593"
+    - "@bdd: BDD.01.03.cb03"
+    - "@chg: CHG-25"
     - "@adr: ADR.04.03.7277"
     - "@adr: ADR.09.03.84b9"
   upstream:
@@ -258,7 +259,6 @@ traceability:
       - "@bdd: BDD.01.03.c0f6"
       - "@bdd: BDD.01.03.e593"
       - "@bdd: BDD.01.03.cb03"
-      - "@bdd: BDD.01.03.aa68"
     ears_references:
       - "@ears: EARS.01.03.4e80"
       - "@ears: EARS.01.03.5e92"

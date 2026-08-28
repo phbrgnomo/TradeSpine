@@ -79,4 +79,4 @@ flowchart LR
 
 ## Traceability
 
-`@spec: SPEC-02`, `@brd: BRD.01.07.88a6`, `@prd: PRD.01.09.eaf3`, `@ears: EARS.01.03.b784`, `@bdd: BDD.01.03.0073`, `@adr: ADR.09.03.84b9`, `@chg: CHG-21`
+`@spec: SPEC-02`, `@brd: BRD.01.07.88a6`, `@prd: PRD.01.09.eaf3`, `@ears: EARS.01.03.b784`, `@bdd: BDD.01.03.0073`, `@adr: ADR.09.03.84b9`, `@chg: CHG-21`, `@chg: CHG-25`

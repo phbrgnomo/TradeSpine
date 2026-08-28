@@ -5,7 +5,7 @@
 //| @code: Include/Market/SymbolContext.mqh                          |
 //| @spec: SPEC-06  @tdd: TDD.06.04.8f4d  @iplan: IPLAN-06          |
 //|                                                                  |
-//| Vendored CSymbolInfo wrapper that loads and caches immutable     |
+//| Vendored CSymbolInfo adapter that loads and caches immutable     |
 //| symbol metadata once at initialization. Exposes lot, price, and  |
 //| stop validation against initialized metadata without calling     |
 //| broker APIs on every tick. Also exports SymbolMetadata struct.   |
@@ -27,18 +27,21 @@ struct SymbolMetadata
   {
    double                 tick_size;    // SYMBOL_TRADE_TICK_SIZE; 0.0 = invalid sentinel
    double                 tick_value;   // SYMBOL_TRADE_TICK_VALUE
+   double                 contract_size; // SYMBOL_TRADE_CONTRACT_SIZE
    double                 point;        // SYMBOL_POINT; required for stop-distance math
    double                 lot_step;     // SYMBOL_VOLUME_STEP
    double                 lot_min;      // SYMBOL_VOLUME_MIN
    double                 lot_max;      // SYMBOL_VOLUME_MAX
    int                    digits;       // SYMBOL_DIGITS
    int                    stops_level;  // SYMBOL_TRADE_STOPS_LEVEL (live call cached at Init)
+   int                    freeze_level; // SYMBOL_TRADE_FREEZE_LEVEL (live call cached at Init)
    ENUM_SYMBOL_TRADE_MODE trade_mode;   // SYMBOL_TRADE_MODE
 
    //--- \brief Default constructor: all-zero sentinels.
-   SymbolMetadata(void) : tick_size(0.0), tick_value(0.0), point(0.0),
+   SymbolMetadata(void) : tick_size(0.0), tick_value(0.0), contract_size(0.0),
+                          point(0.0),
                           lot_step(0.0), lot_min(0.0), lot_max(0.0),
-                          digits(0), stops_level(0),
+                          digits(0), stops_level(0), freeze_level(0),
                           trade_mode(SYMBOL_TRADE_MODE_DISABLED)
      {
      }
@@ -67,6 +70,8 @@ private:
         { reason = "tick_size must be > 0"; return(false); }
       if(!SafeMath::IsFinite(m_meta.tick_value) || m_meta.tick_value <= 0.0)
         { reason = "tick_value must be > 0"; return(false); }
+      if(!SafeMath::IsFinite(m_meta.contract_size) || m_meta.contract_size <= 0.0)
+        { reason = "contract_size must be > 0"; return(false); }
       if(!SafeMath::IsFinite(m_meta.point) || m_meta.point <= 0.0)
         { reason = "point must be > 0"; return(false); }
       if(!SafeMath::IsFinite(m_meta.lot_step) || m_meta.lot_step <= 0.0)
@@ -79,6 +84,8 @@ private:
         { reason = "digits must be >= 0"; return(false); }
       if(m_meta.stops_level < 0)
         { reason = "stops_level must be >= 0"; return(false); }
+      if(m_meta.freeze_level < 0)
+        { reason = "freeze_level must be >= 0"; return(false); }
       if(m_meta.trade_mode != SYMBOL_TRADE_MODE_DISABLED  &&
          m_meta.trade_mode != SYMBOL_TRADE_MODE_LONGONLY  &&
          m_meta.trade_mode != SYMBOL_TRADE_MODE_SHORTONLY &&
@@ -136,18 +143,32 @@ public:
      }
 
    //+------------------------------------------------------------------+
-   //| \brief Production init: loads metadata from broker via           |
-   //|        vendored CSymbolInfo. Caches StopsLevel() via live call.  |
+   //| \brief Production init: loads required metadata through the      |
+   //|        vendored CSymbolInfo adapter and caches it for validation. |
    //| \param symbol  Broker symbol name (empty string → _Symbol).     |
    //| \return true on success; false if required metadata is missing.  |
    //+------------------------------------------------------------------+
    bool Init(const string symbol)
      {
       m_initialized = false;
+      // Clear every cached field before a broker call can fail; otherwise a failed
+      // re-init could expose the previous symbol's metadata through Metadata().
+      m_meta.tick_size    = 0.0;
+      m_meta.tick_value   = 0.0;
+      m_meta.contract_size = 0.0;
+      m_meta.point        = 0.0;
+      m_meta.lot_step     = 0.0;
+      m_meta.lot_min      = 0.0;
+      m_meta.lot_max      = 0.0;
+      m_meta.digits       = 0;
+      m_meta.stops_level  = 0;
+      m_meta.freeze_level = 0;
+      m_meta.trade_mode   = SYMBOL_TRADE_MODE_DISABLED;
+      m_symbol      = "";
       m_symbol      = (StringLen(symbol) > 0) ? symbol : _Symbol;
 
-      CSymbolInfo si;
-      if(!si.Name(m_symbol))
+      CSymbolInfo symbol_info;
+      if(!symbol_info.Name(m_symbol))
         {
          Print(StringFormat("[ERROR] CSymbolContext::Init — symbol '%s' could not be "
                             "selected in Market Watch.", m_symbol));
@@ -155,15 +176,17 @@ public:
          return(false);
         }
 
-      m_meta.tick_size    = si.TickSize();
-      m_meta.tick_value   = si.TickValue();
-      m_meta.point        = si.Point();
-      m_meta.lot_step     = si.LotsStep();
-      m_meta.lot_min      = si.LotsMin();
-      m_meta.lot_max      = si.LotsMax();
-      m_meta.digits       = si.Digits();
-      m_meta.stops_level  = si.StopsLevel(); // live call; not cached by Refresh()
-      m_meta.trade_mode   = si.TradeMode();
+      m_meta.tick_size     = symbol_info.TickSize();
+      m_meta.tick_value    = symbol_info.TickValue();
+      m_meta.contract_size = symbol_info.ContractSize();
+      m_meta.point         = symbol_info.Point();
+      m_meta.lot_step      = symbol_info.LotsStep();
+      m_meta.lot_min       = symbol_info.LotsMin();
+      m_meta.lot_max       = symbol_info.LotsMax();
+      m_meta.digits        = symbol_info.Digits();
+      m_meta.stops_level   = symbol_info.StopsLevel();
+      m_meta.freeze_level  = symbol_info.FreezeLevel();
+      m_meta.trade_mode    = symbol_info.TradeMode();
 
       string reason;
       if(!ValidateMetadata(reason))

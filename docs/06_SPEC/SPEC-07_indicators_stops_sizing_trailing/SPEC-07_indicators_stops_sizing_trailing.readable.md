@@ -5,9 +5,9 @@
 | Field | Value |
 | --- | --- |
 | Status | Draft |
-| Version | 1.1 |
+| Version | 1.2 |
 | Component | IIndicator, stop, sizing, and trailing policy modules |
-| TDD-ready Score | 93/100 |
+| TDD-ready Score | 93% |
 | Architecture Decision | ADR-10 |
 | TDD Target | TDD-07 |
 
@@ -30,11 +30,14 @@ flowchart LR
 
 | Export | Type | Purpose |
 | --- | --- | --- |
-| IIndicator | interface | Exposes readiness and indicator values to strategy-layer readiness checks. |
-| CIndicatorBase | class | Base wrapper for concrete indicator implementations. |
-| IStopPolicy | interface | Resolves SL/TP policy values for generated intents. |
-| IPositionSizer | interface | Produces executable lots from strategy sizing mode and symbol metadata. |
-| ITrailingStop | interface | Applies trailing rules to owned positions. |
+| IIndicator | interface | Initialization state, readiness by minimum bars, handle/name observability, and buffer/shift value access. |
+| CIndicatorBase | class | Base wrapper for handle lifecycle, buffer reads, and readiness through an injectable runtime. |
+| IIndicatorRuntime | interface | Injectable post-creation seam: `BarsCalculated`, `CopyBuffer`, and `Release`; each adapter owns `CreateHandle(symbol,timeframe)`. |
+| IStopPolicy | interface | Computes initial SL/TP from IPLAN-07-owned requests, without a `Signal` dependency. |
+| IPositionSizer | interface | Produces normalized lots; risk implementations obtain equity through `IAccountValueProvider`. |
+| IAccountValueProvider | interface | Injected `Equity()` seam used only by risk-percent sizing. |
+| SizingMath::CalcRiskLots | namespace function | Pure sizing math from supplied equity, request, and `SymbolMetadata`. |
+| ITrailingStop | interface | Proposes a tighten-only stop from the supplied snapshot; never reads or mutates broker state. |
 | IndATR, IndMA, IndDonchian, IndSupertrend | classes | v1 concrete indicator wrappers for approved native/custom strategy dependencies. |
 | CStopATR, CStopFixed, CStopSwing | classes | v1 initial stop policies for ATR, fixed-distance, and swing-level stops. |
 | CTrailATRMultiple, CTrailBreakeven | classes | v1 strategy-owned trailing policies for ATR-multiple and breakeven stop proposals. |
@@ -43,9 +46,11 @@ flowchart LR
 
 | Model | Purpose |
 | --- | --- |
-| StopLevels | Stop-loss and take-profit price outputs with validation metadata. |
-| SizingRequest | Equity, risk, symbol, stop-distance, and sizing-mode inputs. |
-| IndicatorValue | Indicator readiness, buffer value, timestamp, and source metadata. |
+| StopRequest | Entry order type and resolved entry price for stop topology. |
+| StopLevels | IPLAN-07-owned (`PolicyTypes.mqh`) SL/TP output; `sl_distance == 0` is the invalid sentinel. |
+| SizingRequest | Entry `ENUM_ORDER_TYPE`, entry/SL prices, risk percentage, and optional fixed lots. |
+| TrailingRequest | Ticket, `ENUM_POSITION_TYPE`, open/current price, and current SL/TP snapshot. |
+| IndicatorValue | Readiness flag and indicator buffer value. |
 
 ## Behavior
 
@@ -60,6 +65,9 @@ flowchart LR
 - Sizing modes that cannot produce executable lots return `0.0` and let the coordinator reject without broker submission.
 - Concrete indicator wrapper init/read failures report not-ready or init failure and block dependent entries.
 - Side-inverted, off-grid, or zero-distance stop outputs return `InvalidStops` for coordinator rejection.
+- Policy request/result types are IPLAN-07-owned and do not depend on IPLAN-02 `Signal`.
+- Native handles are created by each adapter; the injected runtime makes bars, buffer reads, and release deterministic in tests.
+- Risk sizing calculates `risk_money = equity * risk_percent / 100`, then divides by `abs(entry_price - sl_price) / tick_size * tick_value`; it rounds down to `lot_step`, caps at `lot_max`, and returns `0.0` below `lot_min` or for invalid inputs. `contract_size` is validated metadata and is not double-counted in this tick-value-per-lot formula.
 
 ## Implementation Notes
 
@@ -68,6 +76,8 @@ flowchart LR
 - Stop and trailing policies should be composable strategy members.
 - Indicator readiness must be explicit on attach and restart.
 - Indicator readiness is strategy-owned; the coordinator may defensively reject unresolved requests but does not own indicator-readiness decisions.
+- The generic indicator interface has lifecycle/readiness/value methods; it does not expose one method per native indicator.
+- ATR and MA native adapters are grouped in `Include/Indicators/NativeIndicators.mqh`; Donchian and Supertrend remain separate custom implementations, exposed through `Include/Indicators/Indicators.mqh`.
 - v1 enum values map explicitly to `IndATR`, `IndMA`, `IndDonchian`, `IndSupertrend`, `CStopATR`, `CStopFixed`, `CStopSwing`, `CTrailATRMultiple`, and `CTrailBreakeven`.
 
 ## TDD Contract
@@ -80,4 +90,4 @@ flowchart LR
 
 ## Traceability
 
-`@spec: SPEC-07`, `@brd: BRD.01.07.69ef`, `@prd: PRD.01.09.60ad`, `@ears: EARS.01.03.5e92`, `@bdd: BDD.01.03.e593`, `@adr: ADR.10.03.51ea`
+`@spec: SPEC-07`, `@brd: BRD.01.07.69ef`, `@prd: PRD.01.09.60ad`, `@ears: EARS.01.03.5e92`, `@bdd: BDD.01.03.e593`, `@adr: ADR.10.03.51ea`, `@chg: CHG-25`

@@ -20,6 +20,7 @@ implementation does not include Market directly.
 | `Include/Market/MarketContext.mqh` | Production | live provider adapters and `CMarketContext`; consumes canonical `TradeIntent` from `Include/Core/TradeTypes.mqh` |
 | `Scripts/Tests/Support/FakeMarketContext.mqh` | Test support | `FakeMarketContext` fixture class |
 | `Scripts/Tests/Test_SymbolContext.mq5` | Test (unit) | TDD.06.04.8f4d — metadata + validators |
+| `Scripts/Tests/Test_SymbolContextLive.mq5` | Test (manual integration) | TDD.06.04.a1e6 — production `CSymbolInfo` adapter smoke; excluded from aggregate |
 | `Scripts/Tests/Test_SessionContext.mq5` | Test (integration) | TDD.06.04.4796 — session gates |
 | `Scripts/Tests/Test_ContractLifecycle.mq5` | Test (e2e) | TDD.06.04.cd48 — expiry warning |
 
@@ -34,12 +35,14 @@ ticks. Default constructor zeroes all fields so an incomplete fixture fails `Val
 struct SymbolMetadata {
     double                 tick_size;    // SYMBOL_TRADE_TICK_SIZE; 0.0 = invalid sentinel
     double                 tick_value;   // SYMBOL_TRADE_TICK_VALUE
+    double                 contract_size; // SYMBOL_TRADE_CONTRACT_SIZE
     double                 point;        // SYMBOL_POINT — used for stop-distance math
     double                 lot_step;     // SYMBOL_VOLUME_STEP
     double                 lot_min;      // SYMBOL_VOLUME_MIN
     double                 lot_max;      // SYMBOL_VOLUME_MAX
     int                    digits;       // SYMBOL_DIGITS
     int                    stops_level;  // SYMBOL_TRADE_STOPS_LEVEL (live call cached at Init)
+    int                    freeze_level; // SYMBOL_TRADE_FREEZE_LEVEL (live call cached at Init)
     ENUM_SYMBOL_TRADE_MODE trade_mode;   // SYMBOL_TRADE_MODE
     SymbolMetadata(void);               // all-zero default
 };
@@ -49,25 +52,26 @@ struct SymbolMetadata {
 
 ## CSymbolContext (`Include/Market/SymbolContext.mqh`)
 
-Wraps the vendored `CSymbolInfo` to populate `SymbolMetadata` at init-time. All validators
-operate on the cached snapshot — no broker API calls on tick.
+Uses vendored `CSymbolInfo` to populate `SymbolMetadata` at init-time. All validators operate on
+the cached snapshot — no broker API calls on tick.
 
 ### Public interface
 
 ```mql5
 bool Init(const string symbol)
 ```
-Production init: calls `CSymbolInfo::Name()` (which calls `Refresh()` internally) to populate
-all metadata fields, then caches `StopsLevel()` via one live `SymbolInfoInteger` call (it is
-not cached by `Refresh()`). Returns `false` if any required field is zero.
+Production init calls `CSymbolInfo::Name()`, then maps only the required typed accessors into the
+TradeSpine-owned snapshot. It deliberately does not require profit/loss-specific tick-value
+properties. Returns `false` if the adapter cannot load the symbol or a required field fails validation.
+
 
 ```mql5
 bool InitFromMetadata(const SymbolMetadata &meta)
 ```
 Test-only injection path. Accepts a pre-built fixture and validates it with the same
-`ValidateMetadata()` guard: `tick_size > 0`, `tick_value > 0`, `point > 0`, `lot_step > 0`,
-`lot_min > 0`, `lot_max >= lot_min`, `digits >= 0`, `stops_level >= 0`, and `trade_mode` on the
-`ENUM_SYMBOL_TRADE_MODE` whitelist.
+`ValidateMetadata()` guard: finite positive `tick_size`, `tick_value`, `contract_size`, `point`,
+and lot fields, with `lot_max >= lot_min`; non-negative `stops_level` and `freeze_level`; and a
+whitelisted `ENUM_SYMBOL_TRADE_MODE`.
 
 ```mql5
 bool IsInitialized() const
@@ -81,9 +85,21 @@ bool ValidateStops(double sl, double tp, double entry_price, string &reason) con
 `Init()` and `InitFromMetadata()` `Print` a field-level diagnostic on failure (e.g.
 `tick_size must be > 0`) rather than failing silently. `Init()` retains the symbol name so
 `IsEntryAllowedLive()` can re-read the broker trade mode (which can change intraday) via a
-single direct `SymbolInfoInteger` call; the vendored `CSymbolInfo` is used only for the one-time
-`Init` batch load. Fixture contexts use their injected metadata. An uninitialized context or
+single direct `SymbolInfoInteger` call. Fixture contexts use their injected metadata. An uninitialized context or
 failed live read rejects entries conservatively.
+
+Before each production initialization, `CSymbolContext` clears the complete cached metadata
+snapshot. A failed re-initialization therefore cannot expose a prior symbol's values through
+`Metadata()`.
+
+### Manual production-adapter smoke
+
+`Scripts/Tests/Test_SymbolContextLive.mq5` is a read-only Tier-1.5 script. Attach it to an
+approved B3 chart (or set `InpSymbol`) and run it from the Navigator. It calls
+`CSymbolContext::Init()`, asserts the required production snapshot fields, and prints one
+`[LIVE]` line containing the loaded values. It is intentionally excluded from `RunAllTests`,
+whose Market tests must remain deterministic and fixture-only. It never sends, modifies, or
+closes trades.
 
 **Trade-mode matrix:**
 
@@ -274,11 +290,12 @@ by value:
 
 ```mql5
 void SetAsB3Futures()       // tick_size=5.0, point=1.0, tick_value=1.0, lot_step/min=1.0,
-                            // lot_max=900.0, digits=0, stops_level=0, FULL, session open
+                            // lot_max=900.0, digits=0, stops_level=0, freeze_level=0, FULL, session open
 void SetAsInvalidSymbol()   // tick_size=0.0 → triggers CSymbolContext::InitFromMetadata failure
-void ConfigureMetadata(double tick_size, double tick_value, double point,
-                       double lot_step, double lot_min, double lot_max,
-                       int digits, int stops_level, ENUM_SYMBOL_TRADE_MODE mode)
+void ConfigureMetadata(double tick_size, double tick_value, double contract_size,
+                       double point, double lot_step, double lot_min, double lot_max,
+                       int digits, int stops_level, int freeze_level,
+                       ENUM_SYMBOL_TRADE_MODE mode)
 void SetMarketSessionOpen(bool open)         // delegates to internal FakeMarketSessionProvider
 void SetExpirationTime(datetime expiry)      // 0 = no expiry
 bool SetMarketSessionEnd(int tod)            // delegates; [0..86399] or -1
@@ -294,7 +311,7 @@ to `CMarketContext::InitFromFixtures()`.
 
 ## Dependencies
 
-- Vendored `Include/StdLib/Trade/SymbolInfo.mqh` (ADR-06) — `CSymbolInfo` for broker metadata
+- Vendored `Include/StdLib/Trade/SymbolInfo.mqh` — sole adapter for static broker metadata reads
 - `Include/Core/Interfaces.mqh` — `IClock`, `ILogSink`
 - `Include/Core/CommonInputs.mqh` — `CommonInputs` struct
 - `Include/Core/SafeMath.mqh` — `NormalizeLotRaw`, `EqualDoubles`, `IsFinite`
@@ -308,7 +325,7 @@ From `Include/Market/*.mqh`:
 
 ```
 #include "Interfaces.mqh"                   // intra-module seams (MarketContext.mqh)
-#include "../StdLib/Trade/SymbolInfo.mqh"
+#include "../StdLib/Trade/SymbolInfo.mqh"    // static symbol metadata adapter
 #include "../Core/SafeMath.mqh"
 #include "../Core/Interfaces.mqh"
 #include "../Core/CommonInputs.mqh"

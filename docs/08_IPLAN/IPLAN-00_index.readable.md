@@ -2,7 +2,7 @@
 
 > Human-readable rendering generated from `IPLAN-00_index.yaml`. The YAML file remains the canonical aidoc artifact.
 >
-> Provenance: @chg: CHG-23
+> Provenance: @chg: CHG-23, @chg: CHG-25
 
 ## Document Control
 
@@ -12,20 +12,20 @@
 | Document Type | iplan-registry |
 | Layer | 8 |
 | Total Permanent Plans | 12 |
-| Last Updated | 2026-08-27 |
+| Last Updated | 2026-08-28 |
 | Status | 5 completed plans; 7 non-completed plans |
 
 ## Registry
 
 | ID | Title | Source | Status | Files | Depends On | Blocks | Note |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| IPLAN-01 | Strategy Authoring Surface Implementation | @spec: SPEC-01 | Draft | 0/8 | IPLAN-02, IPLAN-04, IPLAN-07, IPLAN-09, IPLAN-10 | IPLAN-12, IPLAN-13 | Owns provider assembly, timer/transaction wiring, attachable EA packaging, and two-chart validation. |
+| IPLAN-01 | Strategy Authoring Surface Implementation | @spec: SPEC-01 | Draft | 0/16 | IPLAN-02, IPLAN-04, IPLAN-07, IPLAN-09, IPLAN-10 | IPLAN-12, IPLAN-13 | Owns provider assembly, timer/transaction wiring, attachable EA packaging, and two-chart validation. |
 | IPLAN-02 | Trade Coordination Pipeline Implementation | @spec: SPEC-02 | Draft | 0/7 | IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-09, IPLAN-11 | IPLAN-01, IPLAN-03 | Owns coordinator consumption of the CHG-22-R1 readiness/lifecycle contract. |
 | IPLAN-03 | Guarded Execution and Risk Controls Implementation | @spec: SPEC-03 | Draft | 0/9 | IPLAN-02, IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-09, IPLAN-11 |  | Owns final broker-mutation fences, classified emergency cleanup, and zero broker-bypass findings. |
 | IPLAN-04 | Position Account Mode and State Implementation | @spec: SPEC-04 | Completed | 18/18 present and verified | IPLAN-05, IPLAN-11 | IPLAN-01, IPLAN-02, IPLAN-03 | Module closure approved: 137/137 module and 694/694 aggregate; exact inclusion/reachability verified. No production rollout authorization. |
 | IPLAN-05 | Persistence and Audit Evidence Implementation | @spec: SPEC-05 | Completed | 10/10 present and verified | IPLAN-09, IPLAN-11 | IPLAN-02, IPLAN-03, IPLAN-04, IPLAN-06 | Module closure approved: 243/243 module; all inventory entries delivered. No production rollout authorization. |
-| IPLAN-06 | Market Session and Symbol Context Implementation | @spec: SPEC-06 | Completed | 10/10 | IPLAN-05, IPLAN-09, IPLAN-11 | IPLAN-02, IPLAN-03, IPLAN-07 | CHG-21 (2026-06-21): canonical TradeIntent hoisted to Include/Core/TradeTypes.mqh (SPEC-02 extends, SPEC-03 consumes); MarketSessionEndTod returns the regular (first/index-0) session end; B3 full-day sentinel handled. GATE-06/GATE-08 APPROVED 2026-06-21 (phbr). |
-| IPLAN-07 | Indicators Stops Sizing and Trailing Implementation | @spec: SPEC-07 | Draft | 0/8 | IPLAN-06, IPLAN-09, IPLAN-11 | IPLAN-01, IPLAN-02 |  |
+| IPLAN-06 | Market Session and Symbol Context Implementation | @spec: SPEC-06 | Completed | 11/11 delivered and verified | IPLAN-05, IPLAN-09, IPLAN-11 | IPLAN-02, IPLAN-03, IPLAN-07 | @chg: CHG-25 Market delta closed with focused, aggregate, and live B3 evidence; gates approved by explicit user authorization. No production rollout authorization. |
+| IPLAN-07 | Indicators Stops Sizing and Trailing Implementation | @spec: SPEC-07 | Draft | 0/18 | IPLAN-06, IPLAN-09, IPLAN-11 | IPLAN-01, IPLAN-02 | @chg: CHG-25 pre-flight gates are approved. The plan begins only on a separate implementation instruction. |
 | IPLAN-09 | Core Runtime and Configuration Implementation | @spec: SPEC-09 | Completed | 10/10 |  | IPLAN-01, IPLAN-02, IPLAN-03, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-10, IPLAN-11 |  |
 | IPLAN-10 | Visualization Optional Services Implementation | @spec: SPEC-10 | Draft | 0/5 | IPLAN-09, IPLAN-11 | IPLAN-01 |  |
 | IPLAN-11 | Testing Support and Harnesses Implementation | @spec: SPEC-11 | Completed | 9/9 | IPLAN-09 | IPLAN-02, IPLAN-03, IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-10 |  |

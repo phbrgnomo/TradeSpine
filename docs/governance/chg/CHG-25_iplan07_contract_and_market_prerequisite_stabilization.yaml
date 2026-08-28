@@ -1,0 +1,171 @@
+id: CHG-25
+title: "IPLAN-07 Contract and Market Prerequisite Stabilization"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-08-28"
+  change_level:
+    value: C3
+  change_source:
+    value: design
+
+change_control:
+  chg_id: "CHG-25"
+  status: Approved
+  change_level: C3
+  change_source: design
+  entry_gate: GATE-06
+  semver_impact: null
+  author: "Codex"
+  date_proposed: "2026-08-27T00:00:00-03:00"
+  date_approved: "2026-08-28T19:45:00-03:00"
+  date_implemented: "2026-08-28T19:45:00-03:00"
+  supersedes: []
+
+change_description:
+  what: "Stabilize @spec: SPEC-02, @spec: SPEC-06, and @spec: SPEC-07 contracts, Market metadata, @tdd: TDD-06/@tdd: TDD-07 mappings, and @iplan: IPLAN-00/@iplan: IPLAN-06/@iplan: IPLAN-07 manifests before @iplan: IPLAN-07 implementation."
+  why: "The prior @iplan: IPLAN-07 contract depended on @iplan: IPLAN-02-owned `Signal`, omitted sizing equity and trailing snapshot seams, and required Market metadata absent from `SymbolMetadata`."
+  trigger: "@iplan: IPLAN-07 pre-flight verification on 2026-08-27."
+
+impact_assessment:
+  affected_layers:
+    - layer: "SPEC"
+      artifacts: ["SPEC-02", "SPEC-06", "SPEC-07"]
+      impact: "Expand Market metadata, define @iplan: IPLAN-07-owned policy contracts, and record the @spec: SPEC-02 consumer of PolicyTypes::StopLevels."
+    - layer: "TDD"
+      artifacts: ["TDD-06", "TDD-07"]
+      impact: "Add metadata-validation coverage and remap future policy tests."
+    - layer: "IPLAN"
+      artifacts: ["IPLAN-06", "IPLAN-07", "IPLAN-00"]
+      impact: "Record the Market delta and correct IPLAN-07 future layout, counts, and handoff."
+    - layer: "Code"
+      artifacts: ["Include/Market/SymbolContext.mqh", "Scripts/Tests/Support/FakeMarketContext.mqh", "Scripts/Tests/Test_SymbolContext.mq5", "Scripts/Tests/Test_SymbolContextLive.mq5", "Scripts/Tests/Test_ContractLifecycle.mq5", "Docs/MODULES/Market.md"]
+      impact: "Map static metadata through vendored CSymbolInfo, validate, fixture, and document contract size and freeze level."
+  cascade_direction: "upstream→downstream"
+  risk_level: High
+
+implementation:
+  steps:
+    - step: "Define policy request/result ownership and deterministic seams in SPEC-07."
+      artifact: "SPEC-07"
+      status: Completed
+    - step: "Extend SymbolMetadata acquisition through vendored CSymbolInfo, validation, fixtures, and tests."
+      artifact: "SPEC-06 / IPLAN-06 code"
+      status: Completed
+    - step: "Reconcile TDD/IPLAN mappings and future source layout without implementing IPLAN-07 modules."
+      artifact: "TDD-06, TDD-07, IPLAN-06, IPLAN-07, IPLAN-00"
+      status: Completed
+    - step: "Regenerate readable views, audit artifacts, compile manually, run MT5 tests, and obtain gates."
+      artifact: "CHG-25 evidence"
+      status: Completed
+  artifacts_modified:
+    - id: "CHG-25"
+      file: "docs/governance/chg/CHG-25_iplan07_contract_and_market_prerequisite_stabilization.yaml"
+      change_type: "created"
+    - id: "SPEC-02"
+      file: "docs/06_SPEC/SPEC-02_trade_coordination_pipeline/SPEC-02_trade_coordination_pipeline.yaml"
+      change_type: "modified"
+    - id: "SPEC-06"
+      file: "docs/06_SPEC/SPEC-06_market_session_and_symbol_context/SPEC-06_market_session_and_symbol_context.yaml"
+      change_type: "modified"
+    - id: "SPEC-07"
+      file: "docs/06_SPEC/SPEC-07_indicators_stops_sizing_trailing/SPEC-07_indicators_stops_sizing_trailing.yaml"
+      change_type: "modified"
+    - id: "TDD-06"
+      file: "docs/07_TDD/TDD-06_market_session_and_symbol_context/TDD-06_market_session_and_symbol_context.yaml"
+      change_type: "modified"
+    - id: "TDD-07"
+      file: "docs/07_TDD/TDD-07_indicators_stops_sizing_trailing/TDD-07_indicators_stops_sizing_trailing.yaml"
+      change_type: "modified"
+    - id: "IPLAN-06"
+      file: "docs/08_IPLAN/IPLAN-06_market_session_and_symbol_context.yaml"
+      change_type: "modified"
+    - id: "IPLAN-07"
+      file: "docs/08_IPLAN/IPLAN-07_indicators_stops_sizing_trailing.yaml"
+      change_type: "modified"
+    - id: "IPLAN-00"
+      file: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      change_type: "modified"
+    - id: "CHG-00"
+      file: "docs/governance/chg/CHG-00_index.md"
+      change_type: "modified"
+    - id: "Market module documentation"
+      file: "Docs/MODULES/Market.md"
+      change_type: "modified"
+    - id: "Market source"
+      file: "Include/Market/SymbolContext.mqh"
+      change_type: "modified"
+    - id: "Market fixture"
+      file: "Scripts/Tests/Support/FakeMarketContext.mqh"
+      change_type: "modified"
+    - id: "Market unit tests"
+      file: "Scripts/Tests/Test_SymbolContext.mq5"
+      change_type: "modified"
+    - id: "Market live adapter smoke test"
+      file: "Scripts/Tests/Test_SymbolContextLive.mq5"
+      change_type: "created"
+    - id: "Market contract tests"
+      file: "Scripts/Tests/Test_ContractLifecycle.mq5"
+      change_type: "modified"
+    - id: "Readable mirrors"
+      file: "docs/{06_SPEC/SPEC-06_market_session_and_symbol_context/SPEC-06_market_session_and_symbol_context,06_SPEC/SPEC-07_indicators_stops_sizing_trailing/SPEC-07_indicators_stops_sizing_trailing,07_TDD/TDD-06_market_session_and_symbol_context/TDD-06_market_session_and_symbol_context,07_TDD/TDD-07_indicators_stops_sizing_trailing/TDD-07_indicators_stops_sizing_trailing,08_IPLAN/IPLAN-06_market_session_and_symbol_context,08_IPLAN/IPLAN-07_indicators_stops_sizing_trailing,08_IPLAN/IPLAN-00_index}.readable.md"
+      change_type: "reconciled-directly-authorized"
+    - id: "CHG-25 gate report"
+      file: "docs/governance/chg/CHG-25_GATE-06_08_CODE_report.md"
+      change_type: "created"
+    - id: "CHG-25 approval form"
+      file: "docs/governance/chg/CHG-25_GATE_APPROVAL_FORM.md"
+      change_type: "created"
+
+verification:
+  checks:
+    - check: "Strict YAML parsing and diff whitespace validation."
+      result: Pass
+      method: "Local static validation."
+    - check: "Readable companions reconciled with canonical YAML."
+      result: Pass
+      method: "Direct reconciliation authorized by the user for SPEC-06, SPEC-07, TDD-06, TDD-07, IPLAN-06, IPLAN-07, and IPLAN-00 companions; content checked against the canonical YAML."
+    - check: "Affected SPEC, TDD, IPLAN, and CHG audits meet their gates."
+      result: Waived
+      method: "Explicit user approval on 2026-08-28; formal aidoc audit/validator execution was not retained."
+    - check: "Market test scripts compile and execute with fresh MT5 evidence."
+      result: Pass
+      method: "Manual MetaEditor F7 and MT5 Navigator."
+
+gate_approval:
+  gate: "GATE-06, GATE-08, GATE-CODE"
+  approver: "User authorization (identity not recorded)"
+  approval_date: "2026-08-28T19:45:00-03:00"
+  conditions:
+    - "All gates accepted under the explicit user authorization and authority-attestation waiver; formal aidoc audit/validator evidence waived."
+    - "This record completes IPLAN-07 prerequisites only; implementation requires a separate explicit instruction and this record does not authorize production use."
+
+traceability:
+  tags:
+    - "@chg: CHG-25"
+    - "@spec: SPEC-02"
+    - "@spec: SPEC-06"
+    - "@spec: SPEC-07"
+    - "@tdd: TDD-06"
+    - "@tdd: TDD-07"
+    - "@iplan: IPLAN-00"
+    - "@iplan: IPLAN-06"
+    - "@iplan: IPLAN-07"
+  registry_index: "docs/governance/chg/CHG-00_index.md"
+
+rollback_plan:
+  strategy: revert-commit
+  steps:
+    - "Revert the CHG-25 document, canonical artifacts, Market source, fixtures, tests, and module documentation as one bundle."
+    - "Regenerate readable views from the restored canonical YAML."
+    - "Re-run the prior aggregate Market baseline in MT5."
+  estimated_effort: "One focused change revert and manual evidence rerun."
+
+emergency_change:
+  emergency_id: null
+  incident_severity: null
+  fix_deployed: null
+  post_mortem_due: null
+  post_mortem_completed: false
+  post_hoc_gate: null

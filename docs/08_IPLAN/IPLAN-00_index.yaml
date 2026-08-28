@@ -3,7 +3,7 @@ metadata:
   document_type: "iplan-registry"
   layer: 8
   total_plans: 12
-  last_updated: "2026-08-27"
+  last_updated: "2026-08-28"
 
 registry:
   plans:
@@ -16,7 +16,7 @@ registry:
       complexity: 5
       session_count: 0
       sessions_completed: 0
-      files_declared: 8
+      files_declared: 16
       files_done: 0
       skipped: []
       skip_reasons: {}
@@ -102,29 +102,29 @@ registry:
       source_spec: "@spec: SPEC-06"
       scope: "Implement symbol metadata, session gates, market context, order-definition validation, and expiration warnings."
       status: "Completed"
-      status_date: "2026-06-21"
+      status_date: "2026-08-28"
       complexity: 4
-      session_count: 4
-      sessions_completed: 4
-      files_declared: 10
-      files_done: 10
+      session_count: 10
+      sessions_completed: 10
+      files_declared: 11
+      files_done: 11
       skipped: []
       skip_reasons: {}
       depends_on: ["IPLAN-05", "IPLAN-09", "IPLAN-11"]
       blocks: ["IPLAN-02", "IPLAN-03", "IPLAN-07"]
       parallel_with: []
       file_path: "IPLAN-06_market_session_and_symbol_context.yaml"
-      note: "CHG-21 (2026-06-21): canonical TradeIntent hoisted to Include/Core/TradeTypes.mqh (SPEC-02 extends, SPEC-03 consumes); MarketSessionEndTod returns the regular (first/index-0) session end; B3 full-day sentinel handled. GATE-06/GATE-08 APPROVED 2026-06-21 (phbr)."
+      note: "Historical IPLAN-06 baseline completed under CHG-21. @chg: CHG-25 Market delta is closed: focused, aggregate, and live B3 evidence passed; GATE-06/GATE-08/GATE-CODE were approved by explicit user authorization. Formal aidoc audit/validator execution was waived; no production rollout is authorized."
     - id: "IPLAN-07"
       title: "Indicators Stops Sizing and Trailing Implementation"
       source_spec: "@spec: SPEC-07"
       scope: "Implement indicator wrappers, stop policies, futures sizing, v2 sizing placeholders, and trailing policies."
       status: "Draft"
-      status_date: "2026-06-03"
+      status_date: "2026-08-28"
       complexity: 5
       session_count: 0
       sessions_completed: 0
-      files_declared: 8
+      files_declared: 18
       files_done: 0
       skipped: []
       skip_reasons: {}
@@ -132,6 +132,7 @@ registry:
       blocks: ["IPLAN-01", "IPLAN-02"]
       parallel_with: ["IPLAN-04", "IPLAN-10"]
       file_path: "IPLAN-07_indicators_stops_sizing_trailing.yaml"
+      note: "@chg: CHG-25 pre-flight gates are approved by explicit user authorization. IPLAN-07 remains Draft until separately instructed; its future layout groups native ATR/MA adapters, isolates custom Donchian/Supertrend algorithms behind one generic interface and facade, owns policy types, and adds deterministic indicator-runtime/account-value fakes."
     - id: "IPLAN-09"
       title: "Core Runtime and Configuration Implementation"
       source_spec: "@spec: SPEC-09"
@@ -541,12 +542,28 @@ status_history:
         to: "Draft"
         date: "2026-06-03"
         reason: "TDD-06 audit passed 93/100 and reached IPLAN-Ready."
+      - from: "Draft"
+        to: "Completed"
+        date: "2026-06-21"
+        reason: "Historical IPLAN-06 baseline closure recorded under CHG-21; this entry preserves the registry state that predated @chg: CHG-25."
+      - from: "Completed"
+        to: "In Review"
+        date: "2026-08-28"
+        reason: "@chg: CHG-25 changes SymbolMetadata acquisition and Market tests; baseline history remains complete, but the changed delta awaits fresh manual compile/runtime evidence, audits, and approval."
+      - from: "In Review"
+        to: "Completed"
+        date: "2026-08-28"
+        reason: "@chg: CHG-25 focused, aggregate, and live B3 evidence passed. GATE-06/GATE-08/GATE-CODE were approved by explicit user authorization; formal aidoc audit/validator execution was waived. No production authorization is implied."
   - plan_id: "IPLAN-07"
     transitions:
       - from: "BACKLOG"
         to: "Draft"
         date: "2026-06-03"
         reason: "TDD-07 audit passed 94/100 and reached IPLAN-Ready."
+      - from: "Draft"
+        to: "Draft"
+        date: "2026-08-28"
+        reason: "@chg: CHG-25 prerequisite gates were approved by explicit user authorization. The plan remains Draft until implementation is separately instructed."
   - plan_id: "IPLAN-09"
     transitions:
       - from: "BACKLOG"
@@ -615,4 +632,4 @@ update_triggers:
     - "Append to cross_plan_obligations.obligations."
 
 traceability:
-  provenance: ["@chg: CHG-22", "@chg: CHG-23"]
+  provenance: ["@chg: CHG-22", "@chg: CHG-23", "@chg: CHG-25"]
