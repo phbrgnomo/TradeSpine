@@ -1,5 +1,7 @@
 # TradeSpine Lifecycle Operations
 
+> Provenance: @chg: CHG-22, @chg: CHG-23
+
 This runbook covers the CHG-22 lifecycle, persistence, duplicate-owner, and provider controls. It is an operator procedure, not approval evidence. CHG-22 remains open until the manual checks in the acceptance section are recorded.
 
 ## Safety rules
@@ -68,15 +70,15 @@ Capture, without modifying state:
 - native terminal position, order, deal, and history observations;
 - exact test pass/fail/skip counts and fresh EX5 timestamps.
 
-Suggested event-code families are `TS_REC_*`, `TS_HINT_*`, `TS_HALT_*`, `TS_LEASE_*`, `TS_STORE_*`, `TS_PROVIDER_*`, and `TS_TIMER_LATE`. Event-code emission is required acceptance evidence; absence is a release blocker.
+Runtime event-code families are `TS_REC_*`, `TS_HINT_*`, `TS_HALT_*`, `TS_LEASE_*`, `TS_STORE_*`, `TS_PROVIDER_*`, and `TS_TIMER_LATE`. For events covered by the runtime, emission is required acceptance evidence; absence is a release blocker.
 
-At every deploy boundary, capture `TS_DEPLOY_PHASE` with source commit, `CHG-22-R1`, fresh EX5 SHA-256 values, account, canonical symbol, magic, phase, and terminal timestamp. Export the MT5 Experts/Journal log to the CHG-22 evidence bundle and query it with:
+At every deploy boundary, record an external deployment-evidence entry labelled `TS_DEPLOY_PHASE` with source commit, `CHG-22-R1`, fresh EX5 SHA-256 values, account, canonical symbol, magic, phase, and terminal timestamp. `TS_DEPLOY_PHASE` is not emitted by the current `Include/` or `Scripts/Tests/` code, so store it in the evidence bundle rather than expecting it in the terminal log. Export the MT5 Experts/Journal log to the CHG-22 evidence bundle and query runtime events with:
 
 ```sh
-rg -n '\[TS_(DEPLOY_PHASE|REC_|HINT_|HALT_|LEASE_|STORE_|PROVIDER_|TIMER_)' exported-terminal.log
+rg -n '\[TS_(REC_|HINT_|HALT_|LEASE_|STORE_|PROVIDER_|TIMER_)' exported-terminal.log
 ```
 
-The operational monitoring view is MT5 Toolbox → Experts/Journal filtered by `[TS_` and the account-symbol-magic identity. A missing deploy event, checksum drift, or unexplained maintenance gap blocks promotion.
+The operational monitoring view is MT5 Toolbox → Experts/Journal filtered by `[TS_` and the account-symbol-magic identity. A missing deployment-evidence entry, checksum drift, or unexplained maintenance gap blocks promotion.
 
 ## Rollback
 
@@ -99,14 +101,16 @@ Promotion order is demo rehearsal → one restricted live identity → a partial
 
 ## Acceptance evidence
 
-Run in this order:
+The normative module-closure, aggregate-test, and release-obligation criteria
+are [SPEC-08 `data_models.evidence_contract`](../docs/06_SPEC/SPEC-08_release_testing_and_documentation_governance/SPEC-08_release_testing_and_documentation_governance.yaml). This runbook records operational execution only.
 
-1. Canonical YAML/schema and cross-document validation.
-2. Focused unit/integration scripts and aggregate `RunAllTests`, with exact pass/fail/skip counts.
-3. Manual MetaEditor F7 for every changed script and aggregate runner, with fresh EX5 files and 0 errors/0 warnings.
-4. Complete IPLAN-05 producers and IPLAN-04, then IPLAN-02 coordination, then IPLAN-01 StrategyBase/provider assembly and IPLAN-03 GuardedTrade/final mutation fencing against the same `CHG-22-R1` bundle. Run `Test_StrategyBase.mq5`, `Test_Coordinator.mq5`, `Test_GuardedTrade.mq5`, `Test_BrokerBypassScan.mq5`, all IPLAN-04/05 focused suites, and `RunAllTests.mq5`.
-5. Manual two-chart ownership test using the fresh IPLAN-01 `StrategyTemplate` EX5; exactly one same-identity chart may become ready.
-6. Rollback rehearsal, then one full-session demo canary, one restricted live identity, partial cohort when applicable, and full rollout. Emit `TS_DEPLOY_PHASE` at each boundary.
-7. Review-team rerun.
+Static source accounting currently identifies 243 assertion sites in IPLAN-05 and
+127 assertion sites in IPLAN-04. These are not execution results: the authoritative
+module and aggregate pass/fail/skip counts, compiler diagnostics, and fresh EX5
+metadata must be recorded from the MT5/MetaEditor run in the CHG-22 evidence bundle.
 
-GATE06, GATE08, and GATECODE remain failed until this evidence is attached. Final acceptance requires no P0/P1 findings, each review lens at least 80, and weighted score at least 85.
+The following release obligations remain downstream and do not reopen module closure:
+
+5. Complete IPLAN-02 coordination, IPLAN-01 StrategyBase/provider assembly, and IPLAN-03 GuardedTrade/final mutation fencing against the same `CHG-22-R1` bundle.
+6. Run the manual two-chart ownership test using the fresh IPLAN-01 attachable EA EX5; exactly one same-identity chart may become ready.
+7. Perform rollback rehearsal, one full-session demo canary, one restricted live identity, partial cohort when applicable, and full rollout. Record the external `TS_DEPLOY_PHASE` deployment-evidence entry at each boundary.

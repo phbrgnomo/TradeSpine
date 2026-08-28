@@ -1,25 +1,33 @@
 # IPLAN-04: Position Account Mode and State
 
 > Human-readable rendering of `IPLAN-04_position_account_mode_and_state.yaml`. The YAML file is canonical.
+>
+> Provenance: @chg: CHG-23
 
 ## Document Control
 
 | Field | Value |
 | --- | --- |
 | IPLAN ID | IPLAN-04 |
-| Status | In Progress |
-| Version | 1.3 |
-| Updated | 2026-08-24T00:00:00-03:00 |
+| Status | Completed |
+| Version | 1.6 |
+| Updated | 2026-08-27T00:00:00-03:00 |
 | Source SPEC | @spec: SPEC-04 |
 | Source TDD | @tdd: TDD.04.04.8b79 |
 | Subtype | combined |
 | Estimated Files | 18 |
-| Session Count | 2 |
-| Readiness Gate | CHG-22 remains In Review; GATE06, GATE08, and GATECODE fail until manual F7, exact runtime counts, two-chart ownership, canary, and review evidence pass. |
+| Session Count | 7 |
+| Readiness Gate | Completed at the CHG-22 module boundary: accepted aggregate evidence, audit quorum, and human GATE-06/GATE-08/GATE-CODE approval are recorded. Production integration and rollout remain downstream release obligations. |
+
+Canonical closure and aggregate-test criteria: [SPEC-08 evidence contract](../06_SPEC/SPEC-08_release_testing_and_documentation_governance/SPEC-08_release_testing_and_documentation_governance.yaml).
 
 ## Current Outcome
 
-All 18 declared files are present, but none has fresh CHG-22 compile/runtime verification. Source and assertion-backed tests now implement:
+All 18/18 declared files are present and verified by the accepted aggregate
+build/runtime evidence. `RunAllTests` compiled the complete test/dependency
+translation unit with 0 errors and 0 warnings, IPLAN-04 passed 137/137 with
+0 failed/0 skipped, and the aggregate passed 694/694 with 11 mapped skips
+outside IPLAN-04/05. Source and assertion-backed tests implement:
 
 - one canonical startup/timer/transaction-hint reconciliation path;
 - commit-before-apply lifecycle transitions and classified cancellation evidence;
@@ -29,30 +37,30 @@ All 18 declared files are present, but none has fresh CHG-22 compile/runtime ver
 - explicit isolated namespaces for optimization/nonvisual tester suppression;
 - separate read-only production account, position, and transaction-evidence providers.
 
-Production provider lifetime/injection remains IPLAN-01 scope. Immediate guarded broker-operation fences and classified emergency cleanup remain IPLAN-03 scope.
+Coordinator consumption remains IPLAN-02 scope. Production provider lifetime/injection, timer wiring, attachable two-chart validation, and strategy packaging remain IPLAN-01 scope. Immediate guarded broker-operation fences, bypass validation, and classified emergency cleanup remain IPLAN-03 scope.
 
 ## File Manifest
 
 | Order | Path | Status | Freshly Verified | Purpose |
 | --- | --- | --- | --- | --- |
-| 1 | `Scripts/Tests/Support/FakePositionView.mqh` | DONE | false | Broker position, account mode, transaction evidence, and executor fakes. |
-| 2 | `Scripts/Tests/Support/FakeStateStore.mqh` | DONE | false | Snapshot, runtime namespace, HALT, and marker-lease fake. |
-| 3 | `Scripts/Tests/Support/FakeAlertSink.mqh` | DONE | false | Checked HALT/Warn capture fake. |
-| 4 | `Scripts/Tests/Test_PositionStateMachine.mq5` | DONE | false | Lifecycle, restart, hint correlation, cancellation, persistence, lease, and HALT recovery assertions. |
-| 5 | `Scripts/Tests/Test_AccountModeAdapters.mq5` | DONE | false | Hedging ownership and deferred no-write adapter assertions. |
-| 6 | `Scripts/Tests/Test_AccountModeDeferred.mq5` | DONE | false | Initialization ordering, 30-second cadence, lease loss, isolation, and stop-repair assertions. |
-| 7 | `Scripts/Tests/Test_PositionLiveProviders.mq5` | DONE | false | Native parity smoke for read-only terminal providers. |
-| 8 | `Include/Position/PositionTypes.mqh` | DONE | false | Position enums and five-second cancel-confirm timeout. |
-| 9 | `Include/Position/Interfaces.mqh` | DONE | false | Position, broker, history, account-mode, and executor seams. |
-| 10 | `Include/Position/PositionStateMachine.mqh` | DONE | false | Durable lifecycle and canonical reconciliation. |
-| 11 | `Include/Position/AccountModeAdapter.mqh` | DONE | false | Account-mode adapter interface. |
-| 12 | `Include/Position/HedgingAdapter.mqh` | DONE | false | Symbol+magic hedging ownership and delegated writes. |
-| 13 | `Include/Position/NettingAdapter.mqh` | DONE | false | Deferred netting/exchange no-write adapter. |
-| 14 | `Include/Position/PositionContext.mqh` | DONE | false | Checked startup, readiness, maintenance, lease-loss HALT, hint routing, and explicit fresh-claim recovery. |
-| 15 | `Include/Position/TradeTxRouter.mqh` | DONE | false | Untrusted hint filter delegating to reconciliation. |
-| 16 | `Include/Position/LiveAccountModeProvider.mqh` | DONE | false | Read-only `CAccountInfo` adapter. |
-| 17 | `Include/Position/LiveBrokerPositionView.mqh` | DONE | false | Read-only current-position and stable-identifier adapter. |
-| 18 | `Include/Position/LiveTradeTransactionEvidence.mqh` | DONE | false | Read-only active order, position, and explicitly selected history adapter. |
+| 1 | `Scripts/Tests/Support/FakePositionView.mqh` | DONE | true | Broker position, account mode, transaction evidence, and executor fakes. |
+| 2 | `Scripts/Tests/Support/FakeStateStore.mqh` | DONE | true | Snapshot, runtime namespace, HALT, and marker-lease fake. |
+| 3 | `Scripts/Tests/Support/FakeAlertSink.mqh` | DONE | true | Checked HALT/Warn capture fake. |
+| 4 | `Scripts/Tests/Test_PositionStateMachine.mq5` | DONE | true | Lifecycle, restart, hint correlation, cancellation, persistence, lease, and HALT recovery assertions. |
+| 5 | `Scripts/Tests/Test_AccountModeAdapters.mq5` | DONE | true | Hedging ownership and deferred no-write adapter assertions. |
+| 6 | `Scripts/Tests/Test_AccountModeDeferred.mq5` | DONE | true | Initialization ordering, 30-second cadence, lease loss, isolation, and stop-repair assertions. |
+| 7 | `Scripts/Tests/Test_PositionLiveProviders.mq5` | DONE | true | Native parity smoke for read-only terminal providers. |
+| 8 | `Include/Position/PositionTypes.mqh` | DONE | true | Position enums and five-second cancel-confirm timeout. |
+| 9 | `Include/Position/Interfaces.mqh` | DONE | true | Position, broker, history, account-mode, and executor seams. |
+| 10 | `Include/Position/PositionStateMachine.mqh` | DONE | true | Durable lifecycle and canonical reconciliation. |
+| 11 | `Include/Position/AccountModeAdapter.mqh` | DONE | true | Account-mode adapter interface. |
+| 12 | `Include/Position/HedgingAdapter.mqh` | DONE | true | Symbol+magic hedging ownership and delegated writes. |
+| 13 | `Include/Position/NettingAdapter.mqh` | DONE | true | Deferred netting/exchange no-write adapter. |
+| 14 | `Include/Position/PositionContext.mqh` | DONE | true | Checked startup, readiness, maintenance, lease-loss HALT, hint routing, and explicit fresh-claim recovery. |
+| 15 | `Include/Position/TradeTxRouter.mqh` | DONE | true | Untrusted hint filter delegating to reconciliation. |
+| 16 | `Include/Position/LiveAccountModeProvider.mqh` | DONE | true | Read-only `CAccountInfo` adapter. |
+| 17 | `Include/Position/LiveBrokerPositionView.mqh` | DONE | true | Read-only current-position and stable-identifier adapter. |
+| 18 | `Include/Position/LiveTradeTransactionEvidence.mqh` | DONE | true | Read-only active order, position, and explicitly selected history adapter. |
 
 ## Lockstep Supporting Changes
 
@@ -83,37 +91,58 @@ Completed in this recovery session:
 - quoted include paths resolved;
 - `git diff --check` and static interface/provider scans.
 
-Required external/manual evidence:
+Completed external/manual evidence:
 
-1. Run focused scripts and `RunAllTests` in MT5; record exact pass/fail/skip counts.
-2. Compile every changed script and aggregate runner with manual MetaEditor F7; require fresh EX5 artifacts, 0 errors, and 0 warnings.
-3. Complete the `CHG-22-R1` producer/consumer DAG: IPLAN-05 and IPLAN-04, then IPLAN-02, then IPLAN-01 provider assembly plus IPLAN-03 final broker-mutation fencing. Run their named focused suites, bypass scan, and aggregate runner together.
-4. Run the manual two-chart ownership test using the fresh IPLAN-01 StrategyTemplate EX5.
-5. Rehearse rollback, then promote the exact pinned bundle through demo, restricted live, partial cohort when applicable, and full rollout; emit `TS_DEPLOY_PHASE` at every boundary.
-6. Rerun review-team after runtime evidence; require no P0/P1, every lens at least 80, and weighted score at least 85.
+1. `RunAllTests.mq5` compiled manually with F7: 0 errors, 0 warnings, fresh EX5 timestamp and SHA-256 recorded.
+2. Exact-set inspection found all 16 `Test_*.mq5` files included once; call-graph inspection found all 158 actual `Test_*` cases reachable.
+3. MT5 execution recorded IPLAN-04 137/137 and IPLAN-05 243/243 with 0 failed/0 skipped, plus aggregate 694/694 with 11 mapped non-module skips.
+
+Closure record: IPLAN audit quorum passed at 94.44/100 with no P0/P1. Human
+GATE-06/GATE-08/GATE-CODE approval accepted the documentation-level MQL5
+provenance manifest. IPLAN-04 is completed; no further MetaEditor or MT5 action
+is required for its module closure.
 
 ## Deterministic Gate Flow
 
-`CANONICAL_CASCADE → STATIC_VALIDATION → MANUAL_F7 → MT5_TEST → PRODUCER_CONTRACT → COORDINATION_CONSUMER → PRODUCTION_ASSEMBLY_INTEGRATION → TWO_CHART → ROLLBACK_REHEARSAL → DEMO_CANARY → RESTRICTED_LIVE → PARTIAL_COHORT → FULL_ROLLOUT → FINAL_REVIEW → APPROVAL`.
+Module closure: `CANONICAL_CASCADE → STATIC_VALIDATION → aggregate MANUAL_F7 → aggregate MT5_TEST → MODULE_CONTRACT → FINAL_REVIEW → APPROVAL`.
 
-Every deployment step has a stable `DPL-CHG22-*` ID and every paired rollback has a stable `RBK-CHG22-*` ID in the canonical deployment-step matrix. The manual smoke matrix names the exact F7 scripts, MT5 runs, StrategyBase/coordinator/GuardedTrade integration suite, two-chart attachment, expected result, evidence, timeout, and failure transition.
+The canonical smoke tests require the fresh aggregate build, exact inclusion and
+case-reachability proof, exact module/aggregate MT5 counts, review thresholds,
+and failure transition. Canonical module metrics are 0 aggregate compile errors,
+0 warnings, 0 IPLAN-04/05 failures or skips, 0 aggregate failures, mapped
+non-module skips, and passing team-audit thresholds.
 
 - Static, compile, or assertion failure transitions to `REMEDIATE` and restarts at the canonical cascade.
-- Ownership loss, contradictory persistence, uncorrelated transition, or unavailable required evidence transitions to `HALT_AND_EXPORT`.
-- A canary stop condition transitions to `ROLLBACK`; the EA must be disabled within 60 seconds.
-- Approval is possible only after all evidence is attached and the final review/gates pass.
+- Missing or stale evidence transitions to `REMEDIATE`; verification flags and statuses do not change.
+- Approval is possible only after all module evidence is attached and the final review/gates pass.
 
-Cutover requires zero failed and zero skipped IPLAN-04 focused tests; zero failed aggregate tests with only canonically pending functions allowed to skip; exactly one successful owner in every interleaving; 100% mutation-fence checks; maintenance gaps below 60 seconds; recovery within 90 seconds once evidence is available; and zero contradictory snapshots, uncorrelated transitions, unexplained HALTs, or unavailable required provider facts. The canary spans one complete terminal-reported trading session without a disconnect longer than 60 seconds.
+Aggregate module acceptance requires 0 failed and 0 skipped in each IPLAN-04/05
+section. Global skips are allowed only when each skipped function is named,
+mapped to a pending canonical TDD case, and lies outside those module suites.
 
-Before canary, a demo rollback rehearsal injects lease theft, provider/history failure, and inactive-slot corruption. It must prove two distinct outcomes: same-revision restoration may reconcile flat or one unambiguously owned position; after `SNAPSHOT-MIGRATION-BOUNDARY`, a prior-binary downgrade must separately prove flat state with no matching order, publish legacy IDLE under exclusive disabled/HALT control, and clear HALT last before attachment. The stale existing EX5 is never rollback evidence. `CHG-22-R1` has a zero-width compatibility window: the first committed new snapshot retires the old binary.
+The canonical rollback procedure covers documentation restore, atomic Position/Persistence source-bundle restore, and the forward-only snapshot migration safeguard. An attachable-EA rollback rehearsal is deferred to final release closeout after IPLAN-01/02/03 complete. The stale existing EX5 is never rollback evidence.
 
-## Session 2 Handoff
+## Deferred Release Obligations
 
-Source and assertion-backed tests implement reconciliation, absorbing HALT, explicit fresh-claim recovery, classified cancellation evidence, commit-last snapshots, marker fencing, runtime namespaces, and read-only live providers. No fresh compile/runtime evidence is inherited from session 1. StrategyBase provider assembly, coordinator consumption, and guarded execution remain owned by IPLAN-01, IPLAN-02, and IPLAN-03 and are mandatory before production-shaped validation.
+| Owner | Mandatory obligation before production readiness |
+| --- | --- |
+| IPLAN-02 | Consume the pinned CHG-22-R1 readiness and lifecycle contract. |
+| IPLAN-01 | Assemble providers, wire timer/transactions, package an attachable EA, and execute two-chart validation. |
+| IPLAN-03 | Prove final broker-mutation fencing, classified emergency cleanup, and zero broker-bypass findings. |
+| Final release gate | Rehearse rollback and execute demo canary, restricted live, partial cohort, full rollout, and final production approval. |
+
+## Session 2 Handoff (Historical)
+
+Source and assertion-backed tests implement reconciliation, absorbing HALT,
+explicit fresh-claim recovery, classified cancellation evidence, commit-last
+snapshots, marker fencing, runtime namespaces, and read-only live providers.
+Fresh aggregate compilation/runtime evidence verified the complete module case
+set. This historical handoff predates the completed audit quorum and human gate
+approval recorded above; it is not a current closure blocker.
 
 ## Rollback
 
-Disable the EA within 60 seconds and export both lifecycle generations, active commit, legacy keys, HALT audit, marker globals, terminal logs, provider observations, and source/EX5 checksums. Every state-mutating promotion has a dedicated `RBK-CHG22-*` pair naming its exact identity set and terminal state; validation-only phases are explicitly N/A. Restore artifact bundles only as complete pinned revisions. A prior binary may not attach to migrated snapshots: prove flat/no-order state under exclusive ownership, archive evidence, publish rehearsed legacy IDLE evidence, and clear the legacy HALT flag last. Successful rollback terminates that release attempt; a new attempt restarts at the canonical cascade with a new fingerprint.
+Restore documentation only as one canonical/readable bundle. Restore Position/Persistence source, interfaces, fakes, and tests only as one pinned revision while every EA remains disabled. A prior binary may not attach to migrated snapshots: prove flat/no-order state under exclusive ownership, archive evidence, publish rehearsed legacy IDLE evidence, and clear HALT last. Release-deployment rollback belongs to the final release gate.
 
 ## Traceability
 

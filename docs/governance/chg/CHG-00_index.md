@@ -11,6 +11,8 @@ custom_fields:
 
 # CHG Index
 
+> Provenance: @chg: CHG-23
+
 ## Purpose
 
 - Central index for TradeSpine Change Management documents.
@@ -41,7 +43,9 @@ custom_fields:
 | CHG-19 | Session close reference input and broker market-session gate reconciliation | C3 | feedback | Proposed | GATE-CODE pending |
 | CHG-20 | Fixture ownership and FakeMarketContext scope clarification | C3 | design | Approved | GATE-06/GATE-08 approved |
 | CHG-21 | Canonical TradeIntent type extraction and regular-session-end close reference | C3 | design | Approved | GATE-06 + GATE-08 PASS (2026-06-21) |
-| CHG-22 | IPLAN-04 correctness, safety, persistence, and governance recovery | C3 | design | In Review | GATE-06/GATE-08/GATE-CODE failed pending fresh compile, runtime, ownership, canary, and review evidence |
+| CHG-22 | IPLAN-04 correctness, safety, persistence, and governance recovery | C3 | design | Implemented | GATE-06/GATE-08/GATE-CODE approved at the IPLAN-04/05 module boundary on 2026-08-27; no deployment authorization |
+| CHG-23 | Documentation template normalization and CHG-22 boundary amendment | C3 | design | Implemented | GATE-06/GATE-08 approved on 2026-08-27; documentation-only, no MQL5 source change |
+| CHG-24 | Evidence-contract consolidation and field semantics | C2 | design | In Review | Documentation-only consolidation of SPEC-08 evidence authority; peer review pending |
 
 ## Planned
 

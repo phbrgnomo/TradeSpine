@@ -7,24 +7,25 @@ metadata:
   source_spec: "@spec: SPEC-04"
   source_tdd: "@tdd: TDD.04.04.8b79"
   total_sections: 6
-  last_updated: "2026-08-25T00:00:00-03:00"
-  tags: ["iplan-document", "layer-8-artifact", "shared-architecture", "in-progress"]
+  last_updated: "2026-08-27T00:00:00-03:00"
+  tags: ["iplan-document", "layer-8-artifact", "shared-architecture", "completed"]
 
 document_control:
   iplan_id: "IPLAN-04"
   source_spec: "@spec: SPEC-04"
   source_tdd: "@tdd: TDD.04.04.8b79"
-  status: In Progress
-  version: "1.4"
+  status: Completed
+  version: "1.6"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-08-25T00:00:00-03:00"
+  last_updated: "2026-08-27T00:00:00-03:00"
   author: "Codex"
   component: "CPositionContext, adapters, router, state machine, and IPLAN-04 persistence extensions"
   subtype: combined
   complexity: 5
   estimated_files: 18
-  session_count: 3
-  readiness_gate: "CHG-22 remains In Review; GATE06, GATE08, and GATECODE fail until manual F7, runtime, two-chart, canary, and review evidence pass"
+  session_count: 7
+  readiness_gate: "Completed at the CHG-22 module boundary: accepted aggregate evidence, audit quorum, and human GATE-06/GATE-08/GATE-CODE approval are recorded. Production integration and rollout remain downstream release obligations."
+  evidence_contract_reference: "@spec: SPEC-08 data_models.evidence_contract"
   source_inputs:
     - "../07_TDD/TDD-04_position_account_mode_and_state/TDD-04_position_account_mode_and_state.yaml"
     - "../06_SPEC/SPEC-04_position_account_mode_and_state/SPEC-04_position_account_mode_and_state.yaml"
@@ -37,109 +38,109 @@ file_manifest:
       order: 1
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "Single-interface fakes for broker positions, account mode, transaction evidence, and guarded trade execution."
     - path: "Scripts/Tests/Support/FakeStateStore.mqh"
       order: 2
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "Reusable in-memory IStateStore fake with marker lease, pending order, HALT set/clear, scalar, and ticket counters."
     - path: "Scripts/Tests/Support/FakeAlertSink.mqh"
       order: 3
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "Reusable IAlertSink fake that captures HALT/Warn payloads and can forward HALT to FakeStateStore."
     - path: "Scripts/Tests/Test_PositionStateMachine.mq5"
       order: 4
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "Commit-before-apply lifecycle, both cancellation origins, restart matrix, canonical transaction reconciliation, stable position identity, lease fencing, absorbing HALT, and explicit recovery guards."
     - path: "Scripts/Tests/Test_AccountModeAdapters.mq5"
       order: 5
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "Hedging ownership filtering, executor delegation, tighten-only trailing, and deferred netting no-write tests."
     - path: "Scripts/Tests/Test_AccountModeDeferred.mq5"
       order: 6
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "PositionContext startup ordering, deferred modes, duplicate lease, lease loss, 30-second maintenance, runtime namespace isolation, and stop-repair fences."
     - path: "Scripts/Tests/Test_PositionLiveProviders.mq5"
       order: 7
       status: DONE
       session: 2
-      verified: false
+      verified: true
       purpose: "Read-only production provider comparison with native terminal account, position, order, and bounded-history APIs."
     - path: "Include/Position/PositionTypes.mqh"
       order: 8
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "Position close reasons, state triggers, recovery decisions, exit roles, and fill-timeout constant."
     - path: "Include/Position/Interfaces.mqh"
       order: 9
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "IPositionView, IBrokerPositionView, ITradeTransactionEvidence, IAccountModeProvider, and ITradeExecutor seams."
     - path: "Include/Position/PositionStateMachine.mqh"
       order: 10
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "Commit-before-apply lifecycle, classified cancellation, canonical restart/timer/hint reconciliation, stable position identity, and absorbing HALT."
     - path: "Include/Position/AccountModeAdapter.mqh"
       order: 11
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "IAccountModeAdapter interface."
     - path: "Include/Position/HedgingAdapter.mqh"
       order: 12
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "Magic+symbol-filtered hedging ticket ownership and guarded write delegation."
     - path: "Include/Position/NettingAdapter.mqh"
       order: 13
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "Deferred v1 adapter for retail netting and exchange modes with zero write side effects."
     - path: "Include/Position/PositionContext.mqh"
       order: 14
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "Checked startup reconciliation, readiness, 30-second maintenance, lease-loss HALT, hint routing, isolated-runtime validation, immediate mutation fences, and explicit Recover with fresh claim plus full reconciliation."
     - path: "Include/Position/TradeTxRouter.mqh"
       order: 15
       status: DONE
       session: 1
-      verified: false
+      verified: true
       purpose: "Untrusted hint filter that selects bounded evidence and delegates every correlated event to canonical reconciliation."
     - path: "Include/Position/LiveAccountModeProvider.mqh"
       order: 16
       status: DONE
       session: 2
-      verified: false
+      verified: true
       purpose: "Read-only CAccountInfo-composed production margin-mode provider."
     - path: "Include/Position/LiveBrokerPositionView.mqh"
       order: 17
       status: DONE
       session: 2
-      verified: false
+      verified: true
       purpose: "Read-only CPositionInfo-composed live ticket and stable-identifier provider."
     - path: "Include/Position/LiveTradeTransactionEvidence.mqh"
       order: 18
       status: DONE
       session: 2
-      verified: false
+      verified: true
       purpose: "Read-only order, deal, position, and explicit-history provider with selection invalidation."
 
 modified_supporting_files:
@@ -183,12 +184,23 @@ execution_commands:
     - "Implement commit-last lifecycle snapshots, checked HALT evidence, marker bootstrap mutex, and ownership fencing in lockstep with IPLAN-05."
   validation:
     - "Parse every canonical YAML artifact and run cross-document traceability validation."
-    - "Run focused scripts and RunAllTests inside MT5; record exact pass, fail, and skip counts."
-    - "Compile every changed test and aggregate runner with manual MetaEditor F7; require fresh EX5 artifacts, 0 errors, and 0 warnings."
-    - "Run the manual two-chart ownership interleaving and one demo account-symbol-magic canary for a full broker session."
+    - "Verify RunAllTests includes all Test_*.mq5 sources exactly once and reaches every actual Test_* case compiled into the aggregate translation unit."
+    - "Compile RunAllTests with manual MetaEditor F7; require a fresh aggregate EX5, 0 errors, and 0 warnings."
+    - "Execute RunAllTests in MT5; record exact IPLAN-04, IPLAN-05, and aggregate pass/fail/skip counts and map every skip."
     - "Rerun review-team; require no P0/P1, every lens >=80, and weighted score >=85."
 
 acceptance_workflow:
+  completion_boundary: "Apply @spec: SPEC-08 data_models.evidence_contract. IPLAN-04 closes only at the CHG-22 module boundary and does not authorize production readiness or deployment."
+  closure_phase_ids: [CANONICAL_CASCADE, STATIC_VALIDATION, MANUAL_F7, MT5_TEST, MODULE_CONTRACT, FINAL_REVIEW, APPROVAL]
+  deferred_release_obligations:
+    - owner: "IPLAN-02"
+      obligation: "Consume the pinned CHG-22-R1 readiness and lifecycle contract in coordinator tests."
+    - owner: "IPLAN-01"
+      obligation: "Assemble live providers, wire timer/transactions, package an attachable EA, and execute two-chart validation."
+    - owner: "IPLAN-03"
+      obligation: "Prove final broker-mutation fencing and zero broker-bypass findings."
+    - owner: "Tier-9 documentation_closeout"
+      obligation: "After IPLAN-01/02/03 complete, perform rollback rehearsal, demo canary, restricted live, staged rollout, and final release approval."
   phases:
     - id: CANONICAL_CASCADE
       step_id: "DPL-CHG22-01"
@@ -206,85 +218,49 @@ acceptance_workflow:
       step_id: "DPL-CHG22-03"
       rollback_step_id: "N/A: build evidence only; unapproved EX5 remains undeployed"
       entry: "STATIC_VALIDATION passed on the exact source to compile."
-      exit: "Every changed focused script and RunAllTests has a fresh EX5 with 0 errors and 0 warnings; source and EX5 timestamps/checksums are captured."
+      exit: "RunAllTests has a fresh EX5 with 0 errors and 0 warnings; the aggregate source includes every Test_*.mq5 file and all dependencies, and source/EX5 timestamps plus checksum are captured."
       failure_next: REMEDIATE
     - id: MT5_TEST
       step_id: "DPL-CHG22-04"
       rollback_step_id: "N/A: isolated test execution; test cleanup owns temporary state"
       entry: "MANUAL_F7 passed and the fresh EX5 set is loaded in the intended terminal."
-      exit: "All IPLAN-04 focused scripts and RunAllTests report exact counts satisfying cutover_thresholds.tests."
+      exit: "RunAllTests reports exact module and aggregate counts: IPLAN-04 has 0 failed/0 skipped, IPLAN-05 has 0 failed/0 skipped, and every aggregate skip is named and mapped outside those module suites."
       failure_next: REMEDIATE
-    - id: PRODUCER_CONTRACT
+    - id: MODULE_CONTRACT
       step_id: "DPL-CHG22-05"
       rollback_step_id: "N/A: source integration gate; nothing is deployed"
       entry: "MT5_TEST passed and every CHG-22-R1 producer artifact is present in one source bundle."
-      exit: "IPLAN-05 persistence producers and IPLAN-04 lifecycle/providers compile and pass their focused suites against CHG-22-R1; mixed contract generations are rejected."
+      exit: "IPLAN-05 persistence producers and IPLAN-04 lifecycle/providers compile in the aggregate translation unit and their complete actual Test_* case sets pass against CHG-22-R1; mixed contract generations are rejected."
       failure_next: REMEDIATE
     - id: COORDINATION_CONSUMER
       step_id: "DPL-CHG22-06"
       rollback_step_id: "N/A: source integration gate; nothing is deployed"
-      entry: "PRODUCER_CONTRACT passed."
+      entry: "MODULE_CONTRACT passed; this phase is a downstream release obligation owned by IPLAN-02 and is not part of CHG-22 module closure."
       exit: "IPLAN-02 coordination consumes the CHG-22-R1 position readiness and lifecycle contract with its declared tests passing."
       failure_next: REMEDIATE
     - id: PRODUCTION_ASSEMBLY_INTEGRATION
       step_id: "DPL-CHG22-07"
       rollback_step_id: "N/A: source integration gate; nothing is deployed"
-      entry: "IPLAN-01 and IPLAN-03 manifests are DONE and COORDINATION_CONSUMER passed."
+      entry: "IPLAN-01 and IPLAN-03 manifests are DONE and COORDINATION_CONSUMER passed; this phase is a downstream release obligation, not part of CHG-22 module closure."
       exit: "StrategyBase/provider injection, CGuardedTrade final mutation fencing, broker-bypass scan, all focused producer/consumer suites, and RunAllTests pass together against CHG-22-R1."
       failure_next: REMEDIATE
-    - id: TWO_CHART
-      step_id: "DPL-CHG22-08"
-      rollback_step_id: "RBK-CHG22-10"
-      entry: "PRODUCTION_ASSEMBLY_INTEGRATION passed on a demo identity with no production exposure."
-      exit: "The interleaving matrix proves exactly one successful current owner and zero stale-owner mutations."
-      failure_next: HALT_AND_EXPORT
-    - id: ROLLBACK_REHEARSAL
-      step_id: "DPL-CHG22-09"
-      rollback_step_id: "N/A: this phase executes and proves the rollback procedures"
-      entry: "TWO_CHART passed; rollback source target and evidence-export location are accessible."
-      exit: "Both applicable paths pass within the declared SLAs: same-revision restoration may reconcile flat or one unambiguously owned position, while the post-SPEC.05.06.7c3a downgrade separately proves flat/no-matching-order legacy-IDLE publication before any prior binary attaches."
-      failure_next: HALT_AND_EXPORT
-    - id: DEMO_CANARY
-      step_id: "DPL-CHG22-10"
-      rollback_step_id: "RBK-CHG22-06"
-      entry: "ROLLBACK_REHEARSAL passed and one account-symbol-magic identity is approved for demo."
-      exit: "One complete terminal-reported broker trading session satisfies every canary threshold with no stop condition."
-      failure_next: ROLLBACK
-    - id: RESTRICTED_LIVE
-      step_id: "DPL-CHG22-11"
-      rollback_step_id: "RBK-CHG22-07"
-      entry: "DEMO_CANARY passed; the exact CHG-22-R1 source/EX5 bundle is pinned and one restricted live identity is approved."
-      exit: "Restricted live session meets the demo thresholds and emits TS_DEPLOY_PHASE evidence for the pinned commit and EX5 checksums."
-      failure_next: ROLLBACK
-    - id: PARTIAL_COHORT
-      step_id: "DPL-CHG22-12"
-      rollback_step_id: "RBK-CHG22-08"
-      entry: "RESTRICTED_LIVE passed and topology supports more than one identity; otherwise an explicit N/A decision is recorded."
-      exit: "The approved partial identity cohort meets the same thresholds, or the documented single-identity topology makes this phase N/A."
-      failure_next: ROLLBACK
-    - id: FULL_ROLLOUT
-      step_id: "DPL-CHG22-13"
-      rollback_step_id: "RBK-CHG22-09"
-      entry: "PARTIAL_COHORT passed or has an approved N/A decision."
-      exit: "All approved identities run the exact pinned CHG-22-R1 bundle with no stop condition."
-      failure_next: ROLLBACK
     - id: FINAL_REVIEW
       step_id: "DPL-CHG22-14"
       rollback_step_id: "N/A: review-only; no runtime or state mutation"
-      entry: "All preceding evidence is attached to CHG-22."
+      entry: "MODULE_CONTRACT passed and the module evidence bundle is attached to CHG-22; release-only phases are explicitly excluded."
       exit: "Review-team has no P0/P1, every lens is at least 80, weighted score is at least 85, and structural gates pass."
       failure_next: REMEDIATE
     - id: APPROVAL
       step_id: "DPL-CHG22-15"
-      rollback_step_id: "N/A: governance decision; deployment already passed all rollback-capable phases"
+      rollback_step_id: "N/A: governance decision; no deployment is authorized by this approval"
       entry: "FINAL_REVIEW passed and GATE06/GATE08/GATECODE evidence is complete."
-      exit: "Human approver records approval; only then may CHG-22 close."
-      failure_next: HALT_AND_EXPORT
+      exit: "Human approvers record the required decisions; only then may IPLAN-04/IPLAN-05 and CHG-22 close at the module boundary."
+      failure_next: REMEDIATE
   transitions:
-    - "CANONICAL_CASCADE -> STATIC_VALIDATION -> MANUAL_F7 -> MT5_TEST -> PRODUCER_CONTRACT -> COORDINATION_CONSUMER -> PRODUCTION_ASSEMBLY_INTEGRATION -> TWO_CHART -> ROLLBACK_REHEARSAL -> DEMO_CANARY -> RESTRICTED_LIVE -> PARTIAL_COHORT -> FULL_ROLLOUT -> FINAL_REVIEW -> APPROVAL."
+    - "CHG-22 module closure: CANONICAL_CASCADE -> STATIC_VALIDATION -> aggregate MANUAL_F7 -> aggregate MT5_TEST -> MODULE_CONTRACT -> FINAL_REVIEW -> APPROVAL."
+    - "Release-only sequencing, stop conditions, and executable rollback identifiers are owned by the final release-closeout artifact after IPLAN-01/02/03 complete; they are not states in this module-closure workflow."
     - "A static, compile, or assertion failure transitions only to REMEDIATE and restarts from CANONICAL_CASCADE."
     - "Ownership loss, contradictory snapshot, uncorrelated transition, or required evidence unavailability transitions to HALT_AND_EXPORT; no retry occurs before evidence export and root-cause remediation."
-    - "A demo-canary stop condition transitions to ROLLBACK; disable the EA within 60 seconds and execute the paired rollback procedure."
   failure_states:
     - id: REMEDIATE
       entry: "A canonical, static, compile, test, integration, or review gate failed before a production mutation."
@@ -296,16 +272,6 @@ acceptance_workflow:
       action: "Disable the affected identity within 60 seconds, enter/retain HALT, and export lifecycle, marker, broker, log, source, and EX5 evidence without deletion."
       exit: "Evidence export is complete and the root cause has an approved remediation."
       next: REMEDIATE
-    - id: ROLLBACK
-      entry: "A state-mutating DPL phase hit a stop condition."
-      action: "Execute only that phase's rollback_step_id, preserve evidence, and leave every affected identity in the rollback row's terminal state."
-      exit: "The paired rollback success signal is proven or the flow escalates to HALT_AND_EXPORT."
-      next: TERMINATED
-    - id: TERMINATED
-      entry: "A release attempt rolled back successfully."
-      action: "Keep the attempted CHG-22 promotion closed; do not resume at an intermediate phase."
-      exit: "A later attempt may begin only as a new fingerprinted run at CANONICAL_CASCADE."
-      next: CANONICAL_CASCADE_NEW_ATTEMPT_ONLY
 
 deployment_step_matrix:
   - step_id: "DPL-CHG22-01"
@@ -321,7 +287,7 @@ deployment_step_matrix:
     body_step: MT5_TEST
     rollback_step_id: "N/A"
   - step_id: "DPL-CHG22-05"
-    body_step: PRODUCER_CONTRACT
+    body_step: MODULE_CONTRACT
     rollback_step_id: "N/A"
   - step_id: "DPL-CHG22-06"
     body_step: COORDINATION_CONSUMER
@@ -329,24 +295,6 @@ deployment_step_matrix:
   - step_id: "DPL-CHG22-07"
     body_step: PRODUCTION_ASSEMBLY_INTEGRATION
     rollback_step_id: "N/A"
-  - step_id: "DPL-CHG22-08"
-    body_step: TWO_CHART
-    rollback_step_id: "RBK-CHG22-10"
-  - step_id: "DPL-CHG22-09"
-    body_step: ROLLBACK_REHEARSAL
-    rollback_step_id: "N/A"
-  - step_id: "DPL-CHG22-10"
-    body_step: DEMO_CANARY
-    rollback_step_id: "RBK-CHG22-06"
-  - step_id: "DPL-CHG22-11"
-    body_step: RESTRICTED_LIVE
-    rollback_step_id: "RBK-CHG22-07"
-  - step_id: "DPL-CHG22-12"
-    body_step: PARTIAL_COHORT
-    rollback_step_id: "RBK-CHG22-08"
-  - step_id: "DPL-CHG22-13"
-    body_step: FULL_ROLLOUT
-    rollback_step_id: "RBK-CHG22-09"
   - step_id: "DPL-CHG22-14"
     body_step: FINAL_REVIEW
     rollback_step_id: "N/A"
@@ -354,84 +302,87 @@ deployment_step_matrix:
     body_step: APPROVAL
     rollback_step_id: "N/A"
   - step_id: "RBK-CHG22-01"
-    body_step: rollback_pairs.documentation_bundle
+    body_step: rollback_details.documentation_bundle
   - step_id: "RBK-CHG22-02"
-    body_step: rollback_pairs.position_contract_bundle
+    body_step: rollback_details.position_contract_bundle
   - step_id: "RBK-CHG22-03"
-    body_step: rollback_pairs.persistence_contract_bundle
+    body_step: rollback_details.persistence_contract_bundle
   - step_id: "RBK-CHG22-04"
-    body_step: rollback_pairs.test_support_bundle
+    body_step: rollback_details.test_support_bundle
   - step_id: "RBK-CHG22-05"
-    body_step: rollback_pairs.snapshot_migration
-  - step_id: "RBK-CHG22-06"
-    body_step: rollback_pairs.demo_canary_deployment
-  - step_id: "RBK-CHG22-07"
-    body_step: rollback_pairs.restricted_live_deployment
-  - step_id: "RBK-CHG22-08"
-    body_step: rollback_pairs.partial_cohort_deployment
-  - step_id: "RBK-CHG22-09"
-    body_step: rollback_pairs.full_rollout_deployment
-  - step_id: "RBK-CHG22-10"
-    body_step: rollback_pairs.two_chart_demo_deployment
+    body_step: rollback_details.snapshot_migration
 
-cutover_smoke_matrix:
-  - phase: MANUAL_F7
-    invocation: "In MetaEditor, open and press F7 for Test_StateStore.mq5, Test_AlertSink.mq5, Test_PositionStateMachine.mq5, Test_AccountModeAdapters.mq5, Test_AccountModeDeferred.mq5, Test_PositionLiveProviders.mq5, and RunAllTests.mq5."
-    expected: "Each source produces a fresh EX5 with 0 errors and 0 warnings; record source and EX5 timestamps plus SHA-256."
-    timeout_or_failure: "Any missing/stale EX5, error, or warning returns to REMEDIATE."
-  - phase: MT5_TEST
-    invocation: "Run each focused script, then RunAllTests, from MT5 Navigator against the same terminal build and export Experts/Journal output."
-    expected: "Exact passed/failed/skipped counts meet cutover_thresholds.tests; provider parity submits zero trade requests."
-    timeout_or_failure: "Any failed assertion, unexplained skip, timeout, or missing output returns to REMEDIATE."
-  - phase: PRODUCTION_ASSEMBLY_INTEGRATION
-    invocation: "After IPLAN-01/02/03 are DONE, manually F7 and run Test_StrategyBase.mq5, Test_Coordinator.mq5, Test_GuardedTrade.mq5, Test_BrokerBypassScan.mq5, all IPLAN-04/05 focused suites, and RunAllTests.mq5."
-    expected: "All producers and consumers accept CHG-22-R1, provider lifetime/injection is proven, final broker mutation fencing passes, and bypass scan has zero findings."
-    timeout_or_failure: "Absent consumer artifacts or any failure blocks TWO_CHART and every canary stage."
-  - phase: TWO_CHART
-    invocation: "Attach the fresh IPLAN-01 StrategyTemplate EX5 twice to demo charts with identical account, canonical symbol, and magic; export both chart logs and marker values."
-    expected: "Exactly one instance becomes ready; after owner removal and lease expiry, the successor claims and fully reconciles before mutation."
-    timeout_or_failure: "Duplicate success, stale-owner mutation, or recovery beyond 90 seconds transitions to HALT_AND_EXPORT."
-  - phase: DEMO_CANARY
-    invocation: "Attach the pinned production-assembly EX5 to one approved demo identity before the first reported trading-session open and observe through the final close."
-    expected: "TS_DEPLOY_PHASE records commit, contract revision, EX5 checksums, identity, and phase; every canary threshold passes for the full session."
-    timeout_or_failure: "Any stop condition disables within 60 seconds and transitions to ROLLBACK."
-  - phase: RESTRICTED_LIVE_TO_FULL
-    invocation: "Promote the exact pinned bundle to one restricted live identity, then an approved partial cohort, then full rollout; emit TS_DEPLOY_PHASE at every boundary."
-    expected: "Each phase independently meets the demo thresholds; a single-identity topology records PARTIAL_COHORT=N/A."
-    timeout_or_failure: "Any identity or checksum drift, missing deploy event, or stop condition transitions to ROLLBACK."
-
-cutover_thresholds:
+smoke_tests:
   tests:
-    focused_iplan04: "0 failed and 0 skipped; exact passed/failed/skipped counts recorded per focused script."
-    aggregate: "0 failed; skips are permitted only when their exact function names remain status=pending in the canonical TDD tables, and every skip is listed in the report."
-  ownership:
-    - "Exactly one claimant succeeds in every first-use, stale-reclaim, CAS-to-heartbeat, heartbeat-loss, and release interleaving; every competing claimant has zero success tokens."
-    - "MarkerIsOwner succeeds immediately before 100% of lifecycle commits and context-owned broker mutations; stale owners produce zero shared lifecycle or broker mutations."
-  timing:
-    - "Live maintenance gap remains below the 60-second lease minimum; planned cadence is 30 seconds and every late event is explained."
-    - "After a competing owner is removed and required evidence is available, fresh claim plus safe reconciliation completes within 90 seconds."
-    - "Gate failure disables the EA within 60 seconds; rollback source restore and static/manual verification completes within 15 minutes or escalates while the EA remains disabled."
-  data_and_providers:
-    - "Zero contradictory committed snapshots, zero uncorrelated lifecycle transitions, zero unexplained HALT events, and zero unavailable required provider/history facts."
-    - "Every snapshot publication either advances one verified generation or leaves the prior generation authoritative."
-  canary_window: "One complete terminal-reported trading session: attach no later than the first SymbolInfoSessionTrade opening, observe through the final reported close, and permit no terminal disconnect longer than 60 seconds."
+    - name: "Aggregate MetaEditor compile evidence"
+      runs_after: "STATIC_VALIDATION"
+      pass_criterion: "RunAllTests produces a fresh EX5 with 0 errors and 0 warnings; static inspection proves exact inclusion of every Test_*.mq5 source and dependency; source/EX5 timestamps and SHA-256 are recorded."
+      timeout_seconds: 900
+    - name: "Aggregate MT5 module tests"
+      runs_after: "MANUAL_F7"
+      pass_criterion: "RunAllTests reaches every actual Test_* case and reports IPLAN-04 137/137 and IPLAN-05 243/243, each with 0 failed and 0 skipped."
+      timeout_seconds: 900
+    - name: "Aggregate skip reconciliation"
+      runs_after: "Aggregate MT5 module tests"
+      pass_criterion: "RunAllTests reports 694/694 passed and 0 failed; all 11 skips are named, mapped, and outside IPLAN-04/05."
+      timeout_seconds: 1800
+    - name: "Fresh review-team gate"
+      runs_after: "MODULE_CONTRACT"
+      pass_criterion: "No unresolved P0/P1, every required lens score is at least 80, weighted score is at least 85, and coverage quorum is met."
+      timeout_seconds: 1800
 
-pre_cutover_rehearsal:
-  environment: "Demo account with representative symbol/magic, broker history, active-order/position evidence, lifecycle generations, and two-chart ownership contention."
-  required_injections:
-    - "Lose the owner token between maintenance cycles and prove the stale chart cannot mutate shared lifecycle or broker state."
-    - "Make required history/provider evidence unavailable and prove HALT plus evidence export."
-    - "Corrupt the inactive snapshot during replacement and prove the prior committed generation remains authoritative."
+canary_metrics:
+  metrics:
+    - name: "MetaEditor errors"
+      threshold: "0 for the aggregate RunAllTests translation unit"
+      window_minutes: 0
+      action_on_breach: "Retain In Progress/In Review and request corrected evidence"
+    - name: "MetaEditor warnings"
+      threshold: "0 for the aggregate RunAllTests translation unit"
+      window_minutes: 0
+      action_on_breach: "Retain In Progress/In Review and request corrected evidence"
+    - name: "IPLAN-04/05 module failures and skips"
+      threshold: "0 failed and 0 skipped in each RunAllTests module section"
+      window_minutes: 0
+      action_on_breach: "Retain all false verification flags"
+    - name: "Aggregate MT5 failures"
+      threshold: "0 failed; skips only when named and mapped to pending TDD cases"
+      window_minutes: 0
+      action_on_breach: "Retain all false verification flags"
+    - name: "Review-team acceptance"
+      threshold: "quorum met, each lens >=80, weighted score >=85, no P0/P1"
+      window_minutes: 0
+      action_on_breach: "Keep CHG-22 and both IPLANs non-terminal"
+  release_canary_boundary: "Not part of IPLAN-04 or CHG-22 module closure; owned by final release closeout after IPLAN-01/02/03 complete."
+
+rollback_procedure:
+  steps:
+    - step: "Restore the documentation bundle"
+      forward_action: "Apply the CHG-23 canonical/readable normalization and CHG-22 boundary amendment."
+      reverse_action: "Restore the complete pre-CHG-23 documentation bundle from the recorded Git baseline."
+      verification: "Strict YAML, readable parity, reference resolution, and git diff --check pass with no partial amendment."
+      reversible: true
+    - step: "Restore Position and Persistence source bundles"
+      forward_action: "Use the CHG-22-R1 Position/Persistence contract during module verification."
+      reverse_action: "Keep every EA disabled and restore only one pinned, internally consistent source/interface/test bundle."
+      verification: "Human F7 and MT5 evidence for the restored bundle reports fresh artifacts, 0 errors, 0 warnings, and exact test counts."
+      reversible: true
+    - step: "Handle a committed LifecycleSnapshot migration"
+      forward_action: "Publish the first CHG-22-R1 committed LifecycleSnapshot."
+      reverse_action: "Do not attach a prior binary until exclusive ownership and broker evidence prove flat/no-order state and rollback-compatible legacy IDLE is published with HALT cleared last."
+      verification: "The prior binary starts only against verified flat legacy state and performs no broker mutation during reconciliation."
+      reversible: false
+  release_rehearsal_boundary: "Rollback rehearsal against an attachable EA is deferred to final release closeout after IPLAN-01/02/03 complete."
   rollback_target:
     source_commit: "ac7fe244dec1aa2d5897da406bf6c817804c607d"
     binary_checksum: "Captured from a fresh manual F7 build of the approved rollback source before rehearsal; the existing stale EX5 is not acceptable evidence."
     retrieval: "Local Git object database plus an operator-created read-only export of the approved source/EX5 bundle before canary."
-  pass_signals:
-    same_revision_restore: "EA disabled, evidence preserved, approved CHG-22-R1 bundle restored, fresh F7 clean, exactly one owner, and canonical reconciliation proves flat or one unambiguously owned position within the timing thresholds."
-    migrated_state_downgrade: "After SPEC.05.06.7c3a, the EA remains disabled/HALT; exclusive ownership and broker evidence prove flat with no matching live order, snapshots/legacy keys are exported, rollback-compatible legacy IDLE is published, HALT clears last, and only then may the prior binary attach."
-    phase_result: "DPL-CHG22-09 passes only when same_revision_restore passes and migrated_state_downgrade also passes whenever the migration boundary is in scope."
+  validation_after_rollback:
+    - "Use manual MetaEditor F7 for restored tests and RunAllTests; require fresh EX5 files, 0 errors, and 0 warnings."
+    - "Run strict YAML parsing with duplicate-key rejection and full strict doc-validator."
+    - "Run git diff --check."
 
-rollback_pairs:
+rollback_details:
   - forward: "Canonical SPEC/TDD/IPLAN/CHG cascade and readable companions."
     step_id: "RBK-CHG22-01"
     rollback: "Restore the complete approved documentation bundle from source commit ac7fe244dec1aa2d5897da406bf6c817804c607d; do not mix generations."
@@ -457,31 +408,38 @@ rollback_pairs:
     rollback: "Do not attach a prior binary to migrated state. Under disabled/HALT operation and exclusive ownership, export snapshots and legacy keys, prove broker flat with no matching orders, publish rollback-compatible legacy IDLE evidence, clear the legacy HALT flag last, then restore the prior binary."
     precondition: "Rollback rehearsal has proven the exact legacy-key procedure and SPEC-05 decision SPEC.05.06.7c3a is acknowledged; otherwise remain disabled and escalate."
     success: "Prior binary starts only against verified flat legacy state and produces no broker mutation during reconciliation."
-  - forward: "DPL-CHG22-10 demo-canary attachment."
-    step_id: "RBK-CHG22-06"
-    rollback: "Disable and detach the exact demo account-symbol-magic identity; preserve its broker/session evidence and do not attach any prior binary to migrated state."
-    precondition: "The demo identity set, previous detached state, CHG-22-R1 commit, and EX5 checksums were captured by TS_DEPLOY_PHASE."
-    success: "The demo identity has no running EA owner, no new broker mutation, exported evidence is complete, and the release attempt is TERMINATED."
-  - forward: "DPL-CHG22-11 restricted-live promotion."
-    step_id: "RBK-CHG22-07"
-    rollback: "Disable the one named restricted-live identity within 60 seconds and return it to its recorded pre-promotion disabled/deployed state; use RBK-CHG22-05 before any older binary if a new snapshot committed."
-    precondition: "The exact identity, prior approved bundle/checksums, pre-promotion broker state, and snapshot boundary are in the phase evidence."
-    success: "The restricted identity is disabled or restored to the proven prior safe bundle/state, has zero unowned exposure, and the release attempt is TERMINATED."
-  - forward: "DPL-CHG22-12 partial-cohort promotion."
-    step_id: "RBK-CHG22-08"
-    rollback: "Disable only the newly promoted cohort identity set and return each to its recorded pre-promotion state; retain the previously approved restricted-live identity unchanged unless it also hit a stop condition."
-    precondition: "The cohort manifest lists every account-symbol-magic identity, prior bundle/checksums, owner, and broker state."
-    success: "Every newly promoted cohort identity is disabled/restored and reconciled; the prior restricted-live terminal state is proven, and the release attempt is TERMINATED."
-  - forward: "DPL-CHG22-13 full rollout."
-    step_id: "RBK-CHG22-09"
-    rollback: "Disable the identities added after the last approved partial-cohort boundary and restore their recorded pre-promotion state; preserve the last approved cohort unless evidence requires broader HALT_AND_EXPORT."
-    precondition: "The full-rollout manifest and immediately prior approved cohort manifest pin identities, source commit, contract revision, EX5 checksums, owners, and broker state."
-    success: "All newly added identities are disabled/restored, the prior cohort boundary is proven safe, and the release attempt is TERMINATED."
-  - forward: "DPL-CHG22-08 two-chart demo ownership exercise."
-    step_id: "RBK-CHG22-10"
-    rollback: "Detach both demo charts, export both logs and marker values, and leave the demo identity with no EA owner."
-    precondition: "Both chart IDs, identical canonical identity, source/EX5 checksums, and pre-test broker state are captured."
-    success: "Neither chart owns the marker, no broker mutation occurred after stop, evidence is complete, and the test attempt is TERMINATED."
+
+observability_hooks:
+  hooks:
+    - event: "Module evidence captured"
+      signal_type: log
+      signal_name: "CHG22_MODULE_EVIDENCE"
+      dashboard_url: "docs/governance/chg/CHG-22_GATE-06_08_CODE_report.md"
+    - event: "Lifecycle recovery decision"
+      signal_type: log
+      signal_name: "TS_REC_DECISION"
+      dashboard_url: "Docs/OPERATIONS.md"
+    - event: "Lease ownership change"
+      signal_type: log
+      signal_name: "TS_LEASE_CLAIM|TS_LEASE_CONFLICT|TS_LEASE_LOST"
+      dashboard_url: "Docs/OPERATIONS.md"
+    - event: "HALT persistence failure"
+      signal_type: log
+      signal_name: "TS_HALT_PERSIST_FAIL|TS_HALT_UNFENCED"
+      dashboard_url: "Docs/OPERATIONS.md"
+
+runbook_reference:
+  runbook_url: "Docs/OPERATIONS.md"
+  new_failure_modes:
+    - mode: "Incomplete aggregate verification bundle"
+      detection: "Missing RunAllTests MetaEditor summary, stale/missing aggregate EX5 metadata, incomplete exact module counts, incomplete inclusion/reachability proof, or unexplained skip."
+      response: "Keep verification flags false and IPLAN-04/IPLAN-05/CHG-22 non-terminal; request only the missing evidence."
+    - mode: "Lifecycle or lease uncertainty"
+      detection: "Contradictory snapshot, lost owner, provider/history unavailability, or uncorrelated transition."
+      response: "Retain HALT, preserve evidence, and follow the state-aware rollback procedure."
+    - mode: "Release integration not yet owned"
+      detection: "IPLAN-01/02/03 are incomplete or no attachable strategy bundle exists."
+      response: "Do not attempt two-chart, canary, or rollout; complete the owning plans and final release gate first."
 
 implementation_contracts:
   revision: "CHG-22-R1"
@@ -613,28 +571,52 @@ session_handoff:
         - "Scripts/Tests/Test_PositionStateMachine.mq5"
         - "Docs/MODULES/Persistence.md"
       partial_work: "Extracted the marker lease protocol from CStateStore, made heartbeat reread failure ownership-preserving, documented snapshot invariants and commit-last publication, classified legacy UNKNOWN from unambiguous broker/durable evidence, and proved the IAlertSink persistence return changes state-machine control flow. The first reported aggregate run exposed two HALT hydration/recovery failures; Reconcile now hydrates durable HALT for ordinary calls and preserves a local lease-loss HALT until explicit broker-proof recovery clears it last."
-      blockers: "User reported the post-fix aggregate passed all tests. Exact post-fix pass/skip totals, MetaEditor 0-error/0-warning summary, fresh EX5 metadata, two-chart ownership, demo canary, and final review-team acceptance remain required."
-      next_session_directive: "Capture the exact post-fix RunAllTests pass/skip/fail line and MetaEditor error/warning summary, then perform the two-chart ownership test, demo canary, and final review-team gate."
+      blockers: "User reported the post-fix aggregate passed all tests, but exact post-fix counts, per-script MetaEditor 0-error/0-warning summaries, fresh EX5 metadata, fresh team audits, and human approvals remain required for module closure. Two-chart, canary, and rollout are downstream release obligations and are not IPLAN-04 closure gates."
+      next_session_directive: "Capture the exact focused and aggregate pass/fail/skip lines plus fresh per-script F7/EX5 evidence; then run the module-boundary team audits and request CHG-22 approvals without attempting release-only MT5 interactions."
       validation_results:
         tests_passing: "Pass reported by user after the HALT hydration fix. Exact post-fix pass and skip counts were not supplied; pre-fix evidence was 682/684 passed, 11 skipped, 2 failed."
         coverage: "Direct regression assertions added for transient heartbeat mismatch, committed UNKNOWN rejection, legacy UNKNOWN flat/active/pending/contradictory classification, and durable HALT failure propagation."
         lint_clean: null
-
-rollback_strategy:
-  summary: "IPLAN-04 spans Position, Persistence, tests, runtime state, and documentation. Execute the matching rollback_pairs row; any missing precondition keeps the EA disabled and CHG-22 open."
-  steps:
-    - "Within 60 seconds of a stop condition, disable the affected EA and preserve both lifecycle generations, commit key, legacy keys, HALT audit evidence, marker globals, terminal logs, provider observations, and source/EX5 checksums."
-    - "Select the rollback_pairs row for every forward mutation and verify all listed preconditions before changing source or state."
-    - "Restore source/doc/interface bundles only from pinned commit ac7fe244dec1aa2d5897da406bf6c817804c607d or the separately approved bundle recorded at GATECODE; never mix bundles."
-    - "For a migrated snapshot, execute the rehearsed downgrade protocol only after flat/no-order proof and exclusive ownership; otherwise remain disabled and escalate."
-    - "Complete source restore plus static and manual F7 verification within 15 minutes; missing the SLA keeps the EA disabled."
-    - "Re-enable only after exactly one owner and canonical broker reconciliation prove a safe state."
-  validation_after_rollback:
-    - "Use manual MetaEditor F7 for restored tests and RunAllTests; require fresh EX5 files, 0 errors, and 0 warnings."
-    - "python3 -c \"import yaml, pathlib; [yaml.safe_load(p.read_text()) for p in pathlib.Path('docs').glob('**/*.yaml')]; print('yaml ok')\""
-    - "git diff --check"
+    - date: "2026-08-26"
+      agent: "Human MetaEditor/MT5 evidence + Codex read-only reconciliation"
+      files_touched:
+        - "docs/governance/chg/CHG-22_human_evidence_2026-08-26.md"
+      partial_work: "Human evidence supplied a clean aggregate RunAllTests compile and exact MT5 output. IPLAN-04 executed 137/137 assertions with 0 failed and 0 skipped; IPLAN-05 executed 243/243 with 0 failed and 0 skipped; the full aggregate executed 694/694 with 11 mapped skips outside the module suites. RunAllTests.ex5 is fresh and fingerprinted."
+      blockers: "Aggregate compilation and execution are accepted as complete module evidence. Team-mode SPEC/TDD/IPLAN/CHG audit quorum and required human gate approvals remain absent."
+      next_session_directive: "Run fresh team audits, regenerate gate reports, and request the required CHG-23 and CHG-22 approvals. Do not attempt release-only MT5 interactions."
+      validation_results:
+        tests_passing: "IPLAN-04 137/137 passed, 0 failed, 0 skipped; IPLAN-05 243/243 passed, 0 failed, 0 skipped; aggregate 694/694 passed, 0 failed, 11 mapped skips outside IPLAN-04/05."
+        coverage: "All 16 Test_*.mq5 files are included exactly once; every one of the 158 actual Test_* case functions is reachable from RunAllTests. Forty-five uncalled lowercase TDD wrappers delegate only to cases already executed. Exact evidence is recorded in CHG-22_human_evidence_2026-08-26.md."
+        lint_clean: true
+    - date: "2026-08-27"
+      agent: "Codex / IPLAN-04/05 team-audit reconciliation"
+      files_touched:
+        - "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.yaml"
+        - "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+        - "docs/08_IPLAN/IPLAN-00_index.yaml"
+      partial_work: "Fresh IPLAN team-audit quorum is complete. IPLAN-04 weighted score is 94.44/100 with no P0/P1; the only findings are P2 release-benchmark and inventory/session-parity advisories. The session-count parity correction is recorded here and in IPLAN-00."
+      blockers: "CHG-22 remains In Review pending a final auditor adjudication of non-lifecycle MQL5 provenance placement and the required human GATE-06/GATE-08/GATE-CODE approvals. No MQL5 source may change in this documentation-only run."
+      next_session_directive: "After CHG-22 reaches audit-ready state, regenerate gate reports and obtain the required human approvals; only then transition IPLAN-04/05 to Completed at the module boundary."
+      validation_results:
+        tests_passing: "Accepted aggregate evidence remains IPLAN-04 137/137, IPLAN-05 243/243, aggregate 694/694; all module failures/skips are zero and 11 aggregate skips are mapped outside IPLAN-04/05."
+        coverage: "IPLAN team audit: tech_lead=100, architect=88, operator=100, integration_lead=100, auditor=84, chaos_engineer=88; weighted=94.44, quorum met, zero P0/P1."
+        lint_clean: true
+    - date: "2026-08-27"
+      agent: "Codex / CHG-22 module-closure record"
+      files_touched:
+        - "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.yaml"
+        - "docs/08_IPLAN/IPLAN-00_index.yaml"
+        - "docs/governance/chg/CHG-22_iplan04_position_state_and_lease_implementation.yaml"
+      partial_work: "IPLAN-04 is completed at the CHG-22 module boundary. Accepted evidence is IPLAN-04 137/137 passed, 0 failed, 0 skipped; aggregate 694/694 passed with 11 mapped skips outside IPLAN-04/05. Audit quorum scored 94.44/100 with zero P0/P1; human GATE-06/GATE-08/GATE-CODE approval is confirmed."
+      blockers: "None for IPLAN-04 module closure. IPLAN-01, IPLAN-02, IPLAN-03, and the final release gate retain their independent production-integration and rollout obligations."
+      next_session_directive: "Do not reopen IPLAN-04 for downstream integration work; record it in the owning IPLAN or release gate."
+      validation_results:
+        tests_passing: "IPLAN-04 137/137 passed, 0 failed, 0 skipped; aggregate 694/694 passed with 11 mapped non-module skips."
+        coverage: "Human-approved CHG-22 module closure; source remains frozen after accepted aggregate evidence."
+        lint_clean: true
 
 traceability:
+  provenance: ["@chg: CHG-22", "@chg: CHG-23"]
   upstream:
     spec_references: ["@spec: SPEC-04", "@spec: SPEC-05", "@spec: SPEC-03", "@spec: SPEC-01"]
     tdd_references: ["@tdd: TDD.04.04.8b79", "@tdd: TDD.04.04.c6e1", "@tdd: TDD.05.04.e64a", "@tdd: TDD.05.04.ed21"]
@@ -681,35 +663,75 @@ traceability:
       - "README.md"
   code_inventory:
     files:
-      - path: "Include/Persistence/MarkerLease.mqh"
-        public_interfaces: ["IMarkerBackend", "CTerminalMarkerBackend", "CMarkerLease"]
-      - path: "Include/Position/PositionTypes.mqh"
-        public_interfaces: ["ENUM_CLOSE_REASON", "ENUM_STATE_TRIGGER", "ENUM_RECOVERY_DECISION", "ENUM_EXIT_ROLE", "POSITION_FILL_TIMEOUT_SECS_DEFAULT"]
-      - path: "Include/Position/Interfaces.mqh"
-        public_interfaces: ["IPositionView", "IBrokerPositionView", "ITradeTransactionEvidence", "IAccountModeProvider", "ITradeExecutor"]
-      - path: "Include/Position/PositionStateMachine.mqh"
-        public_interfaces: ["CPositionStateMachine"]
-      - path: "Include/Position/AccountModeAdapter.mqh"
-        public_interfaces: ["IAccountModeAdapter"]
-      - path: "Include/Position/HedgingAdapter.mqh"
-        public_interfaces: ["CHedgingAdapter"]
-      - path: "Include/Position/NettingAdapter.mqh"
-        public_interfaces: ["CNettingAdapter"]
-      - path: "Include/Position/PositionContext.mqh"
-        public_interfaces: ["CPositionContext"]
-      - path: "Include/Position/TradeTxRouter.mqh"
-        public_interfaces: ["CTradeTxRouter"]
-      - path: "Include/Position/LiveAccountModeProvider.mqh"
-        public_interfaces: ["CLiveAccountModeProvider"]
-      - path: "Include/Position/LiveBrokerPositionView.mqh"
-        public_interfaces: ["CLiveBrokerPositionView"]
-      - path: "Include/Position/LiveTradeTransactionEvidence.mqh"
-        public_interfaces: ["CLiveTradeTransactionEvidence"]
-      - path: "Scripts/Tests/Test_PositionLiveProviders.mq5"
-        public_interfaces: ["test_position_live_providers_contract"]
       - path: "Scripts/Tests/Support/FakePositionView.mqh"
         public_interfaces: ["FakePositionView", "FakeAccountModeProvider", "FakeTradeTransactionEvidence", "FakeTradeExecutor"]
+        status: delivered
+        verified: true
       - path: "Scripts/Tests/Support/FakeStateStore.mqh"
         public_interfaces: ["FakeStateStore"]
+        status: delivered
+        verified: true
       - path: "Scripts/Tests/Support/FakeAlertSink.mqh"
         public_interfaces: ["FakeAlertSink"]
+        status: delivered
+        verified: true
+      - path: "Scripts/Tests/Test_PositionStateMachine.mq5"
+        public_interfaces: ["test_position_account_mode_and_state_unit_contract"]
+        status: delivered
+        verified: true
+      - path: "Scripts/Tests/Test_AccountModeAdapters.mq5"
+        public_interfaces: ["test_position_account_mode_and_state_integration_contract"]
+        status: delivered
+        verified: true
+      - path: "Scripts/Tests/Test_AccountModeDeferred.mq5"
+        public_interfaces: ["test_position_account_mode_and_state_e2e_acceptance"]
+        status: delivered
+        verified: true
+      - path: "Scripts/Tests/Test_PositionLiveProviders.mq5"
+        public_interfaces: ["test_position_live_providers_contract"]
+        status: delivered
+        verified: true
+      - path: "Include/Position/PositionTypes.mqh"
+        public_interfaces: ["ENUM_CLOSE_REASON", "ENUM_STATE_TRIGGER", "ENUM_RECOVERY_DECISION", "ENUM_EXIT_ROLE", "POSITION_FILL_TIMEOUT_SECS_DEFAULT"]
+        status: delivered
+        verified: true
+      - path: "Include/Position/Interfaces.mqh"
+        public_interfaces: ["IPositionView", "IBrokerPositionView", "ITradeTransactionEvidence", "IAccountModeProvider", "ITradeExecutor"]
+        status: delivered
+        verified: true
+      - path: "Include/Position/PositionStateMachine.mqh"
+        public_interfaces: ["CPositionStateMachine"]
+        status: delivered
+        verified: true
+      - path: "Include/Position/AccountModeAdapter.mqh"
+        public_interfaces: ["IAccountModeAdapter"]
+        status: delivered
+        verified: true
+      - path: "Include/Position/HedgingAdapter.mqh"
+        public_interfaces: ["CHedgingAdapter"]
+        status: delivered
+        verified: true
+      - path: "Include/Position/NettingAdapter.mqh"
+        public_interfaces: ["CNettingAdapter"]
+        status: delivered
+        verified: true
+      - path: "Include/Position/PositionContext.mqh"
+        public_interfaces: ["CPositionContext"]
+        status: delivered
+        verified: true
+      - path: "Include/Position/TradeTxRouter.mqh"
+        public_interfaces: ["CTradeTxRouter"]
+        status: delivered
+        verified: true
+      - path: "Include/Position/LiveAccountModeProvider.mqh"
+        public_interfaces: ["CLiveAccountModeProvider"]
+        status: delivered
+        verified: true
+      - path: "Include/Position/LiveBrokerPositionView.mqh"
+        public_interfaces: ["CLiveBrokerPositionView"]
+        status: delivered
+        verified: true
+      - path: "Include/Position/LiveTradeTransactionEvidence.mqh"
+        public_interfaces: ["CLiveTradeTransactionEvidence"]
+        status: delivered
+        verified: true

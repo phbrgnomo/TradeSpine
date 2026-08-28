@@ -1,5 +1,7 @@
 # TradeSpine
 
+> Provenance: @chg: CHG-22, @chg: CHG-23
+
 ![Status](https://img.shields.io/badge/status-active%20implementation-2b8a3e)
 ![Platform](https://img.shields.io/badge/platform-MetaTrader%205-1f6feb)
 ![Language](https://img.shields.io/badge/language-MQL5-0b7285)
@@ -30,11 +32,11 @@ Completed implementation tiers:
 - **IPLAN-11: Testing Support and Harnesses**: canonical `CAssert`, deterministic clock/log fakes, scenario harness support, shared mock aliases, release evidence harness, and the aggregate test runner.
 - **IPLAN-06: Market Session and Symbol Context**: symbol metadata loading and validation, B3-first lot/price/stop-grid normalization, user-entry session window, broker market-session gate, day-trade close reference, contract-expiry warnings, order-definition validation, and canonical `TradeIntent` type hoisted to `Include/Core/TradeTypes.mqh` (CHG-21).
 
-In progress:
+Completed module tiers:
 
-- **IPLAN-04 / CHG-22 recovery** — canonical startup/timer/hint reconciliation, absorbing HALT, correlated transaction hints, read-only live providers, and assertion-backed tests are present. All changed files require fresh manual F7/runtime verification.
-- **IPLAN-05 / CHG-22 persistence recovery** — commit-last double-buffer lifecycle snapshots, retained HALT/recovery evidence, checked alert persistence, explicit runtime namespaces, and fenced duplicate ownership are present. Changed persistence files require fresh validation.
-- CHG-22 remains open; GATE06, GATE08, and GATECODE remain failed pending exact MT5 counts, fresh EX5 evidence, two-chart ownership, a demo canary, and final review approval.
+- **IPLAN-04 / CHG-22** — completed at the module boundary: 137/137 passed, 0 failed, 0 skipped.
+- **IPLAN-05 / CHG-22** — completed at the module boundary: 243/243 passed, 0 failed, 0 skipped.
+- **CHG-22** is implemented at the module boundary. Production integration and rollout remain separate release obligations defined by the canonical [SPEC-08 evidence contract](docs/06_SPEC/SPEC-08_release_testing_and_documentation_governance/SPEC-08_release_testing_and_documentation_governance.yaml).
 
 Not started yet:
 
@@ -112,7 +114,7 @@ Primary runner:
 Scripts/Tests/RunAllTests.mq5
 ```
 
-Standalone test scripts by IPLAN:
+Test sources are compiled and executed through the aggregate runner and are also available as standalone scripts:
 
 ```text
 # IPLAN-09: Core Runtime

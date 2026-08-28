@@ -1,5 +1,7 @@
 # TradeSpine — Architecture Reference
 
+> Provenance: @chg: CHG-22
+
 This page describes the architecture of the **implemented** TradeSpine codebase. It is
 updated as each IPLAN lands. For the decision records behind these rules, see the ADRs and
 SPECs under [`docs/`](../docs).
@@ -33,25 +35,22 @@ These come from the ADRs and are non-negotiable for any generated code:
 
 ## Dependency direction
 
-Dependencies point **downward** (toward Core); nothing in Core depends on a higher layer.
-The seams in [`Include/Core/Interfaces.mqh`](../Include/Core/Interfaces.mqh) (`IClock`,
+Implemented dependencies point toward lower-level seams; nothing in Core depends on a higher
+layer. The seams in [`Include/Core/Interfaces.mqh`](../Include/Core/Interfaces.mqh) (`IClock`,
 `ILogSink`) are the inversion points that let tests inject deterministic doubles without
-pulling in production execution paths.
+pulling in production execution paths. Position and Market are peer modules: Position depends
+on Persistence and Core, while Market depends on Core and does not depend on Persistence.
 
 ```text
-Strategies / Ports            (IPLAN-01, 12, 13)   — planned
-Coordination / Execution      (IPLAN-02, 03)       — planned
-Position                      (IPLAN-04)            — SOURCE PRESENT / CHG-22 VERIFICATION OPEN
-Indicators / Optional        (IPLAN-07, 10)        — planned
-Market                        (IPLAN-06)            — IMPLEMENTED
-        │
-        ▼
-Persistence                   (IPLAN-05)            — REOPENED BY CHG-22
-        │
-        ▼
-Core Runtime                  (IPLAN-09)            — IMPLEMENTED
-Testing Support               (IPLAN-11)            — IMPLEMENTED (test-time only)
-Vendored StdLib               (ADR-06)              — as-needed per IPLAN
+Position                      (IPLAN-04)            — implemented
+        ├───────────────► Persistence (IPLAN-05)    — implemented / CHG-22 open
+        └───────────────► Core Runtime (IPLAN-09)   — implemented
+Market                        (IPLAN-06) ─────────► Core Runtime
+Testing Support               (IPLAN-11) ─────────► modules under test (test-time only)
+Vendored StdLib               (ADR-06)              — used as needed by implemented modules
+
+Strategies / Ports, Coordination / Execution,
+Indicators / Optional         (IPLAN-01/02/03/07/10/12/13) — planned; no source directory yet
 ```
 
 ## Implemented components
@@ -87,8 +86,9 @@ Full reference: [MODULES/Persistence.md](MODULES/Persistence.md).
 
 ### Market Session and Symbol Context — `Include/Market/` (IPLAN-06)
 
-Sits directly above Persistence and below Position/Coordination. Loads immutable symbol
-metadata once at init via the vendored `CSymbolInfo` wrapper; evaluates broker session,
+Within the implemented framework modules, Market currently depends directly on Core only;
+it also uses the vendored `CSymbolInfo` wrapper. It does not depend on Position, Persistence,
+or Coordination. Loads immutable symbol metadata once at init; evaluates broker session,
 user trading-hours, and day-trade close gates per-tick; validates order definitions before
 submission; and detects futures contract-expiration warnings.
 

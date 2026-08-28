@@ -1,0 +1,131 @@
+id: CHG-24
+title: "Evidence-contract consolidation and field semantics"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-08-27"
+  change_level:
+    value: C2
+  change_source:
+    value: design
+
+change_control:
+  chg_id: "CHG-24"
+  status: In Review
+  change_level: C2
+  change_source: design
+  entry_gate: GATE-06
+  semver_impact: null
+  author: "Codex"
+  date_proposed: "2026-08-27T00:00:00-03:00"
+  date_approved: null
+  date_implemented: "2026-08-27T00:00:00-03:00"
+  supersedes: []
+  amends: ["CHG-22", "CHG-23"]
+
+change_description:
+  what: "Make SPEC-08 the canonical evidence-contract summary, define consistent evidence-model field semantics, and replace repeated closure/aggregate-test prose with references to that contract. Correct the README subject-verb agreement."
+  why: "Duplicated closure and aggregate-runner statements can drift. Text-only evidence models leave future programmatic consumers without explicit field-name, nullability, cardinality, and timestamp rules."
+  trigger: "Code review comments received 2026-08-27."
+
+impact_assessment:
+  affected_layers:
+    - layer: SPEC
+      artifacts: ["SPEC-08"]
+      impact: "Add the canonical module-closure, release-obligation, aggregate-test, and evidence-field contract; no runtime interface changes."
+    - layer: IPLAN
+      artifacts: ["IPLAN-00", "IPLAN-04", "IPLAN-05"]
+      impact: "Replace repeated closure criteria with a reference to SPEC-08 while retaining plan-specific evidence facts and the IPLAN-00 registry inventory."
+    - layer: Documentation
+      artifacts: ["README", "Docs/OPERATIONS", "CHG-22 gate report"]
+      impact: "Reference the canonical contract and retain only local operational or historical facts."
+  cascade_direction: downstream
+  risk_level: Low
+  risk_justification: "Documentation-only clarification. No MQL5 source, test behavior, completion status, acceptance result, or release authorization changes."
+
+implementation:
+  steps:
+    - step: 1
+      action: "Define the canonical evidence contract and field semantics in SPEC-08."
+      artifact: "SPEC-08"
+      status: Completed
+    - step: 2
+      action: "Replace duplicated closure and aggregate-runner criteria with references to SPEC-08."
+      artifact: "IPLAN-04, IPLAN-05, IPLAN-00 registry/readable, README, Docs/OPERATIONS, CHG-22 gate report"
+      status: Completed
+    - step: 3
+      action: "Validate canonical YAML, references, readable parity, and whitespace."
+      artifact: "docs/"
+      status: Completed
+  artifacts_modified:
+    - id: "SPEC-08"
+      file: "docs/06_SPEC/SPEC-08_release_testing_and_documentation_governance/SPEC-08_release_testing_and_documentation_governance.yaml"
+      change_type: modified
+    - id: "SPEC-08 readable"
+      file: "docs/06_SPEC/SPEC-08_release_testing_and_documentation_governance/SPEC-08_release_testing_and_documentation_governance.readable.md"
+      change_type: modified
+    - id: "IPLAN-04"
+      file: "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.yaml"
+      change_type: modified
+    - id: "IPLAN-05"
+      file: "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+      change_type: modified
+    - id: "IPLAN-00"
+      file: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      change_type: modified
+    - id: "IPLAN-04 readable"
+      file: "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.readable.md"
+      change_type: modified
+    - id: "IPLAN-00 readable"
+      file: "docs/08_IPLAN/IPLAN-00_index.readable.md"
+      change_type: modified
+    - id: "README"
+      file: "README.md"
+      change_type: modified
+    - id: "Operations"
+      file: "Docs/OPERATIONS.md"
+      change_type: modified
+    - id: "CHG-22 gate report"
+      file: "docs/governance/chg/CHG-22_GATE-06_08_CODE_report.md"
+      change_type: modified
+    - id: "CHG-24"
+      file: "docs/governance/chg/CHG-24_evidence_contract_consolidation.yaml"
+      change_type: created
+    - id: "CHG-00"
+      file: "docs/governance/chg/CHG-00_index.md"
+      change_type: modified
+
+verification:
+  checks:
+    - check: "Canonical evidence-contract ownership"
+      result: Pass
+      method: "SPEC-08 declares the sole normative module-closure, release-obligation, aggregate-test, and evidence-field contract; downstream documents reference it."
+    - check: "MQL5 source scope"
+      result: Pass
+      method: "No Include/, Scripts/, or Experts/ file is modified."
+    - check: "Structural validation"
+      result: Pass
+      method: "Strict duplicate-key YAML parsing passed for 73 canonical files; SPEC-08 contract fields are present; git diff --check passed."
+
+gate_approval: null
+
+rollback_plan:
+  strategy: revert-commit
+  steps:
+    - "Revert the CHG-24 documentation bundle."
+    - "Rerun YAML, reference, readable-parity, and whitespace checks."
+  estimated_effort: "Low"
+
+emergency_change:
+  emergency_id: null
+  incident_severity: null
+  fix_deployed: null
+  post_mortem_due: null
+  post_mortem_completed: false
+  post_hoc_gate: null
+
+glossary:
+  terms:
+    - term: "Canonical evidence contract"
+      definition: "The SPEC-08 declaration that distinguishes module closure from release authorization and defines aggregate test evidence semantics."

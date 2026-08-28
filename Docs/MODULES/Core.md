@@ -36,9 +36,10 @@ Data models: `RuntimeMode{is_tester, is_optimization, diagnostics_enabled, is_vi
 `ProfileSample{scope, elapsed_us, enabled}`,
 `BenchmarkBaseline{scenario, baseline_memory, component_memory_delta, timing_source}`.
 
-> Trade/position/state seams (`ITradePort`, `IPositionView`, `IStateStore`) are intentionally
-> **deferred** to their owning SPECs (SPEC-03/04/05) because their payload types do not exist
-> yet. Do not add them here.
+> The trade/position/state seams remain in their owning modules. `ITradePort` is still
+> **deferred** to SPEC-03 because its guarded-mutation payloads are not implemented yet;
+> `IPositionView` is implemented in `Include/Position/Interfaces.mqh` and `IStateStore` is
+> implemented in `Include/Persistence/StateStore.mqh`. Do not duplicate those interfaces here.
 
 ## TradeTypes.mqh — shared trade-domain types (CHG-21)
 
@@ -89,8 +90,9 @@ v2 placeholders (rejected in v1): `SIZING_FIXED_CASH`, `SIZING_VALUE_PCT_EQUITY`
   `static bool IsValidSignalTimeframe(ENUM_TIMEFRAMES)`.
 
 Design notes that callers must respect:
-- **Account mode is not an input.** The framework reads
-  `AccountInfoInteger(ACCOUNT_MARGIN_MODE)` at init and fails when the account is not
+- **Account mode is not an input.** `CPositionContext::Init()` obtains the account margin mode
+  through the injected `IAccountModeProvider`; the live `CLiveAccountModeProvider` delegates to
+  `CAccountInfo::MarginMode()`. Position initialisation fails when the mode is not
   `ACCOUNT_MARGIN_MODE_RETAIL_HEDGING`.
 - The default constructor sets invalid sentinels (`magic=0`, `sizing_mode=-1`,
   `signal_timeframe=-1`) so a partially-filled binding fails `Validate()` rather than passing

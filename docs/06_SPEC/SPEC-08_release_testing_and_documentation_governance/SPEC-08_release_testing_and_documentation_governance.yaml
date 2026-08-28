@@ -1,4 +1,16 @@
 ---
+metadata:
+  schema_version: "1.0"
+  document_type: "spec-document"
+  artifact_type: "SPEC"
+  layer: 6
+  total_sections: 8
+  last_updated: "2026-08-27T00:00:00-03:00"
+  deliverable_type: process
+  tags: ["spec-document", "layer-6-artifact", "shared-architecture"]
+  c4_level:
+    value: component
+
 document_type: spec-document
 artifact_type: SPEC
 layer: 6
@@ -7,21 +19,23 @@ id: SPEC-08
 title: Release Testing and Documentation Governance
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-06-02T00:20:00-03:00"
+last_updated: "2026-08-27T00:00:00-03:00"
+chg_references: ["CHG-23", "CHG-24"]
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.0"
+  version: "1.2"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-06-02T00:20:00-03:00"
+  last_updated: "2026-08-27T00:00:00-03:00"
   author: "Codex"
+  chg_references: ["CHG-23", "CHG-24"]
   component: "Release evidence, test harnesses, and documentation gates"
   tdd_ready_score: "92/100"
 
 ## Section 2: Component Overview
 component_overview:
-  description: "The release governance component defines the evidence gates, automated and manual test harness boundaries, documentation inventory, Doxygen/API documentation gate if retained, bypass scans, vendored dependency proof, performance evidence, and changelog decision review required before v1 sign-off."
+  description: "The release governance component is a declarative human/governance review contract. It separates evidence sufficient for module closure from the integration, broker-fencing, operational, and approval evidence required for production release. It does not define a callable MQL5 gate and intentionally has no TDD-08 or IPLAN-08."
   architecture_decision: "@adr: ADR.10.03.51ea"
   diagram:
     tags: ["@diagram: c4-l3", "@diagram: dfd-l3"]
@@ -55,15 +69,15 @@ component_overview:
 interfaces:
   exports:
     - name: "ReleaseEvidenceGate"
-      type: "process component"
-      signature: "bool ValidateReleaseEvidence(const ReleaseEvidencePack &pack)"
-      description: "Evaluates whether required automated, manual, documentation, dependency, bypass, and benchmark evidence is present."
+      type: "declarative review contract"
+      signature: "Human/governance procedure ValidateReleaseEvidence(ReleaseEvidencePack)"
+      description: "Named release reviewers evaluate structured evidence records. This is not a callable MQL5 interface; final approval belongs to the release closeout after all owning IPLANs complete."
       errors:
-        - "false: required evidence is missing or failed."
+        - "BLOCKED: evidence is missing, stale, failed, unreadable, environment-mismatched, or lacks the required reviewer approval."
     - name: "RunAllTests"
       type: "script"
-      signature: "int RunAllTests()"
-      description: "Runs Tier-1 script tests and prints pass/fail summary."
+      signature: "Scripts/Tests/RunAllTests.mq5::OnStart()"
+      description: "Existing aggregate script owned by IPLAN-11. Every code IPLAN that adds a Test_*.mq5 file must update its inclusion/call surface; module and final closeout reviewers verify exact inclusion, case reachability, and reported counts."
       errors:
         - "Nonzero failure count: at least one Tier-1 test failed."
     - name: "DeferredAccountModeEvidenceChecklist"
@@ -73,26 +87,33 @@ interfaces:
       errors:
         - "MissingEvidence: deferred account-mode release sign-off is blocked."
     - name: "DocumentationGate"
-      type: "process component"
-      signature: "bool ValidateDocumentationGate(const DocumentationInventory &inventory)"
-      description: "Checks required docs, same-change docs updates, Doxygen/API coverage if retained, and changelog review."
+      type: "declarative review contract"
+      signature: "Human/governance procedure ValidateDocumentationGate(DocumentationInventory)"
+      description: "Checks required docs, same-change docs updates, canonical/readable parity, Doxygen/API coverage if retained, changelog review, and gate approvals. It is not a callable MQL5 API."
       errors:
-        - "false: documentation release evidence is incomplete."
+        - "BLOCKED: documentation evidence is missing, stale, failed, unreadable, or lacks the required approval."
 
 ## Section 4: Data Models
 data_models:
+  field_semantics:
+    field_naming: "ASCII snake_case."
+    required_semantics: "required: true forbids omission and null; required: false permits omission but not an untyped sentinel."
+    collection_semantics: "Lists are ordered only when the field description says so; an empty required list is valid only when its description explicitly permits no entries."
+    timestamp_semantics: "Timestamps use ISO-8601 with timezone offset."
+    identifier_semantics: "Identifiers and evidence pointers are non-empty, repository-relative strings unless a field declares another format."
+    unknown_semantics: "Use an explicit enum value or a documented reason; do not encode unknown, pending, or not-applicable as an empty required string."
   models:
     - name: "ReleaseEvidencePack"
       type: "struct"
       fields:
-        - name: "tier1_summary"
-          type: "string"
+        - name: "module_evidence_packs"
+          type: "ModuleEvidencePack list"
           required: true
-          description: "RunAllTests pass/fail summary."
-        - name: "tier2_summary"
-          type: "string"
+          description: "Evidence sufficient to close individual implementation modules without claiming production readiness."
+        - name: "release_integration_evidence"
+          type: "ReleaseIntegrationEvidencePack"
           required: true
-          description: "Strategy Tester harness evidence."
+          description: "Evidence for coordinator consumption, production assembly, broker fencing, operational validation, and staged rollout."
         - name: "deferred_account_mode_pack"
           type: "DeferredAccountModeEvidencePack"
           required: true
@@ -105,6 +126,92 @@ data_models:
           type: "BenchmarkEvidence"
           required: true
           description: "Performance thresholds and low-I/O evidence."
+        - name: "dependency_evidence"
+          type: "DependencyEvidence"
+          required: true
+          description: "Vendored dependency inventory, pinned identity/hash, licensing decision, and scan result."
+        - name: "final_approvals"
+          type: "ApprovalEvidence list"
+          required: true
+          description: "Named approvers, roles, decisions, timestamps, and referenced gate reports."
+    - name: "ExecutionEvidenceRecord"
+      type: "struct"
+      fields:
+        - name: "source_identity"
+          type: "string"
+          required: true
+          description: "Canonical source paths and SHA-256 manifest used for the build."
+        - name: "compiled_artifact"
+          type: "string"
+          required: true
+          description: "EX5 path, SHA-256, and modification timestamp proven fresh relative to its sources."
+        - name: "compile_result"
+          type: "string"
+          required: true
+          description: "MetaEditor F7 timestamp plus exact error and warning counts; passing requires 0 errors and 0 warnings."
+        - name: "runtime_environment"
+          type: "string"
+          required: true
+          description: "Terminal/build, account mode, symbol/timeframe, and execution timestamp."
+        - name: "test_counts"
+          type: "string"
+          required: true
+          description: "Exact passed, failed, and skipped counts for module and aggregate scopes."
+        - name: "skip_mappings"
+          type: "string list"
+          required: true
+          description: "Every skip name, reason, and TDD/IPLAN owner; empty when no skips occurred."
+        - name: "evidence_pointer"
+          type: "string"
+          required: true
+          description: "Immutable or repository-tracked evidence location reviewed by a named human."
+    - name: "ModuleEvidencePack"
+      type: "struct"
+      fields:
+        - name: "module_id"
+          type: "string"
+          required: true
+          description: "Owning IPLAN/module identifier."
+        - name: "execution_evidence"
+          type: "ExecutionEvidenceRecord"
+          required: true
+          description: "Fresh aggregate or focused execution evidence covering the module."
+        - name: "aggregate_coverage"
+          type: "string"
+          required: true
+          description: "Exact Test_*.mq5 inclusion and actual test-case reachability report."
+        - name: "module_documentation_evidence"
+          type: "string"
+          required: true
+          description: "Per-IPLAN Doxygen/API coverage result where retained, updated module documentation, canonical/readable parity, and reconciled code_inventory/file-manifest evidence required by repository CPO controls."
+        - name: "audit_and_approval_refs"
+          type: "string list"
+          required: true
+          description: "Fresh audit quorum and required human gate decisions."
+        - name: "production_readiness"
+          type: "bool"
+          required: true
+          description: "Must remain false for CHG-22/IPLAN-04/05 module closure."
+
+    - name: "ReleaseIntegrationEvidencePack"
+      type: "struct"
+      fields:
+        - name: "consumer_contract_pinning"
+          type: "string"
+          required: true
+          description: "IPLAN-02 evidence that coordinator consumers pin the CHG-22-R1 module contract."
+        - name: "production_assembly"
+          type: "string"
+          required: true
+          description: "IPLAN-01 evidence for provider assembly, timer/transaction wiring, attachable EA packaging, and two-chart ownership validation."
+        - name: "broker_mutation_fencing"
+          type: "string"
+          required: true
+          description: "IPLAN-03 evidence for final pre-mutation fences and zero broker-bypass findings."
+        - name: "operational_rollout"
+          type: "string"
+          required: true
+          description: "Final closeout evidence for rollback rehearsal, demo canary, restricted live, staged rollout, and production authorization."
     - name: "DeferredAccountModeEvidencePack"
       type: "struct"
       fields:
@@ -139,10 +246,83 @@ data_models:
           type: "bool"
           required: true
           description: "Whether Doxygen/API coverage is retained for v1."
+        - name: "canonical_readable_parity"
+          type: "bool"
+          required: true
+          description: "Whether every affected readable companion agrees with its canonical artifact."
+        - name: "doxygen_api_result"
+          type: "string"
+          required: false
+          description: "Coverage result and evidence pointer when the Doxygen/API gate is retained."
+        - name: "changelog_decision"
+          type: "string"
+          required: true
+          description: "Recorded CHANGELOG update or explicit no-change decision with reviewer."
+        - name: "documentation_approvals"
+          type: "ApprovalEvidence list"
+          required: true
+          description: "Named documentation/governance decisions required by the applicable gate."
+    - name: "BenchmarkEvidence"
+      type: "struct"
+      fields:
+        - name: "threshold_refs"
+          type: "string list"
+          required: true
+          description: "Applicable PRD performance threshold identifiers."
+        - name: "measurements"
+          type: "string"
+          required: true
+          description: "Environment, method, observed values, and immutable evidence pointer."
+        - name: "verdict"
+          type: "string"
+          required: true
+          description: "PASS or FAIL only. Any approved upstream threshold amendment is a separate prerequisite for a new evaluation; it is not a third verdict value."
+    - name: "DependencyEvidence"
+      type: "struct"
+      fields:
+        - name: "inventory_and_identity"
+          type: "string"
+          required: true
+          description: "Vendored component paths, versions, and pinned hashes."
+        - name: "license_and_scan_result"
+          type: "string"
+          required: true
+          description: "Licensing decision plus dependency/bypass scan outcome and evidence pointer."
+    - name: "ApprovalEvidence"
+      type: "struct"
+      fields:
+        - name: "gate"
+          type: "string"
+          required: true
+          description: "Applicable gate identifier and report revision."
+        - name: "approver_and_role"
+          type: "string"
+          required: true
+          description: "Human approver identity and required role."
+        - name: "decision_and_timestamp"
+          type: "string"
+          required: true
+          description: "Explicit approve/reject decision and timestamp; blank or pending is not approval."
+
+  evidence_contract:
+    authority: "This block is the sole normative summary for module closure, release obligations, and aggregate test evidence. Other artifacts may record local results but SHALL reference this block for criteria."
+    module_closure:
+      required: ["module-scoped ExecutionEvidenceRecord", "exact aggregate inclusion and actual-case reachability", "exact module and aggregate pass/fail/skip counts with mapped skips", "audit quorum with no P0/P1 and configured score thresholds", "required human gate decisions"]
+      result: "Set module evidence complete; production_readiness remains false and deployment remains unauthorized."
+    release_obligations:
+      owners: ["IPLAN-02 coordinator consumption", "IPLAN-01 production assembly, timer wiring, attachable EA, and two-chart validation", "IPLAN-03 broker-mutation fencing and bypass validation", "final release closeout rollback rehearsal, canary, staged rollout, and deployment approval"]
+      result: "Release authorization requires every owner obligation and ReleaseEvidencePack; module closure does not satisfy this result."
+    aggregate_test_contract:
+      rule: "One fresh RunAllTests F7/EX5 plus exact inclusion and actual-case reachability MAY satisfy a module when it proves every owned test executed; focused EX5 files are not duplicate prerequisites."
+      evidence: ["fresh EX5 identity", "0 compile errors and 0 warnings", "each repository Test_*.mq5 included exactly once", "each actual Test_* case reachable from aggregate OnStart", "exact module and aggregate pass/fail/skip counts", "every skip mapped to its TDD/IPLAN owner"]
 
 ## Section 5: Behavior
 behavior:
   validation_rules:
+    - rule: "A module gate MAY accept one fresh RunAllTests F7/EX5 plus exact aggregate inclusion/reachability and module counts when those facts prove every owned test executed; separate focused EX5 artifacts are not mandatory duplicates."
+      source: "@chg: CHG-23"
+    - rule: "Module closure SHALL set production_readiness=false and SHALL NOT authorize deployment. CHG-22 closes only IPLAN-04/05 module scope; IPLAN-02 owns coordinator consumption, IPLAN-01 owns production assembly and two-chart validation, IPLAN-03 owns final broker-mutation fencing/bypass proof, and final release closeout owns rollback, canary, staged rollout, and deployment approval."
+      source: "@chg: CHG-23"
     - rule: "Release reviewer SHALL require evidence that netting and exchange-netting fail initialization with deferred-mode diagnostics in v1."
       source: "@ears: EARS.01.03.d7e9"
     - rule: "Release reviewer SHALL verify required docs, same-change documentation updates, Doxygen coverage if retained, and CHANGELOG decision record."
@@ -156,16 +336,20 @@ behavior:
       to: "ReleaseBlocked"
       trigger: "Deferred account-mode init-failure evidence is missing."
       source: "@bdd: BDD.01.03.f415"
-    - from: "ReleaseCandidate"
-      to: "ReleaseApprovedForBuild"
-      trigger: "Governance evidence, tests, docs, scans, and benchmarks pass."
+    - from: "ModuleCandidate"
+      to: "ModuleClosed"
+      trigger: "Structured module evidence, coverage proof, audit quorum, and module approvals pass; production_readiness remains false."
+      source: "@chg: CHG-23"
+    - from: "CompiledAndTestedCandidate"
+      to: "ReleaseApproved"
+      trigger: "All module plans plus IPLAN-01/02/03 integration obligations, docs, dependency/bypass scans, benchmarks, rollback/canary/rollout evidence, and final human approvals pass."
       source: "@bdd: BDD.01.03.ef54"
   error_handling:
     - condition: "Documentation coverage gate fails."
       response: "Block release sign-off until docs and coverage evidence are updated."
       source: "@bdd: BDD.01.03.7b02"
     - condition: "Performance evidence misses product thresholds."
-      response: "Block release sign-off or record explicit nonconformance before downstream implementation sign-off."
+      response: "Block release sign-off. SPEC-08 defines no waiver path; changing or waiving an applicable product threshold requires a separately approved upstream requirement/change amendment before a new candidate can be evaluated."
       source: "@bdd: BDD.01.03.b37d"
 
 ## Section 6: Implementation Notes
@@ -174,20 +358,23 @@ implementation_notes:
     - "Strategy Tester cannot validate true concurrent same-symbol netting contention; manual live/demo netting evidence is deferred to v2+ executable netting scope."
     - "v1 evidence verifies RETAIL_NETTING and EXCHANGE deferred-mode init failure and no side effects."
     - "Release governance must include broker-bypass scans for raw execution calls."
+    - "SPEC-08 is declarative process governance. It introduces no executable gate, TDD-08, or IPLAN-08; RunAllTests implementation ownership remains IPLAN-11 and final evidence publication is the IPLAN registry release-closeout obligation."
+    - "CHG-22 module approval and production deployment authorization are distinct decisions and must never share one boolean status."
   patterns:
-    - "Store evidence pack references with release notes and Docs/TESTING.md."
+    - "Store immutable evidence-pack references, checksums, execution timestamps, and named reviewer decisions with release notes and Docs/TESTING.md."
     - "Keep CHANGELOG.md as the canonical PRD/version decision log."
   performance_considerations:
     - "Benchmark evidence must reference @threshold: PRD.01.perf.tester_overhead, @threshold: PRD.01.perf.memory_per_ea, and @threshold: PRD.01.perf.idle_tick."
 
 ## Section 7: Downstream TDD Contracts
-  tdd_contracts:
-    tdd_document: null
-    tdd_contract_note: "Not applicable: SPEC-08 is documentation/process governance scope; no explicit TDD-08 or IPLAN-08 artifact is required."
-    test_files: []
+tdd_contracts:
+  tdd_document: null
+  tdd_contract_note: "Not applicable: SPEC-08 is declarative documentation/process governance, not a callable code contract. No TDD-08 or IPLAN-08 is required. RunAllTests is owned by completed IPLAN-11; each code IPLAN owns registration of its tests, and the final IPLAN registry release-closeout step owns integration evidence and publication."
+  test_files: []
 
 ## Section 8: Traceability
 traceability:
+  provenance: ["@chg: CHG-23", "@chg: CHG-24"]
   tags: ["@spec: SPEC-08", "@brd: BRD.01.07.717b", "@prd: PRD.01.09.4c66", "@ears: EARS.01.03.1d60", "@bdd: BDD.01.03.ef54", "@adr: ADR.10.03.51ea"]
   upstream:
     adr_references: ["@adr: ADR.06.03.b277", "@adr: ADR.07.03.6df1", "@adr: ADR.10.03.51ea"]
@@ -198,7 +385,7 @@ traceability:
   downstream:
     - type: DocumentationCloseout
       layer: 8
-      description: "Release governance, evidence, and documentation obligations close through the final IPLAN registry documentation step."
+      description: "Release governance, IPLAN-01/02/03 integration evidence, rollback/canary/staged-rollout proof, and documentation obligations close through the final IPLAN registry release-closeout step; this is an existing registry obligation, not IPLAN-08."
   health_score:
     tdd_ready: "N/A - process governance scope"
     target_score: ">=90/100"

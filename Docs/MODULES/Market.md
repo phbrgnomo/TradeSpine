@@ -4,8 +4,9 @@
 
 The Market module loads immutable symbol metadata once at initialisation, evaluates session and
 trading-hours gates per-tick, validates order definitions before submission, and detects
-contract-expiration warnings for futures symbols. It is consumed by Position (IPLAN-04),
-Coordination (IPLAN-02), and Execution (IPLAN-03).
+contract-expiration warnings for futures symbols. It exposes seams for future Position
+(IPLAN-04), Coordination (IPLAN-02), and Execution (IPLAN-03) integration; the current Position
+implementation does not include Market directly.
 
 ---
 
@@ -16,7 +17,7 @@ Coordination (IPLAN-02), and Execution (IPLAN-03).
 | `Include/Market/Interfaces.mqh` | Production | `IContractInfoProvider`, `IMarketSessionProvider` (`IsMarketSessionOpen` + `MarketSessionEndTod`) seams |
 | `Include/Market/SymbolContext.mqh` | Production | `SymbolMetadata` struct + `CSymbolContext` |
 | `Include/Market/SessionContext.mqh` | Production | `SessionWindow` struct + `CSessionContext` |
-| `Include/Market/MarketContext.mqh` | Production | live provider adapters, `TradeIntent`, `CMarketContext` |
+| `Include/Market/MarketContext.mqh` | Production | live provider adapters and `CMarketContext`; consumes canonical `TradeIntent` from `Include/Core/TradeTypes.mqh` |
 | `Scripts/Tests/Support/FakeMarketContext.mqh` | Test support | `FakeMarketContext` fixture class |
 | `Scripts/Tests/Test_SymbolContext.mq5` | Test (unit) | TDD.06.04.8f4d — metadata + validators |
 | `Scripts/Tests/Test_SessionContext.mq5` | Test (integration) | TDD.06.04.4796 — session gates |

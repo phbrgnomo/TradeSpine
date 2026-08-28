@@ -1,0 +1,300 @@
+id: CHG-23
+title: "Documentation template normalization and CHG-22 boundary amendment"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-08-27"
+  change_level:
+    value: C3
+  change_source:
+    value: design
+
+change_control:
+  chg_id: "CHG-23"
+  status: Implemented
+  change_level: C3
+  change_source: design
+  entry_gate: GATE-06
+  semver_impact: null
+  author: "Codex"
+  date_proposed: "2026-08-25T00:00:00-03:00"
+  date_approved: "2026-08-27T00:00:00-03:00"
+  date_implemented: "2026-08-27T00:00:00-03:00"
+  supersedes: []
+  amends: ["CHG-22"]
+
+change_description:
+  what: |
+    Normalize TradeSpine artifacts to the current aidoc-flow templates and amend
+    CHG-22 so IPLAN-04/05 may close on verified module scope without claiming
+    production readiness. Correct SPEC-08 root structure, declare code-only IPLAN
+    subtypes, map IPLAN-04 deployment material to canonical sections, record
+    downstream release obligations, reconcile the accepted aggregate
+    compilation/runtime evidence, and regenerate affected readable/registry views.
+  why: |
+    Missing subtype metadata made code-only plans inherit combined deployment
+    requirements; SPEC-08 nested `tdd_contracts` under implementation notes; and
+    CHG-22 mixed module verification with consumers that do not yet exist. The
+    drift prevented truthful closure while encouraging false production claims.
+  trigger: |
+    A current-template conformance review of IPLAN-05 and the CHG-22 cascade found
+    structural drift after the aidoc-flow template evolved. The user authorized a
+    one-run documentation-only remediation with no MQL5 changes or automated MT5 use.
+
+impact_assessment:
+  affected_layers:
+    - layer: SPEC
+      artifacts: ["SPEC-01", "SPEC-03", "SPEC-04", "SPEC-05", "SPEC-08"]
+      impact: "Normalize current metadata; make the existing event, Position, Persistence, and evidence contracts explicit; correct the future IPLAN-03 single-inheritance topology; and preserve the explicit absence of TDD-08/IPLAN-08."
+    - layer: TDD
+      artifacts: ["TDD-01", "TDD-03", "TDD-04", "TDD-05"]
+      impact: "Pin the one-parent ITradePort/ITradeExecutor topology, make planned versus executable coverage truthful, assign deferred cross-module BDD owners, and reconcile accepted IPLAN-05 aggregate runtime status."
+    - layer: IPLAN
+      artifacts: ["IPLAN-00", "IPLAN-01", "IPLAN-02", "IPLAN-03", "IPLAN-04", "IPLAN-05", "IPLAN-06", "IPLAN-07", "IPLAN-09", "IPLAN-10", "IPLAN-11", "IPLAN-12", "IPLAN-13"]
+      impact: "Declare subtypes, normalize IPLAN-04 deploy sections, assign CHG-22 downstream release obligations, and reconcile evidence-backed verification/inventory fields without changing plan status."
+    - layer: CHG
+      artifacts: ["CHG-00", "CHG-22", "CHG-23"]
+      impact: "Amend the CHG-22 acceptance boundary, register this change, and prepare unsigned gate evidence."
+    - layer: Documentation
+      artifacts: ["SPEC-01/03/04/05/08 readable", "TDD-01 readable", "TDD-03 readable", "IPLAN-04 readable", "IPLAN-05 readable", "IPLAN-00 readable", "Position module", "Persistence module", "Operations", "CLAUDE.md"]
+      impact: "Regenerate affected views and remove stale standalone-evidence and completion wording."
+  cascade_direction: downstream
+  risk_level: High
+  risk_justification: |
+    The change alters completion semantics across SPEC, IPLAN, and CHG governance.
+    A faulty amendment could falsely close safety-critical work or hide mandatory
+    release checks. Plan/CHG statuses and approval fields therefore remain
+    unchanged until structural validation, team audit, and human approval;
+    verification and inventory fields change only where accepted evidence exists.
+  architecture_delta:
+    component_boundaries: "None; no runtime component, dependency, topology, or trust boundary changes. ADR-02/04/06/07/08/10 remain unchanged."
+    new_components: "None."
+    interface_compatibility: "No delivered MQL5 signature or CHG-22-R1 module interface is changed. The still-Draft IPLAN-03 contract is corrected so future ITradePort derives from the delivered ITradeExecutor seam and CGuardedTrade uses one MQL5 parent."
+    spec_behavior_change: "SPEC-08 is made unambiguously declarative and separates module closure from production release. Existing SPEC-01/04/05 delivered behavior is unchanged; their public surfaces and concurrency boundaries are documented exactly."
+  recovery_delta:
+    new_failure_modes: "No runtime failure modes; the only introduced risk is an incomplete or inconsistent documentation bundle, reversed atomically by the rollback_plan."
+    state_impact: "No durable runtime state is touched; RTO/RPO are not applicable to CHG-23."
+  operational_delta:
+    runbook_impact: "No on-call runbook change; existing module and release runbooks retain their owners."
+    observability_impact: "No runtime telemetry is added, removed, renamed, or degraded."
+    deployment_impact: "No deployment, canary, smoke execution, chart attachment, MetaEditor, or MT5 action is part of CHG-23."
+    runtime_cost: "No CPU, memory, IO, storage, network, or external-service cost impact."
+  security_delta:
+    threat_model: "No authn/authz, external surface, trust-boundary, sensitive-data, or retention change."
+    supply_chain: "No third-party dependency or toolchain version is added."
+    security_adrs: "Existing security and safety commitments are preserved; no ADR amendment is required."
+
+implementation:
+  steps:
+    - step: 1
+      action: "Correct SPEC-08 root `tdd_contracts` structure without creating TDD-08/IPLAN-08."
+      artifact: "SPEC-08"
+      status: Completed
+    - step: 2
+      action: "Add `subtype: code_build` to code-only IPLANs and retain IPLAN-04 as combined."
+      artifact: "IPLAN-01/02/03/05/07/09/10/11/12/13 and IPLAN-04"
+      status: Completed
+    - step: 3
+      action: "Normalize IPLAN-04 rollback, smoke, canary, observability, and runbook sections."
+      artifact: "IPLAN-04"
+      status: Completed
+    - step: 4
+      action: "Amend CHG-22 module closure and assign deferred integration/rollout obligations."
+      artifact: "CHG-22, IPLAN-01/02/03, IPLAN-00"
+      status: Completed
+    - step: 5
+      action: "Regenerate affected readable companions and registries."
+      artifact: "SPEC-08 readable, IPLAN-04 readable, IPLAN-00 readable, CHG-00"
+      status: Completed
+    - step: 6
+      action: "Reconcile RunAllTests aggregate build/runtime evidence across IPLAN-04/05, CHG-22, registries, module docs, and operations guidance."
+      artifact: "IPLAN-04, IPLAN-05, CHG-22 evidence/gate report, IPLAN-00, README, Docs/MODULES, Docs/OPERATIONS"
+      status: Completed
+    - step: 7
+      action: "Resolve team-audit documentation defects in SPEC-01/03/04/05/08 and TDD-01/03/04/05; propagate the Draft IPLAN-03 single-inheritance contract without implementing it."
+      artifact: "SPEC-01/03/04/05/08, TDD-01/03/04/05, IPLAN-03 and readable companions"
+      status: Completed
+    - step: 8
+      action: "Run strict structural validation and team-mode audits; prepare unsigned gate reports."
+      artifact: "docs and .aidoc review evidence"
+      status: Completed
+
+  artifacts_modified:
+    - id: "SPEC-01"
+      file: "docs/06_SPEC/SPEC-01_strategy_authoring_surface/SPEC-01_strategy_authoring_surface.yaml"
+      change_type: modified
+    - id: "SPEC-03"
+      file: "docs/06_SPEC/SPEC-03_guarded_execution_and_risk_controls/SPEC-03_guarded_execution_and_risk_controls.yaml"
+      change_type: modified
+    - id: "SPEC-04"
+      file: "docs/06_SPEC/SPEC-04_position_account_mode_and_state/SPEC-04_position_account_mode_and_state.yaml"
+      change_type: modified
+    - id: "SPEC-05"
+      file: "docs/06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
+      change_type: modified
+    - id: "SPEC-08"
+      file: "docs/06_SPEC/SPEC-08_release_testing_and_documentation_governance/SPEC-08_release_testing_and_documentation_governance.yaml"
+      change_type: modified
+    - id: "TDD-03"
+      file: "docs/07_TDD/TDD-03_guarded_execution_and_risk_controls/TDD-03_guarded_execution_and_risk_controls.yaml"
+      change_type: modified
+    - id: "TDD-01"
+      file: "docs/07_TDD/TDD-01_strategy_authoring_surface/TDD-01_strategy_authoring_surface.yaml"
+      change_type: modified
+    - id: "TDD-04"
+      file: "docs/07_TDD/TDD-04_position_account_mode_and_state/TDD-04_position_account_mode_and_state.yaml"
+      change_type: modified
+    - id: "TDD-05"
+      file: "docs/07_TDD/TDD-05_persistence_and_audit_evidence/TDD-05_persistence_and_audit_evidence.yaml"
+      change_type: modified
+    - id: "TDD-01 readable"
+      file: "docs/07_TDD/TDD-01_strategy_authoring_surface/TDD-01_strategy_authoring_surface.readable.md"
+      change_type: modified
+    - id: "TDD-03 readable"
+      file: "docs/07_TDD/TDD-03_guarded_execution_and_risk_controls/TDD-03_guarded_execution_and_risk_controls.readable.md"
+      change_type: modified
+    - id: "IPLAN-01"
+      file: "docs/08_IPLAN/IPLAN-01_strategy_authoring_surface.yaml"
+      change_type: modified
+    - id: "IPLAN-02"
+      file: "docs/08_IPLAN/IPLAN-02_trade_coordination_pipeline.yaml"
+      change_type: modified
+    - id: "IPLAN-03"
+      file: "docs/08_IPLAN/IPLAN-03_guarded_execution_and_risk_controls.yaml"
+      change_type: modified
+    - id: "IPLAN-04"
+      file: "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.yaml"
+      change_type: modified
+    - id: "IPLAN-05"
+      file: "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+      change_type: modified
+    - id: "IPLAN-06"
+      file: "docs/08_IPLAN/IPLAN-06_market_session_and_symbol_context.yaml"
+      change_type: modified
+    - id: "IPLAN-07"
+      file: "docs/08_IPLAN/IPLAN-07_indicators_stops_sizing_trailing.yaml"
+      change_type: modified
+    - id: "IPLAN-09"
+      file: "docs/08_IPLAN/IPLAN-09_core_runtime_and_configuration.yaml"
+      change_type: modified
+    - id: "IPLAN-10"
+      file: "docs/08_IPLAN/IPLAN-10_visualization_optional_services.yaml"
+      change_type: modified
+    - id: "IPLAN-11"
+      file: "docs/08_IPLAN/IPLAN-11_testing_support_and_harnesses.yaml"
+      change_type: modified
+    - id: "IPLAN-12"
+      file: "docs/08_IPLAN/IPLAN-12_1minscalpv3_hedging_port.yaml"
+      change_type: modified
+    - id: "IPLAN-13"
+      file: "docs/08_IPLAN/IPLAN-13_bullishbearish_hedging_port.yaml"
+      change_type: modified
+    - id: "IPLAN-00"
+      file: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      change_type: modified
+    - id: "CHG-22"
+      file: "docs/governance/chg/CHG-22_iplan04_position_state_and_lease_implementation.yaml"
+      change_type: modified
+    - id: "CHG-23"
+      file: "docs/governance/chg/CHG-23_documentation_template_normalization.yaml"
+      change_type: created
+    - id: "CHG-00"
+      file: "docs/governance/chg/CHG-00_index.md"
+      change_type: modified
+    - id: "CHG-22 gate report"
+      file: "docs/governance/chg/CHG-22_GATE-06_08_CODE_report.md"
+      change_type: modified
+    - id: "CHG-23 gate report"
+      file: "docs/governance/chg/CHG-23_GATE-06_08_report.md"
+      change_type: created
+    - id: "CHG-23 audit report v001"
+      file: "docs/governance/chg/CHG-23.A_audit_report_v001.md"
+      change_type: created
+    - id: "IPLAN-04 readable"
+      file: "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.readable.md"
+      change_type: modified
+    - id: "IPLAN-05 readable"
+      file: "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.readable.md"
+      change_type: created
+    - id: "SPEC-08 readable"
+      file: "docs/06_SPEC/SPEC-08_release_testing_and_documentation_governance/SPEC-08_release_testing_and_documentation_governance.readable.md"
+      change_type: modified
+    - id: "IPLAN-00 readable"
+      file: "docs/08_IPLAN/IPLAN-00_index.readable.md"
+      change_type: modified
+    - id: "Repository guidance"
+      file: "CLAUDE.md"
+      change_type: modified
+    - id: "Repository status"
+      file: "README.md"
+      change_type: modified
+    - id: "Position module documentation"
+      file: "Docs/MODULES/Position.md"
+      change_type: modified
+    - id: "Persistence module documentation"
+      file: "Docs/MODULES/Persistence.md"
+      change_type: modified
+    - id: "Operations guidance"
+      file: "Docs/OPERATIONS.md"
+      change_type: modified
+    - id: "CHG-22 human evidence"
+      file: "docs/governance/chg/CHG-22_human_evidence_2026-08-26.md"
+      change_type: modified
+
+verification:
+  checks:
+    - check: "Strict YAML parsing with duplicate-key rejection"
+      result: Pass
+      method: "All 72 canonical YAML files parsed with zero duplicate keys and zero parse errors."
+    - check: "Current-template and readable parity"
+      result: Pass
+      method: "Subtype-aware roots pass and regenerated SPEC-08/IPLAN-04/IPLAN-00 views contain the canonical facts and provenance."
+    - check: "Full corpus traceability and consistency"
+      result: Pass
+      method: "Strict declarative checks report zero unresolved references, duplicate/malformed IDs, orphans, cumulative-tag gaps, path/count/registry errors, and implementation include errors."
+    - check: "Team-mode artifact audits"
+      result: Pass
+      method: "Fresh SPEC/TDD/IPLAN/CHG audit quorums completed with zero P0/P1, every required lens at least 80, and weighted scores at least 85. CHG-23 weighted score: 95.2/100."
+    - check: "Workspace whitespace integrity"
+      result: Pass
+      method: "git diff --check reports no findings."
+    - check: "MetaEditor/MT5 actions"
+      result: Pass
+      method: "Not attempted; CHG-23 is documentation-only and the user reserved all terminal interactions for human execution."
+
+gate_approval:
+  gate: "GATE-06/GATE-08"
+  approver: "Human gate authority confirmed by user: Technical Lead and Domain Expert"
+  approval_date: "2026-08-27T00:00:00-03:00"
+  conditions:
+    - "All automated documentation checks pass with zero structural errors."
+    - "Team audit quorum is met with no P0/P1, every lens >=80, and weighted score >=85."
+    - "Technical Lead and Domain Expert approve the C3 GATE-06/GATE-08 amendment."
+    - "CHG-23 changes no MQL5 source; it records accepted CHG-22 aggregate module evidence without asserting production readiness or deployment approval."
+  approval_record: "User-confirmed human approval for GATE-06/GATE-08 on 2026-08-27 after completed documentation and audit checks."
+
+rollback_plan:
+  strategy: revert-commit
+  steps:
+    - "Restore every CHG-23-modified canonical and readable document as one bundle from the pre-change Git baseline."
+    - "Rerun strict YAML, reference, registry, readable-parity, and git diff checks."
+    - "Restore CHG-22, IPLAN-04, and IPLAN-05 to their documented pre-change statuses: Implemented, Completed, and Completed."
+  estimated_effort: "Low"
+
+emergency_change:
+  emergency_id: null
+  incident_severity: null
+  fix_deployed: null
+  post_mortem_due: null
+  post_mortem_completed: false
+  post_hoc_gate: null
+
+glossary:
+  terms:
+    - term: "Template drift"
+      definition: "A canonical artifact shape that no longer matches the current aidoc-flow template contract."
+    - term: "Module closure"
+      definition: "Completion of IPLAN-04/05 contracts and evidence without production deployment authorization."
+    - term: "Release closeout"
+      definition: "The final gate that owns integration, rollback rehearsal, canary, and staged rollout after prerequisite IPLANs complete."

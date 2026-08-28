@@ -1,5 +1,7 @@
 # Module: Persistence and Audit Evidence
 
+> Provenance: @chg: CHG-22, @chg: CHG-23
+
 **Owning plan:** IPLAN-05 · **Spec:** SPEC-05 · **Source:** `Include/Persistence/`
 
 ---
@@ -253,5 +255,10 @@ Standard scope tags used by `CStateStore`:
 | `Scripts/Tests/Test_TradeLogger.mq5` | Intent/execution pairing, CSV content verification, log separation, optimization gate, write failure path, invalid `ENUM_TRADE_SIDE` rejection |
 | `Scripts/Tests/Test_AlertSink.mq5` | Logger/runtime routing plus explicit durable-HALT success/failure return and persistence-attempt evidence. |
 
-Changed CHG-22 persistence files have assertion-backed source coverage but no fresh F7/runtime
-evidence. See `Docs/OPERATIONS.md`; IPLAN-05 remains In Progress.
+Fresh aggregate evidence verifies the changed CHG-22 persistence files:
+`RunAllTests` compiled the included test/dependency graph with 0 errors and
+0 warnings, then reported IPLAN-05 243/243 passed with 0 failed and 0 skipped.
+IPLAN-05 is complete at the approved module boundary; governance verification
+and downstream release obligations remain separate. See the [CHG-22 human
+evidence record](../../docs/governance/chg/CHG-22_human_evidence_2026-08-26.md)
+and [Docs/OPERATIONS.md](../OPERATIONS.md).

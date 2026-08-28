@@ -1,4 +1,16 @@
 ---
+metadata:
+  schema_version: "1.0"
+  document_type: "spec-document"
+  artifact_type: "SPEC"
+  layer: 6
+  total_sections: 8
+  last_updated: "2026-08-26T00:00:00-03:00"
+  deliverable_type: code
+  tags: ["spec-document", "layer-6-artifact", "shared-architecture"]
+  c4_level:
+    value: component
+
 document_type: spec-document
 artifact_type: SPEC
 layer: 6
@@ -7,17 +19,17 @@ id: SPEC-05
 title: Persistence and Audit Evidence
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-08-24T00:00:00-03:00"
-chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18", "CHG-22"]
+last_updated: "2026-08-26T00:00:00-03:00"
+chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18", "CHG-22", "CHG-23"]
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.7"
+  version: "1.8"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-08-24T00:00:00-03:00"
+  last_updated: "2026-08-26T00:00:00-03:00"
   author: "Codex"
-  chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18", "CHG-22"]
+  chg_references: ["CHG-13", "CHG-14", "CHG-15", "CHG-16", "CHG-17", "CHG-18", "CHG-22", "CHG-23"]
   component: "PersistenceTypes, CStateStore, CKeyBuilder, TradeLogger, Logger, AlertSink"
   tdd_ready_score: "94/100"
 
@@ -53,13 +65,13 @@ interfaces:
   exports:
     - name: "IStateStore"
       type: "interface"
-      signature: "interface IStateStore"
+      signature: "interface IStateStore { bool WriteLifecycleSnapshot(const LifecycleSnapshot &snapshot); ENUM_STORE_READ_RESULT ReadLifecycleSnapshot(LifecycleSnapshot &snapshot); bool IsRuntimeIsolated(); bool WriteScalar(string scope, double value); bool ReadScalar(string scope, double &value); bool SetDuplicate(string intent_id_hash); bool IsDuplicate(string intent_id_hash); bool SetHalt(const HaltEvidence &ev); bool AppendHaltEvidence(const HaltEvidence &ev); bool IsHalted(); bool ClearHalt(); bool WriteTicket(ulong ticket); bool ReadTicket(ulong &ticket); bool WritePendingOrder(ulong ticket, datetime submitted_ts); bool ReadPendingOrder(ulong &ticket, datetime &submitted_ts); bool ClearPendingOrder(); bool MarkerClaimOrReclaim(datetime now, int lease_secs, long &out_token, ENUM_DUPLICATE_MARKER_STATUS &status); bool MarkerHeartbeat(long &token, datetime now); bool MarkerIsOwner(long token); bool MarkerRelease(long token); bool Verify(); }"
       description: "Persistence seam for classified LifecycleSnapshot reads, commit-last snapshot writes, legacy migration, checked HALT/recovery evidence, append-only unfenced audit evidence, explicit runtime isolation, and token-fenced marker claim, heartbeat, ownership validation, and release. Virtual-ledger fragments remain v2+ scope."
       errors:
         - "StateCorruption: identity mismatch or unrecoverable missing active ownership evidence."
     - name: "CKeyBuilder"
       type: "class"
-      signature: "class CKeyBuilder"
+      signature: "class CKeyBuilder { bool Build(const CanonicalIdentity &id, string &key); bool Verify(const string key, const CanonicalIdentity &expected); double Fingerprint(const CanonicalIdentity &id); }"
       description: "Builds deterministic hashed GV names from canonical strategy identity fields."
       errors:
         - "KeyCollision: stored identity hash does not match expected identity."
@@ -71,19 +83,19 @@ interfaces:
         - "StateCorruption: identity mismatch or unrecoverable missing active ownership evidence."
     - name: "TradeLogger"
       type: "class"
-      signature: "class TradeLogger"
+      signature: "class TradeLogger { bool Init(string filename_prefix, COptContext* ctx, ILogSink* sink); bool WriteIntent(const TradeEvidenceRecord &rec); bool WriteExecution(const TradeEvidenceRecord &rec); void Close(); }"
       description: "Writes paired intent and execution records for trade evaluation. _EnsureFile() checks the CSV header write on a newly created file and fails closed if it cannot be written (CHG-18)."
       errors:
         - "LogFailure: evidence write failed, including header-write failure on new-file creation (CHG-18); component returns status for caller policy."
     - name: "Logger"
       type: "class"
-      signature: "class Logger"
+      signature: "class Logger { void Init(COptContext* ctx, ILogSink* sink=NULL); void Debug(const string category, const string msg); void Info(const string category, const string msg); void Warn(const string category, const string msg); void Error(const string category, const string msg); }"
       description: "Writes leveled diagnostic messages separate from trade evaluation records."
       errors:
         - "None; logging failures are reported as diagnostics where possible."
     - name: "IAlertSink"
       type: "interface"
-      signature: "interface IAlertSink"
+      signature: "interface IAlertSink { bool Halt(const HaltEvidence &ev); void Warn(string category, string msg); }"
       description: "Routes HALT and operator-facing alert payloads by runtime mode."
       errors:
         - "None; unavailable UI alerts degrade to log-only sink."
@@ -93,11 +105,65 @@ interfaces:
       description: "Production implementation of IAlertSink. Init(ctx, logger, store=NULL) accepts an optional IStateStore* for the persistent HALT flag circuit-breaker (CHG-16). When wired, Halt() calls store.SetHalt(ev) before UI/log suppression and before Alert(), so the EA remains halted in every runtime mode including optimization (CHG-22). A missing store preserves notification-only success; a false SetHalt result makes Halt return false and emits a secondary diagnostic when logging is available; in-memory HALT remains effective."
       errors:
         - "Missing store pointer: notification-only routing remains available and Halt returns true; no durable circuit breaker is written."
-        - "SetHalt() failure: secondary Error emitted; circuit breaker state uncertain — operator must treat as unhalted until confirmed."
+        - "SetHalt() failure: secondary Error emitted; in-memory HALT remains effective, while durable circuit-breaker state is unconfirmed until verified."
+    - name: "IMarkerBackend"
+      type: "interface"
+      signature: "interface IMarkerBackend { bool Exists(string key); double Get(string key); bool Set(string key, double value); bool CompareExchange(string key, double value, double expected); int AcquireExclusive(string lock_name); void ReleaseExclusive(int handle); }"
+      description: "Primitive Global Variable and exclusive-file-lock seam used by CMarkerLease. CTerminalMarkerBackend is the production implementation; deterministic tests inject a fake backend."
+      errors:
+        - "false/INVALID_HANDLE: primitive read/write/CAS/lock operation failed or contended; lease claim fails closed."
 
 ## Section 4: Data Models
 data_models:
   models:
+    - name: "ENUM_STORE_READ_RESULT"
+      type: "enum"
+      purpose: "Classifies snapshot reads without collapsing absence, validity, corruption, and storage failure."
+      fields:
+        - name: "STORE_READ_ABSENT"
+          type: "enum value 0"
+          required: true
+          description: "No committed lifecycle snapshot exists."
+        - name: "STORE_READ_VALID"
+          type: "enum value 1"
+          required: true
+          description: "Committed generation and checksum are valid."
+        - name: "STORE_READ_CORRUPT"
+          type: "enum value 2"
+          required: true
+          description: "Snapshot exists but its identity or invariants are contradictory."
+        - name: "STORE_READ_ERROR"
+          type: "enum value 3"
+          required: true
+          description: "Storage, key, or initialization access failed."
+    - name: "LifecycleSnapshot"
+      type: "struct"
+      purpose: "One logically committed lifecycle aggregate published by generation after inactive-slot checksum verification."
+      fields:
+        - name: "state"
+          type: "ENUM_POSITION_STATE"
+          required: true
+          description: "Committed lifecycle state; UNKNOWN is never committed."
+        - name: "position_ticket"
+          type: "ulong"
+          required: true
+          description: "Owned broker position ticket or zero."
+        - name: "position_identifier"
+          type: "ulong"
+          required: true
+          description: "Stable POSITION_IDENTIFIER used for history recovery or zero."
+        - name: "pending"
+          type: "PendingOrderEvidence"
+          required: true
+          description: "Complete pending/cancel evidence or the zero-ticket shape."
+        - name: "halted"
+          type: "bool"
+          required: true
+          description: "Persistent lifecycle circuit-breaker state."
+        - name: "generation"
+          type: "long"
+          required: true
+          description: "Positive committed generation; zero is caller/legacy sentinel only."
     - name: "CanonicalIdentity"
       type: "struct"
       purpose: "Defines the canonical account, symbol, magic, and scope tuple used to derive isolated persistence keys."
@@ -238,6 +304,14 @@ data_models:
           type: "datetime"
           required: true
           description: "Pending-entry order submission timestamp used to recompute fill timeout after restart (CHG-22)."
+        - name: "cancel_requested_ts"
+          type: "datetime"
+          required: true
+          description: "Zero before cancellation; otherwise the timestamp committed before broker cancel submission (CHG-22)."
+        - name: "cancel_origin"
+          type: "ENUM_CANCEL_ORIGIN"
+          required: true
+          description: "Classified cancellation owner/reason committed with the pending evidence (CHG-22)."
     - name: "DuplicateMarkerLease"
       type: "struct"
       purpose: "Represents the token and heartbeat evidence used to fence duplicate strategy owners."
@@ -301,7 +375,7 @@ behavior:
       source: "@bdd: BDD.01.03.e16a"
   error_handling:
     - condition: "GV identity hash mismatch."
-      response: "Fail init before live trading, or set persistent GV HALT flag via IStateStore.SetHalt() and notify operator via Alert()/SendNotification() if detected live. EA remains halted on subsequent ticks until operator resets the flag. If SetHalt() fails, a secondary Error is emitted; the operator must treat the halt state as unconfirmed. (CHG-16, CHG-17)"
+      response: "Fail init before live trading, or set persistent GV HALT flag via IStateStore.SetHalt() and notify operator via Alert()/SendNotification() if detected live. EA remains halted in memory on subsequent callbacks. If SetHalt() fails, emit a secondary Error and treat only the durable circuit-breaker state as unconfirmed; do not describe the in-memory lifecycle as unhalted. (CHG-16, CHG-17, CHG-23)"
       source: "@bdd: BDD.01.03.a31d"
     - condition: "Trade evidence write fails."
       response: "Log diagnostic failure and preserve broker safety outcome. Header-write failure on new-file creation is treated as a write failure: the file handle is closed and reset, and the call returns false (CHG-18)."
@@ -324,6 +398,7 @@ implementation_notes:
       rationale: "A prior binary cannot interpret the committed generation, checksum, complete cancel evidence, or lease-fencing contract and could mutate broker or durable state from a contradictory view."
       governed_by: "@chg: CHG-22"
   constraints:
+    - "Each EA instance uses one serial, non-reentrant MQL5 event queue. Separate instances may contend for terminal Global Variables and files; authoritative lifecycle writes are fenced by the marker owner token, and append-only evidence uses the store's identity/namespace-specific file path and checked write result."
     - "LifecycleSnapshot stores state, broker ticket, stable position identifier, complete pending/cancel evidence, HALT, generation, and checksum as one logical unit."
     - "CStateStore writes the inactive slot, checksum, and read-back verification before publishing life_commit; failed replacement leaves the prior committed generation active."
     - "ReadLifecycleSnapshot distinguishes ABSENT, VALID, CORRUPT, and ERROR. Legacy keys migrate only when no committed snapshot exists and their values are unambiguous."
@@ -368,6 +443,7 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
+  provenance: ["@chg: CHG-22", "@chg: CHG-23"]
   tags: ["@spec: SPEC-05", "@brd: BRD.01.08.cea7", "@prd: PRD.01.14.737b", "@ears: EARS.01.03.a023", "@bdd: BDD.01.03.0073", "@adr: ADR.02.03.c7dd", "@chg: CHG-22"]
   upstream:
     adr_references: ["@adr: ADR.02.03.c7dd", "@adr: ADR.03.03.4124", "@adr: ADR.05.03.2586"]

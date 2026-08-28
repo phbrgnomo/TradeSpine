@@ -1,4 +1,20 @@
 ---
+metadata:
+  schema_version: "1.0"
+  document_type: "spec-document"
+  artifact_type: "SPEC"
+  layer: 6
+  total_sections: 8
+  last_updated: "2026-08-27T00:00:00-03:00"
+  timestamp_policy:
+    canonical_field: "metadata.last_updated"
+    mirrored_fields: ["last_updated", "document_control.last_updated"]
+    require_equal: true
+  deliverable_type: code
+  tags: ["spec-document", "layer-6-artifact", "shared-architecture"]
+  c4_level:
+    value: component
+
 document_type: spec-document
 artifact_type: SPEC
 layer: 6
@@ -7,17 +23,17 @@ id: SPEC-01
 title: Strategy Authoring Surface
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-08-24T00:00:00-03:00"
-chg_references: ["CHG-22"]
+last_updated: "2026-08-27T00:00:00-03:00"
+chg_references: ["CHG-22", "CHG-23"]
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.2"
+  version: "1.3"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-08-24T00:00:00-03:00"
+  last_updated: "2026-08-27T00:00:00-03:00"
   author: "Codex"
-  chg_references: ["CHG-22"]
+  chg_references: ["CHG-22", "CHG-23"]
   component: "CStrategyBase and strategy template surface"
   tdd_ready_score: "93/100"
 
@@ -36,6 +52,7 @@ component_overview:
         Base --> Coordinator["CTradeCoordinator"]
         Base --> Indicators["Registered IIndicator list"]
         Base --> StateMachine["CPositionStateMachine"]
+        Base --> PositionContext["CPositionContext"]
   language: "MQL5"
   dependencies:
     - name: "CTradeCoordinator"
@@ -44,6 +61,9 @@ component_overview:
     - name: "CPositionStateMachine"
       version: "v1"
       purpose: "Owned once by CStrategyBase for lifecycle state."
+    - name: "CPositionContext"
+      version: "CHG-22-R1 module contract"
+      purpose: "Receives timer maintenance and trade-transaction hints. Construction, provider assembly, and event wiring remain IPLAN-01 obligations; CHG-22 module closure does not claim that production integration."
     - name: "CommonInputs.mqh"
       version: "v1"
       purpose: "Provides universal operator inputs with grouped MT5 input labels."
@@ -99,9 +119,27 @@ interfaces:
     - name: "OnTimer"
       type: "framework event method"
       signature: "void OnTimer()"
-      description: "Framework timer event that delegates maintenance to CPositionContext.OnMaintenance(now). Strategy-authored sub-maintenance-cadence trade logic remains in OnTickEvent (CHG-22)."
+      description: "Framework timer event that delegates maintenance to CPositionContext.OnMaintenance(now). Strategy-authored sub-maintenance-cadence trade logic remains in the deferred OnTickEvent surface (CHG-22)."
       errors:
         - "None; maintenance failures are routed through owned components."
+    - name: "OnTickEvent"
+      type: "virtual method"
+      signature: "void OnTickEvent()"
+      description: "Deferred v1 strategy-authored tick hook; IPLAN-01 will implement invocation only after framework lifecycle, HALT, and readiness gates pass."
+      errors:
+        - "Deferred: no production event surface exists until IPLAN-01; future state-changing requests remain subject to coordinator and guarded-execution results."
+    - name: "OnTradeTransaction"
+      type: "framework event method"
+      signature: "void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest &request, const MqlTradeResult &result)"
+      description: "Deferred v1 framework event surface; IPLAN-01 will assemble production wiring that forwards the untrusted transaction hint to CPositionContext.RouteTradeTransaction."
+      errors:
+        - "Deferred: no production event surface exists until IPLAN-01; missing or ambiguous evidence will be classified by the position module and may defer reconciliation or preserve HALT."
+    - name: "OnDeinit"
+      type: "framework event method"
+      signature: "void OnDeinit(const int reason)"
+      description: "Deferred v1 framework teardown surface; IPLAN-01 will stop the timer and delegate owned component teardown, guaranteeing no maintenance callback remains registered after return."
+      errors:
+        - "Deferred: no production event surface exists until IPLAN-01; teardown must preserve durable state/evidence rather than clear it implicitly."
 
 ## Section 4: Data Models
 data_models:
@@ -179,12 +217,13 @@ behavior:
 ## Section 6: Implementation Notes
 implementation_notes:
   constraints:
+    - "Each EA instance uses one serial, non-reentrant MQL5 event queue. Separate EA/chart instances are independent; cross-instance ownership and ordering are coordinated only by the SPEC-04/SPEC-05 token-fenced marker lease."
     - "CStrategyBase owns the lifetime of the three read-only live broker providers and injects them into CPositionContext; provider classes alone do not establish production readiness."
     - "Framework OnTimer calls position maintenance at least once per second; broker reconciliation and lease heartbeat are fixed at 30 seconds with no idle OnTick persistence."
     - "StateStore initialization selects the live canonical namespace or an explicit isolated tester/pass namespace before PositionContext initialization."
-    - "OnTradeTransaction routes through CPositionContext.RouteTradeTransaction rather than calling CTradeTxRouter or lifecycle mutators directly."
+    - "When implemented by IPLAN-01, OnTradeTransaction will route through CPositionContext.RouteTradeTransaction rather than calling CTradeTxRouter or lifecycle mutators directly."
     - "Strategy authors MUST NOT override or process OnTradeTransaction beyond the framework shim delegation."
-    - "Sub-maintenance-cadence strategy-authored trade logic belongs in OnTickEvent, not OnTimerEvent; framework maintenance, lease heartbeat, and reconciliation work is timer-driven through OnTimer and CPositionContext.OnMaintenance (CHG-22)."
+    - "Sub-maintenance-cadence strategy-authored trade logic belongs in the deferred OnTickEvent surface, not OnTimerEvent; framework maintenance, lease heartbeat, and reconciliation work is timer-driven through OnTimer and CPositionContext.OnMaintenance (CHG-22)."
     - "Signal is framework-internal and MUST NOT become a strategy-authored API."
     - "CStrategyBase exposes lifecycle hooks and helper methods; the concrete strategy class owns signal decisions, strategy-specific inputs, indicator inputs, and post-entry exit-management decisions."
   patterns:
@@ -192,7 +231,8 @@ implementation_notes:
     - "Keep CloseAll as an explicit strategy-exposure close request; keep signal exits and trailing stops in OnManagePosition or strategy hooks so they remain distinct from entry-time SL/TP."
     - "Use classes for lifecycle/stateful concerns and pure namespaces for stateless calculations per ADR-10."
   performance_considerations:
-    - "Optimization-aware branches SHALL skip logging, drawing, and persistence work not required for accepted audit output."
+    - "The matched release benchmark SHALL compare the TradeSpine strategy with its hand-written equivalent on the same terminal/build, data range, symbol/timeframe, and settings. After at least 1,000 warm-up callbacks, collect at least 10,000 idle callbacks with the SPEC-09 profiler; gate median idle tick at <=50 us and matched median tester overhead at <=10% per @threshold: PRD.01.perf.idle_tick and @threshold: PRD.01.perf.tester_overhead, and report p95 plus the measurement window without inventing a separate p95 pass threshold."
+    - "Optimization-aware branches SHALL skip logging, drawing, and persistence work not required for accepted audit output. Under callback backlog, lease/HALT/risk maintenance has priority; new entries are blocked when a safety deadline cannot be maintained, and drawing/nonessential diagnostics are shed before safety work."
 
 ## Section 7: Downstream TDD Contracts
 tdd_contracts:
@@ -207,6 +247,7 @@ tdd_contracts:
 
 ## Section 8: Traceability
 traceability:
+  provenance: ["@chg: CHG-23"]
   tags: ["@spec: SPEC-01", "@brd: BRD.01.07.88a6", "@prd: PRD.01.09.eaf3", "@ears: EARS.01.03.b784", "@bdd: BDD.01.03.aa68", "@adr: ADR.09.03.84b9", "@chg: CHG-22"]
   upstream:
     adr_references: ["@adr: ADR.01.03.42e3", "@adr: ADR.09.03.84b9", "@adr: ADR.10.03.51ea"]

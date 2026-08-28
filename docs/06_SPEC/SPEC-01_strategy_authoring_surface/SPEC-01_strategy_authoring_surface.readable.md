@@ -7,12 +7,12 @@
 | Field | Value |
 | --- | --- |
 | Status | Draft |
-| Version | 1.2 |
+| Version | 1.3 |
 | Component | CStrategyBase and strategy template surface |
 | TDD-ready Score | 93/100 |
-| CHG References | CHG-22 |
+| CHG References | @chg: CHG-22, @chg: CHG-23 |
 | Created | 2026-06-02T00:20:00-03:00 |
-| Updated | 2026-08-24T00:00:00-03:00 |
+| Updated | 2026-08-27T00:00:00-03:00 |
 
 ## Overview
 
@@ -27,6 +27,7 @@ flowchart LR
   Base --> Coordinator["CTradeCoordinator"]
   Base --> Indicators["Registered IIndicator list"]
   Base --> StateMachine["CPositionStateMachine"]
+  Base --> PositionContext["CPositionContext"]
 ```
 
 ## Interfaces
@@ -40,7 +41,10 @@ flowchart LR
 | CloseAll | method | bool CloseAll(string reason) | Requests closure of this strategy instance's owned exposure through the coordinator close branch. | false: ownership is unknown, close is rejected, or strategy is halted. |
 | OnManagePosition | virtual method | void OnManagePosition() | Strategy hook for signal exits, trailing-stop decisions, partial-management logic, and other post-entry exit management distinct from entry-time SL/TP and CloseAll. | None; invalid management actions are rejected by helper, guard, or position-context calls. |
 | RegisterIndicator | method | bool RegisterIndicator(IIndicator *indicator) | Registers an indicator for readiness-gate enforcement. | false: indicator reference is invalid or strategy init phase has passed. |
-| OnTimer | framework event method | void OnTimer() | Framework timer event that delegates maintenance to CPositionContext.OnMaintenance(now). Strategy-authored sub-maintenance-cadence trade logic remains in OnTickEvent (CHG-22). | None; maintenance failures are routed through owned components. |
+| OnTimer | framework event method | void OnTimer() | Framework timer event that delegates maintenance to CPositionContext.OnMaintenance(now). Strategy-authored sub-maintenance-cadence trade logic remains in the deferred OnTickEvent surface (CHG-22). | None; maintenance failures are routed through owned components. |
+| OnTickEvent | virtual method | void OnTickEvent() | Deferred v1 strategy-authored hook; IPLAN-01 will implement invocation after framework lifecycle, HALT, and readiness gates. | Deferred until IPLAN-01; state-changing requests remain subject to coordinator and guarded-execution results. |
+| OnTradeTransaction | framework event method | void OnTradeTransaction(const MqlTradeTransaction &trans, const MqlTradeRequest &request, const MqlTradeResult &result) | Deferred v1 event surface; IPLAN-01 will assemble production wiring to CPositionContext.RouteTradeTransaction. | Deferred until IPLAN-01; missing or ambiguous evidence is classified by the position module. |
+| OnDeinit | framework event method | void OnDeinit(const int reason) | Deferred v1 teardown surface; IPLAN-01 will stop the timer and delegate owned component teardown. | Deferred until IPLAN-01; durable state/evidence must not be cleared implicitly. |
 
 ## Data Models
 
@@ -72,14 +76,16 @@ flowchart LR
 
 ## Implementation Notes
 
-- Strategy authors MUST NOT override or process OnTradeTransaction beyond the framework shim delegation.
-- Sub-maintenance-cadence strategy-authored trade logic belongs in OnTickEvent, not OnTimerEvent; framework maintenance, lease heartbeat, and reconciliation work is timer-driven through OnTimer and CPositionContext.OnMaintenance (CHG-22).
+- When implemented by IPLAN-01, strategy authors MUST NOT override or process OnTradeTransaction beyond the framework shim delegation.
+- Sub-maintenance-cadence strategy-authored trade logic belongs in the deferred OnTickEvent surface, not OnTimerEvent; framework maintenance, lease heartbeat, and reconciliation work is timer-driven through OnTimer and CPositionContext.OnMaintenance (CHG-22).
 - Signal is framework-internal and MUST NOT become a strategy-authored API.
 - CStrategyBase exposes lifecycle hooks and helper methods; the concrete strategy class owns signal decisions, strategy-specific inputs, indicator inputs, and post-entry exit-management decisions.
 - Compose policy objects as strategy members and select them through GetSizer, GetStopPolicy, and trailing hooks.
 - Keep CloseAll as an explicit strategy-exposure close request; keep signal exits and trailing stops in OnManagePosition or strategy hooks so they remain distinct from entry-time SL/TP.
 - Use classes for lifecycle/stateful concerns and pure namespaces for stateless calculations per ADR-10.
 - Optimization-aware branches SHALL skip logging, drawing, and persistence work not required for accepted audit output.
+- Matched release benchmarks use the same terminal/build/data/settings and at least 1,000 warm-up plus 10,000 measured idle callbacks. Median idle tick must be <=50 us and matched median tester overhead <=10%; p95 and the measurement window are reported. Under backlog, lease/HALT/risk maintenance wins, new entries block, and drawing/nonessential diagnostics shed first.
+- Each EA instance uses one serial, non-reentrant MQL5 event queue. Separate EA/chart instances coordinate only through the SPEC-04/SPEC-05 token-fenced marker lease.
 
 ## TDD Contract
 

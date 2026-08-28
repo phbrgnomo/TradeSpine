@@ -8,14 +8,14 @@
 | --- | --- |
 | Document ID | TDD-04 |
 | Status | Draft |
-| Version | 1.1 |
+| Version | 1.2 |
 | Component | CPositionContext, adapters, router, and state machine |
 | SPEC Reference | @spec: SPEC-04 |
 | Source SPEC | ../../06_SPEC/SPEC-04_position_account_mode_and_state/SPEC-04_position_account_mode_and_state.yaml |
 | IPLAN-ready Score | 96/100 |
-| CHG References | CHG-22 |
+| CHG References | CHG-22, CHG-23 |
 | Created | 2026-06-02T00:00:00-03:00 |
-| Updated | 2026-08-24T00:00:00-03:00 |
+| Updated | 2026-08-27T00:00:00-03:00 |
 
 ## Test Pyramid
 
@@ -42,7 +42,7 @@
 | @bdd: BDD.01.03.a31d | Duplicate magic collision fails initialization | `Scripts/Tests/Test_PositionStateMachine.mq5` / `test_position_account_mode_and_state_a31d_unit` (pending) | `Scripts/Tests/Test_AccountModeAdapters.mq5` / `test_position_account_mode_and_state_a31d_integration` (pending) | `Scripts/Tests/Test_AccountModeDeferred.mq5` / `test_position_account_mode_and_state_a31d_e2e` (implemented) |
 | @bdd: BDD.01.03.f415 | Missing deferred account-mode evidence blocks signoff | `Scripts/Tests/Test_PositionStateMachine.mq5` / `test_position_account_mode_and_state_f415_unit` (pending) | `Scripts/Tests/Test_AccountModeAdapters.mq5` / `test_position_account_mode_and_state_f415_integration` (pending) | `Scripts/Tests/Test_AccountModeDeferred.mq5` / `test_position_account_mode_and_state_f415_e2e` (pending) |
 
-Named assertion-backed coverage is: 8180 `0/0/1`, f11f `0/0/1`, e16a `1/0/0`, 9a7d `0/0/0`, a31d `0/0/1`, f415 `0/0/0` (unit/integration/e2e). Day-trade close and release-signoff evidence remain pending their owning IPLAN workflows.
+Named assertion-backed coverage is: 8180 `0/0/1`, f11f `0/0/1`, e16a `1/0/0`, 9a7d `0/0/0`, a31d `0/0/1`, f415 `0/0/0` (unit/integration/e2e). The full 9a7d workflow is final integration across IPLAN-01/02/03 with trigger evidence from TDD-06/IPLAN-06; f415 release-signoff blocking is implemented by TDD-11/IPLAN-11. Neither zero is missing IPLAN-04 module execution.
 
 ## Test Cases
 
@@ -63,6 +63,7 @@ Named assertion-backed coverage is: 8180 `0/0/1`, f11f `0/0/1`, e16a `1/0/0`, 9a
 
 | ID | Name | Target | File | Function | Expected | Edge Cases |
 | --- | --- | --- | --- | --- | --- | --- |
+| TDD.04.04.8180 | Account mode ownership remains strategy scoped | @bdd: BDD.01.03.8180 | Scripts/Tests/Test_AccountModeDeferred.mq5 | test_position_account_mode_and_state_8180_e2e | Netting/exchange initialization fails before lease or broker writes; hedging exposes only matching symbol/magic ownership and readiness; all assertions pass. |  |
 | TDD.04.04.b7d2 | Account modes preserve ownership under parameterization | @bdd: BDD.01.03.f11f | Scripts/Tests/Test_AccountModeDeferred.mq5 | test_position_account_mode_and_state_e2e_acceptance | Hedging initializes only after claim+reconcile; netting/exchange fail with no writes; maintenance runs at 30 seconds; lease loss removes readiness; optimization/nonvisual tester require isolated namespaces without live-key cleanup; stop repair is ownership-fenced. | Manual F7/runtime/two-chart/canary evidence remains pending. |
 | TDD.04.04.c6e1 | Live read-only provider parity | @bdd: BDD.01.03.f11f | Scripts/Tests/Test_PositionLiveProviders.mq5 | test_position_live_providers_contract | Terminal-backed account, position, order, deal, and bounded-history values match native selections; failure returns safe empty values and the provider boundary cannot submit trades. | Manual F7 and terminal-backed runtime evidence remains pending. |
 

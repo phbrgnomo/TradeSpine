@@ -8,14 +8,14 @@
 | --- | --- |
 | Document ID | TDD-05 |
 | Status | Draft |
-| Version | 1.1 |
+| Version | 1.2 |
 | Component | CStateStore, CKeyBuilder, TradeLogger, Logger, AlertSink |
 | SPEC Reference | @spec: SPEC-05 |
 | Source SPEC | ../../06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml |
 | IPLAN-ready Score | 95/100 |
-| CHG References | CHG-22 |
+| CHG References | CHG-22, CHG-23 |
 | Created | 2026-06-02T00:00:00-03:00 |
-| Updated | 2026-08-24T00:00:00-03:00 |
+| Updated | 2026-08-26T00:00:00-03:00 |
 
 ## Test Pyramid
 
@@ -35,12 +35,14 @@
 
 | BDD Scenario | Description | Unit Test | Integration Test | E2E Test |
 | --- | --- | --- | --- | --- |
-| @bdd: BDD.01.03.0073 | Guarded order writes intent and execution evidence | `Scripts/Tests/Test_StateStore.mq5` / `test_persistence_and_audit_evidence_0073_unit` (pending) | `Scripts/Tests/Test_TradeLogger.mq5` / `test_persistence_and_audit_evidence_0073_integration` (pending) | `Scripts/Tests/Test_AlertSink.mq5` / `test_persistence_and_audit_evidence_0073_e2e` (pending) |
-| @bdd: BDD.01.03.d6ae | Evidence records remain paired and separated | `Scripts/Tests/Test_StateStore.mq5` / `test_persistence_and_audit_evidence_d6ae_unit` (pending) | `Scripts/Tests/Test_TradeLogger.mq5` / `test_persistence_and_audit_evidence_d6ae_integration` (pending) | `Scripts/Tests/Test_AlertSink.mq5` / `test_persistence_and_audit_evidence_d6ae_e2e` (pending) |
-| @bdd: BDD.01.03.e16a | Ambiguous async outcome enters halt | `Scripts/Tests/Test_StateStore.mq5` / `test_persistence_and_audit_evidence_e16a_unit` (pending) | `Scripts/Tests/Test_TradeLogger.mq5` / `test_persistence_and_audit_evidence_e16a_integration` (pending) | `Scripts/Tests/Test_AlertSink.mq5` / `test_persistence_and_audit_evidence_e16a_e2e` (pending) |
-| @bdd: BDD.01.03.b37d | Performance budgets are evidenced | `Scripts/Tests/Test_StateStore.mq5` / `test_persistence_and_audit_evidence_b37d_unit` (pending) | `Scripts/Tests/Test_TradeLogger.mq5` / `test_persistence_and_audit_evidence_b37d_integration` (pending) | `Scripts/Tests/Test_AlertSink.mq5` / `test_persistence_and_audit_evidence_b37d_e2e` (pending) |
+| @bdd: BDD.01.03.0073 | Guarded order writes intent and execution evidence | `Scripts/Tests/Test_StateStore.mq5` / `test_persistence_and_audit_evidence_0073_unit` (verified) | `Scripts/Tests/Test_TradeLogger.mq5` / `test_persistence_and_audit_evidence_0073_integration` (verified) | `Scripts/Tests/Test_AlertSink.mq5` / `test_persistence_and_audit_evidence_0073_e2e` (verified) |
+| @bdd: BDD.01.03.d6ae | Evidence records remain paired and separated | `Scripts/Tests/Test_StateStore.mq5` / `test_persistence_and_audit_evidence_d6ae_unit` (verified) | `Scripts/Tests/Test_TradeLogger.mq5` / `test_persistence_and_audit_evidence_d6ae_integration` (verified) | `Scripts/Tests/Test_AlertSink.mq5` / `test_persistence_and_audit_evidence_d6ae_e2e` (verified) |
+| @bdd: BDD.01.03.e16a | Ambiguous async outcome enters halt | `Scripts/Tests/Test_StateStore.mq5` / `test_persistence_and_audit_evidence_e16a_unit` (verified) | `Scripts/Tests/Test_TradeLogger.mq5` / `test_persistence_and_audit_evidence_e16a_integration` (verified) | `Scripts/Tests/Test_AlertSink.mq5` / `test_persistence_and_audit_evidence_e16a_e2e` (verified) |
+| @bdd: BDD.01.03.b37d | Performance budgets are evidenced | `Scripts/Tests/Test_StateStore.mq5` / `test_persistence_and_audit_evidence_b37d_unit` (verified module contribution) | `Scripts/Tests/Test_TradeLogger.mq5` / `test_persistence_and_audit_evidence_b37d_integration` (verified module contribution) | `Scripts/Tests/Test_AlertSink.mq5` / `test_persistence_and_audit_evidence_b37d_e2e` (verified module contribution) |
 
 ## Test Cases
+
+All 12 named module functions are aggregate-reachable and runtime-verified by IPLAN-05 243/243. They are component contributions: full BDD 0073 ordering closes through TDD-02/IPLAN-02 plus TDD-03/IPLAN-03, and numeric b37d benchmarks remain final SPEC-08 release-closeout scope.
 
 
 ### Unit Tests

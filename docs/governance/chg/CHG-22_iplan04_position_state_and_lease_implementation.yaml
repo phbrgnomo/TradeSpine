@@ -4,7 +4,8 @@ title: "IPLAN-04 correctness, safety, persistence, and governance recovery"
 metadata:
   document_type: "chg-document"
   purpose: governance
-  last_updated: "2026-08-25"
+  last_updated: "2026-08-27"
+  provenance: ["@chg: CHG-23"]
   change_level:
     value: C3
   change_source:
@@ -12,16 +13,17 @@ metadata:
 
 change_control:
   chg_id: "CHG-22"
-  status: In Review
+  status: Implemented
   change_level: C3
   change_source: design
   entry_gate: GATE-06
   semver_impact: major
   author: "Codex"
   date_proposed: "2026-07-04T00:00:00-03:00"
-  date_approved: null
-  date_implemented: null
+  date_approved: "2026-08-27T00:00:00-03:00"
+  date_implemented: "2026-08-27T00:00:00-03:00"
   supersedes: []
+  amended_by: ["CHG-23"]
 
 change_description:
   what: |
@@ -44,6 +46,14 @@ change_description:
     evidence success. Trade transactions become hints that can only request the
     canonical broker-evidence reconciler. Three read-only terminal providers are
     added, while production lifetime/assembly remains owned by IPLAN-01.
+
+    CHG-22 closes only on verified IPLAN-04/05 module scope. This boundary does
+    not approve production readiness, deployment, canary, or live rollout.
+    Coordinator consumption remains IPLAN-02 scope; provider assembly, timer
+    wiring, attachable two-chart validation, and strategy packaging remain
+    IPLAN-01 scope; final broker-mutation fencing and bypass validation remain
+    IPLAN-03 scope. Rollback rehearsal and staged demo/live rollout remain final
+    release-gate obligations after those plans complete.
   why: |
     IPLAN-04 blocks IPLAN-01, IPLAN-02, and IPLAN-03. The reviewed external
     plan identified missing state-machine, account-mode, and persistence
@@ -97,13 +107,15 @@ impact_assessment:
         lifecycle tests.
       cascade_direction: downstream
     - layer: IPLAN
-      artifacts: ["IPLAN-04", "IPLAN-05", "IPLAN-03", "IPLAN-01", "IPLAN-00"]
+      artifacts: ["IPLAN-04", "IPLAN-05", "IPLAN-03", "IPLAN-02", "IPLAN-01", "IPLAN-00"]
       impact: |
         IPLAN-04 expands beyond the original 14-file manifest to include live
         evidence providers and recovery tests. IPLAN-05 owns snapshot and lease
         integrity, IPLAN-03 owns pre-write HALT/lease enforcement, and IPLAN-01
-        owns timer/provider lifetime and production assembly. IPLAN-00 must keep
-        IPLAN-04 in progress until manual compilation and runtime evidence exist.
+        owns timer/provider lifetime and production assembly, and IPLAN-02 owns
+        coordinator consumption. IPLAN-00 must keep IPLAN-04/05 in progress until
+        module-level manual compilation/runtime evidence, team audits, and human
+        approval exist; downstream release obligations retain their Draft state.
       cascade_direction: downstream
     - layer: Code
       artifacts:
@@ -138,9 +150,12 @@ impact_assessment:
     This is a source-breaking cross-layer change at the persistence, lifecycle,
     and guarded-execution boundaries. Earlier file-presence and aliased-test
     evidence overstated completion. No compile/runtime result is inherited by
-    this recovery revision. The change remains blocked until canonical artifacts,
-    focused tests, manual MetaEditor compilation, MT5 runtime counts, canary
-    evidence, and the post-remediation review all pass.
+    this recovery revision. Fresh aggregate MetaEditor and MT5 evidence now proves
+    compilation and runtime behavior for every included module test case. The
+    change remains blocked only until canonical artifacts, post-remediation team
+    review, and human approval pass at the module boundary.
+    Production integration, two-chart, rollback rehearsal, canary, and rollout are
+    mandatory release obligations, but are not CHG-22 module-closure evidence.
 
 implementation:
   steps:
@@ -169,55 +184,263 @@ implementation:
       artifact: "docs/08_IPLAN, Docs/MODULES"
       status: Completed
     - step: 7
-      action: "Update canonical SPEC/TDD cascade; readable SPEC/TDD/IPLAN regeneration remains required through the documentation generator."
+      action: "Update canonical SPEC/TDD/IPLAN cascade and regenerate affected readable companions."
       artifact: "docs/06_SPEC, docs/07_TDD, docs/08_IPLAN"
-      status: Partial
+      status: Completed
     - step: 8
-      action: "RunAllTests execution was reported complete; authoritative compile evidence remains partial until the MetaEditor warning summary and fresh EX5 metadata are recorded."
-      artifact: "Scripts/Tests/RunAllTests.mq5"
-      status: Partial
+      action: "Collect authoritative aggregate F7 summary, fresh RunAllTests EX5 metadata, exact module/aggregate MT5 counts, and inclusion/reachability proof."
+      artifact: "Scripts/Tests/RunAllTests.mq5 and its included Test_*.mq5 translation unit"
+      status: Completed
     - step: 9
-      action: "Run two-chart ownership, full-session demo canary, and post-runtime review-team acceptance."
-      artifact: "Docs/OPERATIONS.md and .aidoc/review"
+      action: "Run fresh module-boundary SPEC/TDD/IPLAN/CHG team audits and obtain human approvals."
+      artifact: ".aidoc/review and gate approval forms"
+      status: Completed
+    - step: 10
+      action: "Carry coordinator integration, provider assembly/timer wiring/two-chart, final mutation fencing/bypass validation, rollback rehearsal, and staged rollout through their owning plans and final release gate."
+      artifact: "IPLAN-02, IPLAN-01, IPLAN-03, IPLAN-00 documentation_closeout"
       status: Pending
+
+  artifacts_modified:
+    # TAG_SYNTAX provenance applies inline to the eight lifecycle document
+    # layers, all of which carry @chg: CHG-22 below. MQL5 source/test files are
+    # non-lifecycle implementation evidence and have no governed traceability
+    # section; their back-reference is this exact manifest so the accepted
+    # source/EX5 fingerprint remains unchanged during the documentation-only
+    # closure run.
+    - id: "SPEC-01"
+      file: "docs/06_SPEC/SPEC-01_strategy_authoring_surface/SPEC-01_strategy_authoring_surface.yaml"
+      change_type: modified
+    - id: "SPEC-03"
+      file: "docs/06_SPEC/SPEC-03_guarded_execution_and_risk_controls/SPEC-03_guarded_execution_and_risk_controls.yaml"
+      change_type: modified
+    - id: "SPEC-04"
+      file: "docs/06_SPEC/SPEC-04_position_account_mode_and_state/SPEC-04_position_account_mode_and_state.yaml"
+      change_type: modified
+    - id: "SPEC-05"
+      file: "docs/06_SPEC/SPEC-05_persistence_and_audit_evidence/SPEC-05_persistence_and_audit_evidence.yaml"
+      change_type: modified
+    - id: "TDD-01"
+      file: "docs/07_TDD/TDD-01_strategy_authoring_surface/TDD-01_strategy_authoring_surface.yaml"
+      change_type: modified
+    - id: "TDD-03"
+      file: "docs/07_TDD/TDD-03_guarded_execution_and_risk_controls/TDD-03_guarded_execution_and_risk_controls.yaml"
+      change_type: modified
+    - id: "TDD-04"
+      file: "docs/07_TDD/TDD-04_position_account_mode_and_state/TDD-04_position_account_mode_and_state.yaml"
+      change_type: modified
+    - id: "TDD-05"
+      file: "docs/07_TDD/TDD-05_persistence_and_audit_evidence/TDD-05_persistence_and_audit_evidence.yaml"
+      change_type: modified
+    - id: "IPLAN-00"
+      file: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      change_type: modified
+    - id: "IPLAN-01"
+      file: "docs/08_IPLAN/IPLAN-01_strategy_authoring_surface.yaml"
+      change_type: modified
+    - id: "IPLAN-02"
+      file: "docs/08_IPLAN/IPLAN-02_trade_coordination_pipeline.yaml"
+      change_type: modified
+    - id: "IPLAN-03"
+      file: "docs/08_IPLAN/IPLAN-03_guarded_execution_and_risk_controls.yaml"
+      change_type: modified
+    - id: "IPLAN-04"
+      file: "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.yaml"
+      change_type: modified
+    - id: "IPLAN-05"
+      file: "docs/08_IPLAN/IPLAN-05_persistence_and_audit_evidence.yaml"
+      change_type: modified
+    - id: "CODE-POSITION-TYPES"
+      file: "Include/Position/PositionTypes.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-POSITION-INTERFACES"
+      file: "Include/Position/Interfaces.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-POSITION-STATE-MACHINE"
+      file: "Include/Position/PositionStateMachine.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-ACCOUNT-MODE-ADAPTER"
+      file: "Include/Position/AccountModeAdapter.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-HEDGING-ADAPTER"
+      file: "Include/Position/HedgingAdapter.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-NETTING-ADAPTER"
+      file: "Include/Position/NettingAdapter.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-POSITION-CONTEXT"
+      file: "Include/Position/PositionContext.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-TRADE-TX-ROUTER"
+      file: "Include/Position/TradeTxRouter.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-LIVE-ACCOUNT-MODE-PROVIDER"
+      file: "Include/Position/LiveAccountModeProvider.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-LIVE-BROKER-POSITION-VIEW"
+      file: "Include/Position/LiveBrokerPositionView.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-LIVE-TRADE-TRANSACTION-EVIDENCE"
+      file: "Include/Position/LiveTradeTransactionEvidence.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-PERSISTENCE-TYPES"
+      file: "Include/Persistence/PersistenceTypes.mqh"
+      change_type: modified
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-MARKER-LEASE"
+      file: "Include/Persistence/MarkerLease.mqh"
+      change_type: modified
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-STATE-STORE"
+      file: "Include/Persistence/StateStore.mqh"
+      change_type: modified
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-ALERT-SINK"
+      file: "Include/Persistence/AlertSink.mqh"
+      change_type: modified
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "CODE-CORE-INTERFACES"
+      file: "Include/Core/Interfaces.mqh"
+      change_type: modified
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "TEST-FAKE-POSITION-VIEW"
+      file: "Scripts/Tests/Support/FakePositionView.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "TEST-FAKE-STATE-STORE"
+      file: "Scripts/Tests/Support/FakeStateStore.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "TEST-FAKE-ALERT-SINK"
+      file: "Scripts/Tests/Support/FakeAlertSink.mqh"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "TEST-POSITION-STATE-MACHINE"
+      file: "Scripts/Tests/Test_PositionStateMachine.mq5"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "TEST-ACCOUNT-MODE-ADAPTERS"
+      file: "Scripts/Tests/Test_AccountModeAdapters.mq5"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "TEST-ACCOUNT-MODE-DEFERRED"
+      file: "Scripts/Tests/Test_AccountModeDeferred.mq5"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "TEST-POSITION-LIVE-PROVIDERS"
+      file: "Scripts/Tests/Test_PositionLiveProviders.mq5"
+      change_type: created
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "TEST-STATE-STORE"
+      file: "Scripts/Tests/Test_StateStore.mq5"
+      change_type: modified
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "TEST-ALERT-SINK"
+      file: "Scripts/Tests/Test_AlertSink.mq5"
+      change_type: modified
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "TEST-RUN-ALL"
+      file: "Scripts/Tests/RunAllTests.mq5"
+      change_type: modified
+      provenance: "@chg: CHG-22 (recorded in this governance manifest; source is frozen during the documentation-only closure run)"
+    - id: "DOC-POSITION-MODULE"
+      file: "Docs/MODULES/Position.md"
+      change_type: modified
+    - id: "DOC-PERSISTENCE-MODULE"
+      file: "Docs/MODULES/Persistence.md"
+      change_type: modified
+    - id: "DOC-OPERATIONS"
+      file: "Docs/OPERATIONS.md"
+      change_type: modified
+    - id: "DOC-IMPLEMENTATION-INDEX"
+      file: "Docs/README.md"
+      change_type: modified
+    - id: "DOC-ARCHITECTURE"
+      file: "Docs/ARCHITECTURE.md"
+      change_type: modified
+    - id: "DOC-REPOSITORY-STATUS"
+      file: "README.md"
+      change_type: modified
+    - id: "CHG-22-EVIDENCE"
+      file: "docs/governance/chg/CHG-22_human_evidence_2026-08-26.md"
+      change_type: created
+    - id: "CHG-22-GATE-REPORT"
+      file: "docs/governance/chg/CHG-22_GATE-06_08_CODE_report.md"
+      change_type: modified
 
 verification:
   checks:
     - check: "Changed persistence tests compile."
       result: Pass
-      method: "User reported the post-fix RunAllTests aggregate passed all tests; it transitively compiles and executes the registered persistence tests. Exact MetaEditor warning summary and fresh EX5 metadata remain unrecorded."
+      method: "RunAllTests compiles Test_StateStore, Test_TradeLogger, Test_AlertSink, and their dependencies in one translation unit with 0 errors/0 warnings and a fresh aggregate EX5."
     - check: "New IPLAN-04 tests compile."
       result: Pass
-      method: "User reported RunAllTests compiled and executed on 2026-08-25; the aggregate transitively compiles the registered IPLAN-04 test sources. Warning count and fresh EX5 metadata were not supplied."
+      method: "RunAllTests includes all four IPLAN-04 Test_*.mq5 sources and dependencies; exact set comparison found no missing or duplicate includes."
     - check: "Aggregate runner compiles after IPLAN-04 registration."
       result: Pass
-      method: "User reported RunAllTests compiled and produced runtime output at 2026-08-25 07:42:07. Warning count and fresh EX5 metadata remain unrecorded."
+      method: "Human evidence reports 0 errors and 0 warnings; RunAllTests.ex5 is fresh at 2026-08-26 07:31:44 -03 with SHA-256 b5cd5f2c25d29b1da26b7666323a31b5fd69f731cac2deed38474992cad83520."
     - check: "In-code public API documentation."
       result: Pass
       method: "New Position headers, IPLAN-04 support fakes, and touched Persistence interfaces carry Doxygen-style \\brief plus \\param/\\return notes where applicable."
     - check: "Aidoc CHG/gate cascade."
-      result: Fail
-      method: "GATE-06, GATE-08, and GATE-CODE remain blocked while the source-breaking cascade and implementation are in progress."
+      result: Pass
+      method: "Fresh SPEC/TDD/IPLAN/CHG audit quorums met the configured threshold with no P0/P1. Human gate authority accepted the documentation-level MQL5 provenance manifest and approved GATE-06, GATE-08, and GATE-CODE on 2026-08-27."
     - check: "Canonical SPEC/TDD CHG-22 term coverage."
       result: Pass
       method: "Canonical YAML duplicate-key parse, affected-reference resolution, delivered-path validation, readable drift scan, and quoted-include resolution pass for the CHG-22 cascade."
     - check: "Runtime assertion execution."
       result: Pass
-      method: "User reported all post-fix RunAllTests assertions passed. Exact post-fix pass/skip totals were not supplied; pre-fix evidence was 682 of 684 passed, 11 skipped, 2 failed."
+      method: "Human MT5 output records IPLAN-05 243/243 with 0 failed/0 skipped, IPLAN-04 137/137 with 0 failed/0 skipped, and aggregate 694/694 with 0 failed/11 mapped skips outside those module suites."
+    - check: "Aggregate test inclusion and execution reachability."
+      result: Pass
+      method: "All 16 Test_*.mq5 files are included exactly once; all 158 actual Test_* case functions are reachable from RunAllTests. The 45 uncalled lowercase TDD wrappers delegate only to cases already executed and are intentionally not double-run."
     - check: "Gate report prepared."
       result: Pass
       method: "docs/governance/chg/CHG-22_GATE-06_08_CODE_report.md prepared without approval signatures."
 
 gate_approval:
   gate: "GATE-06/GATE-08/GATE-CODE"
-  approver: null
-  approval_date: null
+  approver: "Human gate authority confirmed by user: Technical Lead, Domain Expert, and Architect"
+  approval_date: "2026-08-27T00:00:00-03:00"
   conditions:
     - "No unresolved P0/P1 finding; each review lens >=80 and weighted score >=85."
-    - "Fresh manual F7 evidence reports 0 errors, 0 warnings, and matching fresh EX5 artifacts."
-    - "Record exact focused and RunAllTests pass/fail/skip counts plus two-chart and canary evidence."
+    - "Fresh manual F7 evidence for RunAllTests reports 0 errors, 0 warnings, and a matching fresh aggregate EX5 artifact."
+    - "Static inspection proves exact Test_*.mq5 inclusion and actual Test_* case reachability; RunAllTests records exact module/aggregate counts and maps every skip."
+    - "Approval closes only the IPLAN-04/05 module boundary and does not authorize production deployment."
+  approval_record: "User-confirmed human approval for all applicable gates on 2026-08-27. The documentation-level MQL5 provenance manifest is accepted; no source annotation or recompilation is required."
+
+acceptance_boundary:
+  closes:
+    - "IPLAN-05 persistence producers and focused tests on CHG-22-R1."
+    - "IPLAN-04 lifecycle, adapters, context/router, read-only providers, fixtures, and focused tests on CHG-22-R1."
+    - "Canonical/readable parity, strict corpus validation, fresh team-audit thresholds, and required human approvals."
+  excludes:
+    - owner: "IPLAN-02"
+      obligation: "Coordinator consumption of CHG-22-R1 readiness and lifecycle contracts."
+    - owner: "IPLAN-01"
+      obligation: "Provider assembly, timer/transaction wiring, attachable EA packaging, and two-chart validation."
+    - owner: "IPLAN-03"
+      obligation: "Final broker-mutation fencing, classified emergency cleanup, and broker-bypass validation."
+    - owner: "Final release gate"
+      obligation: "Rollback rehearsal, demo canary, restricted live, partial cohort, full rollout, and production-readiness approval."
+  production_readiness: false
+  deployment_authorized: false
 
 recovery_governance:
+  architecture_and_compatibility:
+    component_boundaries: "ADR-02/06/07/08/10 boundaries are preserved; Position and Persistence remain distinct modules and no new infrastructure is introduced."
+    contract_version: "CHG-22-R1 is a pinned, atomic source/interface/test revision with zero-width mixed-generation coexistence at the module boundary."
+    backward_compatibility: "Breaking at the internal module interface and therefore upgraded atomically; downstream IPLAN-01/02/03 consumers must pin CHG-22-R1 before release."
   adr_impact:
     - "ADR-02 preserved: terminal GV persistence remains the durable scalar boundary."
     - "ADR-06 preserved: all production providers compose quoted, vendored StdLib includes."
@@ -253,19 +476,29 @@ recovery_governance:
     - TS_PROVIDER_HISTORY_FAIL
     - TS_PROVIDER_POSITION_HISTORY_FAIL
     - TS_TIMER_LATE
-  canary: "Demo rollback rehearsal, then one full terminal-reported demo session, one restricted live identity, a partial identity cohort when topology permits, and full rollout. Each stage requires zero duplicate owners, lease loss, contradictory snapshots, provider/history failure, uncorrelated transitions, or maintenance gaps >=60 seconds."
+  operational_impact:
+    runbooks: ["Docs/MODULES/Position.md", "Docs/MODULES/Persistence.md"]
+    observability: "No existing signal is removed; the listed TS_* events expose recovery, lease, snapshot, provider, timer, and deployment-phase decisions."
+    deployment: "No deployment is authorized by module closure; attachable smoke, two-chart, canary, and staged rollout remain final-release obligations."
+    runtime_cost: "No new external service or dependency. Runtime overhead is bounded to lifecycle GV snapshots, lease checks, existing audit logging, and the declared 30-second maintenance cadence."
+  security_and_supply_chain:
+    sensitive_data: "No new PII, secret, credential, or external retention path is introduced; lifecycle and audit evidence remain in the existing terminal GV/CSV boundary."
+    dependencies: "No new third-party dependency; production providers use the existing quoted vendored StdLib policy under ADR-06."
+    security_adrs: "ADR-04/06/07/08 safety and trust commitments are preserved; no security ADR amendment is required."
+  canary: "Deferred to the final release gate after IPLAN-01/02/03 complete. CHG-22 module closure neither executes nor approves demo/live rollout."
 
 contract_cutover:
   revision: "CHG-22-R1"
   policy: "One atomic source/interface/test bundle; zero-width old/new interface coexistence window. The first committed CHG-22-R1 LifecycleSnapshot retires the old binary and activates the SPEC-05 SPEC.05.06.7c3a decision."
   required_consumers:
     persistence: ["CStateStore", "CAlertSink", "CPositionStateMachine", "FakeStateStore", "FakeAlertSink", "Test_StateStore", "Test_AlertSink", "RunAllTests"]
-    position: ["CPositionStateMachine", "CPositionContext", "CTradeTxRouter", "three live providers", "IPLAN-02 CTradeCoordinator", "IPLAN-03 CGuardedTrade", "IPLAN-01 CStrategyBase"]
+    position_module: ["CPositionStateMachine", "CPositionContext", "CTradeTxRouter", "three read-only live providers", "IPLAN-04 fixtures and focused tests"]
+    downstream_release: ["IPLAN-02 CTradeCoordinator", "IPLAN-03 CGuardedTrade", "IPLAN-01 CStrategyBase"]
   gates:
-    - "IPLAN-05 producers and IPLAN-04 consumers pass first against CHG-22-R1."
-    - "IPLAN-02 coordination then consumes the pinned readiness/lifecycle contract."
-    - "IPLAN-01 provider assembly and IPLAN-03 final broker-mutation fences pass a joint integration suite before two-chart, rollback rehearsal, or canary."
-    - "TS_DEPLOY_PHASE records source commit, contract revision, fresh EX5 checksums, identity, rollout phase, and timestamp at demo, restricted-live, cohort, and full boundaries."
+    - "CHG-22 module closure requires IPLAN-05 producers and IPLAN-04 module consumers to pass against CHG-22-R1."
+    - "IPLAN-02 coordination consumes the pinned readiness/lifecycle contract in its own implementation gate."
+    - "IPLAN-01 provider assembly and IPLAN-03 final broker-mutation fences pass their own integration gates before two-chart, rollback rehearsal, or canary."
+    - "The final release gate records TS_DEPLOY_PHASE source commit, contract revision, fresh EX5 checksums, identity, rollout phase, and timestamp at demo/live boundaries."
 
 rollback_plan:
   strategy: "state-aware disable-and-restore"
@@ -300,3 +533,20 @@ rollback_plan:
     - "Docs/MODULES/Position.md"
     - "Docs/MODULES/Persistence.md"
     - "Docs/OPERATIONS.md"
+
+emergency_change:
+  emergency_id: null
+  incident_severity: null
+  fix_deployed: null
+  post_mortem_due: null
+  post_mortem_completed: false
+  post_hoc_gate: null
+
+glossary:
+  terms:
+    - term: "Module boundary"
+      definition: "The IPLAN-04/05 Position and Persistence contracts, implementations, fixtures, and focused verification evidence covered by CHG-22."
+    - term: "Release obligation"
+      definition: "Mandatory integration or rollout evidence owned by IPLAN-01/02/03 or the final release gate and excluded from CHG-22 closure."
+    - term: "CHG-22-R1"
+      definition: "The source-breaking Position/Persistence contract revision verified as one atomic module bundle."
