@@ -84,7 +84,7 @@ the plan is marked complete:
 3. **Code inventory.** Update the IPLAN's `code_inventory`, `file_manifest` status, and
    `session_handoff`, and the IPLAN-00 registry status, per the normal completion process.
 
-The Tier-9 `documentation_closeout` in [docs/08_IPLAN/IPLAN-00_index.yaml](docs/08_IPLAN/IPLAN-00_index.yaml)
+The Tier-10 `documentation_closeout` in [docs/08_IPLAN/IPLAN-00_index.yaml](docs/08_IPLAN/IPLAN-00_index.yaml)
 remains the final **release-documentation reconciliation** (AUTHORING/RECIPES/INPUTS_REFERENCE/
 TESTING and the strategy template README), but per-module reference docs are now produced
 along the way rather than only at the end. Changes to that governance model go through the

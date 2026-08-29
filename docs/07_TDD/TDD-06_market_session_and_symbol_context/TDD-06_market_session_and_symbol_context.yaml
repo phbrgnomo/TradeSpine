@@ -7,7 +7,7 @@ id: TDD-06
 title: "Market Session and Symbol Context Test-Driven Development Guide"
 status: Draft
 created_date: "2026-06-02T00:00:00-03:00"
-last_updated: "2026-08-28T19:30:00-03:00"
+last_updated: "2026-08-29T00:00:00-03:00"
 metadata:
   schema_version: "1.0"
   document_type: tdd-document
@@ -23,9 +23,9 @@ metadata:
 
 document_control:
   status: Draft
-  version: "1.5"
+  version: "1.6"
   date_created: "2026-06-02T00:00:00-03:00"
-  last_updated: "2026-08-28T19:30:00-03:00"
+  last_updated: "2026-08-29T00:00:00-03:00"
   author: "Codex"
   component: "CSymbolContext, CSessionContext, CMarketContext"
   spec_reference: "@spec: SPEC-06"
@@ -210,11 +210,12 @@ test_cases:
           - "market_open reflects broker session schedule membership only."
           - "user_trading_hours_open independently blocks entry outside the configured window."
           - "A disabled or side-restricted symbol remains subject to ValidateOrderDefinition for the concrete BUY or SELL intent."
+          - "A default-constructed TradeIntent exposes invalid order_type sentinel -1 and ValidateOrderDefinition rejects it with an explicit invalid-order-type reason before trade-mode or numeric validation."
         error_paths:
           - condition: "Close buffer sets day_trade_close_required"
             expected_error: "SPEC-defined rejection or HALT path."
         notes:
-          - "TradeIntent fixtures resolve to the canonical type in Include/Core/TradeTypes.mqh (@chg: CHG-21); existing order-definition cases are unaffected by the relocation."
+          - "TradeIntent fixtures resolve to the canonical type in Include/Core/TradeTypes.mqh; the missing-side regression proves its invalid default sentinel and explicit validation rejection (@chg: CHG-21, @chg: CHG-26)."
           - "MarketSessionEndTod regular-session-end (index-0) selection is a thin live-adapter behavior verified manually on the live/demo B3 feed; FakeMarketSessionProvider returns a single configured end-tod, so the close-reference cases here remain valid and after-hours exclusion is not fake-exercised (@chg: CHG-21)."
   e2e_tests:
     cases: []
@@ -276,6 +277,7 @@ traceability:
     - "@spec: SPEC-06"
     - "@chg: CHG-21"
     - "@chg: CHG-25"
+    - "@chg: CHG-26"
     - "@brd: BRD.01.07.69ef"
     - "@prd: PRD.01.09.fada"
     - "@prd: PRD.01.09.60ad"

@@ -7,10 +7,10 @@
 | Field | Value |
 | --- | --- |
 | Status | Completed — CHG-25 Market delta closed at the module boundary |
-| Version | 1.8 |
+| Version | 1.9 |
 | Component | CSymbolContext, CSessionContext, CMarketContext |
 | Source | @spec: SPEC-06 / @tdd: TDD.06.04.8f4d |
-| Updated | 2026-08-28T19:45:00-03:00 |
+| Updated | 2026-08-29T00:00:00-03:00 |
 | Files | 11 |
 
 ## Delivered Inventory
@@ -19,12 +19,12 @@
 | --- | --- | --- |
 | 1 | `Scripts/Tests/Test_SymbolContext.mq5` | Metadata, contract-size, freeze-level, lot, and price-grid tests. |
 | 2 | `Scripts/Tests/Test_SessionContext.mq5` | Session, user-hours, and close-required trigger tests. |
-| 3 | `Scripts/Tests/Test_ContractLifecycle.mq5` | Contract-expiration warning tests. |
+| 3 | `Scripts/Tests/Test_ContractLifecycle.mq5` | Order-definition validation, including invalid default side, session facade, and contract-expiration warning tests. |
 | 4 | `Scripts/Tests/Support/FakeMarketContext.mqh` | Explicit complete metadata/session/contract fixture. |
 | 5 | `Include/Market/SymbolContext.mqh` | Vendored `CSymbolInfo` static metadata mapping and cached validation. |
 | 6 | `Include/Market/SessionContext.mqh` | Session and close-window evaluation. |
 | 7 | `Include/Market/MarketContext.mqh` | Market facade and live-provider adapters. |
-| 8 | `Include/Core/TradeTypes.mqh` | Canonical shared `TradeIntent`. |
+| 8 | `Include/Core/TradeTypes.mqh` | Canonical shared `TradeIntent`; numeric fields default to zero and `order_type` to invalid sentinel `-1`, requiring explicit BUY/SELL assignment. |
 | 9 | `Include/Market/Interfaces.mqh` | Market-layer injectable seams. |
 | 10 | `Scripts/Tests/Test_CommonInputs.mq5` | Close-reference input validation. |
 | 11 | `Scripts/Tests/Test_SymbolContextLive.mq5` | Manual Tier-1.5 `CSymbolContext.Init()` smoke; not included in `RunAllTests`. |

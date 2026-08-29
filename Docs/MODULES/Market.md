@@ -208,6 +208,8 @@ interface IMarketSessionProvider {
 `TradeIntent` was hoisted from `Include/Market/MarketContext.mqh` to `Include/Core/TradeTypes.mqh`
 by CHG-21 so that Market, Coordination (SPEC-02), and Execution (SPEC-03) share one canonical
 definition. `CMarketContext::ValidateOrderDefinition()` consumes it via the shared Core header.
+Default construction leaves `order_type` at invalid sentinel `-1`; callers assign BUY or SELL
+explicitly before validation.
 See [Core.md — TradeTypes.mqh](Core.md#tradetypesmqh--shared-trade-domain-types-chg-21) for
 the full struct definition and extension policy.
 
@@ -254,8 +256,9 @@ provider is wired). It also queries `MarketSessionEndTod` (using the retained `I
 query) and passes it to `CSessionContext::Evaluate()` for the close-reference math. Directional
 trade-mode permission is evaluated by `ValidateOrderDefinition()` once an intent exists.
 
-**ValidateOrderDefinition:** delegates to `CSymbolContext::IsEntryAllowedLive(intent.order_type)`,
-`ValidateLots`, and `ValidatePrice` (skipped when `intent.price == 0`); then enforces order-level
+**ValidateOrderDefinition:** first rejects any side other than `ORDER_TYPE_BUY` or
+`ORDER_TYPE_SELL`, then delegates to `CSymbolContext::IsEntryAllowedLive(intent.order_type)`,
+`ValidateLots`, and `ValidatePrice` (skipped when `intent.price == 0`); it then enforces order-level
 rules — an entry price is required when SL/TP is set, side-aware stop ordering (BUY: SL below / TP
 above entry; SELL: the mirror), and the SL/TP price grid — before `ValidateStops`. Returns `false`
 with an operator-facing `reason` string on any failure. Non-finite (NaN/Inf) price, SL, or TP

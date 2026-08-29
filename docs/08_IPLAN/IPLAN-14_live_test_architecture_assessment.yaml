@@ -1,0 +1,168 @@
+metadata:
+  schema_version: "1.0"
+  document_type: "iplan-document"
+  artifact_type: "IPLAN"
+  layer: 8
+  iplan_id: "IPLAN-14"
+  source_spec: "@spec: SPEC-11"
+  source_tdd: "@tdd: TDD.11.04.c14e | @tdd: TDD.11.04.d14e"
+  total_sections: 6
+  last_updated: "2026-08-29T00:25:21-03:00"
+  tags: ["iplan-document", "layer-8-artifact", "architecture-assessment", "live-testing"]
+
+document_control:
+  iplan_id: "IPLAN-14"
+  source_spec: "@spec: SPEC-11"
+  source_tdd: "@tdd: TDD.11.04.c14e | @tdd: TDD.11.04.d14e"
+  subtype: code_build
+  status: Draft
+  version: "0.2"
+  date_created: "2026-08-28T20:45:50-03:00"
+  last_updated: "2026-08-29T00:25:21-03:00"
+  author: "Codex"
+  component: "Live-test architecture assessment and implementation planning"
+  complexity: 5
+  estimated_files: 3
+  session_count: 0
+  readiness_gate: "SPEC-11/TDD-11 GATE-06 approved under CHG-26; GATE-08 review and explicit approval remain required before execution."
+  approval_scope:
+    upstream_contract_status: "Approved"
+    upstream_contract_gate: "GATE-06"
+    governing_change: "CHG-26"
+    governing_change_status: "In Review"
+    plan_status: "Draft"
+    execution_gate: "GATE-08"
+    execution_authorization_status: "Pending"
+    execution_authorized: false
+  path_casing_policy: "Docs/ is the case-sensitive implementation evidence root; docs/ is the SDD corpus and SHALL NOT replace it."
+  source_inputs:
+    - "../06_SPEC/SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.yaml"
+    - "../07_TDD/TDD-11_testing_support_and_harnesses/TDD-11_testing_support_and_harnesses.yaml"
+    - "../06_SPEC/SPEC-08_release_testing_and_documentation_governance/SPEC-08_release_testing_and_documentation_governance.yaml"
+    - "IPLAN-00_index.yaml"
+    - "../../Scripts/Tests/Test_SymbolContextLive.mq5"
+    - "../../Include/"
+    - "../../Scripts/Tests/"
+  implementation_boundary: |
+    This IPLAN produces an evidence-backed architecture assessment, coverage matrix,
+    and refactor decision only. It does not implement live tests, refactor the test
+    harness, modify production MQL5, or authorize release. Any approved implementation
+    finding requires its own CHG and, where contracts change, an upstream SPEC/TDD
+    amendment followed by one or more implementation IPLANs. The three file-manifest
+    entries are future execution outputs; while this plan remains Draft with zero
+    sessions, their NOT_STARTED state and absence from the worktree are intentional.
+
+file_manifest:
+  files:
+    - path: "Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml"
+      order: 1
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Evidence-first inventory mapping every implemented production boundary to existing automated, tester, demo/live, and manual evidence plus its remaining live-test gap."
+    - path: "Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md"
+      order: 2
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Authoritative complete finding inventory plus architecture review of terminal-coupled behavior, broker/account/symbol dependencies, mutation risk, feasible environments, and candidate live-test ownership."
+    - path: "Docs/ASSESSMENTS/LIVE_TEST_REFACTOR_DECISION.md"
+      order: 3
+      status: NOT_STARTED
+      session: null
+      verified: false
+      purpose: "Reviewed decision on whether no, targeted, or shared test-architecture refactoring is required, with follow-on artifact and sequencing requirements."
+
+execution_commands:
+  cwd: "MQL5/Experts/Main/TradeSpine"
+  setup:
+    - "mkdir -p Docs/ASSESSMENTS"
+  implementation:
+    - "# Inventory the final implemented Include/, Scripts/Tests/, strategy-port, module-documentation, and IPLAN code_inventory surfaces after IPLAN-01 through IPLAN-13 code work is complete."
+    - "# Build LIVE_TEST_COVERAGE_MATRIX.yaml first; do not infer coverage from filenames or compilation alone."
+    - "# For each production boundary record every approved LiveTestCoverageRecord field: a non-empty coverage_record_id unique within the complete assessment, module, production paths, terminal dependencies and level, mutation class, existing evidence, evidence gap, live-test need, safe environment, owner, proposed tier, and rationale."
+    - "# Review the resulting seams and fixtures for duplication, unsafe coupling, nondeterminism, environment leakage, and gaps in aggregate reachability."
+    - "# Select NO_REFACTOR, TARGETED_REFACTOR, or SHARED_ARCHITECTURE_REFACTOR and identify every required CHG/SPEC/TDD/IPLAN follow-up."
+    - "# Do not create or modify .mq5/.mqh files while executing this assessment IPLAN."
+  validation:
+    - "test -f Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml"
+    - "test -f Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md"
+    - "test -f Docs/ASSESSMENTS/LIVE_TEST_REFACTOR_DECISION.md"
+    - "python3 -c 'import yaml; yaml.safe_load(open(\"Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml\", encoding=\"utf-8\"))'"
+    - "rg -n \"coverage_record_id|terminal_api_dependencies|mutation_class|existing_evidence|live_test_need|safe_environment|owner|rationale\" Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml"
+    - "rg -n \"finding_id|coverage_record_refs|evidence_refs\" Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md"
+    - "rg -n \"NO_REFACTOR|TARGETED_REFACTOR|SHARED_ARCHITECTURE_REFACTOR|follow-on|SPEC|TDD|IPLAN\" Docs/ASSESSMENTS/LIVE_TEST_REFACTOR_DECISION.md"
+    - "git diff --check"
+
+implementation_contracts:
+  derivation_rule: "This section materializes approved SPEC-11/TDD-11 contracts. IPLAN-14 SHALL NOT add fields, states, classifications, or closeout semantics absent from those upstream contracts."
+  provided:
+    contracts:
+      - name: "Live-test coverage record"
+        type: "Assessment Data Model"
+        files: ["Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml"]
+        upstream_contract: "@spec: SPEC-11 LiveTestCoverageRecord; @tdd: TDD.11.04.c14e"
+        summary: "Materialize the approved LiveTestCoverageRecord fields for every implemented behavior boundary, using a non-empty coverage_record_id that is unique within the complete assessment."
+      - name: "Live-test necessity classification"
+        type: "Decision Rule"
+        files: ["Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml", "Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md"]
+        upstream_contract: "@spec: SPEC-11 LiveTestAssessmentContract and LiveTestAssessmentResult; @tdd: TDD.11.04.c14e"
+        summary: "Apply the approved REQUIRED, CONDITIONAL, or NOT_REQUIRED classification without conflating evidence types; record the complete finding inventory with unique stable finding IDs; and require every coverage_record_refs value to resolve to exactly one coverage_record_id."
+      - name: "Test-architecture refactor decision"
+        type: "Architecture Decision"
+        files: ["Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md", "Docs/ASSESSMENTS/LIVE_TEST_REFACTOR_DECISION.md"]
+        upstream_contract: "@spec: SPEC-11 LiveTestArchitectureDecision; @tdd: TDD.11.04.d14e"
+        summary: "Materialize exactly one approved refactor decision and its affected contracts and governed follow-on artifacts."
+      - name: "Pre-closeout disposition gate"
+        type: "Governance Contract"
+        files: ["Docs/ASSESSMENTS/LIVE_TEST_REFACTOR_DECISION.md", "docs/08_IPLAN/IPLAN-00_index.yaml"]
+        upstream_contract: "@spec: SPEC-11 LiveTestAssessmentResult, LiveTestCloseoutGate, and LiveTestFindingDisposition; @tdd: TDD.11.04.d14e"
+        summary: "Pass the complete assessment result to the closeout gate, require an exact one-to-one match between assessed finding IDs and disposition.finding_id values, and apply exactly one mutually exclusive disposition per matched finding."
+        disposition_semantics:
+          IMPLEMENTED: "The governed follow-on is complete with required evidence."
+          DEFERRED_WITH_RATIONALE: "Owner, rationale, risk acceptance, and revisit trigger are recorded."
+          REJECTED_WITH_EVIDENCE: "Recorded evidence explains why implementation or deferral is not required."
+  consumed:
+    dependencies:
+      - "@spec: SPEC-11 shared test support, owner-extension seams, and automated/manual evidence separation"
+      - "@tdd: TDD.11.04.c14e approved live-test coverage assessment contract"
+      - "@tdd: TDD.11.04.d14e approved architecture-decision and closeout-disposition contract"
+      - "@spec: SPEC-08 release evidence and documentation governance"
+      - "@tests: Scripts/Tests/Test_SymbolContextLive.mq5 as the initial live-instrument test example, not as a universal architecture template"
+      - "@iplan: IPLAN-01 through @iplan: IPLAN-13 implemented code, tests, manifests, and module evidence (excluding intentionally absent IPLAN-08)"
+
+review_questions:
+  - "Does IPLAN-14 materialize SPEC-11 LiveTestAssessmentContract and LiveTestCloseoutGate without introducing downstream-only fields or semantics?"
+  - "Does the coverage record classify all implemented behavior boundaries without equating compilation, aggregate reachability, tester execution, demo/live observation, or production authorization?"
+  - "Are mutation-capable live tests prohibited from unrestricted production accounts and assigned a safe demo/restricted-live environment?"
+  - "Does the refactor decision threshold prevent speculative shared abstractions while still detecting repeated fixtures, environment leakage, and terminal-coupled seams?"
+  - "Does the disposition gate compare the complete assessed finding inventory with disposition.finding_id values one-to-one and prevent documentation closeout from concealing missing, extra, duplicate, or unresolved live-test work?"
+
+session_handoff:
+  sessions:
+    - date: "2026-08-28"
+      agent: "Codex doc-iplan"
+      files_touched: []
+      partial_work: "Revised the Draft proposal after SPEC-11/TDD-11 were amended and approved at GATE-06. No assessment execution, MQL5 implementation, test refactor, or live run has started."
+      blockers: "Execution is blocked until all code-deliverable IPLANs are complete and GATE-08 confirms exact derivation from approved @tdd: TDD.11.04.c14e and @tdd: TDD.11.04.d14e."
+      next_session_directive: "Run GATE-08 review against the approved SPEC-11/TDD-11 contracts. After human GATE-08 approval and dependency completion, create the coverage matrix before the architecture review or refactor decision."
+      validation_results:
+        tests_passing: null
+        coverage: null
+        lint_clean: null
+
+traceability:
+  provenance: ["@chg: CHG-26"]
+  upstream:
+    spec_references: ["@spec: SPEC-11", "@spec: SPEC-08"]
+    tdd_references: ["@tdd: TDD.11.04.c14e", "@tdd: TDD.11.04.d14e"]
+  downstream:
+    code_paths: []
+    test_paths: ["@tests: Scripts/Tests/Test_SymbolContextLive.mq5 (assessment input only)"]
+    documentation_paths:
+      - "@docs: Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml"
+      - "@docs: Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md"
+      - "@docs: Docs/ASSESSMENTS/LIVE_TEST_REFACTOR_DECISION.md"
+    no_code_reason: "Assessment-only boundary; implementation findings require separately approved downstream artifacts."
+  code_inventory:
+    files: []

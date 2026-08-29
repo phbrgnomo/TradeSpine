@@ -10,8 +10,8 @@
 | --- | --- |
 | IPLAN ID | IPLAN-04 |
 | Status | Completed |
-| Version | 1.6 |
-| Updated | 2026-08-27T00:00:00-03:00 |
+| Version | 1.7 |
+| Updated | 2026-08-29T00:00:00-03:00 |
 | Source SPEC | @spec: SPEC-04 |
 | Source TDD | @tdd: TDD.04.04.8b79 |
 | Subtype | combined |

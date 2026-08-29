@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-06"
   source_tdd: "@tdd: TDD.06.04.8f4d"
   total_sections: 6
-  last_updated: "2026-08-28T19:45:00-03:00"
+  last_updated: "2026-08-29T00:00:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture"]
 
 document_control:
@@ -16,9 +16,9 @@ document_control:
   source_spec: "@spec: SPEC-06"
   source_tdd: "@tdd: TDD.06.04.8f4d"
   status: Completed
-  version: "1.8"
+  version: "1.9"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-08-28T19:45:00-03:00"
+  last_updated: "2026-08-29T00:00:00-03:00"
   author: "Codex"
   component: "CSymbolContext, CSessionContext, CMarketContext"
   complexity: 4
@@ -82,7 +82,7 @@ file_manifest:
       status: DONE
       session: 4
       verified: true
-      purpose: "Canonical shared TradeIntent struct (price/sl/tp/lots/order_type), hoisted from MarketContext.mqh so Market and the future Coordination/Execution layers share one include-guarded definition (@chg: CHG-21). SPEC-02 extends it; SPEC-03 consumes it."
+      purpose: "Canonical shared TradeIntent struct (price/sl/tp/lots/order_type), with numeric zero defaults and an invalid order_type sentinel requiring explicit BUY/SELL assignment; hoisted from MarketContext.mqh so Market and future Coordination/Execution layers share one include-guarded definition (@chg: CHG-21, @chg: CHG-26)."
     - path: "Include/Market/Interfaces.mqh"
       order: 9
       status: DONE

@@ -41,9 +41,10 @@ struct TradeIntent
    double          lots;        // requested volume
    ENUM_ORDER_TYPE order_type;  // ORDER_TYPE_BUY or ORDER_TYPE_SELL
 
-   //--- \brief Default constructor: zeroes.
+   //--- \brief Default constructor: zeroes numeric fields and leaves the
+   //---        order side invalid so callers must assign it explicitly.
    TradeIntent(void) : price(0.0), sl(0.0), tp(0.0), lots(0.0),
-                       order_type(ORDER_TYPE_BUY)
+                       order_type((ENUM_ORDER_TYPE)-1)
      {
      }
   };

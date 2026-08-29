@@ -55,9 +55,12 @@ struct TradeIntent {
     double          tp;          // take-profit price; 0.0 = no TP
     double          lots;        // requested volume
     ENUM_ORDER_TYPE order_type;  // ORDER_TYPE_BUY or ORDER_TYPE_SELL
-    TradeIntent();               // zeroes default
+    TradeIntent();               // zeroes numeric fields; order_type = invalid sentinel -1
 };
 ```
+
+Callers must assign `ORDER_TYPE_BUY` or `ORDER_TYPE_SELL` before validation or submission. The
+invalid default prevents an omitted side from silently becoming a BUY intent.
 
 Dependency-free: uses only the built-in `ENUM_ORDER_TYPE`, so any layer can include this header
 without pulling in other framework modules. SPEC-02 will *extend* this struct; downstream
