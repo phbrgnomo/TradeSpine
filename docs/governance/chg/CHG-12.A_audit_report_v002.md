@@ -48,7 +48,7 @@ FAIL. CHG-12 is not gate-ready. Three P1 blockers remain: rollback coverage is i
 |---|---|---|---|---|---|---|
 | CHG12-ADV-IMPACT-GLOBS | warning | REVIEW | lines 91-97 | Code impact still uses broad directories and globs such as `Docs/`, `Include/Core/*`, `Include/Testing/*`, and `Scripts/Tests/Support/*`, so the blast radius is not fully computable from `impact_assessment`. | Replace broad groups with exact modified file entries, or state a bounded exception for each intentionally broad group. | auto-assisted |
 | CHG12-ADV-IPLAN00-CLOSEOUT-CONFLICT | warning | REVIEW | `docs/08_IPLAN/IPLAN-00_index.yaml` | IPLAN-00 still contains a batch-only execution command that says to write documentation only after IPLAN-12 and IPLAN-13 complete, conflicting with CHG-12's incremental model. | Limit post-IPLAN-13 work to release-only reconciliation and consistency sweeps over already-written module pages. | auto-assisted |
-| CHG12-ADV-COMPATIBILITY-POSTURE | warning | REVIEW | lines 71-106 | The CHG implies executable behavior and Tier-9 deliverables are unchanged, but does not explicitly classify compatibility as backward-compatible, backward-compatible-with-migration, or breaking. | Add an explicit compatibility statement for the incremental documentation obligation and already-backfilled IPLANs. | auto-safe |
+| CHG12-ADV-COMPATIBILITY-POSTURE | warning | REVIEW | lines 71-106 | The CHG implies executable behavior and the then-current closeout deliverables are unchanged, but does not explicitly classify compatibility as backward-compatible, backward-compatible-with-migration, or breaking. | Add an explicit compatibility statement for the incremental documentation obligation and already-backfilled IPLANs. | auto-safe |
 
 ## Content Findings
 

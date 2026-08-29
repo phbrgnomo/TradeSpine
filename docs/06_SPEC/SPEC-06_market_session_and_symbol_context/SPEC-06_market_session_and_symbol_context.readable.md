@@ -38,7 +38,7 @@ flowchart LR
 | IContractInfoProvider | interface | Contract expiry seam: `ExpirationTime()` returns expiry timestamp (0 = no expiry / non-futures); production reads `SYMBOL_EXPIRATION_TIME`, test doubles return a configured fixture. |
 | IMarketSessionProvider | interface | Broker session schedule seam: `IsMarketSessionOpen(when)` reports schedule membership; `MarketSessionEndTod(when)` returns the REGULAR (first / index-0) trade-session end-of-day for the close-reference trigger. After-hours sessions are excluded (@chg: CHG-21). Returns -1 when no session is defined or when the broker reports a full-day 00:00–24:00 sentinel (common on B3); close trigger then falls back to `entry_window_end`. |
 | CMarketContext | class | Coordinates symbol, account, session, and contract lifecycle checks. |
-| ValidateOrderDefinition | method | Validates lots, stop prices, and price grid against initialized symbol metadata. Consumes the canonical `TradeIntent` from `Include/Core/TradeTypes.mqh` (SPEC-02 extends it, SPEC-03 consumes it — @chg: CHG-21). |
+| ValidateOrderDefinition | method | Rejects an unset or unsupported order side before validating lots, stop prices, and price grid. Consumes the canonical `TradeIntent`, whose default `order_type` is invalid until explicitly assigned (@chg: CHG-21, @chg: CHG-26). |
 
 ## Data Models
 
@@ -49,6 +49,7 @@ flowchart LR
 
 ## Behavior
 
+- Reject any `TradeIntent.order_type` other than `ORDER_TYPE_BUY` or `ORDER_TYPE_SELL` before trade-mode or numeric validation.
 - Required symbol information SHALL load during strategy initialization.
 - Order definitions SHALL validate sizing, lots, stop prices, and price grid against initialized symbol information.
 - Entries SHALL require both market trade session and user-defined strategy trading-hours window.
@@ -73,7 +74,7 @@ flowchart LR
 | `Scripts/Tests/Test_SymbolContext.mq5` | Required metadata loading, invalid re-initialization without stale fixture data, contract-size/freeze-level rejection, and lot/price-grid validation. |
 | `Scripts/Tests/Test_SymbolContextLive.mq5` | Manual Tier-1.5 `CSymbolContext.Init()` smoke on the chart or supplied broker symbol, through vendored `CSymbolInfo`; excluded from `RunAllTests`. |
 | `Scripts/Tests/Test_SessionContext.mq5` | Market session, user trading-hours gate, entry blocking, and day-trade forced close. |
-| `Scripts/Tests/Test_ContractLifecycle.mq5` | One-broker-day expiration warning at session open. |
+| `Scripts/Tests/Test_ContractLifecycle.mq5` | Invalid-default-side order validation, session facade behavior, and one-broker-day expiration warning. |
 
 ## Traceability
 

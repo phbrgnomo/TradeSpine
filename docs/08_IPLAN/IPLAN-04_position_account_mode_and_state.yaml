@@ -7,7 +7,7 @@ metadata:
   source_spec: "@spec: SPEC-04"
   source_tdd: "@tdd: TDD.04.04.8b79"
   total_sections: 6
-  last_updated: "2026-08-27T00:00:00-03:00"
+  last_updated: "2026-08-29T00:00:00-03:00"
   tags: ["iplan-document", "layer-8-artifact", "shared-architecture", "completed"]
 
 document_control:
@@ -15,9 +15,9 @@ document_control:
   source_spec: "@spec: SPEC-04"
   source_tdd: "@tdd: TDD.04.04.8b79"
   status: Completed
-  version: "1.6"
+  version: "1.7"
   date_created: "2026-06-03T00:00:00-03:00"
-  last_updated: "2026-08-27T00:00:00-03:00"
+  last_updated: "2026-08-29T00:00:00-03:00"
   author: "Codex"
   component: "CPositionContext, adapters, router, state machine, and IPLAN-04 persistence extensions"
   subtype: combined
@@ -199,7 +199,7 @@ acceptance_workflow:
       obligation: "Assemble live providers, wire timer/transactions, package an attachable EA, and execute two-chart validation."
     - owner: "IPLAN-03"
       obligation: "Prove final broker-mutation fencing and zero broker-bypass findings."
-    - owner: "Tier-9 documentation_closeout"
+    - owner: "Tier-10 documentation_closeout"
       obligation: "After IPLAN-01/02/03 complete, perform rollback rehearsal, demo canary, restricted live, staged rollout, and final release approval."
   phases:
     - id: CANONICAL_CASCADE

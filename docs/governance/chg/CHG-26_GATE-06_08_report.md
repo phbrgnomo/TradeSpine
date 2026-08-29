@@ -1,4 +1,4 @@
-# CHG-26 GATE-06 / GATE-08 Report
+# CHG-26 GATE-06 / GATE-08 / GATE-CODE Report
 
 ## Result
 
@@ -6,7 +6,7 @@
 | --- | --- | --- | --- |
 | GATE-06 | PASS | Approved by explicit project-owner instruction | SPEC-11/TDD-11 contracts approved. |
 | GATE-08 | PASS | Pending | IPLAN-14 execution not authorized. |
-| GATE-CODE | N/A | N/A | No code change. |
+| GATE-CODE | NOT READY | Pending | Static review passed; fresh F7/MT5 evidence and human approval are missing. |
 
 ## GATE-06 Findings
 
@@ -31,6 +31,33 @@
 | GATE-08-W002 | ADDRESSED | IPLAN implementation contracts identify their exact approved upstream contracts. |
 | GATE-08-W003 | ADDRESSED | CHG-26 defines rollback for the complete documentation cascade. |
 
+## TradeIntent Amendment Findings
+
+### GATE-06
+
+| Check | Result | Basis |
+| --- | --- | --- |
+| GATE-06-E001 | PASS | SPEC-02 TDD-ready 94/100 and SPEC-06 TDD-ready 92/100 exceed the threshold. |
+| GATE-06-E002 | PASS | Existing BDD mapping remains unchanged; TDD-06 extends the existing Market-context case with missing-side regression coverage. |
+| GATE-06-E003 | PASS | SPEC-02 constructor semantics, SPEC-06 validation semantics, and TDD-06 regression expectations agree. |
+| GATE-06-E004 | PASS | SPEC-02/SPEC-06 and TDD-06 were amended together. |
+
+Validation passes; human approval for this later amendment remains pending and is not inherited from the SPEC-11/TDD-11 approval.
+
+### GATE-CODE
+
+| Check | Result | Basis |
+| --- | --- | --- |
+| GATE-CODE-E001 | PASS | Root cause: `TradeIntent` defaulted to a valid BUY side, so omitted assignment could silently represent a real direction. |
+| GATE-CODE-E002 | PASS | Correct layers changed: constructor sentinel, validation boundary, and regression test. |
+| GATE-CODE-E003 | PENDING | No fresh MetaEditor F7 `0 errors, 0 warnings`, fresh EX5, or MT5 execution counts were supplied for the amended source. |
+| GATE-CODE-E004 | PENDING | Required human code review approval is not recorded. |
+| GATE-CODE-W001 | N/A | No performance-sensitive behavior changed. |
+| GATE-CODE-W002 | PENDING | Build-warning status requires fresh MetaEditor evidence. |
+| GATE-CODE-W003 | N/A | Static review identified no deferred technical debt. |
+
+**GATE-CODE result:** NOT READY.
+
 ## Authority Boundary
 
-The user’s instruction is recorded as human GATE-06 approval for the amended upstream contracts. No instruction approved GATE-08 execution; IPLAN-14 therefore remains Draft and blocked pending separate human sign-off and dependency completion.
+The user’s earlier instruction approved only the SPEC-11/TDD-11 upstream live-test contracts. It did not approve the later TradeIntent SPEC/TDD amendment, GATE-08 execution, or GATE-CODE. IPLAN-14 remains Draft; the MQL5 amendment remains blocked from merge authorization until fresh manual evidence and human gate approval are recorded.

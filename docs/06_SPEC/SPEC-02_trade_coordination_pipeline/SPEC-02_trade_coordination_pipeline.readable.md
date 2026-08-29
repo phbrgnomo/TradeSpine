@@ -7,7 +7,7 @@
 | Field | Value |
 | --- | --- |
 | Status | Draft |
-| Version | 1.2 |
+| Version | 1.3 |
 | Component | CTradeCoordinator, Signal, TradeIntent |
 | TDD-ready Score | 94/100 |
 | Architecture Decision | ADR-09 |
@@ -36,17 +36,18 @@ flowchart LR
 | ProcessSignal | method | Converts canonical strategy signals into validated trade intents. |
 | Update | method | Runs pending-entry, async-fill, timeout, and reconciliation bookkeeping outside normal entry flow. |
 | Signal | struct | Carries internal direction, market-entry mode, optional requested price placeholder, stops, comment, and metadata. |
-| TradeIntent | struct | Extends the canonical Core `TradeIntent` from `Include/Core/TradeTypes.mqh` (price/sl/tp/lots/order_type) with coordination fields: resolved entry, risk percent, timestamp, symbol, magic, comment, and audit metadata. IPLAN-02 must include the Core header and add fields — it must not redefine the struct (@chg: CHG-21). |
+| TradeIntent | struct | Extends the canonical Core `TradeIntent` from `Include/Core/TradeTypes.mqh`. Default construction zeroes numeric fields and leaves `order_type` at invalid sentinel `-1`; IPLAN-02 must assign BUY or SELL before validation or submission and must not redefine the struct (@chg: CHG-21, @chg: CHG-26). |
 
 ## Data Models
 
 | Model | Purpose |
 | --- | --- |
 | Signal | Internal strategy request normalized by the coordinator, including `entry_mode`, optional `entry_price`, SL/TP, comment, and compact metadata. |
-| TradeIntent | EXTENDS `Include/Core/TradeTypes.mqh::TradeIntent` (canonical base: price/sl/tp/lots/order_type). Adds resolved entry, stops, risk percent, timestamp, symbol, magic, comment, and audit metadata (@chg: CHG-21 — IPLAN-02 must not redefine the canonical base). |
+| TradeIntent | EXTENDS `Include/Core/TradeTypes.mqh::TradeIntent` (canonical base: price/sl/tp/lots/order_type; numeric fields default to `0.0`, `order_type` to invalid sentinel `-1`). Adds resolved entry, stops, risk percent, timestamp, symbol, magic, comment, and audit metadata (@chg: CHG-21, @chg: CHG-26). |
 
 ## Behavior
 
+- A default-constructed canonical `TradeIntent` leaves `order_type` invalid; the coordinator assigns `ORDER_TYPE_BUY` or `ORDER_TYPE_SELL` before validation, evidence emission, or broker submission.
 - Entry and exit helper requests SHALL route through documented TradeSpine helper calls and coordinator processing.
 - CTradeCoordinator SHALL NOT decide strategy intent, including flat/non-flat entry policy, signal exits, or trailing invocation; those decisions remain in the strategy layer.
 - Intent evidence SHALL be written before accepted broker submission.
@@ -79,4 +80,4 @@ flowchart LR
 
 ## Traceability
 
-`@spec: SPEC-02`, `@brd: BRD.01.07.88a6`, `@prd: PRD.01.09.eaf3`, `@ears: EARS.01.03.b784`, `@bdd: BDD.01.03.0073`, `@adr: ADR.09.03.84b9`, `@chg: CHG-21`, `@chg: CHG-25`
+`@spec: SPEC-02`, `@brd: BRD.01.07.88a6`, `@prd: PRD.01.09.eaf3`, `@ears: EARS.01.03.b784`, `@bdd: BDD.01.03.0073`, `@adr: ADR.09.03.84b9`, `@chg: CHG-21`, `@chg: CHG-25`, `@chg: CHG-26`

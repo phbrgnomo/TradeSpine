@@ -7,14 +7,14 @@ id: SPEC-06
 title: Market Session and Symbol Context
 status: Draft
 created_date: "2026-06-02T00:20:00-03:00"
-last_updated: "2026-08-28T19:30:00-03:00"
+last_updated: "2026-08-29T00:00:00-03:00"
 
 ## Section 1: Document Control
 document_control:
   status: Draft
-  version: "1.5"
+  version: "1.6"
   date_created: "2026-06-02T00:20:00-03:00"
-  last_updated: "2026-08-28T19:30:00-03:00"
+  last_updated: "2026-08-29T00:00:00-03:00"
   author: "Codex"
   component: "CSymbolContext, CSessionContext, CMarketContext"
   tdd_ready_score: "92/100"
@@ -83,7 +83,7 @@ interfaces:
     - name: "ValidateOrderDefinition"
       type: "method"
       signature: "bool ValidateOrderDefinition(const TradeIntent &intent, string &reason)"
-      description: "Validates lots, stop prices, and price grid against initialized symbol metadata. Consumes the canonical TradeIntent declared in Include/Core/TradeTypes.mqh (the single shared definition; SPEC-02 extends it, SPEC-03 consumes it) rather than a market-local struct (@chg: CHG-21)."
+      description: "Validates an explicitly assigned BUY or SELL side, lots, stop prices, and price grid against initialized symbol metadata. Consumes the canonical TradeIntent declared in Include/Core/TradeTypes.mqh; its default invalid order_type sentinel is rejected before trade-mode or numeric validation (@chg: CHG-21, @chg: CHG-26)."
       errors:
         - "false: symbol, lots, stop, price grid, or trade mode is invalid."
 
@@ -156,6 +156,8 @@ data_models:
 ## Section 5: Behavior
 behavior:
   validation_rules:
+    - rule: "ValidateOrderDefinition SHALL reject any TradeIntent.order_type other than ORDER_TYPE_BUY or ORDER_TYPE_SELL before trade-mode, lots, price, or stop validation."
+      source: "@chg: CHG-21, @chg: CHG-26"
     - rule: "Required symbol information SHALL load during strategy initialization."
       source: "@ears: EARS.01.03.03b2"
     - rule: "Order definitions SHALL validate sizing, lots, stop prices, and price grid against initialized symbol information."
@@ -219,11 +221,11 @@ tdd_contracts:
     - path: "Scripts/Tests/Test_SessionContext.mq5"
       covers: "Market session, user trading-hours gate, and day-trade close trigger."
     - path: "Scripts/Tests/Test_ContractLifecycle.mq5"
-      covers: "One-broker-day expiration warning at session open."
+      covers: "Order-definition validation including invalid default side, session facade behavior, and one-broker-day expiration warning at session open."
 
 ## Section 8: Traceability
 traceability:
-  tags: ["@spec: SPEC-06", "@brd: BRD.01.07.69ef", "@prd: PRD.01.09.fada", "@ears: EARS.01.03.03b2", "@bdd: BDD.01.03.edae", "@adr: ADR.10.03.51ea", "@chg: CHG-19", "@chg: CHG-21", "@chg: CHG-25"]
+  tags: ["@spec: SPEC-06", "@brd: BRD.01.07.69ef", "@prd: PRD.01.09.fada", "@ears: EARS.01.03.03b2", "@bdd: BDD.01.03.edae", "@adr: ADR.10.03.51ea", "@chg: CHG-19", "@chg: CHG-21", "@chg: CHG-25", "@chg: CHG-26"]
   upstream:
     adr_references: ["@adr: ADR.04.03.7277", "@adr: ADR.06.03.b277", "@adr: ADR.10.03.51ea"]
     bdd_references: ["@bdd: BDD.01.03.edae", "@bdd: BDD.01.03.a399", "@bdd: BDD.01.03.d4a5", "@bdd: BDD.01.03.4dcb", "@bdd: BDD.01.03.4a71", "@bdd: BDD.01.03.e593"]

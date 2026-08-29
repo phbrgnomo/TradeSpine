@@ -85,6 +85,7 @@ interfaces:
       description: "Inventories implemented behavior boundaries and assessment findings, classifies live-evidence necessity, and decides whether test-architecture refactoring is required."
       errors:
         - "AssessmentIncomplete: an implemented behavior boundary lacks an evidence classification or rationale."
+        - "CoverageInventoryInvalid: a coverage record lacks a unique stable coverage_record_id or a finding reference does not resolve to exactly one coverage record."
         - "FindingInventoryInvalid: an assessment finding lacks a unique stable finding_id."
         - "UnsafeEnvironment: a mutation-capable test is assigned to an unrestricted production environment."
     - name: "LiveTestCloseoutGate"
@@ -131,6 +132,10 @@ data_models:
     - name: "LiveTestCoverageRecord"
       type: "record"
       fields:
+        - name: "coverage_record_id"
+          type: "string"
+          required: true
+          description: "Stable identifier unique within the complete coverage inventory."
         - name: "module"
           type: "string"
           required: true
@@ -220,7 +225,7 @@ data_models:
         - name: "coverage_record_refs"
           type: "string[]"
           required: true
-          description: "Coverage-record identifiers supporting the finding."
+          description: "Supporting coverage_record_id values; every value SHALL resolve to exactly one LiveTestCoverageRecord in the complete assessment."
         - name: "evidence_refs"
           type: "string[]"
           required: true
@@ -283,6 +288,8 @@ behavior:
       source: "@chg: CHG-26"
     - rule: "Each coverage record SHALL classify live evidence as REQUIRED, CONDITIONAL, or NOT_REQUIRED and provide an owner, rationale, and safe environment."
       source: "@chg: CHG-26"
+    - rule: "Every LiveTestCoverageRecord SHALL have a non-empty coverage_record_id unique within the complete assessment, and every LiveTestAssessmentFinding.coverage_record_refs value SHALL resolve to exactly one coverage record by that key."
+      source: "@chg: CHG-26"
     - rule: "Mutation-capable live tests SHALL use DEMO or an explicitly controlled RESTRICTED_LIVE environment and SHALL NOT target an unrestricted production account."
       source: "@chg: CHG-26"
     - rule: "The architecture decision SHALL select exactly one of NO_REFACTOR, TARGETED_REFACTOR, or SHARED_ARCHITECTURE_REFACTOR and enumerate governed follow-on artifacts."
@@ -310,7 +317,7 @@ behavior:
     - condition: "Manual evidence pack is required but absent."
       response: "Mark release gate blocked rather than substituting automated tester evidence."
       source: "@bdd: BDD.01.03.f415"
-    - condition: "An implemented boundary is absent from the coverage matrix, evidence types are conflated, an assessed finding ID is missing or duplicated, or the assessed and disposition finding ID sets do not match one-to-one."
+    - condition: "An implemented boundary is absent from the coverage matrix, evidence types are conflated, a coverage_record_id is missing or duplicated, a coverage_record_refs value does not resolve exactly once, an assessed finding ID is missing or duplicated, or the assessed and disposition finding ID sets do not match one-to-one."
       response: "Block IPLAN-14 completion and documentation closeout until the assessment contract is satisfied."
       source: "@chg: CHG-26"
 

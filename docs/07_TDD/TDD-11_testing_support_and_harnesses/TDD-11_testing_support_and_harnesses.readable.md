@@ -20,7 +20,7 @@
 | Source SPEC | `../../06_SPEC/SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.yaml` |
 | IPLAN-ready Score | 95/100 |
 | Created | 2026-06-02T00:00:00-03:00 |
-| Updated | 2026-08-29T00:05:39-03:00 |
+| Updated | 2026-08-29T00:25:21-03:00 |
 
 ## Test Pyramid
 
@@ -73,7 +73,7 @@ Path casing is intentional: `Docs/` is the case-sensitive implementation evidenc
 | ID | Name | Contract | File | Expected State | Error Paths |
 | --- | --- | --- | --- | --- | --- |
 | TDD.11.04.aadd | ScenarioHarness assembles fakes and evidence assertions | ScenarioHarness | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` | Stimulus runs with deterministic time and evidence assertions fail on missing required traces | Owner extension slot is missing for a scenario that requires broker, position, symbol, or store behavior -> Owner hooks (OnOwnerSetup/OnOwnerTeardown) are callable without crashing; owner-specific assertions are deferred to the downstream IPLAN. |
-| TDD.11.04.c14e | Live-test coverage assessment is complete and evidence-separated | LiveTestAssessmentContract | `Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml` plus `Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md` | Every boundary records the approved coverage fields; the review records every finding with a unique stable ID and supporting references | Missing boundary, conflated evidence, missing/duplicate finding ID, or unsafe mutation environment blocks assessment completion and closeout. |
+| TDD.11.04.c14e | Live-test coverage assessment is complete and evidence-separated | LiveTestAssessmentContract | `Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml` plus `Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md` | Every boundary has a non-empty, unique `coverage_record_id` and the approved coverage fields; every finding has a unique stable ID, and each `coverage_record_refs` value resolves to exactly one coverage record | Missing boundary, conflated evidence, missing/duplicate coverage-record ID, unresolved or ambiguous coverage reference, missing/duplicate finding ID, or unsafe mutation environment blocks assessment completion and closeout. |
 
 ### E2E Tests
 

@@ -80,7 +80,7 @@ execution_commands:
   implementation:
     - "# Inventory the final implemented Include/, Scripts/Tests/, strategy-port, module-documentation, and IPLAN code_inventory surfaces after IPLAN-01 through IPLAN-13 code work is complete."
     - "# Build LIVE_TEST_COVERAGE_MATRIX.yaml first; do not infer coverage from filenames or compilation alone."
-    - "# For each production boundary record every approved LiveTestCoverageRecord field: module, production paths, terminal dependencies and level, mutation class, existing evidence, evidence gap, live-test need, safe environment, owner, proposed tier, and rationale."
+    - "# For each production boundary record every approved LiveTestCoverageRecord field: a non-empty coverage_record_id unique within the complete assessment, module, production paths, terminal dependencies and level, mutation class, existing evidence, evidence gap, live-test need, safe environment, owner, proposed tier, and rationale."
     - "# Review the resulting seams and fixtures for duplication, unsafe coupling, nondeterminism, environment leakage, and gaps in aggregate reachability."
     - "# Select NO_REFACTOR, TARGETED_REFACTOR, or SHARED_ARCHITECTURE_REFACTOR and identify every required CHG/SPEC/TDD/IPLAN follow-up."
     - "# Do not create or modify .mq5/.mqh files while executing this assessment IPLAN."
@@ -89,7 +89,7 @@ execution_commands:
     - "test -f Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md"
     - "test -f Docs/ASSESSMENTS/LIVE_TEST_REFACTOR_DECISION.md"
     - "python3 -c 'import yaml; yaml.safe_load(open(\"Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml\", encoding=\"utf-8\"))'"
-    - "rg -n \"terminal_api_dependencies|mutation_class|existing_evidence|live_test_need|safe_environment|owner|rationale\" Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml"
+    - "rg -n \"coverage_record_id|terminal_api_dependencies|mutation_class|existing_evidence|live_test_need|safe_environment|owner|rationale\" Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml"
     - "rg -n \"finding_id|coverage_record_refs|evidence_refs\" Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md"
     - "rg -n \"NO_REFACTOR|TARGETED_REFACTOR|SHARED_ARCHITECTURE_REFACTOR|follow-on|SPEC|TDD|IPLAN\" Docs/ASSESSMENTS/LIVE_TEST_REFACTOR_DECISION.md"
     - "git diff --check"
@@ -102,12 +102,12 @@ implementation_contracts:
         type: "Assessment Data Model"
         files: ["Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml"]
         upstream_contract: "@spec: SPEC-11 LiveTestCoverageRecord; @tdd: TDD.11.04.c14e"
-        summary: "Materialize the approved LiveTestCoverageRecord fields for every implemented behavior boundary."
+        summary: "Materialize the approved LiveTestCoverageRecord fields for every implemented behavior boundary, using a non-empty coverage_record_id that is unique within the complete assessment."
       - name: "Live-test necessity classification"
         type: "Decision Rule"
         files: ["Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml", "Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md"]
         upstream_contract: "@spec: SPEC-11 LiveTestAssessmentContract and LiveTestAssessmentResult; @tdd: TDD.11.04.c14e"
-        summary: "Apply the approved REQUIRED, CONDITIONAL, or NOT_REQUIRED classification without conflating evidence types, and record the complete finding inventory with unique stable finding IDs."
+        summary: "Apply the approved REQUIRED, CONDITIONAL, or NOT_REQUIRED classification without conflating evidence types; record the complete finding inventory with unique stable finding IDs; and require every coverage_record_refs value to resolve to exactly one coverage_record_id."
       - name: "Test-architecture refactor decision"
         type: "Architecture Decision"
         files: ["Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md", "Docs/ASSESSMENTS/LIVE_TEST_REFACTOR_DECISION.md"]

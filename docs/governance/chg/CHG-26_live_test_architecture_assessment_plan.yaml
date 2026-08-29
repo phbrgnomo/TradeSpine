@@ -1,5 +1,5 @@
 id: CHG-26
-title: "Approve Live-Test Assessment Contracts Before IPLAN-14"
+title: "Live-Test Assessment Contracts and TradeIntent Review Remediation"
 
 metadata:
   document_type: "chg-document"
@@ -33,34 +33,56 @@ authorization_scope:
     gate: "GATE-08"
     status: "Pending"
     authorized: false
+  tradeintent_amendment:
+    artifacts: ["SPEC-02", "SPEC-06", "TDD-06", "CHG-21", "Include/Core/TradeTypes.mqh", "Include/Market/MarketContext.mqh", "Scripts/Tests/Test_ContractLifecycle.mq5"]
+    gates: ["GATE-06", "GATE-CODE"]
+    status: "Pending human approval and manual evidence"
+    authorized: false
   overall_change_status: "In Review"
-  completion_rule: "CHG-26 remains In Review until GATE-08 is explicitly approved or the plan is rejected/withdrawn."
+  completion_rule: "CHG-26 remains In Review until the TradeIntent amendment passes GATE-06/GATE-CODE and GATE-08 is explicitly approved or IPLAN-14 is rejected/withdrawn."
 
 change_description:
-  what: "Amend and approve @spec: SPEC-11 and @tdd: TDD-11 live-test assessment and closeout contracts at GATE-06, then derive Draft @iplan: IPLAN-14 from @tdd: TDD.11.04.c14e and @tdd: TDD.11.04.d14e before documentation_closeout."
-  why: "The original Draft IPLAN-14 introduced coverage, refactor-decision, and closeout-disposition contracts before those contracts existed in approved upstream layers. The corrected cascade establishes design and test authority before execution planning."
-  trigger: "Review instruction: approve the upstream contract before creating the IPLAN contract; never invent a downstream layer ahead of an approved upstream."
+  what: "Amend and approve @spec: SPEC-11 and @tdd: TDD-11 before deriving Draft @iplan: IPLAN-14; align documentation_closeout at Tier 10; and govern the TradeIntent invalid-side constructor, validation guard, and regression test through SPEC-02/SPEC-06/TDD-06 plus GATE-CODE."
+  why: "IPLAN-14 initially preceded approved upstream contracts. The same review set also changed production TradeIntent behavior while CHG-26 claimed no code scope, and retained an obsolete closeout-owner label plus an outdated canonical constructor contract."
+  trigger: "Review instructions requiring upstream-first IPLAN derivation, complete finding matching, Tier-10 closeout consistency, and code-gate governance for the TradeIntent fail-loud default."
+
+root_cause_analysis:
+  problem_statement: "TradeIntent default construction selected ORDER_TYPE_BUY, so a caller that omitted side assignment could carry a valid direction until another incidental field guard rejected it."
+  cause_chain:
+    - "The canonical constructor used a valid enum member as its default."
+    - "The canonical SPEC/CHG wording described only a generic zeroing default and did not require explicit side assignment."
+    - "ValidateOrderDefinition lacked an explicit BUY/SELL whitelist before the amendment."
+    - "The PR combined this behavior change with CHG-26 while CHG-26 declared Code scope empty."
+  root_cause_layer: "SPEC/TDD and Code"
+  layer_justification: "The constructor contract belongs to SPEC-02, validation behavior to SPEC-06, regression mapping to TDD-06, and enforcement to TradeTypes.mqh/MarketContext.mqh."
+  regression_scope:
+    - "Default constructor exposes order_type sentinel -1."
+    - "ValidateOrderDefinition rejects missing or unsupported order side before other validation."
+    - "Explicit ORDER_TYPE_BUY and ORDER_TYPE_SELL intents remain accepted when other fields are valid."
 
 impact_assessment:
   affected_layers:
     - layer: "SPEC"
-      artifacts: ["SPEC-11"]
-      impact: "Approve LiveTestAssessmentContract, LiveTestAssessmentResult, LiveTestCloseoutGate, coverage/finding/decision/disposition models, safety boundaries, and exact-inventory closeout behavior."
+      artifacts: ["SPEC-02", "SPEC-06", "SPEC-11"]
+      impact: "SPEC-11 owns the approved live-test assessment contracts. SPEC-02/SPEC-06 amendments define the TradeIntent invalid default side and its rejection before other validation; their new scope remains pending GATE-06 approval."
     - layer: "TDD"
-      artifacts: ["TDD-11", "TDD.11.04.c14e", "TDD.11.04.d14e"]
-      impact: "Approve three-output assessment-completeness/evidence-separation and exact-inventory closeout-disposition test contracts derived from SPEC-11/CHG-26 without retroactive BDD attribution."
+      artifacts: ["TDD-06", "TDD-11", "TDD.11.04.c14e", "TDD.11.04.d14e"]
+      impact: "TDD-11 owns the approved three-output assessment contracts. TDD-06 maps the missing-side TradeIntent regression to Test_ContractLifecycle; the amendment remains pending GATE-06 approval."
     - layer: "IPLAN"
-      artifacts: ["IPLAN-14", "IPLAN-00"]
-      impact: "Derive the Draft assessment plan from approved SPEC/TDD contracts and retain GATE-08 as the execution-approval boundary."
+      artifacts: ["IPLAN-04", "IPLAN-06", "IPLAN-14", "IPLAN-00"]
+      impact: "Derive Draft IPLAN-14 from approved contracts, move documentation_closeout ownership to Tier 10, and align IPLAN-06's TradeIntent manifest description; GATE-08 remains the execution-approval boundary."
+    - layer: "Implementation Documentation"
+      artifacts: ["Docs/MODULES/Core.md", "Docs/MODULES/Market.md"]
+      impact: "Document the invalid default side, explicit BUY/SELL assignment, and early validation rejection."
     - layer: "Project Guidance"
       artifacts: ["CLAUDE.md"]
       impact: "Retain Tier-10 documentation_closeout wording after IPLAN-14."
     - layer: "CHG"
-      artifacts: ["CHG-26", "CHG-00", "CHG-26 gate form/report"]
-      impact: "Correct routing from execution/GATE-08 to design/GATE-06 followed by GATE-08."
+      artifacts: ["CHG-12", "CHG-21", "CHG-26", "CHG-00", "CHG-26 gate form/report"]
+      impact: "Correct Tier-10 references, record the canonical TradeIntent amendment, and route the combined design/IPLAN/code scope through GATE-06, GATE-08, and GATE-CODE."
     - layer: "Code"
-      artifacts: []
-      impact: "No MQL5 source or assessment deliverable is implemented by this change."
+      artifacts: ["Include/Core/TradeTypes.mqh", "Include/Market/MarketContext.mqh", "Scripts/Tests/Test_ContractLifecycle.mq5"]
+      impact: "Default TradeIntent.order_type changes from ORDER_TYPE_BUY to invalid sentinel -1; ValidateOrderDefinition rejects non-BUY/SELL values before other checks; the lifecycle test covers constructor and validation behavior. No live-test assessment deliverable is implemented."
   cascade_direction: "upstream→downstream"
   risk_level: Medium
 
@@ -80,6 +102,15 @@ implementation:
       status: Completed
     - step: "Obtain human GATE-08 approval before IPLAN-14 assessment execution."
       artifact: "CHG-26 GATE-08"
+      status: Pending
+    - step: "Align SPEC-02/SPEC-06/TDD-06 and CHG-21 with the TradeIntent invalid-default contract."
+      artifact: "SPEC-02 / SPEC-06 / TDD-06 / CHG-21"
+      status: Completed
+    - step: "Classify and statically review the TradeIntent constructor, validation guard, and regression test."
+      artifact: "Include/Core/TradeTypes.mqh / Include/Market/MarketContext.mqh / Scripts/Tests/Test_ContractLifecycle.mq5"
+      status: Completed
+    - step: "Obtain fresh MetaEditor/MT5 evidence and human GATE-CODE approval."
+      artifact: "CHG-26 GATE-CODE"
       status: Pending
   artifacts_modified:
     - id: "SPEC-11"
@@ -120,10 +151,67 @@ implementation:
       change_type: "modified"
     - id: "CHG-26 gate form"
       file: "docs/governance/chg/CHG-26_GATE_APPROVAL_FORM.md"
-      change_type: "modified"
+      change_type: "created"
     - id: "CHG-26 gate report"
       file: "docs/governance/chg/CHG-26_GATE-06_08_report.md"
       change_type: "created"
+    - id: "SPEC-02"
+      file: "docs/06_SPEC/SPEC-02_trade_coordination_pipeline/SPEC-02_trade_coordination_pipeline.yaml"
+      change_type: "modified"
+    - id: "SPEC-02 readable"
+      file: "docs/06_SPEC/SPEC-02_trade_coordination_pipeline/SPEC-02_trade_coordination_pipeline.readable.md"
+      change_type: "regenerated"
+    - id: "SPEC-06"
+      file: "docs/06_SPEC/SPEC-06_market_session_and_symbol_context/SPEC-06_market_session_and_symbol_context.yaml"
+      change_type: "modified"
+    - id: "SPEC-06 readable"
+      file: "docs/06_SPEC/SPEC-06_market_session_and_symbol_context/SPEC-06_market_session_and_symbol_context.readable.md"
+      change_type: "regenerated"
+    - id: "TDD-06"
+      file: "docs/07_TDD/TDD-06_market_session_and_symbol_context/TDD-06_market_session_and_symbol_context.yaml"
+      change_type: "modified"
+    - id: "TDD-06 readable"
+      file: "docs/07_TDD/TDD-06_market_session_and_symbol_context/TDD-06_market_session_and_symbol_context.readable.md"
+      change_type: "regenerated"
+    - id: "IPLAN-04"
+      file: "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.yaml"
+      change_type: "modified"
+    - id: "IPLAN-04 readable"
+      file: "docs/08_IPLAN/IPLAN-04_position_account_mode_and_state.readable.md"
+      change_type: "regenerated"
+    - id: "IPLAN-06"
+      file: "docs/08_IPLAN/IPLAN-06_market_session_and_symbol_context.yaml"
+      change_type: "modified"
+    - id: "IPLAN-06 readable"
+      file: "docs/08_IPLAN/IPLAN-06_market_session_and_symbol_context.readable.md"
+      change_type: "regenerated"
+    - id: "CHG-12"
+      file: "docs/governance/chg/CHG-12_incremental_per_iplan_documentation.yaml"
+      change_type: "modified"
+    - id: "CHG-12 audit wording"
+      file: "docs/governance/chg/CHG-12.A_audit_report_v002.md"
+      change_type: "modified"
+    - id: "CHG-21"
+      file: "docs/governance/chg/CHG-21_canonical_tradeintent_and_regular_session_end.yaml"
+      change_type: "modified"
+    - id: "CHG-21 gate report"
+      file: "docs/governance/chg/CHG-21_GATE-06_08_report.md"
+      change_type: "modified"
+    - id: "Core module documentation"
+      file: "Docs/MODULES/Core.md"
+      change_type: "modified"
+    - id: "Market module documentation"
+      file: "Docs/MODULES/Market.md"
+      change_type: "modified"
+    - id: "TradeIntent"
+      file: "Include/Core/TradeTypes.mqh"
+      change_type: "modified"
+    - id: "Market order validation"
+      file: "Include/Market/MarketContext.mqh"
+      change_type: "modified"
+    - id: "TradeIntent regression"
+      file: "Scripts/Tests/Test_ContractLifecycle.mq5"
+      change_type: "modified"
 
 verification:
   checks:
@@ -148,9 +236,18 @@ verification:
     - check: "Human GATE-08 approval authorizes IPLAN-14 execution."
       result: Pending
       method: "Approval form; no execution begins before sign-off."
-    - check: "No MQL5 source or runtime behavior changed."
+    - check: "TradeIntent behavior change and regression scope are explicitly classified."
       result: Pass
-      method: "CHG-26 artifact manifest and scoped diff review; unrelated working-tree source changes are excluded."
+      method: "Static review confirms constructor sentinel, explicit invalid-side guard, and missing-side regression across the three declared code artifacts."
+    - check: "TradeIntent amendment compiles with zero errors and zero warnings."
+      result: Pending
+      method: "Project owner must compile Scripts/Tests/Test_ContractLifecycle.mq5 and Scripts/Tests/RunAllTests.mq5 with MetaEditor F7 and provide fresh EX5 evidence."
+    - check: "TradeIntent regression and aggregate suite execute successfully."
+      result: Pending
+      method: "Run Test_ContractLifecycle.mq5 and RunAllTests.mq5 in MT5; record exact pass/fail/skip counts."
+    - check: "GATE-CODE technical, QA, and architect review is approved."
+      result: Pending
+      method: "CHG-26 gate approval form."
 
 gate_approval:
   gate: GATE-06
@@ -159,27 +256,29 @@ gate_approval:
   conditions:
     - "Approval covers the SPEC-11/TDD-11 upstream contracts only."
     - "IPLAN-14 remains Draft and requires separate human GATE-08 approval before execution."
+    - "SPEC-02/SPEC-06/TDD-06 TradeIntent amendments require separate GATE-06 review; code changes require fresh F7/MT5 evidence and GATE-CODE approval."
 
 cascade_gates:
   GATE-06:
     validation_result: PASS
-    approval_status: Approved
+    approval_status: "SPEC-11/TDD-11 approved; TradeIntent amendment pending"
     evidence: "docs/governance/chg/CHG-26_GATE-06_08_report.md"
   GATE-08:
     validation_result: PASS
     approval_status: Pending
     evidence: "docs/governance/chg/CHG-26_GATE_APPROVAL_FORM.md"
   GATE-CODE:
-    validation_result: N/A
-    approval_status: N/A
-    evidence: "No code change or implementation authorization."
+    validation_result: PENDING
+    approval_status: Pending
+    evidence: "Static review complete; fresh MetaEditor F7, MT5 execution, and human approval are outstanding."
 
 rollback_plan:
   strategy: revert-commit
   steps:
     - "Restore SPEC-11/TDD-11 canonical/readable/index files to their pre-CHG-26 Draft contracts."
-    - "Restore IPLAN-14 to pre-upstream-remediation Draft or remove it and restore the 12-plan/Tier-9 closeout registry."
+    - "Restore IPLAN-14 to its pre-upstream-remediation Draft or remove it and restore the pre-CHG-26 closeout registry."
     - "Restore CHG-26 routing and gate records, then rerun YAML, traceability, and diff checks."
+    - "Restore TradeIntent.order_type default to ORDER_TYPE_BUY, remove the non-BUY/SELL validation branch and missing-side regression assertions, and restore SPEC-02/SPEC-06/TDD-06/CHG-21/module documentation if the code amendment is rejected."
   estimated_effort: "One documentation session"
 
 emergency_change: null

@@ -243,11 +243,11 @@ test_cases:
         action:
           description: "Build the coverage matrix before the architecture review or refactor decision."
         expected_state:
-          - "Every implemented behavior boundary records module, production paths, terminal dependencies and level, mutation class, existing evidence, evidence gap, live-test need, safe environment, owner, proposed tier, and rationale."
+          - "Every implemented behavior boundary records a non-empty coverage_record_id unique within the complete assessment, plus module, production paths, terminal dependencies and level, mutation class, existing evidence, evidence gap, live-test need, safe environment, owner, proposed tier, and rationale."
           - "Automated, Strategy Tester, demo/live, and manual evidence remain distinct."
-          - "The architecture review records the complete assessment finding inventory; every finding has a unique stable finding_id and references its supporting coverage records and evidence."
+          - "The architecture review records the complete assessment finding inventory; every finding has a unique stable finding_id, every coverage_record_refs value resolves to exactly one coverage_record_id, and evidence references are recorded."
         error_paths:
-          - condition: "A boundary is missing, evidence types are conflated, a finding_id is missing or duplicated, or a mutation-capable test targets an unrestricted production account."
+          - condition: "A boundary is missing, evidence types are conflated, a coverage_record_id is missing or duplicated, a coverage_record_refs value does not resolve exactly once, a finding_id is missing or duplicated, or a mutation-capable test targets an unrestricted production account."
             expected_error: "Block assessment completion and documentation closeout."
   e2e_tests:
     cases:

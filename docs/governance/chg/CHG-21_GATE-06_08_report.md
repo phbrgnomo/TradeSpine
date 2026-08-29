@@ -30,7 +30,7 @@ Design/source documentation change. Entry gate is GATE-06 because upstream SPEC/
 
 ## 2. Root cause and decisions
 
-**M1 — TradeIntent collision.** The minimal `TradeIntent` was defined locally in `Include/Market/MarketContext.mqh`. SPEC-02 owns a composite `TradeIntent`; SPEC-03 consumes it via `ITradePort::Submit`. Once IPLAN-02/03 land, both definitions could enter one translation unit → redefinition error. Resolution: one include-guarded canonical `TradeIntent` in `Include/Core/TradeTypes.mqh` (v1 fields unchanged); SPEC-02 EXTENDS it, SPEC-03 consumes it.
+**M1 — TradeIntent collision.** The minimal `TradeIntent` was defined locally in `Include/Market/MarketContext.mqh`. SPEC-02 owns a composite `TradeIntent`; SPEC-03 consumes it via `ITradePort::Submit`. Once IPLAN-02/03 land, both definitions could enter one translation unit → redefinition error. Resolution: one include-guarded canonical `TradeIntent` in `Include/Core/TradeTypes.mqh`; SPEC-02 EXTENDS it and SPEC-03 consumes it. A 2026-08-29 amendment documents numeric zero defaults plus invalid `order_type` sentinel `-1`, requiring explicit BUY/SELL assignment before validation or submission.
 
 **L2 — after-hours close reference.** `CLiveMarketSessionProvider::MarketSessionEndTod` returned the max `to` across all weekday sessions, selecting the B3 after-hours close. Resolution: return the regular (first / index-0) trade-session end so the day-trade close references normal trading hours. `ENUM_SESSION_CLOSE_REF` and `CommonInputs.close_reference` are unchanged (SPEC-09 doc clarification only).
 
@@ -62,6 +62,7 @@ Design/source documentation change. Entry gate is GATE-06 because upstream SPEC/
 
 ## 4. Outstanding (human / runtime — not blocking gate preparation)
 
+- **2026-08-29 constructor amendment:** static source and regression review passed, but fresh MetaEditor F7 compilation, MT5 execution, and GATE-CODE human approval remain pending under CHG-26. The historical 2026-06-21 approval below does not authorize that later behavior change.
 - Execute `RunAllTests.mq5` in the MT5 Navigator for executable evidence (IPLAN-06 suite green).
 - ~~Manual B3 (WIN/WDO) check~~ — **DONE 2026-06-21, finding + fix folded into CHG-21:**
   WINQ26 on XP/Clear reports a full-day session `00:00–24:00` (broker has not configured real B3

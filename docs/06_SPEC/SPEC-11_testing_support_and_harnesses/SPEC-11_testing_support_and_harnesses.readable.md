@@ -48,7 +48,7 @@ flowchart LR
 | --- | --- |
 | EvidenceAssertion | Intent, execution, diagnostic, state, or release evidence kind.; Expected requirement/spec trace tag in the emitted evidence.; Whether absence is a test failure. |
 | DeferredAccountModeEvidencePack | Deferred account mode label covered by init-failure evidence.; Deferred-mode validation scenario name.; Evidence file paths or operator notes proving init failure and no trade-path side effects. |
-| LiveTestCoverageRecord | Module, implemented boundary, source paths, dependency level, mutation class, distinct evidence and gap, live-test need, safe environment, owner, proposed tier, and rationale. |
+| LiveTestCoverageRecord | Unique stable coverage-record ID, module, implemented boundary, source paths, dependency level, mutation class, distinct evidence and gap, live-test need, safe environment, owner, proposed tier, and rationale. |
 | LiveTestArchitectureDecision | Exactly one refactor decision, affected contracts, risks, migration order, and governed follow-on artifacts. |
 | LiveTestAssessmentFinding | Unique stable finding ID, summary, supporting coverage-record references, and evidence references. |
 | LiveTestAssessmentResult | Complete coverage-record inventory, authoritative finding inventory, and evidence-backed architecture decision. |
@@ -62,6 +62,7 @@ flowchart LR
 - Test harnesses SHALL verify paired strategy diagnostics and trade execution logs remain separate evidence streams.
 - After all code-deliverable IPLANs complete, inventory every implemented behavior boundary before documentation closeout.
 - Keep automated, Strategy Tester, demo/live, and manual evidence distinct; classify live evidence as REQUIRED, CONDITIONAL, or NOT_REQUIRED.
+- Require every coverage record to have a non-empty `coverage_record_id` unique within the complete assessment, and require every finding `coverage_record_refs` value to resolve to exactly one record by that key.
 - Restrict mutation-capable live tests to DEMO or an explicitly controlled RESTRICTED_LIVE environment.
 - Select exactly one refactor decision: NO_REFACTOR, TARGETED_REFACTOR, or SHARED_ARCHITECTURE_REFACTOR.
 - Keep closeout blocked unless the complete assessed finding ID set and disposition finding_id set match one-to-one, with no missing, extra, or duplicate IDs.

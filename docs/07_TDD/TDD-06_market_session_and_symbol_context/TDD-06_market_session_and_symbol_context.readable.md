@@ -53,7 +53,7 @@
 
 | ID | Name | Contract | File | Function | Expected State | Error Paths |
 | --- | --- | --- | --- | --- | --- | --- |
-| TDD.06.04.4796 | Session context exposes broker schedule state while order validation enforces direction | CMarketContext session facade with fake clock and market-session provider | `Scripts/Tests/Test_ContractLifecycle.mq5` | `Test_MarketContext_SessionGate` | market_open reflects broker session schedule membership only. user_trading_hours_open independently blocks entry outside the configured window. A disabled or side-restricted symbol remains subject to ValidateOrderDefinition for the concrete BUY or SELL intent. **Note (@chg: CHG-21):** TradeIntent fixtures resolve to the canonical type in `Include/Core/TradeTypes.mqh`; existing order-definition cases are unaffected by the relocation. `MarketSessionEndTod` regular-session-end (index-0) selection is a thin live-adapter behavior verified manually on the live/demo B3 feed (WINQ26 2026-06-21); FakeMarketSessionProvider returns a single configured end-tod, so the close-reference cases remain valid and after-hours exclusion is not fake-exercised. | Close buffer sets day_trade_close_required → SPEC-defined rejection or HALT path. |
+| TDD.06.04.4796 | Session context exposes broker schedule state while order validation enforces direction | CMarketContext session facade with fake clock and market-session provider | `Scripts/Tests/Test_ContractLifecycle.mq5` | `Test_MarketContext_SessionGate` | market_open reflects broker session schedule membership only. user_trading_hours_open independently blocks entry outside the configured window. A disabled or side-restricted symbol remains subject to ValidateOrderDefinition for a concrete BUY or SELL intent. A default-constructed TradeIntent exposes invalid side sentinel `-1` and is rejected with an explicit invalid-order-type reason before other validation. **Note (@chg: CHG-21, @chg: CHG-26):** fixtures resolve to the canonical type in `Include/Core/TradeTypes.mqh`; the missing-side regression covers the constructor contract. `MarketSessionEndTod` regular-session-end selection remains thin live-adapter behavior verified manually on the live/demo B3 feed. | Close buffer sets day_trade_close_required → SPEC-defined rejection or HALT path. |
 | TDD.06.04.a1e6 | Production symbol metadata initializes through vendored CSymbolInfo | CSymbolContext production initialization against approved B3 broker symbol | `Scripts/Tests/Test_SymbolContextLive.mq5` | `Test_SymbolContextLive_ProductionInit` | `Init()` succeeds and prints the validated `[LIVE]` snapshot. | Missing adapter/metadata property causes a field-level diagnostic and blocks gate evidence. This manual Tier-1.5 smoke is excluded from `RunAllTests`. |
 
 ### E2E Tests
@@ -89,7 +89,7 @@ No E2E case is owned by TDD-06 for close-exposure behavior. The current wrapper 
 | EARS | @ears: EARS.01.03.03b2, @ears: EARS.01.03.ec72, @ears: EARS.01.03.1a3e, @ears: EARS.01.03.7669, @ears: EARS.01.03.db97, @ears: EARS.01.03.e152, @ears: EARS.01.03.368c |
 | PRD | @prd: PRD.01.09.fada, @prd: PRD.01.09.60ad, @prd: PRD.01.09.efcd, @prd: PRD.01.09.d722, @prd: PRD.01.09.42eb |
 | BRD | @brd: BRD.01.07.69ef |
-| CHG | @chg: CHG-21, @chg: CHG-25 |
+| CHG | @chg: CHG-21, @chg: CHG-25, @chg: CHG-26 |
 | Downstream | IPLAN-06 |
 
 ## Downstream Use

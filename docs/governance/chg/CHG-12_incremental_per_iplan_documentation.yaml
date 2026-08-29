@@ -5,7 +5,7 @@ title: "Incremental Per-IPLAN Documentation Model"
 metadata:
   document_type: "chg-document"
   purpose: governance
-  last_updated: "2026-06-14"
+  last_updated: "2026-08-29"
   authored_by: "aidoc-flow:doc-chg"
   change_level:
     value: C3
@@ -39,13 +39,14 @@ change_description:
     Shift the codebase-documentation model from a single end-of-project batch to
     incremental, per-IPLAN documentation.
 
-    Before: the Tier-9 documentation_closeout in IPLAN-00 instructed authors to
+    Before: the documentation_closeout then sequenced immediately after the
+    code-deliverable tiers in IPLAN-00 instructed authors to
     "Write documentation only after IPLAN-12 and IPLAN-13 complete," deferring
     ALL Docs/ reference documentation to the very end.
 
     After: every code-deliverable IPLAN's final session produces (a) in-code
     Doxygen documentation for its new/changed public interfaces and (b) the
-    module's Docs/MODULES/<Module>.md reference page. The Tier-9
+    module's Docs/MODULES/<Module>.md reference page. The
     documentation_closeout is retained but re-scoped as the final
     RELEASE-documentation reconciliation (AUTHORING, RECIPES, INPUTS_REFERENCE,
     TESTING, and the strategy template README) plus a consistency sweep over the
@@ -58,7 +59,7 @@ change_description:
         for the delivered files; update code_inventory accordingly."
       - Update documentation_closeout._guidance to describe the
         incremental-then-reconcile model (per-module docs are produced per IPLAN;
-        Tier-9 reconciles release docs and sweeps the module pages).
+        the final closeout reconciles release docs and sweeps the module pages).
   why: |
     The batch model left the implemented IPLAN-09 and IPLAN-11 surface with no
     reference documentation and created a large, error-prone end-of-project
@@ -70,7 +71,7 @@ change_description:
   trigger: |
     Project owner request on 2026-06-13 to start codebase documentation now
     (after IPLAN-09/11) and update it at the end of each IPLAN execution, rather
-    than deferring everything to the Tier-9 closeout after IPLAN-13.
+    than deferring everything to the end-of-project closeout after IPLAN-13.
 
 impact_assessment:
   affected_layers:
@@ -79,7 +80,7 @@ impact_assessment:
       impact: |
         Add CPO-006 to cross_plan_obligations and update
         documentation_closeout._guidance to the incremental-then-reconcile model.
-        Tier-9 deliverables, file_manifest, and acceptance_checks are unchanged;
+        The closeout deliverables, file_manifest, and acceptance_checks are unchanged;
         only the sequencing guidance changes (per-module docs are no longer
         exclusively end-of-project).
       cascade_direction: downstream
@@ -107,7 +108,7 @@ impact_assessment:
     or executable-code behavior changes. The single substantive corpus edit is to
     IPLAN-00 guidance plus a new cross-plan obligation; SPEC-08's release gate is
     confirmed unchanged. Risk is limited to governance drift, mitigated by
-    keeping the Tier-9 closeout as the authoritative release-doc reconciliation.
+    keeping documentation_closeout as the authoritative release-doc reconciliation.
 
 rollback_plan:
   strategy: revert-commit

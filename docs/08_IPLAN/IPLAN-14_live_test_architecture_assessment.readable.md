@@ -43,6 +43,7 @@ Path casing is intentional: `Docs/` is the case-sensitive implementation evidenc
 - Classify live evidence as `REQUIRED`, `CONDITIONAL`, or `NOT_REQUIRED`.
 - Keep automated tests, Strategy Tester evidence, demo/live evidence, and production authorization distinct.
 - Do not create or modify `.mq5` or `.mqh` files in this IPLAN.
+- Give every coverage record a non-empty `coverage_record_id` unique within the complete assessment, and require every finding `coverage_record_refs` value to resolve to exactly one record by that key.
 - Record the complete architecture-review finding inventory with unique stable finding IDs.
 - Before documentation closeout, require the assessed finding ID set and `disposition.finding_id` set to match one-to-one, with no missing, extra, or duplicate IDs, then assign every matched finding exactly one mutually exclusive disposition: `IMPLEMENTED`, `DEFERRED_WITH_RATIONALE`, or `REJECTED_WITH_EVIDENCE`.
 
