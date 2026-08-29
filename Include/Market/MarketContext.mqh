@@ -403,6 +403,12 @@ public:
          reason = "CSymbolContext not initialized.";
          return(false);
         }
+      if(intent.order_type != ORDER_TYPE_BUY && intent.order_type != ORDER_TYPE_SELL)
+        {
+         reason = StringFormat("Invalid order type %d; expected ORDER_TYPE_BUY or ORDER_TYPE_SELL.",
+                               (int)intent.order_type);
+         return(false);
+        }
       if(!m_sym.IsEntryAllowedLive(intent.order_type))
         {
          reason = StringFormat("Symbol trade mode '%s' does not allow %s entries.",

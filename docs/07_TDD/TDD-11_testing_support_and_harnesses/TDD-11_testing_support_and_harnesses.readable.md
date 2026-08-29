@@ -1,6 +1,8 @@
 # TDD-11: Testing Support and Harnesses
 
 > Human-readable rendering generated from `TDD-11_testing_support_and_harnesses.yaml`. The YAML file remains the canonical aidoc artifact.
+>
+> Contract approved at GATE-06 under @chg: CHG-26. CHG-26 remains In Review and does not authorize IPLAN-14 execution; GATE-08 is pending.
 
 ## Document Control
 
@@ -8,14 +10,17 @@
 | --- | --- |
 | Document ID | TDD-11 |
 | Title | Testing Support and Harnesses Test-Driven Development Guide |
-| Status | Draft |
-| Version | 1.0 |
+| Status | Approved |
+| Approval Scope | TDD-11 contract only (GATE-06) |
+| Governing Change | CHG-26 — In Review |
+| IPLAN-14 Execution | Not authorized; GATE-08 pending |
+| Version | 1.2 |
 | Component | Shared test doubles, clocks, log sinks, assertions, and harness primitives |
 | SPEC Reference | @spec: SPEC-11 |
 | Source SPEC | `../../06_SPEC/SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.yaml` |
 | IPLAN-ready Score | 95/100 |
 | Created | 2026-06-02T00:00:00-03:00 |
-| Updated | 2026-06-09T00:00:00-03:00 |
+| Updated | 2026-08-29T00:05:39-03:00 |
 
 ## Test Pyramid
 
@@ -43,6 +48,18 @@
 | @bdd: BDD.01.03.d6ae | Evidence records remain paired and separated | `Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_d6ae_unit` (impl — corrected from clock file) | `Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_d6ae_integration` (impl) | `Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_d6ae_e2e` (impl) |
 | @bdd: BDD.01.03.b37d | Performance budgets are evidenced | `Test_TestSupportClock.mq5` / `test_testing_support_and_harnesses_b37d_unit` (impl — clock-determinism slice) | `Test_TestSupportScenarioHarness.mq5` / `test_testing_support_and_harnesses_b37d_integration` (impl — co-owned by IPLAN-09) | `Test_ReleaseEvidenceHarness.mq5` / `test_testing_support_and_harnesses_b37d_e2e` (def — perf e2e owned by IPLAN-09) |
 
+### CHG-26 Assessment Mappings
+
+These design-change cases derive from the approved SPEC-11 amendment under CHG-26. They are not retroactively attributed to unrelated existing BDD scenarios.
+
+Path casing is intentional: `Docs/` is the case-sensitive implementation evidence root; lowercase `docs/` is the SDD corpus.
+
+| Change Source | Type | Contract | Artifact | Status |
+| --- | --- | --- | --- | --- |
+| @chg: CHG-26 | integration | LiveTestAssessmentContract / TDD.11.04.c14e | `Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml` | planned for IPLAN-14 |
+| @chg: CHG-26 | integration | LiveTestAssessmentResult / TDD.11.04.c14e | `Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md` | planned for IPLAN-14 |
+| @chg: CHG-26 | e2e | LiveTestCloseoutGate / TDD.11.04.d14e | `Docs/ASSESSMENTS/LIVE_TEST_REFACTOR_DECISION.md` | planned for IPLAN-14 |
+
 ## Test Cases
 
 ### Unit Tests
@@ -56,12 +73,14 @@
 | ID | Name | Contract | File | Expected State | Error Paths |
 | --- | --- | --- | --- | --- | --- |
 | TDD.11.04.aadd | ScenarioHarness assembles fakes and evidence assertions | ScenarioHarness | `Scripts/Tests/Test_TestSupportScenarioHarness.mq5` | Stimulus runs with deterministic time and evidence assertions fail on missing required traces | Owner extension slot is missing for a scenario that requires broker, position, symbol, or store behavior -> Owner hooks (OnOwnerSetup/OnOwnerTeardown) are callable without crashing; owner-specific assertions are deferred to the downstream IPLAN. |
+| TDD.11.04.c14e | Live-test coverage assessment is complete and evidence-separated | LiveTestAssessmentContract | `Docs/ASSESSMENTS/LIVE_TEST_COVERAGE_MATRIX.yaml` plus `Docs/ASSESSMENTS/LIVE_TEST_ARCHITECTURE_REVIEW.md` | Every boundary records the approved coverage fields; the review records every finding with a unique stable ID and supporting references | Missing boundary, conflated evidence, missing/duplicate finding ID, or unsafe mutation environment blocks assessment completion and closeout. |
 
 ### E2E Tests
 
-| ID | Name | BDD Ref | File | Workflow | Timeout Seconds |
+| ID | Name | Source Ref | File | Workflow | Timeout Seconds |
 | --- | --- | --- | --- | --- | --- |
 | TDD.11.04.4f72 | Deferred account-mode evidence stays manual where required | @bdd: BDD.01.03.f415 | `Scripts/Tests/Test_ReleaseEvidenceHarness.mq5` | 1. Run harness for netting deferred init failure -> Automated Strategy Tester evidence is not substituted for manual pack<br>2. Attach manual evidence pack reference -> Missing pack blocks release gate<br>3. Run release evidence validation -> No trade-path side effects are recorded | 300 |
+| TDD.11.04.d14e | Live-test findings block closeout until exclusively dispositioned | @chg: CHG-26 | `Docs/ASSESSMENTS/LIVE_TEST_REFACTOR_DECISION.md` consuming the matrix and architecture review | 1. Review complete assessment -> decision with risks/migration order<br>2. Match assessed IDs to disposition.finding_id one-to-one -> missing, extra, or duplicate IDs block; matched findings receive one valid disposition and its required evidence<br>3. Evaluate closeout -> inventory mismatch or unresolved findings block | 300 |
 
 ## Owner Extension Scope
 
@@ -101,8 +120,8 @@
 | EARS | @ears: EARS.01.03.d7e9, @ears: EARS.01.03.a71c, @ears: EARS.01.03.588b, @ears: EARS.01.03.8044 |
 | PRD | @prd: PRD.01.14.8720, @prd: PRD.01.09.3f12, @prd: PRD.01.13.edc4, @prd: PRD.01.09.841a |
 | BRD | @brd: BRD.01.07.a94e, @brd: BRD.01.08.0ce5 |
-| Downstream | IPLAN-11 |
+| Downstream | IPLAN-11, IPLAN-14 |
 
 ## Downstream Use
 
-IPLAN generation must create the declared test files before implementation files, run the Red phase first, then implement the parent SPEC component and verify Green results.
+IPLAN-11 retains the shared test-support implementation sequence. IPLAN-14 derives only the approved assessment contracts TDD.11.04.c14e and TDD.11.04.d14e, creates the coverage matrix before conclusions, and introduces no additional downstream contract.

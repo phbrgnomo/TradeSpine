@@ -1,0 +1,185 @@
+id: CHG-26
+title: "Approve Live-Test Assessment Contracts Before IPLAN-14"
+
+metadata:
+  document_type: "chg-document"
+  purpose: governance
+  last_updated: "2026-08-29"
+  change_level:
+    value: C3
+  change_source:
+    value: design
+
+change_control:
+  chg_id: "CHG-26"
+  status: In Review
+  change_level: C3
+  change_source: design
+  entry_gate: GATE-06
+  semver_impact: null
+  author: "Codex"
+  date_proposed: "2026-08-28T20:45:50-03:00"
+  date_approved: null
+  date_implemented: null
+  supersedes: []
+
+authorization_scope:
+  contract_amendments:
+    artifacts: ["SPEC-11", "TDD-11"]
+    gate: "GATE-06"
+    status: "Approved"
+  plan_execution:
+    artifact: "IPLAN-14"
+    gate: "GATE-08"
+    status: "Pending"
+    authorized: false
+  overall_change_status: "In Review"
+  completion_rule: "CHG-26 remains In Review until GATE-08 is explicitly approved or the plan is rejected/withdrawn."
+
+change_description:
+  what: "Amend and approve @spec: SPEC-11 and @tdd: TDD-11 live-test assessment and closeout contracts at GATE-06, then derive Draft @iplan: IPLAN-14 from @tdd: TDD.11.04.c14e and @tdd: TDD.11.04.d14e before documentation_closeout."
+  why: "The original Draft IPLAN-14 introduced coverage, refactor-decision, and closeout-disposition contracts before those contracts existed in approved upstream layers. The corrected cascade establishes design and test authority before execution planning."
+  trigger: "Review instruction: approve the upstream contract before creating the IPLAN contract; never invent a downstream layer ahead of an approved upstream."
+
+impact_assessment:
+  affected_layers:
+    - layer: "SPEC"
+      artifacts: ["SPEC-11"]
+      impact: "Approve LiveTestAssessmentContract, LiveTestAssessmentResult, LiveTestCloseoutGate, coverage/finding/decision/disposition models, safety boundaries, and exact-inventory closeout behavior."
+    - layer: "TDD"
+      artifacts: ["TDD-11", "TDD.11.04.c14e", "TDD.11.04.d14e"]
+      impact: "Approve three-output assessment-completeness/evidence-separation and exact-inventory closeout-disposition test contracts derived from SPEC-11/CHG-26 without retroactive BDD attribution."
+    - layer: "IPLAN"
+      artifacts: ["IPLAN-14", "IPLAN-00"]
+      impact: "Derive the Draft assessment plan from approved SPEC/TDD contracts and retain GATE-08 as the execution-approval boundary."
+    - layer: "Project Guidance"
+      artifacts: ["CLAUDE.md"]
+      impact: "Retain Tier-10 documentation_closeout wording after IPLAN-14."
+    - layer: "CHG"
+      artifacts: ["CHG-26", "CHG-00", "CHG-26 gate form/report"]
+      impact: "Correct routing from execution/GATE-08 to design/GATE-06 followed by GATE-08."
+    - layer: "Code"
+      artifacts: []
+      impact: "No MQL5 source or assessment deliverable is implemented by this change."
+  cascade_direction: "upstream→downstream"
+  risk_level: Medium
+
+implementation:
+  steps:
+    - step: "Define and approve the live-test assessment, decision, disposition, and closeout contracts."
+      artifact: "SPEC-11"
+      status: Completed
+    - step: "Define and approve test contracts for coverage completeness/evidence separation and exclusive closeout dispositions."
+      artifact: "TDD.11.04.c14e / TDD.11.04.d14e"
+      status: Completed
+    - step: "Run GATE-06 checks and record the project owner's explicit upstream approval."
+      artifact: "CHG-26 GATE-06 report/form"
+      status: Completed
+    - step: "Revise IPLAN-14 so every assessment contract is an explicit translation of approved SPEC-11/TDD-11 content."
+      artifact: "IPLAN-14 / IPLAN-00"
+      status: Completed
+    - step: "Obtain human GATE-08 approval before IPLAN-14 assessment execution."
+      artifact: "CHG-26 GATE-08"
+      status: Pending
+  artifacts_modified:
+    - id: "SPEC-11"
+      file: "docs/06_SPEC/SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.yaml"
+      change_type: "modified"
+    - id: "SPEC-11 readable"
+      file: "docs/06_SPEC/SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.readable.md"
+      change_type: "regenerated"
+    - id: "SPEC-00"
+      file: "docs/06_SPEC/SPEC-00_index.md"
+      change_type: "modified"
+    - id: "TDD-11"
+      file: "docs/07_TDD/TDD-11_testing_support_and_harnesses/TDD-11_testing_support_and_harnesses.yaml"
+      change_type: "modified"
+    - id: "TDD-11 readable"
+      file: "docs/07_TDD/TDD-11_testing_support_and_harnesses/TDD-11_testing_support_and_harnesses.readable.md"
+      change_type: "regenerated"
+    - id: "TDD-00"
+      file: "docs/07_TDD/TDD-00_index.md"
+      change_type: "modified"
+    - id: "IPLAN-14"
+      file: "docs/08_IPLAN/IPLAN-14_live_test_architecture_assessment.yaml"
+      change_type: "modified"
+    - id: "IPLAN-14 readable"
+      file: "docs/08_IPLAN/IPLAN-14_live_test_architecture_assessment.readable.md"
+      change_type: "regenerated"
+    - id: "IPLAN-00"
+      file: "docs/08_IPLAN/IPLAN-00_index.yaml"
+      change_type: "modified"
+    - id: "IPLAN-00 readable"
+      file: "docs/08_IPLAN/IPLAN-00_index.readable.md"
+      change_type: "regenerated"
+    - id: "CLAUDE"
+      file: "CLAUDE.md"
+      change_type: "modified"
+    - id: "CHG-00"
+      file: "docs/governance/chg/CHG-00_index.md"
+      change_type: "modified"
+    - id: "CHG-26 gate form"
+      file: "docs/governance/chg/CHG-26_GATE_APPROVAL_FORM.md"
+      change_type: "modified"
+    - id: "CHG-26 gate report"
+      file: "docs/governance/chg/CHG-26_GATE-06_08_report.md"
+      change_type: "created"
+
+verification:
+  checks:
+    - check: "GATE-06 blocking checks pass for amended SPEC-11/TDD-11."
+      result: Pass
+      method: "Verify readiness scores, existing BDD mapping, exact SPEC/TDD contract sync, and same-change TDD update."
+    - check: "SPEC-11 and TDD-11 lifecycle status records the human upstream approval."
+      result: Pass
+      method: "Canonical/readable/index comparison plus CHG-26 approval evidence."
+    - check: "The complete assessed finding inventory is authoritative at closeout."
+      result: Pass
+      method: "Verify LiveTestAssessmentResult is passed to LiveTestCloseoutGate and assessed finding IDs equal disposition.finding_id values one-to-one, with missing, extra, and duplicate IDs rejected."
+    - check: "All three assessment outputs have approved SPEC-11/TDD-11 mappings."
+      result: Pass
+      method: "Compare SPEC-11 test_files, TDD-11 change_contracts, IPLAN-14 manifest, and the GATE-08 report for coverage matrix, architecture review, and refactor/disposition decision paths."
+    - check: "IPLAN-14 references only approved TDD.11.04.c14e and TDD.11.04.d14e for the new assessment contracts."
+      result: Pass
+      method: "Traceability and implementation_contracts comparison."
+    - check: "Canonical YAML parses without duplicate keys and registry tier invariants hold."
+      result: Pass
+      method: "PyYAML unique-key load plus registry invariant assertions."
+    - check: "Human GATE-08 approval authorizes IPLAN-14 execution."
+      result: Pending
+      method: "Approval form; no execution begins before sign-off."
+    - check: "No MQL5 source or runtime behavior changed."
+      result: Pass
+      method: "CHG-26 artifact manifest and scoped diff review; unrelated working-tree source changes are excluded."
+
+gate_approval:
+  gate: GATE-06
+  approver: "Project owner (explicit user instruction)"
+  approval_date: "2026-08-28T20:59:55-03:00"
+  conditions:
+    - "Approval covers the SPEC-11/TDD-11 upstream contracts only."
+    - "IPLAN-14 remains Draft and requires separate human GATE-08 approval before execution."
+
+cascade_gates:
+  GATE-06:
+    validation_result: PASS
+    approval_status: Approved
+    evidence: "docs/governance/chg/CHG-26_GATE-06_08_report.md"
+  GATE-08:
+    validation_result: PASS
+    approval_status: Pending
+    evidence: "docs/governance/chg/CHG-26_GATE_APPROVAL_FORM.md"
+  GATE-CODE:
+    validation_result: N/A
+    approval_status: N/A
+    evidence: "No code change or implementation authorization."
+
+rollback_plan:
+  strategy: revert-commit
+  steps:
+    - "Restore SPEC-11/TDD-11 canonical/readable/index files to their pre-CHG-26 Draft contracts."
+    - "Restore IPLAN-14 to pre-upstream-remediation Draft or remove it and restore the 12-plan/Tier-9 closeout registry."
+    - "Restore CHG-26 routing and gate records, then rerun YAML, traceability, and diff checks."
+  estimated_effort: "One documentation session"
+
+emergency_change: null

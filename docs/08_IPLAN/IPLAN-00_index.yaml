@@ -2,8 +2,8 @@ metadata:
   schema_version: "1.0"
   document_type: "iplan-registry"
   layer: 8
-  total_plans: 12
-  last_updated: "2026-08-28"
+  total_plans: 13
+  last_updated: "2026-08-29"
 
 registry:
   plans:
@@ -218,6 +218,30 @@ registry:
       blocks: []
       parallel_with: ["IPLAN-12"]
       file_path: "IPLAN-13_bullishbearish_hedging_port.yaml"
+    - id: "IPLAN-14"
+      title: "Live-Test Architecture Assessment"
+      source_spec: "@spec: SPEC-11"
+      scope: "Review the final implemented codebase, classify live-instrument test needs, and decide whether no, targeted, or shared test-architecture refactoring is required."
+      status: "Draft"
+      status_date: "2026-08-28"
+      upstream_contract_status: "Approved"
+      upstream_contract_gate: "GATE-06"
+      governing_change_status: "In Review"
+      execution_authorization_status: "Pending"
+      execution_gate: "GATE-08"
+      execution_authorized: false
+      complexity: 5
+      session_count: 0
+      sessions_completed: 0
+      files_declared: 3
+      files_done: 0
+      skipped: []
+      skip_reasons: {}
+      depends_on: ["IPLAN-01", "IPLAN-02", "IPLAN-03", "IPLAN-04", "IPLAN-05", "IPLAN-06", "IPLAN-07", "IPLAN-09", "IPLAN-10", "IPLAN-11", "IPLAN-12", "IPLAN-13"]
+      blocks: ["documentation_closeout"]
+      parallel_with: []
+      file_path: "IPLAN-14_live_test_architecture_assessment.yaml"
+      note: "Draft plan derived from SPEC-11/TDD-11 contracts approved only at GATE-06 under @chg: CHG-26. CHG-26 remains In Review; GATE-08 execution authorization is Pending/false. Its three NOT_STARTED deliverables are intentionally absent until execution; source changes require separate follow-on artifacts."
 
 backlog: []
 
@@ -260,6 +284,10 @@ execution_path:
       status: "NOT_STARTED"
       plans: ["IPLAN-12", "IPLAN-13"]
     - tier: 9
+      label: "Live-Test Architecture Assessment"
+      status: "NOT_STARTED"
+      plans: ["IPLAN-14"]
+    - tier: 10
       label: "Documentation Closeout"
       status: "NOT_STARTED"
       plans: []
@@ -278,10 +306,13 @@ documentation_closeout:
     span the whole framework (AUTHORING, RECIPES, INPUTS_REFERENCE, TESTING, and
     the strategy template README) and (2) sweeps the per-module pages already
     written for consistency against the final implemented tree. It still runs
-    after the strategy ports (IPLAN-12/13) so release docs reflect the shipped
-    framework, but per-module reference docs are no longer deferred to this step.
+    after IPLAN-14 so release docs reflect the assessment's reviewed disposition
+    as well as the shipped framework, but per-module reference docs are no longer
+    deferred to this step. Before closeout, every IPLAN-14 finding must receive
+    exactly one mutually exclusive disposition: IMPLEMENTED,
+    DEFERRED_WITH_RATIONALE, or REJECTED_WITH_EVIDENCE.
   status: "NOT_STARTED"
-  sequence_after_tier: 8
+  sequence_after_tier: 9
   source_refs:
     - "@spec: SPEC-08"
     - "@prd: PRD.01.09.5ef1"
@@ -365,7 +396,7 @@ documentation_closeout:
     setup:
       - "mkdir -p Docs/MODULES Experts/_Template"
     implementation:
-      - "# Write documentation only after IPLAN-12 and IPLAN-13 complete so docs reflect the implemented framework and shipped strategy ports."
+      - "# Write release documentation only after IPLAN-14 is reviewed and every finding has exactly one disposition: IMPLEMENTED, DEFERRED_WITH_RATIONALE, or REJECTED_WITH_EVIDENCE."
       - "# Use implemented public interfaces and file paths, not planned placeholders."
     validation:
       - "test -f Docs/README.md"
@@ -382,6 +413,7 @@ documentation_closeout:
     - "TESTING documents how to run each declared script and how to collect release evidence."
     - "Docs use the TradeSpine root MQL5/Experts/Main/TradeSpine/ and quoted relative include examples."
     - "After IPLAN-01/02/03 complete, the final release gate proves coordinator consumption, provider assembly/timer wiring, final mutation fencing, zero broker bypass, attachable two-chart ownership, rollback rehearsal, demo canary, and staged live rollout."
+    - "IPLAN-14 is reviewed and every live-test/refactor finding has exactly one mutually exclusive disposition before closeout: IMPLEMENTED, DEFERRED_WITH_RATIONALE, or REJECTED_WITH_EVIDENCE."
   status_history:
     - from: "UNTRACKED"
       to: "NOT_STARTED"
@@ -412,7 +444,7 @@ cross_plan_obligations:
       introduced_by: "IPLAN-00"
       adopted_date: "2026-06-03"
     - id: "CPO-006"
-      description: "At the end of each code-deliverable IPLAN, produce in-code Doxygen documentation for the new/changed public interfaces AND the module's Docs/MODULES/<Module>.md reference page for the delivered files, and update code_inventory accordingly. The Tier-9 documentation_closeout then reconciles release docs and sweeps the per-module pages (see CHG-12)."
+      description: "At the end of each code-deliverable IPLAN, produce in-code Doxygen documentation for the new/changed public interfaces AND the module's Docs/MODULES/<Module>.md reference page for the delivered files, and update code_inventory accordingly. The Tier-10 documentation_closeout then reconciles release docs and sweeps the per-module pages (see CHG-12 and CHG-26)."
       introduced_by: "IPLAN-00"
       adopted_date: "2026-06-13"
     - id: "CPO-007"
@@ -610,6 +642,12 @@ status_history:
         to: "Draft"
         date: "2026-06-03"
         reason: "Review-team remediation split Bullish/Bearish hedging port ownership out of IPLAN-01."
+  - plan_id: "IPLAN-14"
+    transitions:
+      - from: "UNTRACKED"
+        to: "Draft"
+        date: "2026-08-28"
+        reason: "@chg: CHG-26 adds a review-gated base proposal for the final implemented-code live-test architecture assessment before documentation closeout."
 
 update_triggers:
   _guidance: "When to update this registry."
@@ -632,4 +670,4 @@ update_triggers:
     - "Append to cross_plan_obligations.obligations."
 
 traceability:
-  provenance: ["@chg: CHG-22", "@chg: CHG-23", "@chg: CHG-25"]
+  provenance: ["@chg: CHG-22", "@chg: CHG-23", "@chg: CHG-25", "@chg: CHG-26"]

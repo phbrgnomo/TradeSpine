@@ -9,7 +9,7 @@ custom_fields:
   artifact_type: SPEC
   layer: 6
   priority: shared
-  last_updated: "2026-06-02"
+  last_updated: "2026-08-29"
 ---
 
 # SPEC-00: Technical Specification Index
@@ -47,7 +47,7 @@ SPEC defines the component-level implementation contracts for TradeSpine: interf
 | SPEC-08 | Release Testing and Documentation Governance | ADR-06, ADR-07, ADR-10 | N/A - documentation/process scope | Draft, governance-ready | [YAML](SPEC-08_release_testing_and_documentation_governance/SPEC-08_release_testing_and_documentation_governance.yaml) | [Markdown](SPEC-08_release_testing_and_documentation_governance/SPEC-08_release_testing_and_documentation_governance.readable.md) | [Corpus v005 SUPERSEDES v004](SPEC-00.A_audit_report_v005.md) | 2026-06-03 |
 | SPEC-09 | Core Runtime and Configuration | ADR-03, ADR-09, ADR-10 | TDD-09 | Draft, TDD-ready 93/100 | [YAML](SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.yaml) | [Markdown](SPEC-09_core_runtime_and_configuration/SPEC-09_core_runtime_and_configuration.readable.md) | [Corpus v004 PASS](SPEC-00.A_audit_report_v004.md) | 2026-06-02 |
 | SPEC-10 | Visualization Optional Services | ADR-03, ADR-10 | TDD-10 | Draft, TDD-ready 91/100 | [YAML](SPEC-10_visualization_optional_services/SPEC-10_visualization_optional_services.yaml) | [Markdown](SPEC-10_visualization_optional_services/SPEC-10_visualization_optional_services.readable.md) | [Corpus v004 PASS](SPEC-00.A_audit_report_v004.md) | 2026-06-02 |
-| SPEC-11 | Testing Support and Harnesses | ADR-06, ADR-07, ADR-08, ADR-10 | TDD-11 | Draft, TDD-ready 94/100 | [YAML](SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.yaml) | [Markdown](SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.readable.md) | [Corpus v004 PASS](SPEC-00.A_audit_report_v004.md) | 2026-06-02 |
+| SPEC-11 | Testing Support and Harnesses | ADR-06, ADR-07, ADR-08, ADR-10 | TDD-11 | Contract Approved at GATE-06; CHG-26 In Review; IPLAN-14 execution Pending GATE-08; TDD-ready 94/100 | [YAML](SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.yaml) | [Markdown](SPEC-11_testing_support_and_harnesses/SPEC-11_testing_support_and_harnesses.readable.md) | [Corpus v004 PASS baseline](SPEC-00.A_audit_report_v004.md) | 2026-08-29 |
 
 ## Dependency Order
 
@@ -102,5 +102,5 @@ Latest corpus audit: [SPEC-00.A v004 PASS](SPEC-00.A_audit_report_v004.md).
 
 ---
 
-**Last Updated**: 2026-06-02  
+**Last Updated**: 2026-08-29
 **Maintainer**: phbr

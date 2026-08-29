@@ -2,7 +2,7 @@
 
 > Human-readable rendering generated from `IPLAN-00_index.yaml`. The YAML file remains the canonical aidoc artifact.
 >
-> Provenance: @chg: CHG-23, @chg: CHG-25
+> Provenance: @chg: CHG-23, @chg: CHG-25, @chg: CHG-26
 
 ## Document Control
 
@@ -11,9 +11,9 @@
 | Document ID | IPLAN-00 |
 | Document Type | iplan-registry |
 | Layer | 8 |
-| Total Permanent Plans | 12 |
-| Last Updated | 2026-08-28 |
-| Status | 5 completed plans; 7 non-completed plans |
+| Total Permanent Plans | 13 |
+| Last Updated | 2026-08-29 |
+| Status | 5 completed plans; 8 non-completed plans |
 
 ## Registry
 
@@ -31,6 +31,13 @@
 | IPLAN-11 | Testing Support and Harnesses Implementation | @spec: SPEC-11 | Completed | 9/9 | IPLAN-09 | IPLAN-02, IPLAN-03, IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-10 |  |
 | IPLAN-12 | 1minscalpv3 Hedging Port Implementation | @spec: SPEC-01 | Draft | 0/2 | IPLAN-01, IPLAN-02, IPLAN-03, IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-09, IPLAN-11 |  |  |
 | IPLAN-13 | BullishBearish Engulfing v7 Hedging Port Implementation | @spec: SPEC-01 | Draft | 0/2 | IPLAN-01, IPLAN-02, IPLAN-03, IPLAN-04, IPLAN-05, IPLAN-06, IPLAN-07, IPLAN-09, IPLAN-11 |  |  |
+| IPLAN-14 | Live-Test Architecture Assessment | @spec: SPEC-11 | Draft; execution not authorized | 0/3 assessment artifacts | IPLAN-01 through IPLAN-13, excluding intentionally absent IPLAN-08 | documentation_closeout | SPEC-11/TDD-11 contracts are approved only at GATE-06. CHG-26 remains In Review; GATE-08 execution authorization is Pending/false. The three deliverables are future execution outputs. |
+
+## Pre-Closeout Live-Test Assessment
+
+IPLAN-14 is Tier 9 and runs after the implemented codebase and strategy ports. It inventories live-test needs and decides whether test-architecture refactoring is required. Documentation closeout moves to Tier 10 and remains blocked until every IPLAN-14 finding has exactly one mutually exclusive disposition: `IMPLEMENTED`, `DEFERRED_WITH_RATIONALE`, or `REJECTED_WITH_EVIDENCE`.
+
+Registry authorization fields are machine-readable: upstream contracts are Approved at GATE-06, while `execution_authorized: false` remains in force until human GATE-08 approval.
 
 ## CHG-22/CHG-23 Cross-Plan Controls
 
@@ -41,6 +48,8 @@
 - Final release closeout owns rollback rehearsal, demo canary, restricted live, partial cohort, full rollout, and production-readiness approval after IPLAN-01/02/03 complete.
 
 ## Final Documentation Step
+
+This Tier-10 step begins only after IPLAN-14 and its reviewed disposition are complete.
 
 | Deliverable | Purpose |
 | --- | --- |

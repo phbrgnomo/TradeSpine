@@ -9,7 +9,7 @@ custom_fields:
   artifact_type: TDD
   layer: 7
   priority: shared
-  last_updated: "2026-06-02"
+  last_updated: "2026-08-29"
 ---
 
 # TDD-00: Test-Driven Development Guide Index
@@ -44,7 +44,7 @@ flowchart LR
 | TDD-07 | Indicators Stops Sizing and Trailing | @spec: SPEC-07 | [YAML](TDD-07_indicators_stops_sizing_trailing/TDD-07_indicators_stops_sizing_trailing.yaml) | [Readable](TDD-07_indicators_stops_sizing_trailing/TDD-07_indicators_stops_sizing_trailing.readable.md) | @bdd: BDD.01.03.c0f6<br>@bdd: BDD.01.03.e593<br>@bdd: BDD.01.03.cb03<br>@bdd: BDD.01.03.aa68 | @adr: ADR.04.03.7277<br>@adr: ADR.09.03.84b9<br>@adr: ADR.10.03.51ea | IPLAN-07 | Draft, audit PASS 94/100 |
 | TDD-09 | Core Runtime and Configuration | @spec: SPEC-09 | [YAML](TDD-09_core_runtime_and_configuration/TDD-09_core_runtime_and_configuration.yaml) | [Readable](TDD-09_core_runtime_and_configuration/TDD-09_core_runtime_and_configuration.readable.md) | @bdd: BDD.01.03.aa68<br>@bdd: BDD.01.03.b37d<br>@bdd: BDD.01.03.cb03 | @adr: ADR.03.03.4124<br>@adr: ADR.09.03.84b9<br>@adr: ADR.10.03.51ea | IPLAN-09 | Draft, audit PASS 94/100 |
 | TDD-10 | Visualization Optional Services | @spec: SPEC-10 | [YAML](TDD-10_visualization_optional_services/TDD-10_visualization_optional_services.yaml) | [Readable](TDD-10_visualization_optional_services/TDD-10_visualization_optional_services.readable.md) | @bdd: BDD.01.03.b37d<br>@bdd: BDD.01.03.d6ae | @adr: ADR.03.03.4124<br>@adr: ADR.10.03.51ea | IPLAN-10 | Draft, audit PASS 92/100 |
-| TDD-11 | Testing Support and Harnesses | @spec: SPEC-11 | [YAML](TDD-11_testing_support_and_harnesses/TDD-11_testing_support_and_harnesses.yaml) | [Readable](TDD-11_testing_support_and_harnesses/TDD-11_testing_support_and_harnesses.readable.md) | @bdd: BDD.01.03.aa68<br>@bdd: BDD.01.03.f415<br>@bdd: BDD.01.03.e16a<br>@bdd: BDD.01.03.d6ae<br>@bdd: BDD.01.03.b37d | @adr: ADR.06.03.b277<br>@adr: ADR.07.03.6df1<br>@adr: ADR.08.03.0a8f<br>@adr: ADR.10.03.51ea | IPLAN-11 | Draft, audit PASS 95/100 |
+| TDD-11 | Testing Support and Harnesses | @spec: SPEC-11 | [YAML](TDD-11_testing_support_and_harnesses/TDD-11_testing_support_and_harnesses.yaml) | [Readable](TDD-11_testing_support_and_harnesses/TDD-11_testing_support_and_harnesses.readable.md) | @bdd: BDD.01.03.aa68<br>@bdd: BDD.01.03.f415<br>@bdd: BDD.01.03.e16a<br>@bdd: BDD.01.03.d6ae<br>@bdd: BDD.01.03.b37d | @adr: ADR.06.03.b277<br>@adr: ADR.07.03.6df1<br>@adr: ADR.08.03.0a8f<br>@adr: ADR.10.03.51ea | IPLAN-11, IPLAN-14 | Contract Approved at GATE-06; CHG-26 In Review; IPLAN-14 execution Pending GATE-08; audit PASS baseline 95/100 |
 
 ## Non-TDD Documentation Scope
 
@@ -72,5 +72,5 @@ TDD requires IPLAN-Ready score >=90/100 before downstream IPLAN generation. All 
 
 ---
 
-**Last Updated**: 2026-06-02  
+**Last Updated**: 2026-08-29
 **Maintainer**: phbr

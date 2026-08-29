@@ -220,6 +220,15 @@ bool Test_MarketContext_OrderDefinitionValidation(CAssert &a)
    string reason = "";
 
    // Prices on the 5.0 tick grid; stops_level=0 so distance always passes.
+   TradeIntent missing_side;
+   missing_side.price = 100000.0; missing_side.lots = 1.0;
+   ok &= a.TS_CHECK((int)missing_side.order_type == -1,
+                    "default TradeIntent order type is an invalid sentinel");
+   reason = "";
+   ok &= a.TS_CHECK(!ctx.ValidateOrderDefinition(missing_side, reason) &&
+                    StringFind(reason, "Invalid order type") >= 0,
+                    "unset TradeIntent order type is rejected explicitly");
+
    TradeIntent buy;
    buy.order_type = ORDER_TYPE_BUY;
    buy.price = 100000.0; buy.sl = 99500.0; buy.tp = 100500.0; buy.lots = 1.0;

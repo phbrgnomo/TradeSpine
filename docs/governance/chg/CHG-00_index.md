@@ -11,7 +11,7 @@ custom_fields:
 
 # CHG Index
 
-> Provenance: @chg: CHG-23, @chg: CHG-25
+> Provenance: @chg: CHG-23, @chg: CHG-25, @chg: CHG-26
 
 ## Purpose
 
@@ -47,7 +47,8 @@ custom_fields:
 | CHG-23 | Documentation template normalization and CHG-22 boundary amendment | C3 | design | Implemented | GATE-06/GATE-08 approved on 2026-08-27; documentation-only, no MQL5 source change |
 | CHG-24 | Evidence-contract consolidation and field semantics | C2 | design | In Review | Documentation-only consolidation of SPEC-08 evidence authority; peer review pending |
 | @chg: CHG-25 | @iplan: IPLAN-07 Contract and Market Prerequisite Stabilization | C3 | design | Approved | GATE-06/GATE-08/GATE-CODE approved by explicit user authorization on 2026-08-28; formal audit evidence waived; no production authorization |
+| @chg: CHG-26 | Approve Live-Test Assessment Contracts Before IPLAN-14 | C3 | design | In Review | GATE-06 approved by explicit user instruction; GATE-08 validation passed but human execution approval remains pending |
 
 ## Planned
 
-No planned CHG records.
+- @chg: CHG-26 upstream SPEC-11/TDD-11 contracts are approved; IPLAN-14 remains pending human GATE-08 approval.
